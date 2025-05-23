@@ -1,0 +1,18 @@
+# Node/NPM
+node_modules
+.npmrc
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build output
+lib/dist
+*.tsbuildinfo
+
+# Testing
+coverage
+
+# IDEs
+.vscode
+.idea
