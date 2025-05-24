@@ -45,6 +45,7 @@ export default defineConfig([
           ...globals.browser,
           ...globals.node,
         },
+        parser: tseslint.parser,
         parserOptions: {
           project: ['./tsconfig.json'],
         },
