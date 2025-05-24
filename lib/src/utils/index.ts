@@ -1,0 +1,1 @@
+export { MirageError } from './MirageError';
