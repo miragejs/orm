@@ -10,8 +10,8 @@
   "types": "./lib/dist/index.d.ts",
   "type": "module",
   "scripts": {
-    "build": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm build",
-    "build:dev": "tsup lib/src/index.ts --dts --out-dir lib/dist",
+    "build:prod": "pnpm format && pnpm lint:fix && pnpm typecheck && pnpm build",
+    "build": "tsup lib/src/index.ts --dts --out-dir lib/dist",
     "format": "prettier --write \"lib/src/**/*.ts\" \"test/**/*.ts\"",
     "format:check": "prettier --check \"lib/src/**/*.ts\" \"test/**/*.ts\"",
     "lint": "eslint lib/src test/ --ext .ts",
