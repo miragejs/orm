@@ -1,6 +1,7 @@
 import js from '@eslint/js';
 import { defineConfig } from 'eslint/config';
 import eslintPluginImport from 'eslint-plugin-import';
+import eslintPluginJSDoc from 'eslint-plugin-jsdoc';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -16,6 +17,31 @@ const baseRules = {
   ],
 };
 
+const jsdocRules = {
+  'jsdoc/require-jsdoc': [
+    'error',
+    {
+      publicOnly: true,
+      require: {
+        ArrowFunctionExpression: true,
+        ClassDeclaration: true,
+        ClassExpression: true,
+        FunctionDeclaration: true,
+        FunctionExpression: true,
+        MethodDefinition: true,
+      },
+      exemptEmptyConstructors: true,
+      contexts: [
+        'ExportDefaultDeclaration > FunctionDeclaration',
+        'ExportNamedDeclaration > FunctionDeclaration',
+        'ExportDefaultDeclaration > ClassDeclaration',
+        'ExportNamedDeclaration > ClassDeclaration',
+      ],
+      checkConstructors: false,
+    },
+  ],
+};
+
 export default defineConfig([
   {
     ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**'],
@@ -27,8 +53,13 @@ export default defineConfig([
     plugins: {
       js,
       import: eslintPluginImport,
+      jsdoc: eslintPluginJSDoc,
     },
-    rules: baseRules,
+    rules: {
+      ...baseRules,
+      ...eslintPluginJSDoc.configs.recommended.rules,
+      ...jsdocRules,
+    },
     extends: ['js/recommended'],
     languageOptions: {
       globals: {
@@ -52,8 +83,16 @@ export default defineConfig([
     },
     plugins: {
       import: eslintPluginImport,
+      jsdoc: eslintPluginJSDoc,
     },
-    rules: baseRules,
+    rules: {
+      ...baseRules,
+      ...eslintPluginJSDoc.configs.recommended.rules,
+      ...jsdocRules,
+      // Relax JSDoc rules for TS files
+      'jsdoc/require-returns-type': 'off',
+      'jsdoc/require-param-type': 'off',
+    },
   }),
 
   // Test files
@@ -73,6 +112,10 @@ export default defineConfig([
     },
     rules: {
       'import/no-default-export': 'off',
+      // Relax JSDoc rules for test files
+      'jsdoc/require-jsdoc': 'off',
+      'jsdoc/require-param': 'off',
+      'jsdoc/require-returns': 'off',
     },
   },
 
@@ -81,6 +124,10 @@ export default defineConfig([
     files: ['*.config.{js,mjs,cjs,ts,mts,cts}'],
     rules: {
       'import/no-default-export': 'off',
+      // Relax JSDoc rules for config files
+      'jsdoc/require-jsdoc': 'off',
+      'jsdoc/require-param': 'off',
+      'jsdoc/require-returns': 'off',
     },
   },
 
