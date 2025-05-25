@@ -1,1 +1,4 @@
-export { Schema } from './schema/Schema';
+import { inflections } from 'inflected';
+
+export { DB } from './db';
+export { inflections };
