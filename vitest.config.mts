@@ -1,12 +1,19 @@
+import { resolve } from 'path';
+
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@src': resolve(__dirname, './lib/src'),
+    },
+  },
   test: {
-    globals: true,
-    environment: 'node',
-    include: ['test/**/*.test.ts'],
     coverage: {
       reporter: ['text', 'html'],
     },
+    environment: 'node',
+    globals: true,
+    include: ['test/**/*.test.ts'],
   },
 });
