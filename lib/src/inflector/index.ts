@@ -1,1 +1,1 @@
-export { default as Inflector } from "./Inflector";
+export { default as Inflector } from './Inflector';

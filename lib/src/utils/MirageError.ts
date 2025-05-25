@@ -3,4 +3,3 @@ export class MirageError extends Error {
     super(`[Mirage]: ${message}`);
   }
 }
-

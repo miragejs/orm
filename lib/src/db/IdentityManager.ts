@@ -1,9 +1,9 @@
-import { MirageError } from "../utils";
+import { MirageError } from '../utils';
 
 /**
  * Manages unique identifiers for database records.
  * Handles different types of IDs, ensuring uniqueness and proper sequencing.
- * 
+ *
  * @template T - The type of ID to manage (defaults to number)
  * @param config - Configuration options for the identity manager.
  * @param config.initialCounter - The initial counter value.
@@ -43,7 +43,7 @@ export default class IdentityManager<T = number> {
     if (this.usedIds.has(id)) {
       throw new MirageError(`Attempting to use the ID ${id}, but it's already been used`);
     }
-    
+
     this.usedIds.add(id);
   }
 
@@ -60,7 +60,7 @@ export default class IdentityManager<T = number> {
    * Resets the manager's state, clearing all used IDs and resetting the counter.
    */
   reset(): void {
-    this.counter = (1 as T);
+    this.counter = 1 as T;
     this.usedIds.clear();
   }
 
@@ -75,7 +75,9 @@ export default class IdentityManager<T = number> {
       if (typeof currentId === 'number') {
         return (currentId + 1) as T;
       }
-      throw new MirageError('Default ID generator only works with numbers. Provide a custom idGenerator for other types.');
+      throw new MirageError(
+        'Default ID generator only works with numbers. Provide a custom idGenerator for other types.',
+      );
     };
   }
 
@@ -88,7 +90,6 @@ export default class IdentityManager<T = number> {
 }
 
 // -- Types -- //
-
 
 /**
  * Type for ID generator function that takes current ID and returns next ID

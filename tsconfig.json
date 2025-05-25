@@ -20,5 +20,9 @@
     "typeRoots": ["./lib/types", "./node_modules", "./node_modules/@types"],
     "types": ["node", "vitest/globals"]
   },
-  "include": ["lib/src", "test", "*.config.{ts,mts,cts}"]
+  "include": [
+    "lib/src/**/*",
+    "test/**/*",
+    "*.config.{ts,mts,cts}"
+  ]
 }

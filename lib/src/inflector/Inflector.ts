@@ -1,20 +1,20 @@
-import { pluralize, singularize } from "inflected";
+import { pluralize, singularize } from 'inflected';
 
 /**
  * Inflector is a singleton class that provides methods for singularizing and pluralizing words.
  * It uses the inflected library to perform the transformations.
- * 
+ *
  * @example
  * const inflector = Inflector.instance;
  * const singular = inflector.singularize("books"); // "book"
  * const plural = inflector.pluralize("book"); // "books"
- * 
- * // Register a custom inflector 
+ *
+ * // Register a custom inflector
  * inflector.register({
  *   singularize: (word) => word.replace(/s$/, ""),
  *   pluralize: (word) => word + "s"
  * });
- * 
+ *
  */
 export default class Inflector {
   static #instance: Inflector;
@@ -49,4 +49,3 @@ export default class Inflector {
     return this.pluralizeFn(word);
   }
 }
-
