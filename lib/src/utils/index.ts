@@ -1,1 +1,2 @@
-export { MirageError } from './MirageError';
+export * from './MirageError';
+export * from './string';

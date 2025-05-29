@@ -15,7 +15,7 @@ import { MirageError } from '../utils';
  * identityManager.fetch(); // => 3
  * identityManager.reset(); // => 1
  */
-export default class IdentityManager<T = number> {
+export default class IdentityManager<T extends AllowedIdTypes = number> {
   private counter: T;
   private usedIds: Set<T>;
   private idGenerator: IdGenerator<T>;
@@ -116,6 +116,11 @@ export default class IdentityManager<T = number> {
 }
 
 // -- Types -- //
+
+/**
+ * Type for allowed ID types
+ */
+export type AllowedIdTypes = number | string;
 
 /**
  * Type for ID generator function that takes current ID and returns next ID
