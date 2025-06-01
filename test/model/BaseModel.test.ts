@@ -2,8 +2,8 @@ import { DbCollection } from '@src/db';
 import BaseModel, { type ModelAttrs } from '@src/model/BaseModel';
 
 interface UserAttrs extends ModelAttrs<number> {
-  name: string;
   email: string;
+  name: string;
 }
 
 describe('BaseModel', () => {
@@ -13,8 +13,11 @@ describe('BaseModel', () => {
   beforeEach(() => {
     collection = new DbCollection<number, UserAttrs>({ name: 'users' });
     model = new BaseModel<UserAttrs>({
-      name: 'User',
-      attrs: { name: 'John', email: 'john@example.com' },
+      name: 'user',
+      attrs: {
+        email: 'john@example.com',
+        name: 'John',
+      },
       collection,
     });
   });
@@ -38,7 +41,7 @@ describe('BaseModel', () => {
   describe('core functionality', () => {
     it('should provide id getter', () => {
       expect(model.id).toBeNull();
-      model.attrs.id = 1;
+      model.save();
       expect(model.id).toBe(1);
     });
 
@@ -51,8 +54,7 @@ describe('BaseModel', () => {
     it('should handle update operation', () => {
       model.save();
       const id = model.id;
-      model.attrs.name = 'Jane';
-      model.save();
+      model.update({ name: 'Jane' });
       expect(model.id).toBe(id);
       expect(model.attrs.name).toBe('Jane');
     });
