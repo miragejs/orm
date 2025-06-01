@@ -23,20 +23,7 @@ export default class BaseModel<TAttrs extends ModelAttrs<AllowedIdTypes> = Model
       });
     this._status = 'new';
 
-    for (const key in attrs) {
-      if (key !== 'id' && !Object.prototype.hasOwnProperty.call(this, key)) {
-        Object.defineProperty(this, key, {
-          get: function (this: BaseModel<TAttrs>) {
-            return this.attrs[key];
-          },
-          set: function (this: BaseModel<TAttrs>, value: TAttrs[keyof TAttrs]) {
-            this.attrs[key as keyof TAttrs] = value;
-          },
-          enumerable: true,
-          configurable: true,
-        });
-      }
-    }
+    this.initAttributeAccessors();
   }
 
   // -- Getters --
@@ -67,6 +54,7 @@ export default class BaseModel<TAttrs extends ModelAttrs<AllowedIdTypes> = Model
   reload(): this {
     if (this.id) {
       this.attrs = this._collection.find(this.id) as TAttrs;
+      this.initAttributeAccessors();
     }
 
     return this;
@@ -100,6 +88,7 @@ export default class BaseModel<TAttrs extends ModelAttrs<AllowedIdTypes> = Model
    */
   update(attrs: Partial<TAttrs>): this {
     Object.assign(this.attrs, attrs);
+    this.initAttributeAccessors();
     return this.save();
   }
 
@@ -139,6 +128,33 @@ export default class BaseModel<TAttrs extends ModelAttrs<AllowedIdTypes> = Model
     let idLabel = this.id ? `(${this.id})` : '';
     return `model:${this.modelName}${idLabel}`;
   }
+
+  // -- Private methods --
+
+  private initAttributeAccessors(): void {
+    // Remove old accessors
+    for (const key in this.attrs) {
+      if (key !== 'id' && Object.prototype.hasOwnProperty.call(this, key)) {
+        delete this[key as keyof this];
+      }
+    }
+
+    // Set up new accessors
+    for (const key in this.attrs) {
+      if (key !== 'id' && !Object.prototype.hasOwnProperty.call(this, key)) {
+        Object.defineProperty(this, key, {
+          get: () => {
+            return this.attrs[key];
+          },
+          set: (value: TAttrs[keyof TAttrs]) => {
+            this.attrs[key as keyof TAttrs] = value;
+          },
+          enumerable: true,
+          configurable: true,
+        });
+      }
+    }
+  }
 }
 
 /**
@@ -148,8 +164,8 @@ export default class BaseModel<TAttrs extends ModelAttrs<AllowedIdTypes> = Model
  */
 export function createModelInstance<TAttrs extends ModelAttrs<AllowedIdTypes>>(
   options: ModelOptions<TAttrs>,
-): BaseModel<TAttrs> & TAttrs {
-  return new BaseModel<TAttrs>(options) as BaseModel<TAttrs> & TAttrs;
+): ModelInstance<TAttrs> {
+  return new BaseModel<TAttrs>(options) as ModelInstance<TAttrs>;
 }
 
 // -- Types --
@@ -157,6 +173,7 @@ export function createModelInstance<TAttrs extends ModelAttrs<AllowedIdTypes>>(
 /**
  * Type for model attributes
  * @template TId - The type of the model's id
+ * @param attrs.id - The id of the model
  */
 export type ModelAttrs<TId = AllowedIdTypes> = {
   id?: TId | null;
@@ -166,6 +183,9 @@ export type ModelAttrs<TId = AllowedIdTypes> = {
 /**
  * Options for creating a model
  * @template TAttrs - The type of the model's attributes
+ * @param options.attrs - The attributes for the model
+ * @param options.collection - The collection to use for the model
+ * @param options.name - The name of the model
  */
 export interface ModelOptions<TAttrs extends ModelAttrs<any>> {
   attrs?: TAttrs;
@@ -174,8 +194,9 @@ export interface ModelOptions<TAttrs extends ModelAttrs<any>> {
 }
 
 /**
- * Type for model instances
+ * Type for model instance with accessors for the attributes
  * @template TAttrs - The type of the model's attributes
  */
-export type ModelInstance<TAttrs extends ModelAttrs<any>> = BaseModel<TAttrs> &
-  Omit<TAttrs, keyof BaseModel<TAttrs>>;
+export type ModelInstance<TAttrs extends ModelAttrs<any>> = BaseModel<TAttrs> & {
+  [K in keyof TAttrs]: TAttrs[K];
+};
