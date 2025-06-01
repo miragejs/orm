@@ -23,6 +23,7 @@
   "include": [
     "lib/src/**/*",
     "test/**/*",
-    "*.config.{ts,mts,cts}"
+    "tsup.config.ts",
+    "vitest.config.mts"
   ]
 }
