@@ -16,12 +16,14 @@ import { MirageError } from '../utils';
  * identityManager.reset(); // => 1
  */
 export default class IdentityManager<T extends AllowedIdTypes = number> {
+  private initialCounter: T;
   private counter: T;
   private usedIds: Set<T>;
   private idGenerator: IdGenerator<T>;
 
   constructor(config: IdentityManagerConfig<T> = {}) {
-    this.counter = config.initialCounter ?? (1 as T);
+    this.initialCounter = config.initialCounter ?? (1 as T);
+    this.counter = this.initialCounter;
     this.usedIds = config.initialUsedIds ?? new Set<T>();
     this.idGenerator = config.idGenerator ?? this.getDefaultGenerator();
   }
@@ -77,7 +79,7 @@ export default class IdentityManager<T extends AllowedIdTypes = number> {
    * Resets the manager's state, clearing all used IDs and resetting the counter.
    */
   reset(): void {
-    this.counter = 1 as T;
+    this.counter = this.initialCounter;
     this.usedIds.clear();
   }
 
