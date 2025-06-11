@@ -40,7 +40,6 @@ export default class IdentityManager<T extends AllowedIdTypes = number> {
       nextId = this.generateNextId(nextId);
     }
 
-    this.counter = this.generateNextId(nextId);
     return nextId;
   }
 
@@ -61,7 +60,7 @@ export default class IdentityManager<T extends AllowedIdTypes = number> {
   }
 
   /**
-   * Fetches the next available ID.
+   * Fetches the next available ID and marks it as used.
    * @returns The next available ID
    * @example
    * const identityManager = new IdentityManager();
@@ -70,6 +69,7 @@ export default class IdentityManager<T extends AllowedIdTypes = number> {
   fetch(): T {
     const id = this.get();
     this.set(id);
+    this.counter = this.generateNextId(id);
     return id;
   }
 

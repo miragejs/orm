@@ -31,14 +31,11 @@ describe('IdentityManager', () => {
 
     it('should return next available ID', () => {
       expect(manager.get()).toBe(1);
-      expect(manager.get()).toBe(2);
-      expect(manager.get()).toBe(3);
     });
 
     it('should skip used IDs', () => {
-      manager.set(2);
-      expect(manager.get()).toBe(1);
-      expect(manager.get()).toBe(3);
+      manager.set(1);
+      expect(manager.get()).toBe(2);
     });
   });
 
@@ -83,16 +80,18 @@ describe('IdentityManager', () => {
   describe('custom ID generator', () => {
     it('should use custom generator for string IDs', () => {
       const stringManager = new IdentityManager<string>({
-        initialCounter: 'id_0',
+        initialCounter: 'id_1',
         idGenerator: (currentId) => {
           const num = parseInt(currentId.split('_')[1]);
           return `id_${num + 1}`;
         },
       });
 
-      expect(stringManager.get()).toBe('id_0');
       expect(stringManager.get()).toBe('id_1');
-      expect(stringManager.get()).toBe('id_2');
+      expect(stringManager.fetch()).toBe('id_1');
+
+      stringManager.set('id_2');
+      expect(stringManager.get()).toBe('id_3');
     });
   });
 });
