@@ -11,8 +11,10 @@ import { MirageError } from '../utils';
  * @example
  * const identityManager = new IdentityManager();
  * identityManager.get(); // => 1
- * identityManager.set(2); // => 2
- * identityManager.fetch(); // => 3
+ * identityManager.set(1);
+ * identityManager.get(); // => 2
+ * identityManager.fetch(); // => 2
+ * identityManager.get(); // => 3
  * identityManager.reset(); // => 1
  */
 export default class IdentityManager<T extends AllowedIdTypes = number> {
@@ -54,11 +56,9 @@ export default class IdentityManager<T extends AllowedIdTypes = number> {
    * identityManager.set(2); // => 2
    */
   set(id: T): void {
-    if (this.usedIds.has(id)) {
-      throw new MirageError(`Attempting to use the ID ${id}, but it's already been used`);
+    if (!this.usedIds.has(id)) {
+      this.usedIds.add(id);
     }
-
-    this.usedIds.add(id);
   }
 
   /**
@@ -70,8 +70,10 @@ export default class IdentityManager<T extends AllowedIdTypes = number> {
    */
   fetch(): T {
     const id = this.get();
+
     this.set(id);
     this.counter = this.generateNextId(id);
+
     return id;
   }
 

@@ -15,9 +15,6 @@ describe('IdentityManager', () => {
     it('should initialize with custom used IDs', () => {
       const usedIds = new Set([1, 2, 3]);
       const manager = new IdentityManager({ initialUsedIds: usedIds });
-      expect(() => manager.set(1)).toThrow();
-      expect(() => manager.set(2)).toThrow();
-      expect(() => manager.set(3)).toThrow();
       expect(manager.get()).toBe(4);
     });
   });
@@ -29,12 +26,10 @@ describe('IdentityManager', () => {
       manager = new IdentityManager();
     });
 
-    it('should return next available ID', () => {
+    it('should return next available ID without marking it as used', () => {
       expect(manager.get()).toBe(1);
-    });
-
-    it('should skip used IDs', () => {
       manager.set(1);
+      expect(manager.get()).toBe(2);
       expect(manager.get()).toBe(2);
     });
   });
@@ -47,22 +42,18 @@ describe('IdentityManager', () => {
     });
 
     it('should mark ID as used', () => {
-      manager.set(5);
-      expect(() => manager.set(5)).toThrow();
-    });
-
-    it('should throw error when setting already used ID', () => {
       manager.set(1);
-      expect(() => manager.set(1)).toThrow();
+      manager.set(2);
+      expect(manager.get()).toBe(3);
     });
   });
 
   describe('fetch', () => {
     it('should get and mark ID as used', () => {
       const manager = new IdentityManager();
-      const id = manager.fetch();
-      expect(id).toBe(1);
-      expect(() => manager.set(1)).toThrow();
+      expect(manager.fetch()).toBe(1);
+      expect(manager.fetch()).toBe(2);
+      expect(manager.get()).toBe(3);
     });
   });
 
