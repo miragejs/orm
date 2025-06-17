@@ -8,7 +8,7 @@ import { camelize } from '@src/utils/string';
  */
 export default class BaseModel<TAttrs extends ModelAttrs<AllowedIdTypes> = ModelAttrs<number>> {
   readonly modelName: string;
-  private _attrs: TAttrs;
+  protected _attrs: TAttrs;
   protected _collection: DbCollection<NonNullable<TAttrs['id']>, TAttrs>;
   protected _status: 'new' | 'saved';
 
