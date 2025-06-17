@@ -13,22 +13,19 @@ export default class BaseFactory<TAttrs extends ModelAttrs> {
 
   /**
    * Build a model with the given model ID and trait names or default values.
-   * @param modelId - The model ID.
-   * @param traitNamesOrDefaults - The names of the traits to apply to the model or default values for attributes.
+   * @param modelId - The ID of the model to build.
+   * @param traitsOrDefaults - The names of the traits to apply to the model or default values for attributes.
    * @returns The built model.
    */
   build(
     modelId: NonNullable<TAttrs['id']>,
-    ...traitNamesOrDefaults: (string | Partial<TAttrs>)[]
-  ): {
-    attrs: TAttrs;
-    traitNames: string[];
-  } {
+    ...traitsOrDefaults: (string | Partial<TAttrs>)[]
+  ): TAttrs {
     const traitNames: string[] = [];
     const defaults: Partial<TAttrs> = {};
 
     // Separate trait names from default values
-    traitNamesOrDefaults.forEach((arg) => {
+    traitsOrDefaults.forEach((arg) => {
       if (typeof arg === 'string') {
         traitNames.push(arg);
       } else {
@@ -40,25 +37,23 @@ export default class BaseFactory<TAttrs extends ModelAttrs> {
     const traitAttributes = this.buildWithTraits(traitNames, modelId);
 
     // Merge attributes in order: defaults override traits, traits override base attributes
-    return {
-      attrs: this.mergeAttributes(this.mergeAttributes(processedAttributes, traitAttributes), {
-        ...defaults,
-        id: modelId,
-      }),
-      traitNames,
-    };
+    return this.mergeAttributes(this.mergeAttributes(processedAttributes, traitAttributes), {
+      ...defaults,
+      id: modelId,
+    });
   }
 
   /**
    * Process the afterCreate hook and the trait hooks.
    * @param model - The model to process.
-   * @param traitNames - The names of the traits to apply to the model.
+   * @param traitsOrDefaults - The traits or default values to use for the model.
    * @returns The processed model.
    */
-  processAfterCreate(
+  processAfterCreateHooks(
     model: ModelInstance<TAttrs>,
-    traitNames: string[] = [],
+    ...traitsOrDefaults: (string | Partial<TAttrs>)[]
   ): ModelInstance<TAttrs> {
+    const traitNames: string[] = traitsOrDefaults.filter((arg) => typeof arg === 'string');
     const hooks: ((model: ModelInstance<TAttrs>) => void)[] = [];
 
     if (this.afterCreate) {
@@ -77,13 +72,12 @@ export default class BaseFactory<TAttrs extends ModelAttrs> {
 
     hooks.forEach((hook) => {
       hook(model);
-      console.log('ModelAttrs', model.attrs);
     });
-
-    console.log(hooks);
 
     return model;
   }
+
+  // -- PRIVATE METHODS --
 
   private processAttributes(
     attrs: FactoryAttrs<TAttrs>,
@@ -180,9 +174,7 @@ export default class BaseFactory<TAttrs extends ModelAttrs> {
   }
 }
 
-// -- Types --
-
-type DependencyRef = [string, string] | [string];
+// -- TYPES --
 
 export type FactoryAttrs<TAttrs extends ModelAttrs> = {
   [K in keyof TAttrs]:
@@ -197,5 +189,5 @@ export type TraitDefinition<TAttrs extends ModelAttrs> = Partial<FactoryAttrs<TA
 export type FactoryDefinition<TAttrs extends ModelAttrs> = {
   attributes: FactoryAttrs<TAttrs>;
   traits?: Record<string, TraitDefinition<TAttrs>>;
-  afterCreate?: (model: TAttrs) => void;
+  afterCreate?: (model: ModelInstance<TAttrs>) => void;
 };

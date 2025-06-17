@@ -28,7 +28,7 @@ export default class Factory {
     factory: BaseFactory<TAttrs>,
     definition: Partial<FactoryDefinition<TAttrs>>,
   ): BaseFactory<TAttrs> {
-    const { attributes = {}, traits = {}, afterCreate } = definition;
+    const { attributes = {}, traits = {} } = definition;
 
     // Merge attributes, with new attributes taking precedence
     const mergedAttributes = {
@@ -46,7 +46,7 @@ export default class Factory {
     return new BaseFactory<TAttrs>(
       mergedAttributes as FactoryAttrs<TAttrs>,
       mergedTraits,
-      afterCreate || factory.afterCreate,
+      definition.afterCreate || factory.afterCreate,
     );
   }
 }

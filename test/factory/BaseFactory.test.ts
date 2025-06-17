@@ -1,4 +1,4 @@
-import BaseFactory, { type FactoryAttrs } from '@src/factory/BaseFactory';
+import { BaseFactory, type FactoryAttrs } from '@src/factory';
 import { createModelInstance, type ModelAttrs, type ModelInstance } from '@src/model';
 
 interface UserAttrs extends ModelAttrs<number> {
@@ -25,7 +25,7 @@ describe('BaseFactory', () => {
 
   describe('build', () => {
     it('should build model with static attributes', () => {
-      const { attrs } = factory.build(1);
+      const attrs = factory.build(1);
       expect(attrs).toEqual({
         createdAt: null,
         email: 'user1@example.com',
@@ -36,7 +36,7 @@ describe('BaseFactory', () => {
     });
 
     it('should handle function attributes', () => {
-      const { attrs } = factory.build(2);
+      const attrs = factory.build(2);
       expect(attrs.email).toBe('user2@example.com');
       expect(attrs.fullName).toBe('User 2');
     });
@@ -50,7 +50,7 @@ describe('BaseFactory', () => {
       };
 
       factory = new BaseFactory<UserAttrs>(attributes, traits);
-      const { attrs } = factory.build(1, 'admin');
+      const attrs = factory.build(1, 'admin');
 
       expect(attrs).toEqual({
         createdAt: null,
@@ -72,7 +72,7 @@ describe('BaseFactory', () => {
       };
 
       factory = new BaseFactory<UserAttrs>(attributes, traits);
-      const { attrs } = factory.build(1, 'admin', 'verified');
+      const attrs = factory.build(1, 'admin', 'verified');
 
       expect(attrs.name).toBe('Admin User');
       expect(attrs.email).toBe('verified1@example.com');
@@ -86,7 +86,7 @@ describe('BaseFactory', () => {
       };
 
       factory = new BaseFactory<UserAttrs>(attributes, traits);
-      const { attrs } = factory.build(1, 'admin', { name: 'Custom Name' });
+      const attrs = factory.build(1, 'admin', { name: 'Custom Name' });
 
       expect(attrs.name).toBe('Custom Name');
     });
@@ -100,10 +100,10 @@ describe('BaseFactory', () => {
 
       factory = new BaseFactory<UserAttrs>(attributes, {}, afterCreate);
 
-      const { attrs } = factory.build(1);
+      const attrs = factory.build(1);
       const model = createModelInstance<UserAttrs>({ name: 'User', attrs });
 
-      factory.processAfterCreate(model);
+      factory.processAfterCreateHooks(model);
 
       expect(hookCalled).toBe(true);
       expect(model.attrs.name).toBe('Modified Name');
@@ -123,10 +123,10 @@ describe('BaseFactory', () => {
 
       factory = new BaseFactory<UserAttrs>(attributes, traits);
 
-      const { attrs, traitNames } = factory.build(1, 'admin');
+      const attrs = factory.build(1, 'admin');
       const model = createModelInstance<UserAttrs>({ name: 'User', attrs });
 
-      factory.processAfterCreate(model, traitNames);
+      factory.processAfterCreateHooks(model, 'admin');
 
       expect(hookCalled).toBe(true);
       expect(model.attrs.createdAt).toBe(new Date('2024-01-01').toISOString());

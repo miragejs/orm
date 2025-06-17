@@ -33,7 +33,7 @@ describe('Factory', () => {
 
   describe('define', () => {
     it('should create a factory with the given definition', () => {
-      const { attrs } = baseFactory.build(1);
+      const attrs = baseFactory.build(1);
       expect(attrs).toEqual({
         createdAt: null,
         email: 'user1@example.com',
@@ -44,7 +44,7 @@ describe('Factory', () => {
     });
 
     it('should create a factory with traits', () => {
-      const { attrs } = baseFactory.build(1, 'admin');
+      const attrs = baseFactory.build(1, 'admin');
       expect(attrs).toEqual({
         createdAt: null,
         email: 'admin1@example.com',
@@ -65,7 +65,7 @@ describe('Factory', () => {
         },
       });
 
-      const { attrs } = extendedFactory.build(1);
+      const attrs = extendedFactory.build(1);
       expect(attrs).toEqual({
         createdAt: null,
         id: 1,
@@ -85,7 +85,7 @@ describe('Factory', () => {
         },
       });
 
-      const { attrs } = extendedFactory.build(1, 'moderator');
+      const attrs = extendedFactory.build(1, 'moderator');
       expect(attrs).toEqual({
         createdAt: null,
         email: 'mod1@example.com',
@@ -105,7 +105,7 @@ describe('Factory', () => {
         },
       });
 
-      const { attrs } = extendedFactory.build(1, 'admin');
+      const attrs = extendedFactory.build(1, 'admin');
       expect(attrs).toEqual({
         createdAt: null,
         email: 'superadmin1@example.com',
@@ -123,9 +123,9 @@ describe('Factory', () => {
           model.createdAt = new Date('2024-01-01').toISOString();
         },
       });
-      const { attrs } = extendedFactory.build(1);
+      const attrs = extendedFactory.build(1);
       const model = createModelInstance<UserAttrs>({ name: 'User', attrs });
-      extendedFactory.processAfterCreate(model);
+      extendedFactory.processAfterCreateHooks(model);
 
       expect(hookCalled).toBe(true);
       expect(model.attrs.createdAt).toBe(new Date('2024-01-01').toISOString());
@@ -140,7 +140,7 @@ describe('Factory', () => {
         },
       });
 
-      const { attrs } = extendedFactory.build(1);
+      const attrs = extendedFactory.build(1);
       expect(attrs.name).toBe('John');
     });
   });
