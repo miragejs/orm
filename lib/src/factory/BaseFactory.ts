@@ -191,3 +191,5 @@ export type FactoryDefinition<TAttrs extends ModelAttrs> = {
   traits?: Record<string, TraitDefinition<TAttrs>>;
   afterCreate?: (model: ModelInstance<TAttrs>) => void;
 };
+
+export type FactoryInstance<TAttrs extends ModelAttrs> = BaseFactory<TAttrs>;

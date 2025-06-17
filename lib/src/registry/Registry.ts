@@ -1,6 +1,6 @@
 import IdentityManager from '@src/db/IdentityManager';
-import BaseFactory from '@src/factory/BaseFactory';
-import type { ModelClass } from '@src/model/BaseModel';
+import type { FactoryInstance } from '@src/factory';
+import type { ModelClass } from '@src/model';
 
 class RegistryItemManager<T> extends Map<string, T> {
   get<R extends T>(name: string): R {
@@ -23,12 +23,12 @@ class RegistryItemManager<T> extends Map<string, T> {
  * Registry class for storing user-defined model classes, factories, and identity managers
  */
 export default class Registry {
-  public readonly factories: RegistryItemManager<BaseFactory<any>>;
+  public readonly factories: RegistryItemManager<FactoryInstance<any>>;
   public readonly identityManagers: RegistryItemManager<IdentityManager<any>>;
   public readonly models: RegistryItemManager<ModelClass<any>>;
 
   constructor() {
-    this.factories = new RegistryItemManager<BaseFactory<any>>();
+    this.factories = new RegistryItemManager<FactoryInstance<any>>();
     this.identityManagers = new RegistryItemManager<IdentityManager<any>>();
     this.models = new RegistryItemManager<ModelClass<any>>();
   }
