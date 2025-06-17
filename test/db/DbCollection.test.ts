@@ -36,6 +36,19 @@ describe('DbCollection', () => {
     });
   });
 
+  describe('first', () => {
+    it('should return first record', () => {
+      const collection = new DbCollection({ name: 'users' });
+      const record1 = collection.insert({ name: 'John' });
+      expect(collection.first()).toEqual(record1);
+    });
+
+    it('should return null if collection is empty', () => {
+      const collection = new DbCollection({ name: 'users' });
+      expect(collection.first()).toBeNull();
+    });
+  });
+
   describe('find', () => {
     let collection: DbCollection;
 
@@ -120,7 +133,7 @@ describe('DbCollection', () => {
     });
   });
 
-  describe('firstOrCreate', () => {
+  describe('findOrCreateBy', () => {
     let collection: DbCollection;
 
     beforeEach(() => {
@@ -129,12 +142,12 @@ describe('DbCollection', () => {
 
     it('should return existing record if found', () => {
       const existing = collection.insert({ name: 'John' });
-      const result = collection.firstOrCreate({ name: 'John' });
+      const result = collection.findOrCreateBy({ name: 'John' });
       expect(result).toEqual(existing);
     });
 
     it('should create new record if not found', () => {
-      const result = collection.firstOrCreate({ name: 'John' }, { name: 'John', age: 30 });
+      const result = collection.findOrCreateBy({ name: 'John' }, { name: 'John', age: 30 });
       expect(result).toEqual({ id: 1, name: 'John', age: 30 });
     });
   });

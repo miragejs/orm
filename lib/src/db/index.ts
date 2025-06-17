@@ -1,4 +1,4 @@
-export { default as DB, type DbOptions } from './DB';
+export { default as DB } from './DB';
 export {
   default as DbCollection,
   type DbCollectionOptions,

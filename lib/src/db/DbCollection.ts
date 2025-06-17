@@ -30,6 +30,14 @@ export default class DbCollection<
   // -- Getters --
 
   /**
+   * Returns the next available ID for the collection.
+   * @returns The next available ID for the collection
+   */
+  get nextId() {
+    return this._identityManager.fetch();
+  }
+
+  /**
    * Returns the number of records in the collection.
    * @returns The number of records in the collection
    */
@@ -111,12 +119,20 @@ export default class DbCollection<
   }
 
   /**
+   * Finds the first record in the collection.
+   * @returns The first record in the collection or null if the collection is empty.
+   */
+  first(): DbRecord<TId, TAttrs> | null {
+    return this.all()[0] || null;
+  }
+
+  /**
    * Finds the first record matching the query or creates a new one.
    * @param query - Query attributes to match the record
    * @param attrs - Attributes to use when creating a new record. All attributes must be provided, but id is optional.
    * @returns The found or newly created record
    */
-  firstOrCreate(
+  findOrCreateBy(
     query: DbRecordInput<TId, TAttrs>,
     attrs: DbRecordInput<TId, TAttrs> = {} as DbRecordInput<TId, TAttrs>,
   ): DbRecord<TId, TAttrs> {
