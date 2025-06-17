@@ -1,32 +1,20 @@
 import type { AllowedIdTypes } from '@src/db';
 
-import {
-  createModelInstance,
-  type ModelAttrs,
-  type ModelInstance,
-  type ModelOptions,
-} from './BaseModel';
+import AttributeAccessorsMixin from './AttributeAccessorsMixin';
+import BaseModel, { type ModelAttrs, type ModelClass, type ModelOptions } from './BaseModel';
 
 /**
  * Model class that provides static methods for model management
  */
 export default class Model {
   /**
-   * Creates a new model instance with attribute getters/setters
-   * @param options - Options for creating the model
-   * @param options.attrs - The default attributes for the model
-   * @param options.collection - The collection to use for the model
-   * @param options.name - The name of the model
-   * @returns A new model instance with attribute getters/setters
-   * @example
-   * const user = Model.create({
-   *   name: 'User',
-   *   attrs: { name: '', email: '' },
-   * });
+   * Creates a new model class with attribute accessors, or extends an existing model class
+   * @param ModelClass - The model class to enhance with attribute accessors. If not provided, a base model class will be used.
+   * @returns An enhanced model class that can be instantiated with 'new'
    */
-  static create<TAttrs extends ModelAttrs<AllowedIdTypes>>(
-    options: ModelOptions<TAttrs>,
-  ): ModelInstance<TAttrs> {
-    return createModelInstance<TAttrs>(options);
+  static define<TAttrs extends ModelAttrs<AllowedIdTypes>>(
+    ModelClass: new (options: ModelOptions<TAttrs>) => BaseModel<TAttrs> = BaseModel<TAttrs>,
+  ): ModelClass<TAttrs> {
+    return AttributeAccessorsMixin(ModelClass);
   }
 }
