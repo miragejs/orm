@@ -208,3 +208,11 @@ export interface ModelOptions<TAttrs extends ModelAttrs<any>> {
 export type ModelInstance<TAttrs extends ModelAttrs<any>> = BaseModel<TAttrs> & {
   [K in keyof TAttrs]: TAttrs[K];
 };
+
+/**
+ * Type for model class
+ * @template TAttrs - The type of the model's attributes
+ */
+export type ModelClass<TAttrs extends ModelAttrs<AllowedIdTypes>> = {
+  new (options: ModelOptions<TAttrs>): ModelInstance<TAttrs>;
+};
