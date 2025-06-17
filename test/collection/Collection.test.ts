@@ -1,6 +1,5 @@
 import Collection from '@src/collection/Collection';
-import { type ModelAttrs } from '@src/model/BaseModel';
-import { createModelInstance } from '@src/model/BaseModel';
+import { Model, type ModelAttrs, type ModelInstance } from '@src/model';
 
 interface UserAttrs extends ModelAttrs<number> {
   name: string;
@@ -9,15 +8,15 @@ interface UserAttrs extends ModelAttrs<number> {
 
 describe('Collection', () => {
   let collection: Collection<UserAttrs>;
-  let user1: ReturnType<typeof createModelInstance<UserAttrs>>;
-  let user2: ReturnType<typeof createModelInstance<UserAttrs>>;
+  let user1: ModelInstance<UserAttrs>;
+  let user2: ModelInstance<UserAttrs>;
 
   beforeEach(() => {
-    user1 = createModelInstance<UserAttrs>({
+    user1 = Model.create<UserAttrs>({
       name: 'user',
       attrs: { name: 'John', email: 'john@example.com' },
     });
-    user2 = createModelInstance<UserAttrs>({
+    user2 = Model.create<UserAttrs>({
       name: 'user',
       attrs: { name: 'Jane', email: 'jane@example.com' },
     });
