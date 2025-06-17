@@ -1,5 +1,6 @@
+import { DbCollection } from '@src/db';
 import { BaseFactory, Factory, type FactoryDefinition } from '@src/factory';
-import { createModelInstance, type ModelAttrs } from '@src/model';
+import { Model, type ModelAttrs } from '@src/model';
 
 interface UserAttrs extends ModelAttrs<number> {
   createdAt?: string | null;
@@ -8,11 +9,15 @@ interface UserAttrs extends ModelAttrs<number> {
   role?: string;
 }
 
+const UserModel = Model.define<UserAttrs>();
+
 describe('Factory', () => {
+  let collection: DbCollection<number, UserAttrs>;
   let baseDefinition: FactoryDefinition<UserAttrs>;
   let baseFactory: BaseFactory<UserAttrs>;
 
   beforeEach(() => {
+    collection = new DbCollection<number, UserAttrs>({ name: 'users' });
     baseDefinition = {
       attributes: {
         createdAt: null,
@@ -118,13 +123,13 @@ describe('Factory', () => {
     it('should extend with new afterCreate hook', () => {
       let hookCalled = false;
       const extendedFactory = Factory.extend(baseFactory, {
-        afterCreate(model) {
+        afterCreate(model: InstanceType<typeof UserModel>) {
           hookCalled = true;
           model.createdAt = new Date('2024-01-01').toISOString();
         },
       });
       const attrs = extendedFactory.build(1);
-      const model = createModelInstance<UserAttrs>({ name: 'User', attrs });
+      const model = new UserModel({ name: 'User', attrs, collection });
       extendedFactory.processAfterCreateHooks(model);
 
       expect(hookCalled).toBe(true);

@@ -1,5 +1,6 @@
+import { DbCollection } from '@src/db';
 import { BaseFactory, type FactoryAttrs } from '@src/factory';
-import { createModelInstance, type ModelAttrs, type ModelInstance } from '@src/model';
+import { Model, type ModelAttrs } from '@src/model';
 
 interface UserAttrs extends ModelAttrs<number> {
   name: string;
@@ -8,11 +9,15 @@ interface UserAttrs extends ModelAttrs<number> {
   createdAt?: Date | string | null;
 }
 
+const UserModel = Model.define<UserAttrs>();
+
 describe('BaseFactory', () => {
+  let collection: DbCollection<number, UserAttrs>;
   let attributes: FactoryAttrs<UserAttrs>;
   let factory: BaseFactory<UserAttrs>;
 
   beforeEach(() => {
+    collection = new DbCollection<number, UserAttrs>({ name: 'users' });
     attributes = {
       createdAt: null,
       email: (id) => `user${id}@example.com`,
@@ -93,7 +98,7 @@ describe('BaseFactory', () => {
 
     it('should process afterCreate hooks', () => {
       let hookCalled = false;
-      const afterCreate = (model: ModelInstance<UserAttrs>) => {
+      const afterCreate = (model: InstanceType<typeof UserModel>) => {
         hookCalled = true;
         model.name = 'Modified Name';
       };
@@ -101,7 +106,7 @@ describe('BaseFactory', () => {
       factory = new BaseFactory<UserAttrs>(attributes, {}, afterCreate);
 
       const attrs = factory.build(1);
-      const model = createModelInstance<UserAttrs>({ name: 'User', attrs });
+      const model = new UserModel({ name: 'User', attrs, collection });
 
       factory.processAfterCreateHooks(model);
 
@@ -114,7 +119,7 @@ describe('BaseFactory', () => {
       const traits = {
         admin: {
           name: 'Admin User',
-          afterCreate: (model: ModelInstance<UserAttrs>) => {
+          afterCreate: (model: InstanceType<typeof UserModel>) => {
             hookCalled = true;
             model.createdAt = new Date('2024-01-01').toISOString();
           },
@@ -124,7 +129,7 @@ describe('BaseFactory', () => {
       factory = new BaseFactory<UserAttrs>(attributes, traits);
 
       const attrs = factory.build(1, 'admin');
-      const model = createModelInstance<UserAttrs>({ name: 'User', attrs });
+      const model = new UserModel({ name: 'User', attrs, collection });
 
       factory.processAfterCreateHooks(model, 'admin');
 
