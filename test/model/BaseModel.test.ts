@@ -28,14 +28,6 @@ describe('BaseModel', () => {
       expect(model.modelName).toBe('user');
       expect(model.isNew()).toBe(true);
     });
-
-    it('should create a new collection if not provided', () => {
-      const model = new BaseModel<UserAttrs>({
-        name: 'User',
-        attrs: { name: 'John', email: 'john@example.com' },
-      });
-      expect(model.attrs).toBeDefined();
-    });
   });
 
   describe('core functionality', () => {
