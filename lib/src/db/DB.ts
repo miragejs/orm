@@ -1,6 +1,6 @@
-import { MirageError } from '../utils';
+import { MirageError } from '@src/utils';
 
-import DbCollection, { type DbRecord } from './DbCollection';
+import DbCollection, { type DbRecord, type DbRecordInput } from './DbCollection';
 import IdentityManager, { type AllowedIdTypes } from './IdentityManager';
 
 /**
@@ -11,7 +11,7 @@ import IdentityManager, { type AllowedIdTypes } from './IdentityManager';
  *   users: [{ id: 1, name: 'John' }],
  *   posts: [{ id: 1, title: 'Hello' }]
  * });
- * db.users.all();
+ * db.users.records;
  */
 export default class DB<TCollections extends Record<string, DbCollection<any, any>>> {
   private _collections: Map<keyof TCollections, DbCollection<any, any>> = new Map();
@@ -22,7 +22,7 @@ export default class DB<TCollections extends Record<string, DbCollection<any, an
 
     this._identityManagers = identityManagers ?? new Map();
     if (!this._identityManagers.has('application')) {
-      this._identityManagers.set('application', new IdentityManager());
+      this._identityManagers.set('application', new IdentityManager<number>());
     }
 
     if (initialData) {
@@ -34,26 +34,24 @@ export default class DB<TCollections extends Record<string, DbCollection<any, an
 
   /**
    * Factory method for creating a DB instance with collection accessors
-   * @template T - The type of initial data
+   * @template TCollections - The type of collections in the database
    * @param options - The options for the database
    * @param options.identityManagers - The identity managers to use for the database
    * @param options.initialData - The initial data to populate collections
    * @returns A DB instance with typed collection accessors
    * @example
-   * const db = DB.create({
+   * const db = DB.setup({
    *   users: [{ id: 1, name: 'John' }],
    *   posts: [{ id: 1, title: 'Hello world' }]
    * });
    *
-   * db.users.all(); // [{ id: 1, name: 'John' }]
-   * db.posts.all(); // [{ id: 1, title: 'Hello world' }]
+   * db.users.records; // [{ id: 1, name: 'John' }]
+   * db.posts.records; // [{ id: 1, title: 'Hello world' }]
    */
-  static create<T extends Record<string, DbRecord<any, any>[]>>(
-    options?: DbOptions<{ [K in keyof T]: DbCollection<any, any> }>,
-  ): DbInstance<{ [K in keyof T]: DbCollection<any, any> }> {
-    return new DB<{ [K in keyof T]: DbCollection<any, any> }>(options) as DbInstance<{
-      [K in keyof T]: DbCollection<any, any>;
-    }>;
+  static setup<TCollections extends Record<string, DbCollection<any, any>>>(
+    options?: DbOptions<TCollections>,
+  ): DbInstance<TCollections> {
+    return new DB<TCollections>(options) as DbInstance<TCollections>;
   }
 
   // -- COLLECTION MANAGEMENT --
@@ -69,49 +67,50 @@ export default class DB<TCollections extends Record<string, DbCollection<any, an
 
   /**
    * Creates a new collection with the given name and initial data.
-   * @template TId - The type of the collection's ID
-   * @template TAttributes - The type of the collection's attributes
    * @param name - The name of the collection to create.
    * @param initialData - The initial data to populate the collection with.
-   * @returns The newly created collection.
+   * @returns The DB instance.
    */
-  createCollection<TId extends AllowedIdTypes = number, TAttributes = Record<string, any>>(
-    name: keyof TCollections,
-    initialData?: DbRecord<TId, TAttributes>[],
-  ): DbCollection<TId, TAttributes> {
-    if (this._collections.has(name)) {
-      throw new Error(`Collection ${String(name)} already exists`);
+  createCollection<TAttrs extends object, TId extends AllowedIdTypes, TName extends string>(
+    name: TName,
+    initialData?: DbRecordInput<TAttrs, TId>[],
+  ): DbInstance<TCollections & { [K in TName]: DbCollection<TAttrs, TId> }> {
+    if (this._collections.has(name as keyof TCollections)) {
+      throw new Error(`Collection ${name} already exists`);
     }
 
-    const identityManager = this.identityManagerFor(name as string) as IdentityManager<TId>;
-    const collection = new DbCollection<TId, TAttributes>({
+    const identityManager = this.identityManagerFor(
+      name as keyof TCollections,
+    ) as IdentityManager<TId>;
+    const collection = new DbCollection<TAttrs, TId>({
       identityManager,
       initialData,
-      name: name as string,
-    });
+      name,
+    } as any);
 
-    this._collections.set(name, collection);
+    this._collections.set(name as keyof TCollections, collection);
     this.initCollectionAccessors();
 
-    return collection;
+    return this as unknown as DbInstance<
+      TCollections & { [K in TName]: DbCollection<TAttrs, TId> }
+    >;
   }
 
   /**
    * Retrieves a collection by its name.
-   * @template TId - The type of the collection's ID
-   * @template TAttributes - The type of the collection's attributes
+   * @template T - The collection key
    * @param name - The name of the collection to retrieve.
    * @returns The collection with the specified name.
    * @throws {Error} If the collection does not exist.
    */
-  getCollection<TId extends AllowedIdTypes = number, TAttributes = Record<string, any>>(
-    name: keyof TCollections,
-  ): DbCollection<TId, TAttributes> {
+  getCollection<T extends keyof TCollections>(name: T): TCollections[T] {
     const collection = this._collections.get(name);
+
     if (!collection) {
       throw new MirageError(`Collection ${String(name)} does not exist`);
     }
-    return collection as DbCollection<TId, TAttributes>;
+
+    return collection as TCollections[T];
   }
 
   // -- DATA MANAGEMENT --
@@ -120,11 +119,13 @@ export default class DB<TCollections extends Record<string, DbCollection<any, an
    * Dumps the data from all collections in the database.
    * @returns A record of collection names and their data.
    */
-  dump(): Record<string, DbRecord<any, any>[]> {
-    const data: Record<string, DbRecord<any, any>[]> = {};
+  dump(): DbData<TCollections> {
+    const data = {} as DbData<TCollections>;
+
     this._collections.forEach((collection, name) => {
-      data[name as string] = collection.all();
+      data[name] = collection.records as DbCollectionData<TCollections[typeof name]>;
     });
+
     return data;
   }
 
@@ -137,16 +138,22 @@ export default class DB<TCollections extends Record<string, DbCollection<any, an
 
   /**
    * Loads collections data from a record into the database.
+   * @template TData - The type of data to load
    * @param data - Record of collection names and their initial data
+   * @returns The DB instance with collection accessors for the loaded data.
    */
-  loadData(data: Record<keyof TCollections, DbRecord<any, any>[]>): void {
-    Object.entries(data).forEach(([name, records]) => {
-      if (this.hasCollection(name)) {
-        this.getCollection(name).insertMany(records);
+  loadData<TData extends Record<string, any[]>>(
+    data: TData,
+  ): DbInstance<TCollections & InferCollectionsFromData<TData>> {
+    (Object.entries(data) as [keyof TData, TData[keyof TData]][]).forEach(([name, records]) => {
+      if (this.hasCollection(name as keyof TCollections)) {
+        this.getCollection(name as keyof TCollections).insertMany(records);
       } else {
-        this.createCollection(name, records);
+        this.createCollection(name as string, records);
       }
     });
+
+    return this as unknown as DbInstance<TCollections & InferCollectionsFromData<TData>>;
   }
 
   // -- IDENTITY MANAGEMENT --
@@ -156,11 +163,12 @@ export default class DB<TCollections extends Record<string, DbCollection<any, an
    * @param collectionName - The name of the collection to get the identity manager for.
    * @returns The identity manager for the given collection name or the application identity manager if no specific manager is found.
    */
-  identityManagerFor(collectionName: string): IdentityManager<any> | undefined {
-    if (!this._identityManagers.has(collectionName)) {
-      return this._identityManagers.get('application');
+  identityManagerFor(collectionName: keyof TCollections): IdentityManager<any> {
+    const name = collectionName as string;
+    if (!this._identityManagers.has(name)) {
+      return this._identityManagers.get('application')!;
     }
-    return this._identityManagers.get(collectionName);
+    return this._identityManagers.get(name)!;
   }
 
   // -- PRIVATE METHODS --
@@ -181,12 +189,61 @@ export default class DB<TCollections extends Record<string, DbCollection<any, an
 // -- TYPES --
 
 /**
+ * Infers the collection type from data records
+ * @template TData - The type of data records
+ */
+type InferCollectionFromData<TData> =
+  TData extends Array<infer TRecord>
+    ? TRecord extends { id: infer TId }
+      ? TId extends AllowedIdTypes
+        ? DbCollection<Omit<TRecord, 'id'>, TId>
+        : DbCollection<Omit<TRecord, 'id'>, number>
+      : TRecord extends Record<string, unknown>
+        ? DbCollection<TRecord, number>
+        : DbCollection<Record<string, unknown>, number>
+    : DbCollection<Record<string, unknown>, number>;
+
+/**
+ * Infers collections map from data object
+ * @template TData - The type of data object
+ */
+type InferCollectionsFromData<TData> = {
+  [K in keyof TData]: InferCollectionFromData<TData[K]>;
+};
+
+/**
+ * Gets the attributes and ID of a collection
+ * @template T - The type of the collection
+ */
+type DbCollectionAttrs<T> =
+  T extends DbCollection<infer TAttrs, infer TId>
+    ? {
+        id: TId;
+        attrs: TAttrs;
+      }
+    : never;
+
+/**
+ * Gets the data of a collection
+ * @template T - The type of the collection
+ */
+type DbCollectionData<T> = DbRecord<DbCollectionAttrs<T>['attrs'], DbCollectionAttrs<T>['id']>[];
+
+/**
+ * Type for a database's data
+ * @template TCollections - The type of collections in the database
+ */
+export type DbData<TCollections extends Record<string, DbCollection<any, any>>> = {
+  [K in keyof TCollections]: DbCollectionData<TCollections[K]>;
+};
+
+/**
  * Options for creating a DB instance
  * @template TCollections - The type of collections in the database
  */
 export type DbOptions<TCollections extends Record<string, DbCollection<any, any>>> = {
   identityManagers?: Map<string, IdentityManager<any>>;
-  initialData?: Record<keyof TCollections, DbRecord<any, any>[]>;
+  initialData?: DbData<TCollections>;
 };
 
 /**

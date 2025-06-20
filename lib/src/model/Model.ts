@@ -1,5 +1,3 @@
-import type { AllowedIdTypes } from '@src/db';
-
 import AttributeAccessorsMixin from './AttributeAccessorsMixin';
 import BaseModel, { type ModelAttrs, type ModelClass, type ModelOptions } from './BaseModel';
 
@@ -12,7 +10,7 @@ export default class Model {
    * @param ModelClass - The model class to enhance with attribute accessors. If not provided, a base model class will be used.
    * @returns An enhanced model class that can be instantiated with 'new'
    */
-  static define<TAttrs extends ModelAttrs<AllowedIdTypes>>(
+  static define<TAttrs extends ModelAttrs>(
     ModelClass: new (options: ModelOptions<TAttrs>) => BaseModel<TAttrs> = BaseModel<TAttrs>,
   ): ModelClass<TAttrs> {
     return AttributeAccessorsMixin(ModelClass);

@@ -6,10 +6,10 @@ import { camelize } from '@src/utils/string';
  * Base model class that handles core functionality
  * @template TAttrs - The type of the model's attributes
  */
-export default class BaseModel<TAttrs extends ModelAttrs<AllowedIdTypes> = ModelAttrs<number>> {
+export default class BaseModel<TAttrs extends ModelAttrs = ModelAttrs<number>> {
   readonly modelName: string;
   protected _attrs: TAttrs;
-  protected _collection: DbCollection<NonNullable<TAttrs['id']>, TAttrs>;
+  protected _collection: DbCollection<TAttrs, NonNullable<TAttrs['id']>>;
   protected _status: 'new' | 'saved';
 
   constructor({ attrs, collection, name }: ModelOptions<TAttrs>) {
@@ -43,7 +43,7 @@ export default class BaseModel<TAttrs extends ModelAttrs<AllowedIdTypes> = Model
    */
   destroy(): void {
     if (this.isSaved() && this.id) {
-      this._collection.remove(this.id);
+      this._collection.remove(this.id as NonNullable<TAttrs['id']>);
     }
   }
 
@@ -53,7 +53,7 @@ export default class BaseModel<TAttrs extends ModelAttrs<AllowedIdTypes> = Model
    */
   reload(): this {
     if (this.id) {
-      this._attrs = this._collection.find(this.id) as TAttrs;
+      this._attrs = this._collection.find(this.id as NonNullable<TAttrs['id']>) as TAttrs;
     }
 
     return this;
@@ -66,14 +66,14 @@ export default class BaseModel<TAttrs extends ModelAttrs<AllowedIdTypes> = Model
   save(): this {
     if (this.isNew() || !this.id) {
       const modelRecord = this._collection.insert(
-        this._attrs as DbRecordInput<NonNullable<TAttrs['id']>, TAttrs>,
+        this._attrs as DbRecordInput<TAttrs, NonNullable<TAttrs['id']>>,
       );
       this._attrs = modelRecord;
       this._status = 'saved';
     } else {
       this._collection.update(
-        this.id,
-        this._attrs as DbRecordInput<NonNullable<TAttrs['id']>, TAttrs>,
+        this.id as NonNullable<TAttrs['id']>,
+        this._attrs as DbRecordInput<TAttrs, NonNullable<TAttrs['id']>>,
       );
     }
 
@@ -135,7 +135,7 @@ export default class BaseModel<TAttrs extends ModelAttrs<AllowedIdTypes> = Model
    * @returns The status of the model
    */
   private _verifyStatus(id: NonNullable<TAttrs['id']>): 'new' | 'saved' {
-    return this._collection.find(id) ? 'saved' : 'new';
+    return this._collection.find(id as NonNullable<TAttrs['id']>) ? 'saved' : 'new';
   }
 }
 
@@ -144,12 +144,19 @@ export default class BaseModel<TAttrs extends ModelAttrs<AllowedIdTypes> = Model
 /**
  * Type for model attributes
  * @template TId - The type of the model's id
- * @param attrs.id - The id of the model
+ * @param attrs.id - The id of the model (optional for new models, required for saved models)
  */
 export type ModelAttrs<TId = AllowedIdTypes> = {
   id?: TId | null;
   [key: string]: any;
 };
+
+/**
+ * Type for saved model attributes (with required ID)
+ * @template TAttrs - The base attributes type
+ * @template TId - The ID type
+ */
+export type SavedModelAttrs<TAttrs, TId extends AllowedIdTypes> = Omit<TAttrs, 'id'> & { id: TId };
 
 /**
  * Options for creating a model
@@ -158,9 +165,9 @@ export type ModelAttrs<TId = AllowedIdTypes> = {
  * @param options.collection - The collection to use for the model
  * @param options.name - The name of the model
  */
-export interface ModelOptions<TAttrs extends ModelAttrs<AllowedIdTypes>> {
+export interface ModelOptions<TAttrs extends ModelAttrs> {
   attrs?: TAttrs;
-  collection: DbCollection<NonNullable<TAttrs['id']>, TAttrs>;
+  collection: DbCollection<TAttrs, NonNullable<TAttrs['id']>>;
   name: string;
 }
 
@@ -168,14 +175,23 @@ export interface ModelOptions<TAttrs extends ModelAttrs<AllowedIdTypes>> {
  * Type for model instance with accessors for the attributes
  * @template TAttrs - The type of the model's attributes
  */
-export type ModelInstance<TAttrs extends ModelAttrs<AllowedIdTypes>> = BaseModel<TAttrs> & {
+export type ModelInstance<TAttrs extends ModelAttrs> = BaseModel<TAttrs> & {
   [K in keyof TAttrs]: TAttrs[K];
 };
+
+/**
+ * Type for saved model attributes (with required ID)
+ * @template TAttrs - The base attributes type
+ * @template TId - The ID type
+ */
+export type SavedModelInstance<TAttrs extends ModelAttrs> = ModelInstance<
+  TAttrs & { id: NonNullable<TAttrs['id']> }
+>;
 
 /**
  * Type for model class
  * @template TAttrs - The type of the model's attributes
  */
-export type ModelClass<TAttrs extends ModelAttrs<AllowedIdTypes>> = {
+export type ModelClass<TAttrs extends ModelAttrs> = {
   new (options: ModelOptions<TAttrs>): ModelInstance<TAttrs>;
 };

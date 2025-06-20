@@ -4,10 +4,10 @@ import { MirageError } from '../utils';
  * Manages unique identifiers for database records.
  * Handles different types of IDs, ensuring uniqueness and proper sequencing.
  * @template T - The type of ID to manage (defaults to number)
- * @param config - Configuration options for the identity manager.
- * @param config.initialCounter - The initial counter value.
- * @param config.initialUsedIds - A set of initial used IDs.
- * @param config.idGenerator - Custom function to generate the next ID.
+ * @param options - Configuration options for the identity manager.
+ * @param options.initialCounter - The initial counter value.
+ * @param options.initialUsedIds - A set of initial used IDs.
+ * @param options.idGenerator - Custom function to generate the next ID.
  * @example
  * const identityManager = new IdentityManager();
  * identityManager.get(); // => 1
@@ -18,16 +18,16 @@ import { MirageError } from '../utils';
  * identityManager.reset(); // => 1
  */
 export default class IdentityManager<T extends AllowedIdTypes = number> {
-  private initialCounter: T;
-  private counter: T;
-  private usedIds: Set<T>;
-  private idGenerator: IdGenerator<T>;
+  private _counter: T;
+  private _idGenerator: IdGenerator<T>;
+  private _initialCounter: T;
+  private _usedIds: Set<T>;
 
-  constructor(config: IdentityManagerConfig<T> = {}) {
-    this.initialCounter = config.initialCounter ?? (1 as T);
-    this.counter = this.initialCounter;
-    this.usedIds = config.initialUsedIds ?? new Set<T>();
-    this.idGenerator = config.idGenerator ?? this.getDefaultGenerator();
+  constructor(options: IdentityManagerOptions<T> = {}) {
+    this._initialCounter = options.initialCounter ?? (1 as T);
+    this._counter = this._initialCounter;
+    this._usedIds = options.initialUsedIds ?? new Set<T>();
+    this._idGenerator = options.idGenerator ?? this.getDefaultGenerator();
   }
 
   /**
@@ -38,10 +38,10 @@ export default class IdentityManager<T extends AllowedIdTypes = number> {
    * identityManager.get(); // => 1
    */
   get(): T {
-    let nextId = this.counter;
+    let nextId = this._counter;
 
-    while (this.usedIds.has(nextId)) {
-      nextId = this.generateNextId(nextId);
+    while (this._usedIds.has(nextId)) {
+      nextId = this._idGenerator(nextId);
     }
 
     return nextId;
@@ -56,8 +56,8 @@ export default class IdentityManager<T extends AllowedIdTypes = number> {
    * identityManager.set(2); // => 2
    */
   set(id: T): void {
-    if (!this.usedIds.has(id)) {
-      this.usedIds.add(id);
+    if (!this._usedIds.has(id)) {
+      this._usedIds.add(id);
     }
   }
 
@@ -72,7 +72,7 @@ export default class IdentityManager<T extends AllowedIdTypes = number> {
     const id = this.get();
 
     this.set(id);
-    this.counter = this.generateNextId(id);
+    this._counter = this._idGenerator(id);
 
     return id;
   }
@@ -81,8 +81,8 @@ export default class IdentityManager<T extends AllowedIdTypes = number> {
    * Resets the manager's state, clearing all used IDs and resetting the counter.
    */
   reset(): void {
-    this.counter = this.initialCounter;
-    this.usedIds.clear();
+    this._counter = this._initialCounter;
+    this._usedIds.clear();
   }
 
   // -- Private methods -- //
@@ -98,7 +98,7 @@ export default class IdentityManager<T extends AllowedIdTypes = number> {
   private getDefaultGenerator(): IdGenerator<T> {
     return (currentId: T) => {
       if (typeof currentId === 'number') {
-        return (currentId + 1) as T;
+        return ((currentId as number) + 1) as T;
       }
       throw new MirageError(
         'Default ID generator only works with numbers. Provide a custom idGenerator for other types.',
@@ -115,7 +115,7 @@ export default class IdentityManager<T extends AllowedIdTypes = number> {
    * identityManager.generateNextId(1); // => 2
    */
   private generateNextId(currentId: T): T {
-    return this.idGenerator(currentId);
+    return this._idGenerator(currentId);
   }
 }
 
@@ -141,7 +141,7 @@ export type IdGenerator<T> = (currentId: T) => T;
  * @param initialUsedIds - A set of initial used IDs
  * @param idGenerator - Custom function to generate the next ID
  */
-export interface IdentityManagerConfig<T = number> {
+export interface IdentityManagerOptions<T = number> {
   initialCounter?: T;
   initialUsedIds?: Set<T>;
   idGenerator?: IdGenerator<T>;

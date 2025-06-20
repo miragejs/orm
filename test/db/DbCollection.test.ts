@@ -1,4 +1,4 @@
-import { DbCollection } from '@src/db';
+import { DbCollection, IdentityManager } from '@src/db';
 
 describe('DbCollection', () => {
   describe('constructor', () => {
@@ -27,12 +27,12 @@ describe('DbCollection', () => {
     });
   });
 
-  describe('all', () => {
+  describe('records', () => {
     it('should return all records', () => {
       const collection = new DbCollection({ name: 'users' });
       const record1 = collection.insert({ name: 'John' });
       const record2 = collection.insert({ name: 'Jane' });
-      expect(collection.all()).toEqual([record1, record2]);
+      expect(collection.records).toEqual([record1, record2]);
     });
   });
 
@@ -50,7 +50,7 @@ describe('DbCollection', () => {
   });
 
   describe('find', () => {
-    let collection: DbCollection;
+    let collection: DbCollection<{ name: string }>;
 
     beforeEach(() => {
       collection = new DbCollection({ name: 'users' });
@@ -75,7 +75,7 @@ describe('DbCollection', () => {
   });
 
   describe('findBy', () => {
-    let collection: DbCollection;
+    let collection: DbCollection<{ age: number; name: string }>;
 
     beforeEach(() => {
       collection = new DbCollection({ name: 'users' });
@@ -101,7 +101,7 @@ describe('DbCollection', () => {
   });
 
   describe('where', () => {
-    let collection: DbCollection;
+    let collection: DbCollection<{ age: number; name: string }>;
 
     beforeEach(() => {
       collection = new DbCollection({ name: 'users' });
@@ -134,7 +134,7 @@ describe('DbCollection', () => {
   });
 
   describe('findOrCreateBy', () => {
-    let collection: DbCollection;
+    let collection: DbCollection<{ age: number; name: string }>;
 
     beforeEach(() => {
       collection = new DbCollection({ name: 'users' });
@@ -178,7 +178,7 @@ describe('DbCollection', () => {
   });
 
   describe('update', () => {
-    let collection: DbCollection;
+    let collection: DbCollection<{ active?: boolean; age: number; name: string }>;
 
     beforeEach(() => {
       collection = new DbCollection({ name: 'users' });
@@ -209,7 +209,7 @@ describe('DbCollection', () => {
   });
 
   describe('remove', () => {
-    let collection: DbCollection;
+    let collection: DbCollection<{ name: string }>;
 
     beforeEach(() => {
       collection = new DbCollection({ name: 'users' });
@@ -237,6 +237,48 @@ describe('DbCollection', () => {
       collection.insert({ name: 'Jane' });
       collection.clear();
       expect(collection.size).toBe(0);
+    });
+  });
+});
+
+describe('DbCollection Types', () => {
+  describe('DbCollectionWithStringId helper type', () => {
+    it('should work with string IDs', () => {
+      interface UserAttrs {
+        name: string;
+        email: string;
+      }
+
+      const users = new DbCollection<UserAttrs, string>({
+        name: 'users',
+        identityManager: new IdentityManager<string>(),
+      });
+
+      // Insert a user with string ID
+      const user = users.insert({ id: 'user-1', name: 'John', email: 'john@example.com' });
+      expect(user.id).toBe('user-1');
+      expect(user.name).toBe('John');
+      expect(user.email).toBe('john@example.com');
+
+      // Find by string ID
+      const found = users.find('user-1');
+      expect(found).toEqual(user);
+    });
+  });
+
+  describe('Default number ID behavior', () => {
+    it('should use number IDs by default', () => {
+      interface CommentAttrs {
+        text: string;
+        userId: number;
+      }
+
+      const comments = new DbCollection<CommentAttrs>({ name: 'comments' });
+      const comment = comments.insert({ text: 'Great post!', userId: 1 });
+
+      expect(typeof comment.id).toBe('number');
+      expect(comment.text).toBe('Great post!');
+      expect(comment.userId).toBe(1);
     });
   });
 });
