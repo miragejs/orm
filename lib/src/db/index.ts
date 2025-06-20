@@ -12,3 +12,4 @@ export {
   type AllowedIdTypes,
   type IdentityManagerOptions,
 } from './IdentityManager';
+export { default as NumberIdentityManager } from './NumberIdentityManager';

@@ -1,7 +1,7 @@
 import { DbCollection } from '@src/db';
-import { List, Model, type ModelAttrs } from '@src/model';
+import { List, Model, ModelInstance, type ModelAttrs } from '@src/model';
 
-interface UserAttrs extends ModelAttrs<number> {
+interface UserAttrs extends ModelAttrs<string> {
   email: string;
   name: string;
 }
@@ -9,24 +9,24 @@ interface UserAttrs extends ModelAttrs<number> {
 const UserModel = Model.define<UserAttrs>();
 
 describe('List', () => {
-  let collection: DbCollection<number, UserAttrs>;
+  let collection: DbCollection<UserAttrs>;
   let list: List<UserAttrs>;
-  let user1: InstanceType<typeof UserModel>;
-  let user2: InstanceType<typeof UserModel>;
+  let user1: ModelInstance<UserAttrs>;
+  let user2: ModelInstance<UserAttrs>;
 
   beforeEach(() => {
-    collection = new DbCollection<number, UserAttrs>({
+    collection = new DbCollection<UserAttrs>({
       name: 'users',
     });
     user1 = new UserModel({
+      name: 'user',
       attrs: { name: 'John', email: 'john@example.com' },
       collection,
-      name: 'user',
     });
     user2 = new UserModel({
+      name: 'user',
       attrs: { name: 'Jane', email: 'jane@example.com' },
       collection,
-      name: 'user',
     });
     list = new List<UserAttrs>({
       modelName: 'user',
@@ -133,6 +133,41 @@ describe('List', () => {
     it('should convert to string', () => {
       user1.save(); // Ensure model is saved before string conversion
       expect(list.toString()).toBe(`list:user(${user1.toString()})`);
+    });
+  });
+
+  describe('default string ID behavior', () => {
+    it('should work with string IDs by default', () => {
+      interface CommentAttrs extends ModelAttrs {
+        text: string;
+        userId: string;
+      }
+
+      const CommentModel = Model.define<CommentAttrs>();
+      const commentCollection = new DbCollection<CommentAttrs>({ name: 'comments' });
+
+      const comment1 = new CommentModel({
+        name: 'Comment',
+        attrs: { text: 'First comment', userId: '1' },
+        collection: commentCollection,
+      }).save();
+
+      const comment2 = new CommentModel({
+        name: 'Comment',
+        attrs: { text: 'Second comment', userId: '2' },
+        collection: commentCollection,
+      }).save();
+
+      const commentList = new List<CommentAttrs>({
+        modelName: 'comment',
+        models: [comment1, comment2],
+      });
+
+      expect(commentList.length).toBe(2);
+      expect(commentList[0].text).toBe('First comment');
+      expect(commentList[1].text).toBe('Second comment');
+      expect(typeof commentList[0].id).toBe('string');
+      expect(typeof commentList[1].id).toBe('string');
     });
   });
 });

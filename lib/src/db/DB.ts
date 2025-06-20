@@ -8,8 +8,8 @@ import IdentityManager, { type AllowedIdTypes } from './IdentityManager';
  * @template TCollections - The type of collections in the database
  * @example
  * const db = DB.create({
- *   users: [{ id: 1, name: 'John' }],
- *   posts: [{ id: 1, title: 'Hello' }]
+ *   users: [{ id: "1", name: 'John' }],
+ *   posts: [{ id: "1", title: 'Hello' }]
  * });
  * db.users.records;
  */
@@ -22,7 +22,7 @@ export default class DB<TCollections extends Record<string, DbCollection<any, an
 
     this._identityManagers = identityManagers ?? new Map();
     if (!this._identityManagers.has('application')) {
-      this._identityManagers.set('application', new IdentityManager<number>());
+      this._identityManagers.set('application', new IdentityManager<string>());
     }
 
     if (initialData) {
@@ -41,12 +41,12 @@ export default class DB<TCollections extends Record<string, DbCollection<any, an
    * @returns A DB instance with typed collection accessors
    * @example
    * const db = DB.setup({
-   *   users: [{ id: 1, name: 'John' }],
-   *   posts: [{ id: 1, title: 'Hello world' }]
+   *   users: [{ id: "1", name: 'John' }],
+   *   posts: [{ id: "1", title: 'Hello world' }]
    * });
    *
-   * db.users.records; // [{ id: 1, name: 'John' }]
-   * db.posts.records; // [{ id: 1, title: 'Hello world' }]
+   * db.users.records; // [{ id: "1", name: 'John' }]
+   * db.posts.records; // [{ id: "1", title: 'Hello world' }]
    */
   static setup<TCollections extends Record<string, DbCollection<any, any>>>(
     options?: DbOptions<TCollections>,
@@ -197,11 +197,11 @@ type InferCollectionFromData<TData> =
     ? TRecord extends { id: infer TId }
       ? TId extends AllowedIdTypes
         ? DbCollection<Omit<TRecord, 'id'>, TId>
-        : DbCollection<Omit<TRecord, 'id'>, number>
+        : DbCollection<Omit<TRecord, 'id'>, string>
       : TRecord extends Record<string, unknown>
-        ? DbCollection<TRecord, number>
-        : DbCollection<Record<string, unknown>, number>
-    : DbCollection<Record<string, unknown>, number>;
+        ? DbCollection<TRecord, string>
+        : DbCollection<Record<string, unknown>, string>
+    : DbCollection<Record<string, unknown>, string>;
 
 /**
  * Infers collections map from data object

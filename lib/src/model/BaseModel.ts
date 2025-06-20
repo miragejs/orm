@@ -6,7 +6,7 @@ import { camelize } from '@src/utils/string';
  * Base model class that handles core functionality
  * @template TAttrs - The type of the model's attributes
  */
-export default class BaseModel<TAttrs extends ModelAttrs = ModelAttrs<number>> {
+export default class BaseModel<TAttrs extends ModelAttrs = ModelAttrs<string>> {
   readonly modelName: string;
   protected _attrs: TAttrs;
   protected _collection: DbCollection<TAttrs, NonNullable<TAttrs['id']>>;
@@ -143,10 +143,10 @@ export default class BaseModel<TAttrs extends ModelAttrs = ModelAttrs<number>> {
 
 /**
  * Type for model attributes
- * @template TId - The type of the model's id
+ * @template TId - The type of the model's id (defaults to string)
  * @param attrs.id - The id of the model (optional for new models, required for saved models)
  */
-export type ModelAttrs<TId = AllowedIdTypes> = {
+export type ModelAttrs<TId = string> = {
   id?: TId | null;
   [key: string]: any;
 };

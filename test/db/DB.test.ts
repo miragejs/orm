@@ -1,4 +1,4 @@
-import { DB, IdentityManager } from '@src/db';
+import { DB, DbCollection, IdentityManager } from '@src/db';
 import { MirageError } from '@src/utils';
 
 describe('DB', () => {
@@ -15,29 +15,35 @@ describe('DB', () => {
 
     it('should initialize with initial data', () => {
       const initialData = {
-        users: [{ id: 1, name: 'John' }],
-        posts: [{ id: 1, title: 'Post 1' }],
+        users: [{ id: '1', name: 'John' }],
+        posts: [{ id: '1', title: 'Post 1' }],
       };
-      const db = DB.setup({ initialData });
+      const db = DB.setup<{
+        users: DbCollection<{ name: string }>;
+        posts: DbCollection<{ title: string }>;
+      }>({ initialData });
 
-      expect(db.users.find(1)).toEqual({ id: 1, name: 'John' });
-      expect(db.posts.find(1)).toEqual({ id: 1, title: 'Post 1' });
+      expect(db.users.find('1')).toEqual({ id: '1', name: 'John' });
+      expect(db.posts.find('1')).toEqual({ id: '1', title: 'Post 1' });
     });
   });
 
   describe('collection accessors', () => {
     it('should provide access to collections via property accessors', () => {
-      const db = DB.setup({
+      const db = DB.setup<{
+        users: DbCollection<{ name: string }>;
+        posts: DbCollection<{ title: string }>;
+      }>({
         initialData: {
-          users: [{ id: 1, name: 'John' }],
-          posts: [{ id: 1, title: 'Post 1' }],
+          users: [{ id: '1', name: 'John' }],
+          posts: [{ id: '1', title: 'Post 1' }],
         },
       });
 
       expect(db.users).toBeDefined();
       expect(db.posts).toBeDefined();
-      expect(db.users.find(1)).toEqual({ id: 1, name: 'John' });
-      expect(db.posts.find(1)).toEqual({ id: 1, title: 'Post 1' });
+      expect(db.users.find('1')).toEqual({ id: '1', name: 'John' });
+      expect(db.posts.find('1')).toEqual({ id: '1', title: 'Post 1' });
     });
 
     it('should update accessors when collections change', () => {
@@ -82,7 +88,7 @@ describe('DB', () => {
     it('should create collection with initial data', () => {
       const initialData = [{ name: 'John' }];
       const db = DB.setup().createCollection('users', initialData);
-      expect(db.users.find(1)).toEqual({ id: 1, name: 'John' });
+      expect(db.users.find('1')).toEqual({ id: '1', name: 'John' });
     });
 
     it('should throw error when creating duplicate collection', () => {
@@ -107,12 +113,12 @@ describe('DB', () => {
   describe('loadData', () => {
     it('should create collections and load data', () => {
       const data = {
-        users: [{ id: 1, name: 'John' }],
-        posts: [{ id: 1, title: 'Post 1' }],
+        users: [{ id: '1', name: 'John' }],
+        posts: [{ id: '1', title: 'Post 1' }],
       };
       const db = DB.setup().loadData(data);
-      expect(db.users.find(1)).toEqual({ id: 1, name: 'John' });
-      expect(db.posts.find(1)).toEqual({ id: 1, title: 'Post 1' });
+      expect(db.users.find('1')).toEqual({ id: '1', name: 'John' });
+      expect(db.posts.find('1')).toEqual({ id: '1', title: 'Post 1' });
     });
 
     it('should handle empty data', () => {
@@ -126,8 +132,8 @@ describe('DB', () => {
     it('should clear all collections', () => {
       const db = DB.setup({
         initialData: {
-          users: [{ id: 1, name: 'John' }],
-          posts: [{ id: 1, title: 'Post 1' }],
+          users: [{ id: '1', name: 'John' }],
+          posts: [{ id: '1', title: 'Post 1' }],
         },
       });
       db.emptyData();
@@ -145,13 +151,13 @@ describe('DB', () => {
     it('should return all collection data', () => {
       const db = DB.setup({
         initialData: {
-          users: [{ id: 1, name: 'John' }],
-          posts: [{ id: 1, title: 'Post 1' }],
+          users: [{ id: '1', name: 'John' }],
+          posts: [{ id: '1', title: 'Post 1' }],
         },
       });
       expect(db.dump()).toEqual({
-        users: [{ id: 1, name: 'John' }],
-        posts: [{ id: 1, title: 'Post 1' }],
+        users: [{ id: '1', name: 'John' }],
+        posts: [{ id: '1', title: 'Post 1' }],
       });
     });
 
@@ -163,14 +169,14 @@ describe('DB', () => {
     it('should return updated data after modifications', () => {
       const db = DB.setup({
         initialData: {
-          users: [{ id: 1, name: 'John' }],
+          users: [{ id: '1', name: 'John' }],
         },
       });
       db.users.insert({ name: 'Jane' });
       expect(db.dump()).toEqual({
         users: [
-          { id: 1, name: 'John' },
-          { id: 2, name: 'Jane' },
+          { id: '1', name: 'John' },
+          { id: '2', name: 'Jane' },
         ],
       });
     });

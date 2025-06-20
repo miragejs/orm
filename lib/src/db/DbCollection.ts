@@ -8,20 +8,20 @@ import IdentityManager, { type AllowedIdTypes } from './IdentityManager';
  * @param options.initialData - Initial data for the collection.
  * @example
  * const users = new DbCollection({ name: 'users' });
- * users.insert({ name: 'John' }); // => { id: 1, name: 'John' }
+ * users.insert({ name: 'John' }); // => { id: "1", name: 'John' }
  */
 export default class DbCollection<
   TAttrs extends object = Record<string, unknown>,
-  TId extends AllowedIdTypes = number,
+  TId extends AllowedIdTypes = string,
 > {
   name: string;
   private _records: Map<TId, DbRecord<TAttrs, TId>> = new Map();
   private _identityManager: IdentityManager<TId>;
 
   constructor(
-    options: TId extends number
+    options: TId extends string
       ? DbCollectionOptions<TAttrs>
-      : DbCollectionOptionsWithStringId<TAttrs>,
+      : DbCollectionOptionsWithNumberId<TAttrs>,
   ) {
     this.name = options.name;
     this._identityManager = (options as any).identityManager || new IdentityManager<TId>();
@@ -161,7 +161,7 @@ export default class DbCollection<
       return existingRecord;
     }
 
-    const newRecord = this._prepareRecord(attrs);
+    const newRecord = this._prepareRecord({ ...query, ...attrs });
     this._records.set(newRecord.id, newRecord);
     return newRecord;
   }
@@ -329,21 +329,21 @@ export type DbQuery<TAttrs, TId extends AllowedIdTypes> =
 export type DbUpdateInput<TAttrs, TId extends AllowedIdTypes> = TId | DbRecordInput<TAttrs, TId>;
 
 /**
- * Options for creating a database collection with number IDs
+ * Options for creating a database collection with string IDs
  * @template TAttrs - The type of the record's attributes
  */
 export interface DbCollectionOptions<TAttrs> {
-  identityManager?: IdentityManager<number>;
-  initialData?: DbRecordInput<TAttrs, number>[];
+  identityManager?: IdentityManager<string>;
+  initialData?: DbRecordInput<TAttrs, string>[];
   name: string;
 }
 
 /**
- * Options for creating a database collection with string IDs
+ * Options for creating a database collection with number IDs
  * @template TAttrs - The type of the record's attributes
  */
-export interface DbCollectionOptionsWithStringId<TAttrs> {
-  identityManager: IdentityManager<string>;
-  initialData?: DbRecordInput<TAttrs, string>[];
+export interface DbCollectionOptionsWithNumberId<TAttrs> {
+  identityManager: IdentityManager<number>;
+  initialData?: DbRecordInput<TAttrs, number>[];
   name: string;
 }
