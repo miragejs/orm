@@ -1,17 +1,17 @@
 import { DbCollection, NumberIdentityManager } from '@src/db';
-import { BaseModel, Model, type ModelAttrs } from '@src/model';
+import { BaseModel, type ModelAttrs } from '@src/model';
 
-interface UserAttrs extends ModelAttrs<string> {
+interface UserAttrs extends ModelAttrs {
   email: string;
   name: string;
 }
 
 describe('BaseModel', () => {
   let model: BaseModel<UserAttrs>;
-  let collection: DbCollection<UserAttrs, string>;
+  let collection: DbCollection<UserAttrs>;
 
   beforeEach(() => {
-    collection = new DbCollection<UserAttrs, string>({ name: 'users' });
+    collection = new DbCollection<UserAttrs>({ name: 'users' });
     model = new BaseModel<UserAttrs>({
       name: 'user',
       attrs: {
@@ -52,19 +52,19 @@ describe('BaseModel', () => {
     });
 
     it('should handle destroy operation', () => {
-      model.save();
-      const id = model.id as string;
-      model.destroy();
+      const user = model.save();
+      const id = user.id;
+      user.destroy();
       expect(collection.find(id)).toBeNull();
     });
 
     it('should handle reload operation', () => {
-      model.save();
-      const id = model.id as string;
+      const user = model.save();
+      const id = user.id;
       collection.update(id, { name: 'Jane', email: 'jane@example.com' });
-      model.reload();
-      expect(model.attrs.name).toBe('Jane');
-      expect(model.attrs.email).toBe('jane@example.com');
+      user.reload();
+      expect(user.attrs.name).toBe('Jane');
+      expect(user.attrs.email).toBe('jane@example.com');
     });
   });
 
@@ -92,7 +92,7 @@ describe('BaseModel', () => {
         userId: string;
       }
 
-      const CommentModel = Model.define<CommentAttrs>();
+      const CommentModel = BaseModel.create<CommentAttrs>();
       const commentCollection = new DbCollection<CommentAttrs>({ name: 'comments' });
       const comment = new CommentModel({
         attrs: { text: 'Great post!', userId: '1' },
@@ -114,7 +114,7 @@ describe('BaseModel', () => {
         content: string;
       }
 
-      const PostModel = Model.define<PostAttrs>();
+      const PostModel = BaseModel.create<PostAttrs>();
       const postCollection = new DbCollection<PostAttrs, number>({
         name: 'posts',
         identityManager: new NumberIdentityManager(),
@@ -129,6 +129,27 @@ describe('BaseModel', () => {
       expect(typeof post.id).toBe('number');
       expect(post.title).toBe('My Post');
       expect(post.content).toBe('Content here');
+    });
+  });
+
+  describe('static create method', () => {
+    it('should create a model class with attribute accessors', () => {
+      interface TestAttrs extends ModelAttrs {
+        value: string;
+      }
+
+      const TestModel = BaseModel.create<TestAttrs>();
+      const testCollection = new DbCollection<TestAttrs>({ name: 'tests' });
+
+      const test = new TestModel({
+        name: 'Test',
+        attrs: { value: 'test value' },
+        collection: testCollection,
+      });
+
+      expect(test.value).toBe('test value');
+      expect(test.isNew()).toBe(true);
+      expect(typeof test.save).toBe('function');
     });
   });
 });

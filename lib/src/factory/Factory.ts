@@ -1,3 +1,4 @@
+import { type AllowedIdTypes } from '@src/db';
 import type { ModelAttrs } from '@src/model';
 
 import BaseFactory, { type FactoryAttrs, type FactoryDefinition } from './BaseFactory';
@@ -11,7 +12,7 @@ export default class Factory {
    * @param definition - The attributes, traits, and afterCreate hook to define the factory.
    * @returns The factory.
    */
-  static define<TAttrs extends ModelAttrs>(
+  static define<TAttrs extends ModelAttrs<AllowedIdTypes>>(
     definition: FactoryDefinition<TAttrs>,
   ): BaseFactory<TAttrs> {
     const { attributes, traits, afterCreate } = definition;
@@ -24,7 +25,7 @@ export default class Factory {
    * @param definition - The new attributes, traits, and afterCreate hook to add or override.
    * @returns The extended factory.
    */
-  static extend<TAttrs extends ModelAttrs>(
+  static extend<TAttrs extends ModelAttrs<AllowedIdTypes>>(
     factory: BaseFactory<TAttrs>,
     definition: Partial<FactoryDefinition<TAttrs>>,
   ): BaseFactory<TAttrs> {

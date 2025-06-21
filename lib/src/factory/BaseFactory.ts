@@ -1,10 +1,11 @@
+import { type AllowedIdTypes } from '@src/db';
 import type { ModelAttrs, ModelInstance } from '@src/model';
 import { MirageError } from '@src/utils';
 
 /**
  * Base factory that builds model attributes.
  */
-export default class BaseFactory<TAttrs extends ModelAttrs> {
+export default class BaseFactory<TAttrs extends ModelAttrs<AllowedIdTypes>> {
   constructor(
     public readonly attributes: FactoryAttrs<TAttrs>,
     public readonly traits: Record<string, TraitDefinition<TAttrs>> = {},
@@ -37,7 +38,7 @@ export default class BaseFactory<TAttrs extends ModelAttrs> {
     const traitAttributes = this.buildWithTraits(traitNames, modelId);
 
     // Merge attributes in order: defaults override traits, traits override base attributes
-    return this.mergeAttributes(this.mergeAttributes(processedAttributes, traitAttributes), {
+    return this.mergeAttributesWithId(this.mergeAttributes(processedAttributes, traitAttributes), {
       ...defaults,
       id: modelId,
     });
@@ -60,15 +61,13 @@ export default class BaseFactory<TAttrs extends ModelAttrs> {
       hooks.push(this.afterCreate);
     }
 
-    traitNames.forEach(
-      (name) => {
-        const trait = this.traits[name];
-        if (trait?.afterCreate) {
-          hooks.push(trait.afterCreate);
-        }
-      },
-      [] as ((model: ModelInstance<TAttrs>) => void)[],
-    );
+    traitNames.forEach((name) => {
+      const trait = this.traits[name];
+
+      if (trait?.afterCreate) {
+        hooks.push(trait.afterCreate);
+      }
+    });
 
     hooks.forEach((hook) => {
       hook(model);
@@ -81,12 +80,12 @@ export default class BaseFactory<TAttrs extends ModelAttrs> {
 
   private processAttributes(
     attrs: FactoryAttrs<TAttrs>,
-    modelId: NonNullable<TAttrs['id']>,
+    modelId?: NonNullable<TAttrs['id']>,
   ): Partial<TAttrs> {
     const keys = this.sortAttrs(attrs, modelId);
 
     return keys.reduce((acc, key) => {
-      const value = attrs[key];
+      const value = attrs[key as Exclude<keyof TAttrs, 'id'>];
 
       if (typeof value === 'function') {
         acc[key] = value.call(attrs, modelId);
@@ -100,7 +99,7 @@ export default class BaseFactory<TAttrs extends ModelAttrs> {
 
   private buildWithTraits(
     traitNames: string[],
-    modelId: NonNullable<TAttrs['id']>,
+    modelId?: NonNullable<TAttrs['id']>,
   ): Partial<TAttrs> {
     return traitNames.reduce((traitAttributes, name) => {
       const trait = this.traits[name];
@@ -121,6 +120,16 @@ export default class BaseFactory<TAttrs extends ModelAttrs> {
   private mergeAttributes(
     baseAttributes: Partial<TAttrs>,
     overrideAttributes: Partial<TAttrs>,
+  ): Partial<TAttrs> {
+    return {
+      ...baseAttributes,
+      ...overrideAttributes,
+    };
+  }
+
+  private mergeAttributesWithId(
+    baseAttributes: Partial<TAttrs>,
+    overrideAttributes: Partial<TAttrs>,
   ): TAttrs {
     return {
       ...baseAttributes,
@@ -130,7 +139,7 @@ export default class BaseFactory<TAttrs extends ModelAttrs> {
 
   private sortAttrs(
     attrs: FactoryAttrs<TAttrs>,
-    modelId: NonNullable<TAttrs['id']>,
+    modelId?: NonNullable<TAttrs['id']>,
   ): (keyof TAttrs)[] {
     const visited = new Set<string>();
     const processing = new Set<string>();
@@ -144,7 +153,7 @@ export default class BaseFactory<TAttrs extends ModelAttrs> {
       }
 
       processing.add(key);
-      const value = attrs[key as keyof TAttrs];
+      const value = attrs[key as Exclude<keyof TAttrs, 'id'>];
 
       if (typeof value === 'function') {
         // Create a proxy to track property access
@@ -176,20 +185,22 @@ export default class BaseFactory<TAttrs extends ModelAttrs> {
 
 // -- TYPES --
 
-export type FactoryAttrs<TAttrs extends ModelAttrs> = {
-  [K in keyof TAttrs]:
+export type FactoryAttrs<TAttrs extends ModelAttrs<AllowedIdTypes>> = {
+  [K in Exclude<keyof TAttrs, 'id'>]:
     | TAttrs[K]
     | ((this: Record<keyof TAttrs, any>, modelId: NonNullable<TAttrs['id']>) => TAttrs[K]);
 };
 
-export type TraitDefinition<TAttrs extends ModelAttrs> = Partial<FactoryAttrs<TAttrs>> & {
+export type TraitDefinition<TAttrs extends ModelAttrs<AllowedIdTypes>> = Partial<
+  FactoryAttrs<TAttrs>
+> & {
   afterCreate?: (model: ModelInstance<TAttrs>) => void;
 };
 
-export type FactoryDefinition<TAttrs extends ModelAttrs> = {
+export type FactoryDefinition<TAttrs extends ModelAttrs<AllowedIdTypes>> = {
   attributes: FactoryAttrs<TAttrs>;
   traits?: Record<string, TraitDefinition<TAttrs>>;
   afterCreate?: (model: ModelInstance<TAttrs>) => void;
 };
 
-export type FactoryInstance<TAttrs extends ModelAttrs> = BaseFactory<TAttrs>;
+export type FactoryInstance<TAttrs extends ModelAttrs<AllowedIdTypes>> = BaseFactory<TAttrs>;

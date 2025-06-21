@@ -1,3 +1,5 @@
+import { type AllowedIdTypes } from '@src/db';
+
 import type { ModelInstance, ModelAttrs } from './BaseModel';
 
 /**
@@ -7,7 +9,9 @@ import type { ModelInstance, ModelAttrs } from './BaseModel';
  * @param options.modelName - The name of the model
  * @param options.models - The initial models in the list
  */
-export default class List<TAttrs extends ModelAttrs> extends Array<ModelInstance<TAttrs>> {
+export default class List<TAttrs extends ModelAttrs<AllowedIdTypes>> extends Array<
+  ModelInstance<TAttrs>
+> {
   public readonly modelName: string;
 
   constructor(options: ListOptions<TAttrs>) {
@@ -151,7 +155,7 @@ export default class List<TAttrs extends ModelAttrs> extends Array<ModelInstance
  * @param options.modelName - The name of the model
  * @param options.models - The initial models in the list
  */
-export interface ListOptions<TAttrs extends ModelAttrs> {
+export interface ListOptions<TAttrs extends ModelAttrs<AllowedIdTypes>> {
   modelName: string;
   models?: Array<ModelInstance<TAttrs>>;
 }

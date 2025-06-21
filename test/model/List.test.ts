@@ -77,7 +77,7 @@ describe('List', () => {
       let destroyCalled = false;
       user1.destroy = () => {
         destroyCalled = true;
-        originalDestroy.call(user1);
+        return originalDestroy.call(user1);
       };
       list.destroy();
       expect(destroyCalled).toBe(true);

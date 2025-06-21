@@ -1,4 +1,4 @@
-import { DbCollection, IdentityManager } from '@src/db';
+import { DbCollection, IdentityManager, NumberIdentityManager } from '@src/db';
 
 describe('DbCollection', () => {
   describe('constructor', () => {
@@ -272,7 +272,7 @@ describe('DbCollection Types', () => {
 
       const comments = new DbCollection<CommentAttrs, number>({
         name: 'comments',
-        identityManager: new IdentityManager<number>(),
+        identityManager: new NumberIdentityManager(),
       });
       const comment = comments.insert({ text: 'Great post!', userId: 1 });
 

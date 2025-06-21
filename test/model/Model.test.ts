@@ -1,7 +1,7 @@
 import { DbCollection, NumberIdentityManager } from '@src/db';
 import { Model, type ModelAttrs } from '@src/model';
 
-interface UserAttrs extends ModelAttrs<string> {
+interface UserAttrs extends ModelAttrs {
   name: string;
   email: string;
 }
