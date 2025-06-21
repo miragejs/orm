@@ -1,7 +1,11 @@
+export { default as BaseModel } from './BaseModel';
+export { default as List } from './List';
 export { default as Model } from './Model';
-export {
-  createModelInstance,
-  type ModelInstance,
-  type ModelAttrs,
-  type ModelOptions,
+export type {
+  ModelAttrs,
+  ModelClass,
+  ModelInstance,
+  ModelOptions,
+  SavedModelAttrs,
+  SavedModelInstance,
 } from './BaseModel';

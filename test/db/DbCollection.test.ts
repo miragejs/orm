@@ -1,4 +1,4 @@
-import { DbCollection } from '@src/db';
+import { DbCollection, IdentityManager, NumberIdentityManager } from '@src/db';
 
 describe('DbCollection', () => {
   describe('constructor', () => {
@@ -9,12 +9,12 @@ describe('DbCollection', () => {
 
     it('should initialize with initial data', () => {
       const initialData = [
-        { id: 1, name: 'John' },
-        { id: 2, name: 'Jane' },
+        { id: '1', name: 'John' },
+        { id: '2', name: 'Jane' },
       ];
       const collection = new DbCollection({ name: 'users', initialData });
       expect(collection.size).toBe(2);
-      expect(collection.find(1)).toEqual({ id: 1, name: 'John' });
+      expect(collection.find('1')).toEqual({ id: '1', name: 'John' });
     });
   });
 
@@ -27,17 +27,30 @@ describe('DbCollection', () => {
     });
   });
 
-  describe('all', () => {
+  describe('records', () => {
     it('should return all records', () => {
       const collection = new DbCollection({ name: 'users' });
       const record1 = collection.insert({ name: 'John' });
       const record2 = collection.insert({ name: 'Jane' });
-      expect(collection.all()).toEqual([record1, record2]);
+      expect(collection.records).toEqual([record1, record2]);
+    });
+  });
+
+  describe('first', () => {
+    it('should return first record', () => {
+      const collection = new DbCollection({ name: 'users' });
+      const record1 = collection.insert({ name: 'John' });
+      expect(collection.first()).toEqual(record1);
+    });
+
+    it('should return null if collection is empty', () => {
+      const collection = new DbCollection({ name: 'users' });
+      expect(collection.first()).toBeNull();
     });
   });
 
   describe('find', () => {
-    let collection: DbCollection;
+    let collection: DbCollection<{ name: string }>;
 
     beforeEach(() => {
       collection = new DbCollection({ name: 'users' });
@@ -46,23 +59,23 @@ describe('DbCollection', () => {
     });
 
     it('should find record by single ID', () => {
-      expect(collection.find(1)).toEqual({ id: 1, name: 'John' });
+      expect(collection.find('1')).toEqual({ id: '1', name: 'John' });
     });
 
     it('should return null for non-existent ID', () => {
-      expect(collection.find(999)).toBeNull();
+      expect(collection.find('999')).toBeNull();
     });
 
     it('should find multiple records by IDs', () => {
-      expect(collection.find(1, 2)).toEqual([
-        { id: 1, name: 'John' },
-        { id: 2, name: 'Jane' },
+      expect(collection.find('1', '2')).toEqual([
+        { id: '1', name: 'John' },
+        { id: '2', name: 'Jane' },
       ]);
     });
   });
 
   describe('findBy', () => {
-    let collection: DbCollection;
+    let collection: DbCollection<{ age: number; name: string }>;
 
     beforeEach(() => {
       collection = new DbCollection({ name: 'users' });
@@ -71,7 +84,7 @@ describe('DbCollection', () => {
     });
 
     it('should find first matching record', () => {
-      expect(collection.findBy({ name: 'John' })).toEqual({ id: 1, name: 'John', age: 30 });
+      expect(collection.findBy({ name: 'John' })).toEqual({ id: '1', name: 'John', age: 30 });
     });
 
     it('should return null when no match found', () => {
@@ -80,7 +93,7 @@ describe('DbCollection', () => {
 
     it('should match multiple attributes', () => {
       expect(collection.findBy({ name: 'John', age: 30 })).toEqual({
-        id: 1,
+        id: '1',
         name: 'John',
         age: 30,
       });
@@ -88,7 +101,7 @@ describe('DbCollection', () => {
   });
 
   describe('where', () => {
-    let collection: DbCollection;
+    let collection: DbCollection<{ age: number; name: string }>;
 
     beforeEach(() => {
       collection = new DbCollection({ name: 'users' });
@@ -120,38 +133,19 @@ describe('DbCollection', () => {
     });
   });
 
-  describe('firstOrCreate', () => {
-    let collection: DbCollection;
-
-    beforeEach(() => {
-      collection = new DbCollection({ name: 'users' });
-    });
-
-    it('should return existing record if found', () => {
-      const existing = collection.insert({ name: 'John' });
-      const result = collection.firstOrCreate({ name: 'John' });
-      expect(result).toEqual(existing);
-    });
-
-    it('should create new record if not found', () => {
-      const result = collection.firstOrCreate({ name: 'John' }, { name: 'John', age: 30 });
-      expect(result).toEqual({ id: 1, name: 'John', age: 30 });
-    });
-  });
-
   describe('insert', () => {
     it('should insert record with generated ID', () => {
       const collection = new DbCollection({ name: 'users' });
       const record = collection.insert({ name: 'John' });
-      expect(record).toEqual({ id: 1, name: 'John' });
-      expect(collection.find(1)).toEqual(record);
+      expect(record).toEqual({ id: '1', name: 'John' });
+      expect(collection.find('1')).toEqual(record);
     });
 
     it('should insert record with provided ID', () => {
       const collection = new DbCollection({ name: 'users' });
-      const record = collection.insert({ id: 5, name: 'John' });
-      expect(record).toEqual({ id: 5, name: 'John' });
-      expect(collection.find(5)).toEqual(record);
+      const record = collection.insert({ id: '5', name: 'John' });
+      expect(record).toEqual({ id: '5', name: 'John' });
+      expect(collection.find('5')).toEqual(record);
     });
   });
 
@@ -165,7 +159,7 @@ describe('DbCollection', () => {
   });
 
   describe('update', () => {
-    let collection: DbCollection;
+    let collection: DbCollection<{ active?: boolean; age: number; name: string }>;
 
     beforeEach(() => {
       collection = new DbCollection({ name: 'users' });
@@ -174,13 +168,13 @@ describe('DbCollection', () => {
     });
 
     it('should update record by ID', () => {
-      const updated = collection.update(1, { age: 31 });
-      expect(updated).toEqual({ id: 1, name: 'John', age: 31 });
+      const updated = collection.update('1', { age: 31 });
+      expect(updated).toEqual({ id: '1', name: 'John', age: 31 });
     });
 
     it('should update record by query', () => {
       const updated = collection.update({ name: 'John' }, { age: 31 });
-      expect(updated).toEqual({ id: 1, name: 'John', age: 31 });
+      expect(updated).toEqual({ id: '1', name: 'John', age: 31 });
     });
 
     it('should update all records when only attrs provided', () => {
@@ -188,15 +182,15 @@ describe('DbCollection', () => {
       expect(updated).toHaveLength(2);
       expect(updated).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ id: 1, active: true }),
-          expect.objectContaining({ id: 2, active: true }),
+          expect.objectContaining({ id: '1', active: true }),
+          expect.objectContaining({ id: '2', active: true }),
         ]),
       );
     });
   });
 
   describe('remove', () => {
-    let collection: DbCollection;
+    let collection: DbCollection<{ name: string }>;
 
     beforeEach(() => {
       collection = new DbCollection({ name: 'users' });
@@ -205,15 +199,15 @@ describe('DbCollection', () => {
     });
 
     it('should remove record by ID', () => {
-      collection.remove(1);
+      collection.remove('1');
       expect(collection.size).toBe(1);
-      expect(collection.find(1)).toBeNull();
+      expect(collection.find('1')).toBeNull();
     });
 
     it('should remove records by query', () => {
       collection.remove({ name: 'John' });
       expect(collection.size).toBe(1);
-      expect(collection.find(1)).toBeNull();
+      expect(collection.find('1')).toBeNull();
     });
   });
 
@@ -224,6 +218,72 @@ describe('DbCollection', () => {
       collection.insert({ name: 'Jane' });
       collection.clear();
       expect(collection.size).toBe(0);
+    });
+  });
+});
+
+describe('DbCollection Types', () => {
+  describe('Default string ID behavior', () => {
+    it('should use string IDs by default', () => {
+      interface UserAttrs {
+        name: string;
+        email: string;
+      }
+
+      const users = new DbCollection<UserAttrs>({ name: 'users' });
+
+      // Insert a user with auto-generated string ID
+      const user = users.insert({ name: 'John', email: 'john@example.com' });
+      expect(typeof user.id).toBe('string');
+      expect(user.name).toBe('John');
+      expect(user.email).toBe('john@example.com');
+
+      // Find by string ID
+      const found = users.find(user.id);
+      expect(found).toEqual(user);
+    });
+  });
+
+  describe('Number ID behavior when explicitly typed', () => {
+    it('should work with number IDs when explicitly typed', () => {
+      interface CommentAttrs {
+        text: string;
+        userId: number;
+      }
+
+      const comments = new DbCollection<CommentAttrs, number>({
+        name: 'comments',
+        identityManager: new NumberIdentityManager(),
+      });
+      const comment = comments.insert({ text: 'Great post!', userId: 1 });
+
+      expect(typeof comment.id).toBe('number');
+      expect(comment.text).toBe('Great post!');
+      expect(comment.userId).toBe(1);
+    });
+  });
+
+  describe('Custom string ID behavior', () => {
+    it('should work with custom string IDs', () => {
+      interface UserAttrs {
+        name: string;
+        email: string;
+      }
+
+      const users = new DbCollection<UserAttrs, string>({
+        name: 'users',
+        identityManager: new IdentityManager<string>(),
+      });
+
+      // Insert a user with custom string ID
+      const user = users.insert({ id: 'user-1', name: 'John', email: 'john@example.com' });
+      expect(user.id).toBe('user-1');
+      expect(user.name).toBe('John');
+      expect(user.email).toBe('john@example.com');
+
+      // Find by string ID
+      const found = users.find('user-1');
+      expect(found).toEqual(user);
     });
   });
 });

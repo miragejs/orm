@@ -3,30 +3,41 @@ import { Inflector } from '@src/inflector';
 import { camelize } from '@src/utils/string';
 
 /**
- * Base model class that handles core functionality and attribute getters/setters
+ * Base model class that handles core functionality
  * @template TAttrs - The type of the model's attributes
  */
-export default class BaseModel<TAttrs extends ModelAttrs<AllowedIdTypes> = ModelAttrs<number>> {
+export default class BaseModel<TAttrs extends ModelAttrs<AllowedIdTypes> = ModelAttrs<string>> {
   readonly modelName: string;
-  private _attrs: TAttrs;
-  protected _collection: DbCollection<NonNullable<TAttrs['id']>, TAttrs>;
+  protected _attrs: TAttrs;
+  protected _collection: DbCollection<TAttrs, NonNullable<TAttrs['id']>>;
   protected _status: 'new' | 'saved';
 
   constructor({ attrs, collection, name }: ModelOptions<TAttrs>) {
-    this._attrs = { ...attrs, id: attrs?.id ?? null } as TAttrs;
     this.modelName = Inflector.instance.singularize(camelize(name, false));
 
-    this._collection =
-      collection ||
-      new DbCollection<NonNullable<TAttrs['id']>, TAttrs>({
-        name: Inflector.instance.pluralize(this.modelName),
-      });
-    this._status = 'new';
+    this._attrs = { ...attrs, id: attrs?.id ?? null } as TAttrs;
+    this._collection = collection;
+    this._status = this._attrs.id ? this._verifyStatus(this._attrs.id) : 'new';
 
     this.initAttributeAccessors();
   }
 
-  // -- Getters --
+  /**
+   * Creates a new model class with attribute accessors
+   * @template TAttrs - The type of the model's attributes
+   * @returns A model class that can be instantiated with 'new'
+   */
+  static create<
+    TAttrs extends ModelAttrs<AllowedIdTypes> = ModelAttrs<string>,
+  >(): ModelClass<TAttrs> {
+    return class extends BaseModel<TAttrs> {
+      constructor(options: ModelOptions<TAttrs>) {
+        super(options);
+      }
+    } as unknown as ModelClass<TAttrs>;
+  }
+
+  // -- GETTERS --
 
   /**
    * Getter for the protected id attribute
@@ -44,63 +55,66 @@ export default class BaseModel<TAttrs extends ModelAttrs<AllowedIdTypes> = Model
     return { ...this._attrs };
   }
 
-  // -- Main methods --
+  // -- MAIN METHODS --
 
   /**
    * Destroy the model from the database
+   * @returns The model with new instance type
    */
-  destroy(): void {
+  destroy(): ModelInstance<TAttrs> {
     if (this.isSaved() && this.id) {
-      this._collection.remove(this.id);
+      this._collection.remove(this.id as NonNullable<TAttrs['id']>);
+      this._attrs = { ...this._attrs, id: null } as TAttrs;
+      this._status = 'new';
     }
+
+    return this as unknown as ModelInstance<TAttrs>;
   }
 
   /**
    * Reload the model from the database
-   * @returns The model
+   * @returns The model with saved instance type
    */
-  reload(): this {
-    if (this.id) {
-      this._attrs = this._collection.find(this.id) as TAttrs;
-      this.initAttributeAccessors();
+  reload(): SavedModelInstance<TAttrs> {
+    if (this.isSaved() && this.id) {
+      this._attrs = this._collection.find(this.id as NonNullable<TAttrs['id']>) as TAttrs;
     }
 
-    return this;
+    return this as unknown as SavedModelInstance<TAttrs>;
   }
 
   /**
    * Save the model to the database
-   * @returns The model
+   * @returns The model with saved instance type
    */
-  save(): this {
+  save(): SavedModelInstance<TAttrs> {
     if (this.isNew() || !this.id) {
       const modelRecord = this._collection.insert(
-        this._attrs as DbRecordInput<NonNullable<TAttrs['id']>, TAttrs>,
+        this._attrs as DbRecordInput<TAttrs, NonNullable<TAttrs['id']>>,
       );
       this._attrs = modelRecord;
       this._status = 'saved';
     } else {
       this._collection.update(
-        this.id,
-        this._attrs as DbRecordInput<NonNullable<TAttrs['id']>, TAttrs>,
+        this.id as NonNullable<TAttrs['id']>,
+        this._attrs as DbRecordInput<TAttrs, NonNullable<TAttrs['id']>>,
       );
     }
 
-    return this;
+    return this as unknown as SavedModelInstance<TAttrs>;
   }
 
   /**
    * Update the model attributes and save the model
    * @param attrs - The attributes to update
-   * @returns The model
+   * @returns The model with saved instance type
    */
-  update(attrs: Partial<TAttrs>): this {
+  update(attrs: Partial<TAttrs>): SavedModelInstance<TAttrs> {
     Object.assign(this._attrs, attrs);
-    this.initAttributeAccessors();
     return this.save();
   }
 
-  // -- Status --
+  // -- STATUS --
 
   /**
    * Check if the model is new
@@ -118,7 +132,7 @@ export default class BaseModel<TAttrs extends ModelAttrs<AllowedIdTypes> = Model
     return this._status === 'saved';
   }
 
-  // -- Serialization --
+  // -- SERIALIZATION --
 
   /**
    * Serialize the model to a JSON object
@@ -137,9 +151,12 @@ export default class BaseModel<TAttrs extends ModelAttrs<AllowedIdTypes> = Model
     return `model:${this.modelName}${idLabel}`;
   }
 
-  // -- Private methods --
+  // -- ATTRIBUTE ACCESSORS --
 
-  private initAttributeAccessors(): void {
+  /**
+   * Initialize attribute accessors for all attributes except id
+   */
+  protected initAttributeAccessors(): void {
     // Remove old accessors
     for (const key in this._attrs) {
       if (key !== 'id' && Object.prototype.hasOwnProperty.call(this, key)) {
@@ -163,30 +180,37 @@ export default class BaseModel<TAttrs extends ModelAttrs<AllowedIdTypes> = Model
       }
     }
   }
+
+  // -- PRIVATE METHODS --
+
+  /**
+   * Verify the status of the model during initialization when the id is provided
+   * @param id - The id of the model
+   * @returns The status of the model
+   */
+  private _verifyStatus(id: NonNullable<TAttrs['id']>): 'new' | 'saved' {
+    return this._collection.find(id as NonNullable<TAttrs['id']>) ? 'saved' : 'new';
+  }
 }
 
-/**
- * Factory function for creating a model instance and getters/setters for the attributes
- * @param options - The options for creating the model instance
- * @returns The model instance
- */
-export function createModelInstance<TAttrs extends ModelAttrs<AllowedIdTypes>>(
-  options: ModelOptions<TAttrs>,
-): ModelInstance<TAttrs> {
-  return new BaseModel<TAttrs>(options) as ModelInstance<TAttrs>;
-}
-
-// -- Types --
+// -- TYPES --
 
 /**
  * Type for model attributes
- * @template TId - The type of the model's id
- * @param attrs.id - The id of the model
+ * @template TId - The type of the model's id (defaults to string)
+ * @param attrs.id - The id of the model (optional for new models, required for saved models)
  */
-export type ModelAttrs<TId = AllowedIdTypes> = {
+export type ModelAttrs<TId = string> = {
   id?: TId | null;
   [key: string]: any;
 };
+
+/**
+ * Type for saved model attributes (with required ID)
+ * @template TAttrs - The base attributes type
+ * @template TId - The ID type
+ */
+export type SavedModelAttrs<TAttrs, TId extends AllowedIdTypes> = Omit<TAttrs, 'id'> & { id: TId };
 
 /**
  * Options for creating a model
@@ -195,9 +219,9 @@ export type ModelAttrs<TId = AllowedIdTypes> = {
  * @param options.collection - The collection to use for the model
  * @param options.name - The name of the model
  */
-export interface ModelOptions<TAttrs extends ModelAttrs<any>> {
+export interface ModelOptions<TAttrs extends ModelAttrs<AllowedIdTypes>> {
   attrs?: TAttrs;
-  collection?: DbCollection<NonNullable<TAttrs['id']>, TAttrs>;
+  collection: DbCollection<TAttrs, NonNullable<TAttrs['id']>>;
   name: string;
 }
 
@@ -205,6 +229,22 @@ export interface ModelOptions<TAttrs extends ModelAttrs<any>> {
  * Type for model instance with accessors for the attributes
  * @template TAttrs - The type of the model's attributes
  */
-export type ModelInstance<TAttrs extends ModelAttrs<any>> = BaseModel<TAttrs> & {
+export type ModelInstance<TAttrs extends ModelAttrs<AllowedIdTypes>> = BaseModel<TAttrs> & {
   [K in keyof TAttrs]: TAttrs[K];
+};
+
+/**
+ * Type for saved model instance (with required ID)
+ * @template TAttrs - The base attributes type
+ */
+export type SavedModelInstance<TAttrs extends ModelAttrs<AllowedIdTypes>> = ModelInstance<
+  TAttrs & { id: NonNullable<TAttrs['id']> }
+>;
+
+/**
+ * Type for model class with attribute accessors
+ * @template TAttrs - The type of the model's attributes
+ */
+export type ModelClass<TAttrs extends ModelAttrs<AllowedIdTypes>> = {
+  new (options: ModelOptions<TAttrs>): ModelInstance<TAttrs>;
 };

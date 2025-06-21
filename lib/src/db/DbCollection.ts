@@ -8,26 +8,46 @@ import IdentityManager, { type AllowedIdTypes } from './IdentityManager';
  * @param options.initialData - Initial data for the collection.
  * @example
  * const users = new DbCollection({ name: 'users' });
- * users.insert({ name: 'John' }); // => { id: 1, name: 'John' }
+ * users.insert({ name: 'John' }); // => { id: "1", name: 'John' }
  */
 export default class DbCollection<
-  TId extends AllowedIdTypes = number,
-  TAttrs = Record<string, any>,
+  TAttrs extends object = Record<string, unknown>,
+  TId extends AllowedIdTypes = string,
 > {
   name: string;
-  private _records: Map<TId, DbRecord<TId, TAttrs>> = new Map();
+  private _records: Map<TId, DbRecord<TAttrs, TId>> = new Map();
   private _identityManager: IdentityManager<TId>;
 
-  constructor(options: DbCollectionOptions<TId, TAttrs>) {
+  constructor(
+    options: TId extends string
+      ? DbCollectionOptions<TAttrs>
+      : DbCollectionOptionsWithNumberId<TAttrs>,
+  ) {
     this.name = options.name;
-    this._identityManager = options.identityManager || new IdentityManager<TId>();
+    this._identityManager = (options as any).identityManager || new IdentityManager<TId>();
 
     if (options.initialData) {
-      this.insertMany(options.initialData);
+      this.insertMany(options.initialData as any);
     }
   }
 
   // -- Getters --
+
+  /**
+   * Returns the next available ID for the collection.
+   * @returns The next available ID for the collection
+   */
+  get nextId() {
+    return this._identityManager.fetch();
+  }
+
+  /**
+   * Returns all records in the collection.
+   * @returns Array of all records
+   */
+  get records(): DbRecord<TAttrs, TId>[] {
+    return Array.from(this._records.values());
+  }
 
   /**
    * Returns the number of records in the collection.
@@ -40,26 +60,44 @@ export default class DbCollection<
   // -- Query Methods --
 
   /**
-   * Returns all records in the collection.
-   * @returns Array of all records
+   * Finds the first record in the collection.
+   * @returns The first record in the collection or null if the collection is empty.
    */
-  all(): DbRecord<TId, TAttrs>[] {
-    return Array.from(this._records.values());
+  first(): DbRecord<TAttrs, TId> | null {
+    return this.records[0] || null;
   }
 
   /**
    * Finds records by their IDs.
    * @param ids - One or more record IDs to find
-   * @returns The found record or null if not found
+   * @returns The found record(s) or null if not found
    * @example
    * const users = new DbCollection({ name: 'users' });
    * users.find(1); // => { id: 1, name: 'John' }
    * users.find(1, 2, 3); // => [{ id: 1, name: 'John' }, { id: 2, name: 'Jane' }]
    */
-  find(...ids: TId[]): null | DbRecord<TId, TAttrs> | DbRecord<TId, TAttrs>[] {
+  find(id: TId): DbRecord<TAttrs, TId> | null;
+  /**
+   * Finds records by their IDs.
+   * @param ids - One or more record IDs to find
+   * @returns The found record(s) or null if not found
+   * @example
+   * const users = new DbCollection({ name: 'users' });
+   * users.find(1, 2, 3); // => [{ id: 1, name: 'John' }, { id: 2, name: 'Jane' }]
+   */
+  find(...ids: TId[]): DbRecord<TAttrs, TId>[];
+  /**
+   * Finds records by their IDs.
+   * @param {...TId} ids - One or more record IDs to find
+   * @returns The found record(s) or null if not found
+   * @example
+   * const users = new DbCollection({ name: 'users' });
+   * users.find(1, 2, 3); // => [{ id: 1, name: 'John' }, { id: 2, name: 'Jane' }]
+   */
+  find(...ids: TId[]): DbRecord<TAttrs, TId> | DbRecord<TAttrs, TId>[] | null {
     const records = ids.map((id) => this._records.get(id)).filter(Boolean) as DbRecord<
-      TId,
-      TAttrs
+      TAttrs,
+      TId
     >[];
 
     if (ids.length === 1) {
@@ -77,8 +115,8 @@ export default class DbCollection<
    * users.findBy({ name: 'John' }); // => { id: 1, name: 'John' }
    * users.findBy({ name: 'John', age: 30 }); // => null
    */
-  findBy(query: DbRecordInput<TId, TAttrs>): DbRecord<TId, TAttrs> | null {
-    return this.all().find((record) => this._matchesQuery(record, query)) || null;
+  findBy(query: DbRecordInput<TAttrs, TId>): DbRecord<TAttrs, TId> | null {
+    return this.records.find((record) => this._matchesQuery(record, query)) || null;
   }
 
   /**
@@ -90,10 +128,8 @@ export default class DbCollection<
    * users.where({ name: 'John' }); // => [{ id: 1, name: 'John' }]
    * users.where((record) => record.name === 'John' || record.name === 'Jane'); // => [{ id: 1, name: 'John' }, { id: 2, name: 'Jane' }]
    */
-  where(
-    query: DbRecordInput<TId, TAttrs> | ((record: DbRecord<TId, TAttrs>) => boolean),
-  ): DbRecord<TId, TAttrs>[] {
-    return this.all().filter((record) => {
+  where(query: DbQuery<TAttrs, TId>): DbRecord<TAttrs, TId>[] {
+    return this.records.filter((record) => {
       if (typeof query === 'function') {
         return query(record);
       }
@@ -111,26 +147,6 @@ export default class DbCollection<
   }
 
   /**
-   * Finds the first record matching the query or creates a new one.
-   * @param query - Query attributes to match the record
-   * @param attrs - Attributes to use when creating a new record. All attributes must be provided, but id is optional.
-   * @returns The found or newly created record
-   */
-  firstOrCreate(
-    query: DbRecordInput<TId, TAttrs>,
-    attrs: DbRecordInput<TId, TAttrs> = {} as DbRecordInput<TId, TAttrs>,
-  ): DbRecord<TId, TAttrs> {
-    const existingRecord = this.findBy(query);
-    if (existingRecord) {
-      return existingRecord;
-    }
-
-    const newRecord = this._prepareRecord(attrs);
-    this._records.set(newRecord.id, newRecord);
-    return newRecord;
-  }
-
-  /**
    * Inserts a single record into the collection.
    * @param data - The record to insert. All attributes must be provided, but id is optional and will be generated if not provided.
    * @returns The inserted record.
@@ -138,7 +154,7 @@ export default class DbCollection<
    * const users = new DbCollection({ name: 'users' });
    * users.insert({ name: 'John' }); // => { id: 1, name: 'John' }
    */
-  insert(data: DbRecordInput<TId, TAttrs>): DbRecord<TId, TAttrs> {
+  insert(data: DbRecordInput<TAttrs, TId>): DbRecord<TAttrs, TId> {
     const record = this._prepareRecord(data);
     this._records.set(record.id, record);
     return record;
@@ -152,7 +168,7 @@ export default class DbCollection<
    * const users = new DbCollection({ name: 'users' });
    * users.insertMany([{ name: 'John' }, { name: 'Jane' }]); // => [{ id: 1, name: 'John' }, { id: 2, name: 'Jane' }]
    */
-  insertMany(data: DbRecordInput<TId, TAttrs>[]): DbRecord<TId, TAttrs>[] {
+  insertMany(data: DbRecordInput<TAttrs, TId>[]): DbRecord<TAttrs, TId>[] {
     const records = data.map((record) => this._prepareRecord(record));
     records.forEach((record) => this._records.set(record.id, record));
     return records;
@@ -169,11 +185,11 @@ export default class DbCollection<
    * users.remove(1); // => [{ id: 2, name: 'Jane' }]
    * users.remove({ name: 'John' }); // => [{ id: 2, name: 'Jane' }]
    */
-  remove(idOrQuery: TId | DbRecordInput<TId, TAttrs>): DbRecord<TId, TAttrs>[] {
+  remove(idOrQuery: DbUpdateInput<TAttrs, TId>): DbRecord<TAttrs, TId>[] {
     // Case 1: ID is passed - remove specific record
     if (typeof idOrQuery !== 'object' || idOrQuery === null) {
       this._records.delete(idOrQuery as TId);
-      return this.all();
+      return this.records;
     }
 
     // Case 2: Query attributes are passed - remove all matching records
@@ -182,7 +198,7 @@ export default class DbCollection<
       this._records.delete(record.id);
     });
 
-    return this.all();
+    return this.records;
   }
 
   /**
@@ -197,9 +213,9 @@ export default class DbCollection<
    * users.update({ name: 'John' }, { age: 30 }); // => [{ id: 1, name: 'John', age: 30 }]
    */
   update(
-    idOrQuery: TId | DbRecordInput<TId, TAttrs>,
-    attrs?: DbRecordInput<TId, TAttrs>,
-  ): DbRecord<TId, TAttrs> | DbRecord<TId, TAttrs>[] | null {
+    idOrQuery: DbUpdateInput<TAttrs, TId>,
+    attrs?: DbRecordInput<TAttrs, TId>,
+  ): DbRecord<TAttrs, TId> | DbRecord<TAttrs, TId>[] | null {
     // Case 1: Only attrs are passed - update all records
     if (!attrs) {
       if (typeof idOrQuery !== 'object' || idOrQuery === null) {
@@ -208,7 +224,7 @@ export default class DbCollection<
 
       if (this._records.size === 0) return [];
 
-      const updatedRecords = this.all();
+      const updatedRecords = this.records;
       updatedRecords.forEach((record) => Object.assign(record, idOrQuery));
       return updatedRecords;
     }
@@ -238,9 +254,9 @@ export default class DbCollection<
    * @param query - The query to match against.
    * @returns true if the record matches the query, false otherwise.
    */
-  private _matchesQuery(record: DbRecord<TId, TAttrs>, query: DbRecordInput<TId, TAttrs>): boolean {
+  private _matchesQuery(record: DbRecord<TAttrs, TId>, query: DbRecordInput<TAttrs, TId>): boolean {
     return Object.entries(query).every(
-      ([key, value]) => String(record[key as keyof DbRecord<TId, TAttrs>]) === String(value),
+      ([key, value]) => String(record[key as keyof DbRecord<TAttrs, TId>]) === String(value),
     );
   }
 
@@ -249,8 +265,8 @@ export default class DbCollection<
    * @param data - The record to prepare.
    * @returns The prepared record.
    */
-  private _prepareRecord(data: DbRecordInput<TId, TAttrs>): DbRecord<TId, TAttrs> {
-    const record = { ...data } as DbRecord<TId, TAttrs>;
+  private _prepareRecord(data: DbRecordInput<TAttrs, TId>): DbRecord<TAttrs, TId> {
+    const record = { ...data } as DbRecord<TAttrs, TId>;
     if (!record.id) {
       record.id = this._identityManager.fetch();
     } else {
@@ -264,28 +280,50 @@ export default class DbCollection<
 
 /**
  * Type for a database record
- * @template TId - The type of the record's ID
  * @template TAttrs - The type of the record's attributes
+ * @template TId - The type of the record's ID
  */
-export type DbRecord<TId, TAttrs> = { id: TId } & TAttrs;
+export type DbRecord<TAttrs, TId extends AllowedIdTypes> = TAttrs & { id: TId };
 
 /**
  * Type for input data when creating or updating a record
- * @template TId - The type of the record's ID
  * @template TAttrs - The type of the record's attributes
+ * @template TId - The type of the record's ID
  */
-export type DbRecordInput<TId, TAttrs> = Partial<DbRecord<TId, TAttrs>>;
+export type DbRecordInput<TAttrs, TId extends AllowedIdTypes> = Partial<DbRecord<TAttrs, TId>>;
 
 /**
- * Options for creating a database collection
+ * Type for query conditions that can be used to find records
+ * @template TAttrs - The type of the record's attributes
  * @template TId - The type of the record's ID
+ */
+export type DbQuery<TAttrs, TId extends AllowedIdTypes> =
+  | DbRecordInput<TAttrs, TId>
+  | ((record: DbRecord<TAttrs, TId>) => boolean);
+
+/**
+ * Type for update operations
+ * @template TAttrs - The type of the record's attributes
+ * @template TId - The type of the record's ID
+ */
+export type DbUpdateInput<TAttrs, TId extends AllowedIdTypes> = TId | DbRecordInput<TAttrs, TId>;
+
+/**
+ * Options for creating a database collection with string IDs
  * @template TAttrs - The type of the record's attributes
  */
-export interface DbCollectionOptions<
-  TId extends AllowedIdTypes = number,
-  TAttrs = Record<string, any>,
-> {
-  identityManager?: IdentityManager<TId>;
-  initialData?: DbRecord<TId, TAttrs>[];
+export interface DbCollectionOptions<TAttrs> {
+  identityManager?: IdentityManager<string>;
+  initialData?: DbRecordInput<TAttrs, string>[];
+  name: string;
+}
+
+/**
+ * Options for creating a database collection with number IDs
+ * @template TAttrs - The type of the record's attributes
+ */
+export interface DbCollectionOptionsWithNumberId<TAttrs> {
+  identityManager: IdentityManager<number>;
+  initialData?: DbRecordInput<TAttrs, number>[];
   name: string;
 }
