@@ -147,26 +147,6 @@ export default class DbCollection<
   }
 
   /**
-   * Finds the first record matching the query or creates a new one.
-   * @param query - Query attributes to match the record
-   * @param attrs - Attributes to use when creating a new record. All attributes must be provided, but id is optional.
-   * @returns The found or newly created record
-   */
-  findOrCreateBy(
-    query: DbRecordInput<TAttrs, TId>,
-    attrs: DbRecordInput<TAttrs, TId> = {} as DbRecordInput<TAttrs, TId>,
-  ): DbRecord<TAttrs, TId> {
-    const existingRecord = this.findBy(query);
-    if (existingRecord) {
-      return existingRecord;
-    }
-
-    const newRecord = this._prepareRecord({ ...query, ...attrs });
-    this._records.set(newRecord.id, newRecord);
-    return newRecord;
-  }
-
-  /**
    * Inserts a single record into the collection.
    * @param data - The record to insert. All attributes must be provided, but id is optional and will be generated if not provided.
    * @returns The inserted record.

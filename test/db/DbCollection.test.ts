@@ -133,25 +133,6 @@ describe('DbCollection', () => {
     });
   });
 
-  describe('findOrCreateBy', () => {
-    let collection: DbCollection<{ age: number; name: string }>;
-
-    beforeEach(() => {
-      collection = new DbCollection({ name: 'users' });
-    });
-
-    it('should return existing record if found', () => {
-      const existing = collection.insert({ name: 'John' });
-      const result = collection.findOrCreateBy({ name: 'John' });
-      expect(result).toEqual(existing);
-    });
-
-    it('should create new record if not found', () => {
-      const result = collection.findOrCreateBy({ name: 'John' }, { name: 'John', age: 30 });
-      expect(result).toEqual({ id: '1', name: 'John', age: 30 });
-    });
-  });
-
   describe('insert', () => {
     it('should insert record with generated ID', () => {
       const collection = new DbCollection({ name: 'users' });
