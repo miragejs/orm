@@ -1,152 +1,158 @@
 import { DbCollection } from '@src/db';
-import { BaseFactory, Factory, type FactoryDefinition } from '@src/factory';
-import { Model, type ModelAttrs } from '@src/model';
+import { Factory, type FactoryAttrs } from '@src/factory';
+import { defineModel, type ModelAttrs } from '@src/model';
 
 interface UserAttrs extends ModelAttrs {
-  createdAt?: string | null;
-  email: string;
   name: string;
-  role?: string;
+  email: string;
+  fullName?: string;
+  createdAt?: Date | string | null;
 }
 
-const UserModel = Model.define<UserAttrs>();
+const UserModel = defineModel<UserAttrs>();
 
 describe('Factory', () => {
   let collection: DbCollection<UserAttrs>;
-  let baseDefinition: FactoryDefinition<UserAttrs>;
-  let baseFactory: BaseFactory<UserAttrs>;
+  let attributes: FactoryAttrs<UserAttrs>;
+  let factory: Factory<UserAttrs>;
 
   beforeEach(() => {
     collection = new DbCollection<UserAttrs>({ name: 'users' });
-    baseDefinition = {
-      attributes: {
-        createdAt: null,
-        email: (id: string) => `user${id}@example.com`,
-        name: 'John',
-        role: 'user',
-      },
-      traits: {
-        admin: {
-          email: (id: string) => `admin${id}@example.com`,
-          role: 'admin',
-        },
-      },
+
+    attributes = {
+      createdAt: null,
+      email: (id: string) => `user${id}@example.com`,
+      fullName: (id: string) => `User ${id}`,
+      name: 'John',
     };
 
-    baseFactory = Factory.define(baseDefinition);
+    factory = new Factory<UserAttrs>(attributes);
   });
 
-  describe('define', () => {
-    it('should create a factory with the given definition', () => {
-      const attrs = baseFactory.build('1');
+  describe('build', () => {
+    it('should build model with static attributes', () => {
+      const attrs = factory.build('1');
       expect(attrs).toEqual({
         createdAt: null,
         email: 'user1@example.com',
+        fullName: 'User 1',
         id: '1',
         name: 'John',
-        role: 'user',
       });
     });
 
-    it('should create a factory with traits', () => {
-      const attrs = baseFactory.build('1', 'admin');
+    it('should handle function attributes', () => {
+      const attrs = factory.build('2');
+      expect(attrs.email).toBe('user2@example.com');
+      expect(attrs.fullName).toBe('User 2');
+    });
+
+    it('should apply traits', () => {
+      const traits = {
+        admin: {
+          email: (id: string) => `admin${id}@example.com`,
+          name: 'Admin User',
+        },
+      };
+
+      factory = new Factory<UserAttrs>(attributes, traits);
+      const attrs = factory.build('1', 'admin');
+
       expect(attrs).toEqual({
         createdAt: null,
         email: 'admin1@example.com',
+        fullName: 'User 1',
         id: '1',
-        name: 'John',
-        role: 'admin',
+        name: 'Admin User',
       });
     });
-  });
 
-  describe('extend', () => {
-    it('should extend a factory with new attributes', () => {
-      const extendedFactory = Factory.extend(baseFactory, {
-        attributes: {
-          email: (id: string) => `user${id}@example.com`,
-          name: 'John',
-          role: 'user',
+    it('should apply multiple traits in order', () => {
+      const traits = {
+        admin: {
+          name: 'Admin User',
         },
-      });
-
-      const attrs = extendedFactory.build('1');
-      expect(attrs).toEqual({
-        createdAt: null,
-        id: '1',
-        name: 'John',
-        email: 'user1@example.com',
-        role: 'user',
-      });
-    });
-
-    it('should extend a factory with new traits', () => {
-      const extendedFactory = Factory.extend(baseFactory, {
-        traits: {
-          moderator: {
-            role: 'moderator',
-            email: (id: string) => `mod${id}@example.com`,
-          },
+        verified: {
+          email: (id: string) => `verified${id}@example.com`,
         },
-      });
+      };
 
-      const attrs = extendedFactory.build('1', 'moderator');
-      expect(attrs).toEqual({
-        createdAt: null,
-        email: 'mod1@example.com',
-        id: '1',
-        name: 'John',
-        role: 'moderator',
-      });
+      factory = new Factory<UserAttrs>(attributes, traits);
+      const attrs = factory.build('1', 'admin', 'verified');
+
+      expect(attrs.name).toBe('Admin User');
+      expect(attrs.email).toBe('verified1@example.com');
     });
 
-    it('should override existing traits', () => {
-      const extendedFactory = Factory.extend(baseFactory, {
-        traits: {
-          admin: {
-            role: 'superadmin',
-            email: (id: string) => `superadmin${id}@example.com`,
-          },
+    it('should handle default values overriding traits', () => {
+      const traits = {
+        admin: {
+          name: 'Admin User',
         },
-      });
+      };
 
-      const attrs = extendedFactory.build('1', 'admin');
-      expect(attrs).toEqual({
-        createdAt: null,
-        email: 'superadmin1@example.com',
-        id: '1',
-        name: 'John',
-        role: 'superadmin',
-      });
+      factory = new Factory<UserAttrs>(attributes, traits);
+      const attrs = factory.build('1', 'admin', { name: 'Custom Name' });
+
+      expect(attrs.name).toBe('Custom Name');
     });
 
-    it('should extend with new afterCreate hook', () => {
+    it('should process afterCreate hooks', () => {
       let hookCalled = false;
-      const extendedFactory = Factory.extend(baseFactory, {
-        afterCreate(model: InstanceType<typeof UserModel>) {
-          hookCalled = true;
-          model.createdAt = new Date('2024-01-01').toISOString();
-        },
-      });
-      const attrs = extendedFactory.build('1');
+      const afterCreate = (model: InstanceType<typeof UserModel>) => {
+        hookCalled = true;
+        model.name = 'Modified Name';
+      };
+
+      factory = new Factory<UserAttrs>(attributes, {}, afterCreate);
+
+      const attrs = factory.build('1');
       const model = new UserModel({ name: 'User', attrs, collection });
-      extendedFactory.processAfterCreateHooks(model);
+
+      factory.processAfterCreateHooks(model);
+
+      expect(hookCalled).toBe(true);
+      expect(model.attrs.name).toBe('Modified Name');
+    });
+
+    it('should process trait afterCreate hooks', () => {
+      let hookCalled = false;
+      const traits = {
+        admin: {
+          name: 'Admin User',
+          afterCreate: (model: InstanceType<typeof UserModel>) => {
+            hookCalled = true;
+            model.createdAt = new Date('2024-01-01').toISOString();
+          },
+        },
+      };
+
+      factory = new Factory<UserAttrs>(attributes, traits);
+
+      const attrs = factory.build('1', 'admin');
+      const model = new UserModel({ name: 'User', attrs, collection });
+
+      factory.processAfterCreateHooks(model, 'admin');
 
       expect(hookCalled).toBe(true);
       expect(model.attrs.createdAt).toBe(new Date('2024-01-01').toISOString());
     });
 
-    it('should preserve original afterCreate hook if not overridden', () => {
-      const extendedFactory = Factory.extend(baseFactory, {
-        attributes: {
-          email: (id: string) => `user${id}@example.com`,
-          name: 'John',
-          role: 'user',
+    it('should handle circular dependencies in attributes', () => {
+      const circularAttrs: FactoryAttrs<UserAttrs> = {
+        name() {
+          const fullNameValue = this.fullName;
+          return `User ${fullNameValue}`;
         },
-      });
+        fullName() {
+          const nameValue = this.name;
+          return `User ${nameValue}`;
+        },
+        email: (id: string) => `user${id}@example.com`,
+      };
 
-      const attrs = extendedFactory.build('1');
-      expect(attrs.name).toBe('John');
+      factory = new Factory<UserAttrs>(circularAttrs);
+      expect(() => factory.build('1')).toThrow('[Mirage]: Circular dependency detected: name');
     });
   });
 });

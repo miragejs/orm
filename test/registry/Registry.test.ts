@@ -1,6 +1,6 @@
 import { IdentityManager } from '@src/db';
-import { BaseFactory } from '@src/factory';
-import { Model } from '@src/model';
+import { Factory } from '@src/factory';
+import { defineModel } from '@src/model';
 import { Registry } from '@src/registry';
 
 describe('Registry', () => {
@@ -11,7 +11,7 @@ describe('Registry', () => {
   });
 
   describe('models', () => {
-    const MockModel = Model.define<any>();
+    const MockModel = defineModel<any>();
 
     it('should register and get a model', () => {
       registry.models.set('User', MockModel);
@@ -51,7 +51,7 @@ describe('Registry', () => {
   });
 
   describe('factories', () => {
-    const mockFactory = {} as BaseFactory<any>;
+    const mockFactory = {} as Factory<any>;
 
     it('should register and get a factory', () => {
       registry.factories.set('User', mockFactory);
