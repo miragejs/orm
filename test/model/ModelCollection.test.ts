@@ -1,75 +1,77 @@
 import { DbCollection } from '@src/db';
-import { List, Model, ModelInstance, type ModelAttrs } from '@src/model';
+import { ModelCollection, defineModel, type ModelAttrs, type SavedModelInstance } from '@src/model';
 
 interface UserAttrs extends ModelAttrs<string> {
   email: string;
   name: string;
 }
 
-const UserModel = Model.define<UserAttrs>();
+const UserModel = defineModel<UserAttrs>();
 
-describe('List', () => {
+describe('ModelCollection', () => {
   let collection: DbCollection<UserAttrs>;
-  let list: List<UserAttrs>;
-  let user1: ModelInstance<UserAttrs>;
-  let user2: ModelInstance<UserAttrs>;
+  let modelCollection: ModelCollection<UserAttrs>;
+  let user1: SavedModelInstance<UserAttrs>;
+  let user2: SavedModelInstance<UserAttrs>;
 
   beforeEach(() => {
     collection = new DbCollection<UserAttrs>({
       name: 'users',
     });
+
     user1 = new UserModel({
       name: 'user',
       attrs: { name: 'John', email: 'john@example.com' },
       collection,
-    });
+    }).save();
     user2 = new UserModel({
       name: 'user',
       attrs: { name: 'Jane', email: 'jane@example.com' },
       collection,
-    });
-    list = new List<UserAttrs>({
-      modelName: 'user',
+    }).save();
+
+    modelCollection = new ModelCollection<UserAttrs>({
+      collectionName: 'users',
       models: [user1],
     });
   });
 
   describe('constructor', () => {
     it('should initialize with default values', () => {
-      expect(list.modelName).toBe('user');
-      expect(Array.from(list)).toStrictEqual([user1]);
-      expect(list.length).toBe(1);
+      expect(modelCollection.collectionName).toBe('users');
+      expect(Array.from(modelCollection)).toStrictEqual([user1]);
+      expect(modelCollection.length).toBe(1);
     });
   });
 
   describe('array methods', () => {
     it('should use native array methods', () => {
       // Test push
-      list.push(user2);
-      expect(Array.from(list)).toStrictEqual([user1, user2]);
+      modelCollection.push(user2);
+      expect(Array.from(modelCollection)).toStrictEqual([user1, user2]);
 
       // Test filter
-      const filtered = list.filter((model) => model.name === 'John');
+      const filtered = modelCollection.filter((model) => model.name === 'John');
       expect(Array.from(filtered)).toStrictEqual([user1]);
 
       // Test includes
-      expect(list.includes(user1)).toBe(true);
-      expect(list.includes(user2)).toBe(true);
+      expect(modelCollection.includes(user1)).toBe(true);
+      expect(modelCollection.includes(user2)).toBe(true);
 
       // Test slice
-      const sliced = list.slice(0, 1);
+      const sliced = modelCollection.slice(0, 1);
       expect(Array.from(sliced)).toStrictEqual([user1]);
 
       // Test sort
-      list.sort((a, b) => a.name.localeCompare(b.name));
-      expect(Array.from(list)).toStrictEqual([user2, user1]); // Jane comes before John
+      modelCollection.sort((a, b) => a.name.localeCompare(b.name));
+      expect(Array.from(modelCollection)).toStrictEqual([user2, user1]); // Jane comes before John
     });
   });
 
-  describe('list-specific methods', () => {
-    it('should add model to list', () => {
-      list.add(user2);
-      expect(Array.from(list)).toStrictEqual([user1, user2]);
+  describe('collection-specific methods', () => {
+    it('should add model to collection', () => {
+      modelCollection.add(user2);
+      expect(Array.from(modelCollection)).toStrictEqual([user1, user2]);
     });
 
     it('should destroy all models', () => {
@@ -79,27 +81,25 @@ describe('List', () => {
         destroyCalled = true;
         return originalDestroy.call(user1);
       };
-      list.destroy();
+      modelCollection.destroy();
       expect(destroyCalled).toBe(true);
-      expect(list.length).toBe(0);
+      expect(modelCollection.length).toBe(0);
     });
 
     it('should reload all models', () => {
-      user1.save(); // Ensure model is saved before reload
       const originalReload = user1.reload;
       let reloadCalled = false;
       user1.reload = function () {
         reloadCalled = true;
         return originalReload.call(this);
       };
-      list.reload();
+      modelCollection.reload();
       expect(reloadCalled).toBe(true);
     });
 
-    it('should remove model from list', () => {
-      user1.save(); // Ensure model is saved before removal
-      list.remove(user1);
-      expect(Array.from(list)).toStrictEqual([]);
+    it('should remove model from collection', () => {
+      modelCollection.remove(user1);
+      expect(Array.from(modelCollection)).toStrictEqual([]);
     });
 
     it('should save all models', () => {
@@ -109,21 +109,20 @@ describe('List', () => {
         saveCalled = true;
         return originalSave.call(this);
       };
-      list.save();
+      modelCollection.save();
       expect(saveCalled).toBe(true);
     });
 
     it('should update all models', () => {
-      user1.save(); // Ensure model is saved before update
       const originalUpdate = user1.update;
       let updateCalled = false;
       let updateArgs: any;
-      user1.update = function (attrs) {
+      user1.update = function (attrs: Partial<UserAttrs & { id: string }>) {
         updateCalled = true;
         updateArgs = attrs;
         return originalUpdate.call(this, attrs);
       };
-      list.update({ name: 'Updated' });
+      modelCollection.update({ name: 'Updated' });
       expect(updateCalled).toBe(true);
       expect(updateArgs).toEqual({ name: 'Updated' });
     });
@@ -131,8 +130,7 @@ describe('List', () => {
 
   describe('serialization', () => {
     it('should convert to string', () => {
-      user1.save(); // Ensure model is saved before string conversion
-      expect(list.toString()).toBe(`list:user(${user1.toString()})`);
+      expect(modelCollection.toString()).toBe(`collection:users(${user1.toString()})`);
     });
   });
 
@@ -143,7 +141,7 @@ describe('List', () => {
         userId: string;
       }
 
-      const CommentModel = Model.define<CommentAttrs>();
+      const CommentModel = defineModel<CommentAttrs>();
       const commentCollection = new DbCollection<CommentAttrs>({ name: 'comments' });
 
       const comment1 = new CommentModel({
@@ -158,16 +156,16 @@ describe('List', () => {
         collection: commentCollection,
       }).save();
 
-      const commentList = new List<CommentAttrs>({
-        modelName: 'comment',
+      const commentModelCollection = new ModelCollection<CommentAttrs>({
+        collectionName: 'comment',
         models: [comment1, comment2],
       });
 
-      expect(commentList.length).toBe(2);
-      expect(commentList[0].text).toBe('First comment');
-      expect(commentList[1].text).toBe('Second comment');
-      expect(typeof commentList[0].id).toBe('string');
-      expect(typeof commentList[1].id).toBe('string');
+      expect(commentModelCollection.length).toBe(2);
+      expect(commentModelCollection[0].text).toBe('First comment');
+      expect(commentModelCollection[1].text).toBe('Second comment');
+      expect(typeof commentModelCollection[0].id).toBe('string');
+      expect(typeof commentModelCollection[1].id).toBe('string');
     });
   });
 });

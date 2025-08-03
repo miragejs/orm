@@ -1,6 +1,5 @@
-export { default as BaseModel } from './BaseModel';
-export { default as List } from './List';
-export { default as Model } from './Model';
+export { default as Model, defineModel } from './Model';
+export { default as ModelCollection } from './ModelCollection';
 export type {
   ModelAttrs,
   ModelClass,
@@ -8,4 +7,5 @@ export type {
   ModelOptions,
   SavedModelAttrs,
   SavedModelInstance,
-} from './BaseModel';
+} from './Model';
+export type { ModelCollectionOptions } from './ModelCollection';
