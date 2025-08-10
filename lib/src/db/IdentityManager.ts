@@ -17,14 +17,14 @@ import { MirageError } from '../utils';
  * identityManager.get(); // => "3"
  * identityManager.reset(); // => "1"
  */
-export default class IdentityManager<T extends AllowedIdTypes = string> {
+export default class IdentityManager<T extends IdType = string> {
   private _counter: T;
   private _idGenerator: IdGenerator<T>;
   private _initialCounter: T;
   private _usedIds: Set<T>;
 
-  constructor(options: IdentityManagerOptions<T> = {}) {
-    this._initialCounter = options.initialCounter ?? ('1' as T);
+  constructor(options: IdentityManagerConfig<T>) {
+    this._initialCounter = options.initialCounter;
     this._counter = this._initialCounter;
     this._usedIds = options.initialUsedIds ? new Set<T>(options.initialUsedIds) : new Set<T>();
     this._idGenerator = options.idGenerator ?? this.getDefaultGenerator();
@@ -118,12 +118,54 @@ export default class IdentityManager<T extends AllowedIdTypes = string> {
   }
 }
 
+// -- Default Identity Managers -- //
+
+/**
+ * Default string identity manager class.
+ * Starts with "1" and generates sequential string IDs.
+ * @example
+ * const stringManager = new StringIdentityManager();
+ * stringManager.get(); // => "1"
+ * stringManager.fetch(); // => "1"
+ * stringManager.get(); // => "2"
+ */
+export class StringIdentityManager extends IdentityManager<string> {
+  constructor(
+    config?: Omit<IdentityManagerConfig<string>, 'initialCounter'> & { initialCounter?: string },
+  ) {
+    super({
+      initialCounter: '1',
+      ...config,
+    });
+  }
+}
+
+/**
+ * Default number identity manager class.
+ * Starts with 1 and generates sequential numeric IDs.
+ * @example
+ * const numberManager = new NumberIdentityManager();
+ * numberManager.get(); // => 1
+ * numberManager.fetch(); // => 1
+ * numberManager.get(); // => 2
+ */
+export class NumberIdentityManager extends IdentityManager<number> {
+  constructor(
+    config?: Omit<IdentityManagerConfig<number>, 'initialCounter'> & { initialCounter?: number },
+  ) {
+    super({
+      initialCounter: 1,
+      ...config,
+    });
+  }
+}
+
 // -- Types -- //
 
 /**
  * Type for allowed ID types
  */
-export type AllowedIdTypes = number | string;
+export type IdType = number | string;
 
 /**
  * Type for ID generator function that takes current ID and returns next ID
@@ -140,8 +182,8 @@ export type IdGenerator<T> = (currentId: T) => T;
  * @param initialUsedIds - A set of initial used IDs
  * @param idGenerator - Custom function to generate the next ID
  */
-export interface IdentityManagerOptions<T = string> {
-  initialCounter?: T;
+export interface IdentityManagerConfig<T = string> {
+  initialCounter: T;
   initialUsedIds?: T[];
   idGenerator?: IdGenerator<T>;
 }

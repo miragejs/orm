@@ -1,7 +1,7 @@
-export { default as DB } from './DB';
+export { default as DB, createDatabase, type DbConfig, type DbInstance } from './DB';
 export {
   default as DbCollection,
-  type DbCollectionOptions,
+  type DbCollectionConfig,
   type DbQuery,
   type DbRecord,
   type DbRecordInput,
@@ -9,7 +9,8 @@ export {
 } from './DbCollection';
 export {
   default as IdentityManager,
-  type AllowedIdTypes,
-  type IdentityManagerOptions,
+  StringIdentityManager,
+  NumberIdentityManager,
+  type IdType,
+  type IdentityManagerConfig,
 } from './IdentityManager';
-export { default as NumberIdentityManager } from './NumberIdentityManager';

@@ -1,9 +1,17 @@
-import { DbCollection, IdentityManager, NumberIdentityManager } from '@src/db';
+import { DbCollection, NumberIdentityManager, StringIdentityManager } from '@src/db';
+
+interface User {
+  id: string;
+  name: string;
+  email?: string;
+  age?: number;
+  active?: boolean;
+}
 
 describe('DbCollection', () => {
   describe('constructor', () => {
     it('should initialize with name', () => {
-      const collection = new DbCollection({ name: 'users' });
+      const collection = new DbCollection('users');
       expect(collection.name).toBe('users');
     });
 
@@ -12,7 +20,7 @@ describe('DbCollection', () => {
         { id: '1', name: 'John' },
         { id: '2', name: 'Jane' },
       ];
-      const collection = new DbCollection({ name: 'users', initialData });
+      const collection = new DbCollection('users', { initialData });
       expect(collection.size).toBe(2);
       expect(collection.find('1')).toEqual({ id: '1', name: 'John' });
     });
@@ -20,7 +28,7 @@ describe('DbCollection', () => {
 
   describe('size', () => {
     it('should return correct number of records', () => {
-      const collection = new DbCollection({ name: 'users' });
+      const collection = new DbCollection<User>('users');
       expect(collection.size).toBe(0);
       collection.insert({ name: 'John' });
       expect(collection.size).toBe(1);
@@ -29,7 +37,7 @@ describe('DbCollection', () => {
 
   describe('records', () => {
     it('should return all records', () => {
-      const collection = new DbCollection({ name: 'users' });
+      const collection = new DbCollection<User>('users');
       const record1 = collection.insert({ name: 'John' });
       const record2 = collection.insert({ name: 'Jane' });
       expect(collection.records).toEqual([record1, record2]);
@@ -38,22 +46,22 @@ describe('DbCollection', () => {
 
   describe('first', () => {
     it('should return first record', () => {
-      const collection = new DbCollection({ name: 'users' });
+      const collection = new DbCollection<User>('users');
       const record1 = collection.insert({ name: 'John' });
       expect(collection.first()).toEqual(record1);
     });
 
     it('should return null if collection is empty', () => {
-      const collection = new DbCollection({ name: 'users' });
+      const collection = new DbCollection<User>('users');
       expect(collection.first()).toBeNull();
     });
   });
 
   describe('find', () => {
-    let collection: DbCollection<{ name: string }>;
+    let collection: DbCollection<User>;
 
     beforeEach(() => {
-      collection = new DbCollection({ name: 'users' });
+      collection = new DbCollection<User>('users');
       collection.insert({ name: 'John' });
       collection.insert({ name: 'Jane' });
     });
@@ -75,10 +83,10 @@ describe('DbCollection', () => {
   });
 
   describe('findBy', () => {
-    let collection: DbCollection<{ age: number; name: string }>;
+    let collection: DbCollection<User>;
 
     beforeEach(() => {
-      collection = new DbCollection({ name: 'users' });
+      collection = new DbCollection<User>('users');
       collection.insert({ name: 'John', age: 30 });
       collection.insert({ name: 'Jane', age: 25 });
     });
@@ -101,10 +109,10 @@ describe('DbCollection', () => {
   });
 
   describe('where', () => {
-    let collection: DbCollection<{ age: number; name: string }>;
+    let collection: DbCollection<User>;
 
     beforeEach(() => {
-      collection = new DbCollection({ name: 'users' });
+      collection = new DbCollection<User>('users');
       collection.insert({ name: 'John', age: 30 });
       collection.insert({ name: 'Jane', age: 25 });
       collection.insert({ name: 'Bob', age: 30 });
@@ -135,14 +143,14 @@ describe('DbCollection', () => {
 
   describe('insert', () => {
     it('should insert record with generated ID', () => {
-      const collection = new DbCollection({ name: 'users' });
+      const collection = new DbCollection<User>('users');
       const record = collection.insert({ name: 'John' });
       expect(record).toEqual({ id: '1', name: 'John' });
       expect(collection.find('1')).toEqual(record);
     });
 
     it('should insert record with provided ID', () => {
-      const collection = new DbCollection({ name: 'users' });
+      const collection = new DbCollection<User>('users');
       const record = collection.insert({ id: '5', name: 'John' });
       expect(record).toEqual({ id: '5', name: 'John' });
       expect(collection.find('5')).toEqual(record);
@@ -151,7 +159,7 @@ describe('DbCollection', () => {
 
   describe('insertMany', () => {
     it('should insert multiple records', () => {
-      const collection = new DbCollection({ name: 'users' });
+      const collection = new DbCollection<User>('users');
       const records = collection.insertMany([{ name: 'John' }, { name: 'Jane' }]);
       expect(records).toHaveLength(2);
       expect(collection.size).toBe(2);
@@ -159,10 +167,10 @@ describe('DbCollection', () => {
   });
 
   describe('update', () => {
-    let collection: DbCollection<{ active?: boolean; age: number; name: string }>;
+    let collection: DbCollection<User>;
 
     beforeEach(() => {
-      collection = new DbCollection({ name: 'users' });
+      collection = new DbCollection<User>('users');
       collection.insert({ name: 'John', age: 30 });
       collection.insert({ name: 'Jane', age: 25 });
     });
@@ -190,10 +198,10 @@ describe('DbCollection', () => {
   });
 
   describe('remove', () => {
-    let collection: DbCollection<{ name: string }>;
+    let collection: DbCollection<User>;
 
     beforeEach(() => {
-      collection = new DbCollection({ name: 'users' });
+      collection = new DbCollection<User>('users');
       collection.insert({ name: 'John' });
       collection.insert({ name: 'Jane' });
     });
@@ -213,7 +221,7 @@ describe('DbCollection', () => {
 
   describe('clear', () => {
     it('should remove all records', () => {
-      const collection = new DbCollection({ name: 'users' });
+      const collection = new DbCollection<User>('users');
       collection.insert({ name: 'John' });
       collection.insert({ name: 'Jane' });
       collection.clear();
@@ -225,12 +233,7 @@ describe('DbCollection', () => {
 describe('DbCollection Types', () => {
   describe('Default string ID behavior', () => {
     it('should use string IDs by default', () => {
-      interface UserAttrs {
-        name: string;
-        email: string;
-      }
-
-      const users = new DbCollection<UserAttrs>({ name: 'users' });
+      const users = new DbCollection<User>('users');
 
       // Insert a user with auto-generated string ID
       const user = users.insert({ name: 'John', email: 'john@example.com' });
@@ -247,12 +250,12 @@ describe('DbCollection Types', () => {
   describe('Number ID behavior when explicitly typed', () => {
     it('should work with number IDs when explicitly typed', () => {
       interface CommentAttrs {
+        id: number;
         text: string;
         userId: number;
       }
 
-      const comments = new DbCollection<CommentAttrs, number>({
-        name: 'comments',
+      const comments = new DbCollection<CommentAttrs>('comments', {
         identityManager: new NumberIdentityManager(),
       });
       const comment = comments.insert({ text: 'Great post!', userId: 1 });
@@ -265,18 +268,15 @@ describe('DbCollection Types', () => {
 
   describe('Custom string ID behavior', () => {
     it('should work with custom string IDs', () => {
-      interface UserAttrs {
-        name: string;
-        email: string;
-      }
-
-      const users = new DbCollection<UserAttrs, string>({
-        name: 'users',
-        identityManager: new IdentityManager<string>(),
+      const users = new DbCollection<User>('users', {
+        identityManager: new StringIdentityManager({
+          initialCounter: 'user-1',
+          idGenerator: (currentId) => `user-${Number(currentId) + 1}`,
+        }),
       });
 
       // Insert a user with custom string ID
-      const user = users.insert({ id: 'user-1', name: 'John', email: 'john@example.com' });
+      const user = users.insert({ name: 'John', email: 'john@example.com' });
       expect(user.id).toBe('user-1');
       expect(user.name).toBe('John');
       expect(user.email).toBe('john@example.com');
