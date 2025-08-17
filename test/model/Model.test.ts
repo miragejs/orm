@@ -1,19 +1,21 @@
 import { DbCollection, NumberIdentityManager } from '@src/db';
-import { Model, defineModel, type ModelAttrs } from '@src/model';
+import { Model, defineModel, defineToken } from '@src/model';
 
-interface UserAttrs extends ModelAttrs {
+interface UserModel {
+  id: string;
   email: string;
   name: string;
 }
 
+const UserToken = defineToken<UserModel>('user', 'users');
+
 describe('Model', () => {
-  let model: Model<UserAttrs>;
-  let collection: DbCollection<UserAttrs>;
+  let model: Model<typeof UserToken>;
+  let collection: DbCollection<UserModel>;
 
   beforeEach(() => {
-    collection = new DbCollection<UserAttrs>({ name: 'users' });
-    model = new Model<UserAttrs>({
-      name: 'user',
+    collection = new DbCollection<UserModel>('users');
+    model = new Model(UserToken, {
       attrs: {
         email: 'john@example.com',
         name: 'John',
@@ -87,17 +89,18 @@ describe('Model', () => {
 
   describe('default string ID behavior', () => {
     it('should use string IDs by default', () => {
-      interface CommentAttrs extends ModelAttrs {
+      interface CommentModel {
+        id: string;
         text: string;
         userId: string;
       }
 
-      const CommentModel = defineModel<CommentAttrs>();
-      const commentCollection = new DbCollection<CommentAttrs>({ name: 'comments' });
-      const comment = new CommentModel({
+      const CommentToken = defineToken<CommentModel>('comment', 'comments');
+      const CommentModelClass = defineModel(CommentToken);
+      const commentCollection = new DbCollection<CommentModel>('comments');
+      const comment = new CommentModelClass({
         attrs: { text: 'Great post!', userId: '1' },
         collection: commentCollection,
-        name: 'comment',
       });
 
       comment.save();
@@ -109,18 +112,22 @@ describe('Model', () => {
 
   describe('explicit number ID behavior', () => {
     it('should work with number IDs when explicitly typed', () => {
-      interface PostAttrs extends ModelAttrs<number> {
+      interface PostModel {
+        id: number;
         title: string;
         content: string;
       }
 
-      const PostModel = defineModel<PostAttrs>();
-      const postCollection = new DbCollection<PostAttrs, number>({
-        name: 'posts',
+      const PostToken = defineToken<
+        PostModel,
+        PostModel,
+        { modelName: 'post'; collectionName: 'posts' }
+      >('post', 'posts');
+      const PostModelClass = defineModel(PostToken);
+      const postCollection = new DbCollection<PostModel>('posts', {
         identityManager: new NumberIdentityManager(),
       });
-      const post = new PostModel({
-        name: 'post',
+      const post = new PostModelClass({
         attrs: { title: 'My Post', content: 'Content here' },
         collection: postCollection,
       });
@@ -134,15 +141,16 @@ describe('Model', () => {
 
   describe('defineModel factory function', () => {
     it('should create a model class with attribute accessors', () => {
-      interface TestAttrs extends ModelAttrs {
+      interface TestModel {
+        id: string;
         value: string;
       }
 
-      const TestModel = defineModel<TestAttrs>();
-      const testCollection = new DbCollection<TestAttrs>({ name: 'tests' });
+      const TestToken = defineToken<TestModel>('test', 'tests');
+      const TestModelClass = defineModel(TestToken);
+      const testCollection = new DbCollection<TestModel>('tests');
 
-      const test = new TestModel({
-        name: 'Test',
+      const test = new TestModelClass({
         attrs: { value: 'test value' },
         collection: testCollection,
       });

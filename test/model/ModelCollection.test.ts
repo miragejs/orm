@@ -1,39 +1,34 @@
 import { DbCollection } from '@src/db';
-import { ModelCollection, defineModel, type ModelAttrs, type SavedModelInstance } from '@src/model';
+import { ModelCollection, defineModel, defineToken, type SavedModelInstance } from '@src/model';
 
-interface UserAttrs extends ModelAttrs<string> {
+interface UserModel {
+  id: string;
   email: string;
   name: string;
 }
 
-const UserModel = defineModel<UserAttrs>();
+const UserToken = defineToken<UserModel>('user', 'users');
+const UserModelClass = defineModel(UserToken);
 
 describe('ModelCollection', () => {
-  let collection: DbCollection<UserAttrs>;
-  let modelCollection: ModelCollection<UserAttrs>;
-  let user1: SavedModelInstance<UserAttrs>;
-  let user2: SavedModelInstance<UserAttrs>;
+  let collection: DbCollection<UserModel>;
+  let modelCollection: ModelCollection<typeof UserToken>;
+  let user1: SavedModelInstance<typeof UserToken>;
+  let user2: SavedModelInstance<typeof UserToken>;
 
   beforeEach(() => {
-    collection = new DbCollection<UserAttrs>({
-      name: 'users',
-    });
+    collection = new DbCollection<UserModel>('users');
 
-    user1 = new UserModel({
-      name: 'user',
+    user1 = new UserModelClass({
       attrs: { name: 'John', email: 'john@example.com' },
       collection,
     }).save();
-    user2 = new UserModel({
-      name: 'user',
+    user2 = new UserModelClass({
       attrs: { name: 'Jane', email: 'jane@example.com' },
       collection,
     }).save();
 
-    modelCollection = new ModelCollection<UserAttrs>({
-      collectionName: 'users',
-      models: [user1],
-    });
+    modelCollection = new ModelCollection(UserToken, [user1]);
   });
 
   describe('constructor', () => {
@@ -45,26 +40,27 @@ describe('ModelCollection', () => {
   });
 
   describe('array methods', () => {
-    it('should use native array methods', () => {
-      // Test push
-      modelCollection.push(user2);
+    it('should use array-like methods', () => {
+      // Test add (replacement for push)
+      modelCollection.add(user2);
       expect(Array.from(modelCollection)).toStrictEqual([user1, user2]);
 
-      // Test filter
+      // Test filter (returns new collection)
       const filtered = modelCollection.filter((model) => model.name === 'John');
       expect(Array.from(filtered)).toStrictEqual([user1]);
 
-      // Test includes
+      // Test includes (uses toString comparison)
       expect(modelCollection.includes(user1)).toBe(true);
       expect(modelCollection.includes(user2)).toBe(true);
 
-      // Test slice
+      // Test slice (returns new collection)
       const sliced = modelCollection.slice(0, 1);
       expect(Array.from(sliced)).toStrictEqual([user1]);
 
-      // Test sort
-      modelCollection.sort((a, b) => a.name.localeCompare(b.name));
-      expect(Array.from(modelCollection)).toStrictEqual([user2, user1]); // Jane comes before John
+      // Test sort (returns new collection, doesn't mutate original)
+      const sorted = modelCollection.sort((a, b) => a.name.localeCompare(b.name));
+      expect(Array.from(sorted)).toStrictEqual([user2, user1]); // Jane comes before John
+      expect(Array.from(modelCollection)).toStrictEqual([user1, user2]); // Original unchanged
     });
   });
 
@@ -117,7 +113,7 @@ describe('ModelCollection', () => {
       const originalUpdate = user1.update;
       let updateCalled = false;
       let updateArgs: any;
-      user1.update = function (attrs: Partial<UserAttrs & { id: string }>) {
+      user1.update = function (attrs: Partial<UserModel>) {
         updateCalled = true;
         updateArgs = attrs;
         return originalUpdate.call(this, attrs);
@@ -136,36 +132,33 @@ describe('ModelCollection', () => {
 
   describe('default string ID behavior', () => {
     it('should work with string IDs by default', () => {
-      interface CommentAttrs extends ModelAttrs {
+      interface CommentModel {
+        id: string;
         text: string;
         userId: string;
       }
 
-      const CommentModel = defineModel<CommentAttrs>();
-      const commentCollection = new DbCollection<CommentAttrs>({ name: 'comments' });
+      const CommentToken = defineToken<CommentModel>('comment', 'comments');
+      const CommentModelClass = defineModel(CommentToken);
+      const commentCollection = new DbCollection<CommentModel>('comments');
 
-      const comment1 = new CommentModel({
-        name: 'Comment',
+      const comment1 = new CommentModelClass({
         attrs: { text: 'First comment', userId: '1' },
         collection: commentCollection,
       }).save();
 
-      const comment2 = new CommentModel({
-        name: 'Comment',
+      const comment2 = new CommentModelClass({
         attrs: { text: 'Second comment', userId: '2' },
         collection: commentCollection,
       }).save();
 
-      const commentModelCollection = new ModelCollection<CommentAttrs>({
-        collectionName: 'comment',
-        models: [comment1, comment2],
-      });
+      const commentModelCollection = new ModelCollection(CommentToken, [comment1, comment2]);
 
       expect(commentModelCollection.length).toBe(2);
-      expect(commentModelCollection[0].text).toBe('First comment');
-      expect(commentModelCollection[1].text).toBe('Second comment');
-      expect(typeof commentModelCollection[0].id).toBe('string');
-      expect(typeof commentModelCollection[1].id).toBe('string');
+      expect(commentModelCollection.get(0)?.text).toBe('First comment');
+      expect(commentModelCollection.get(1)?.text).toBe('Second comment');
+      expect(typeof commentModelCollection.get(0)?.id).toBe('string');
+      expect(typeof commentModelCollection.get(1)?.id).toBe('string');
     });
   });
 });

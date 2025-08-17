@@ -1,37 +1,49 @@
-import { DbCollection, DbRecordInput, type AllowedIdTypes } from '@src/db';
+import { DbCollection, DbRecordInput } from '@src/db';
 import type { Serializer } from '@src/serializer';
 
+import type {
+  InferTokenModel,
+  ModelAttrs,
+  ModelClass,
+  ModelInstance,
+  ModelConfig,
+  ModelToken,
+  PartialModelAttrs,
+  SavedModelInstance,
+} from './types';
+
 /**
- * Factory function to create a model class with attribute accessors
- * @template TAttrs - The type of the model's attributes
+ * Define a model class with attribute accessors
+ * @template TToken - The model token
+ * @param token - The model token to define
  * @returns A model class that can be instantiated with 'new'
  */
-export function defineModel<
-  TAttrs extends ModelAttrs<AllowedIdTypes> = ModelAttrs<string>,
->(): ModelClass<TAttrs> {
-  return class extends Model<TAttrs> {
-    constructor(options: ModelOptions<TAttrs>) {
-      super(options);
+export function defineModel<TToken extends ModelToken>(token: TToken): ModelClass<TToken> {
+  return class extends Model<TToken> {
+    constructor(config: ModelConfig<TToken>) {
+      super(token, config);
     }
-  } as unknown as ModelClass<TAttrs>;
+  } as unknown as ModelClass<TToken>;
 }
 
 /**
  * Base model class that handles core functionality
- * @template TAttrs - The type of the model's attributes
+ * @template TToken - The model token
  */
-export default class Model<TAttrs extends ModelAttrs<AllowedIdTypes> = ModelAttrs<string>> {
+export default class Model<TToken extends ModelToken> {
   public readonly modelName: string;
-  protected _attrs: TAttrs;
-  protected _collection: DbCollection<TAttrs, NonNullable<TAttrs['id']>>;
+
+  protected _attrs: ModelAttrs<TToken>;
+  protected _dbCollection: DbCollection<InferTokenModel<TToken>>;
   protected _status: 'new' | 'saved';
-  protected _serializer?: Serializer<TAttrs>;
+  protected _serializer?: Serializer<any>;
 
-  constructor({ attrs, collection, name, serializer }: ModelOptions<TAttrs>) {
-    this.modelName = name;
+  constructor(token: TToken, { attrs, collection, serializer }: ModelConfig<TToken>) {
+    this.modelName = token.modelName;
 
-    this._attrs = { ...attrs, id: attrs?.id ?? null } as TAttrs;
-    this._collection = collection;
+    this._attrs = { ...attrs, id: attrs?.id ?? null } as ModelAttrs<TToken>;
+    this._dbCollection =
+      collection ?? new DbCollection<InferTokenModel<TToken>>(token.collectionName);
     this._status = this._attrs.id ? this._verifyStatus(this._attrs.id) : 'new';
     this._serializer = serializer;
 
@@ -44,7 +56,7 @@ export default class Model<TAttrs extends ModelAttrs<AllowedIdTypes> = ModelAttr
    * Getter for the protected id attribute
    * @returns The id of the model
    */
-  get id(): TAttrs['id'] {
+  get id(): InferTokenModel<TToken>['id'] | null {
     return this._attrs.id;
   }
 
@@ -52,7 +64,7 @@ export default class Model<TAttrs extends ModelAttrs<AllowedIdTypes> = ModelAttr
    * Getter for the model attributes
    * @returns A copy of the model attributes
    */
-  get attrs(): TAttrs {
+  get attrs(): ModelAttrs<TToken> {
     return { ...this._attrs };
   }
 
@@ -62,47 +74,49 @@ export default class Model<TAttrs extends ModelAttrs<AllowedIdTypes> = ModelAttr
    * Destroy the model from the database
    * @returns The model with new instance type
    */
-  destroy(): ModelInstance<TAttrs> {
+  destroy(): ModelInstance<TToken> {
     if (this.isSaved() && this.id) {
-      this._collection.remove(this.id as NonNullable<TAttrs['id']>);
-      this._attrs = { ...this._attrs, id: null } as TAttrs;
+      this._dbCollection.remove(this.id as InferTokenModel<TToken>['id']);
+      this._attrs = { ...this._attrs, id: null } as ModelAttrs<TToken>;
       this._status = 'new';
     }
 
-    return this as unknown as ModelInstance<TAttrs>;
+    return this as unknown as ModelInstance<TToken>;
   }
 
   /**
    * Reload the model from the database
    * @returns The model with saved instance type
    */
-  reload(): SavedModelInstance<TAttrs> {
+  reload(): SavedModelInstance<TToken> {
     if (this.isSaved() && this.id) {
-      this._attrs = this._collection.find(this.id as NonNullable<TAttrs['id']>) as TAttrs;
+      this._attrs = this._dbCollection.find(
+        this.id as InferTokenModel<TToken>['id'],
+      ) as ModelAttrs<TToken>;
     }
 
-    return this as unknown as SavedModelInstance<TAttrs>;
+    return this as unknown as SavedModelInstance<TToken>;
   }
 
   /**
    * Save the model to the database
    * @returns The model with saved instance type
    */
-  save(): SavedModelInstance<TAttrs> {
+  save(): SavedModelInstance<TToken> {
     if (this.isNew() || !this.id) {
-      const modelRecord = this._collection.insert(
-        this._attrs as DbRecordInput<TAttrs, NonNullable<TAttrs['id']>>,
+      const modelRecord = this._dbCollection.insert(
+        this._attrs as DbRecordInput<InferTokenModel<TToken>>,
       );
-      this._attrs = modelRecord;
+      this._attrs = modelRecord as ModelAttrs<TToken>;
       this._status = 'saved';
     } else {
-      this._collection.update(
-        this.id as NonNullable<TAttrs['id']>,
-        this._attrs as DbRecordInput<TAttrs, NonNullable<TAttrs['id']>>,
+      this._dbCollection.update(
+        this.id as InferTokenModel<TToken>['id'],
+        this._attrs as DbRecordInput<InferTokenModel<TToken>>,
       );
     }
 
-    return this as unknown as SavedModelInstance<TAttrs>;
+    return this as unknown as SavedModelInstance<TToken>;
   }
 
   /**
@@ -110,7 +124,7 @@ export default class Model<TAttrs extends ModelAttrs<AllowedIdTypes> = ModelAttr
    * @param attrs - The attributes to update
    * @returns The model with saved instance type
    */
-  update(attrs: Partial<TAttrs>): SavedModelInstance<TAttrs> {
+  update(attrs: PartialModelAttrs<TToken>): SavedModelInstance<TToken> {
     Object.assign(this._attrs, attrs);
     return this.save();
   }
@@ -175,8 +189,8 @@ export default class Model<TAttrs extends ModelAttrs<AllowedIdTypes> = ModelAttr
           get: () => {
             return this._attrs[key];
           },
-          set: (value: TAttrs[keyof TAttrs]) => {
-            this._attrs[key as keyof TAttrs] = value;
+          set: (value: ModelAttrs<TToken>[keyof ModelAttrs<TToken>]) => {
+            this._attrs[key as keyof ModelAttrs<TToken>] = value;
           },
           enumerable: true,
           configurable: true,
@@ -192,65 +206,7 @@ export default class Model<TAttrs extends ModelAttrs<AllowedIdTypes> = ModelAttr
    * @param id - The id of the model
    * @returns The status of the model
    */
-  private _verifyStatus(id: NonNullable<TAttrs['id']>): 'new' | 'saved' {
-    return this._collection.find(id as NonNullable<TAttrs['id']>) ? 'saved' : 'new';
+  private _verifyStatus(id: InferTokenModel<TToken>['id']): 'new' | 'saved' {
+    return this._dbCollection.find(id) ? 'saved' : 'new';
   }
 }
-
-// -- TYPES --
-
-/**
- * Type for model attributes
- * @template TId - The type of the model's id (defaults to string)
- * @param attrs.id - The id of the model (optional for new models, required for saved models)
- */
-export type ModelAttrs<TId = string> = {
-  id?: TId | null;
-  [key: string]: any;
-};
-
-/**
- * Type for saved model attributes (with required ID)
- * @template TAttrs - The base attributes type
- * @template TId - The ID type
- */
-export type SavedModelAttrs<TAttrs, TId extends AllowedIdTypes> = Omit<TAttrs, 'id'> & { id: TId };
-
-/**
- * Options for creating a model
- * @template TAttrs - The type of the model's attributes
- * @param options.attrs - The attributes for the model
- * @param options.collection - The collection to use for the model
- * @param options.name - The name of the model
- * @param options.serializer - The serializer to use for serialization
- */
-export interface ModelOptions<TAttrs extends ModelAttrs<AllowedIdTypes>> {
-  attrs?: TAttrs;
-  collection: DbCollection<TAttrs, NonNullable<TAttrs['id']>>;
-  name: string;
-  serializer?: Serializer<TAttrs>;
-}
-
-/**
- * Type for model instance with accessors for the attributes
- * @template TAttrs - The type of the model's attributes
- */
-export type ModelInstance<TAttrs extends ModelAttrs<AllowedIdTypes>> = Model<TAttrs> & {
-  [K in keyof TAttrs]: TAttrs[K];
-};
-
-/**
- * Type for saved model instance (with required ID)
- * @template TAttrs - The base attributes type
- */
-export type SavedModelInstance<TAttrs extends ModelAttrs<AllowedIdTypes>> = ModelInstance<
-  TAttrs & { id: NonNullable<TAttrs['id']> }
->;
-
-/**
- * Type for model class with attribute accessors
- * @template TAttrs - The type of the model's attributes
- */
-export type ModelClass<TAttrs extends ModelAttrs<AllowedIdTypes>> = {
-  new (options: ModelOptions<TAttrs>): ModelInstance<TAttrs>;
-};
