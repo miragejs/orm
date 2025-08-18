@@ -9,11 +9,5 @@
       "require": "./dist/index.js",
       "import": "./dist/index.mjs"
     }
-  },
-  "dependencies": {
-    "inflected": "^2.1.0"
-  },
-  "devDependencies": {
-    "@types/inflected": "^2.1.3"
   }
 }
