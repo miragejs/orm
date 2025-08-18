@@ -1,2 +1,2 @@
-export { default as Factory, defineFactory, extendFactory } from './Factory';
-export type { FactoryAttrs, FactoryDefinition, FactoryInstance, TraitDefinition } from './Factory';
+export { default as Factory, createFactory, extendFactory } from './Factory';
+export type * from './types';

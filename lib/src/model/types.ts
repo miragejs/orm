@@ -1,5 +1,4 @@
 import type { DbCollection, IdType } from '@src/db';
-import type { Serializer } from '@src/serializer';
 
 // -- BASE TYPES --
 
@@ -40,6 +39,7 @@ export interface ModelToken<
 // -- INFERENCE TYPES --
 
 export type InferTokenModel<T> = T extends ModelToken<infer M, any, any> ? M : never;
+export type InferTokenId<T> = InferTokenModel<T>['id'];
 export type InferTokenSerialized<T> = T extends ModelToken<any, infer S, any> ? S : never;
 export type InferTokenMeta<T> = T extends ModelToken<any, any, infer Meta> ? Meta : never;
 export type InferTokenModelName<T> = InferTokenMeta<T>['modelName'];
@@ -88,12 +88,10 @@ export type SavedModelAttrs<TToken extends ModelToken> = InferTokenModel<TToken>
  * @template TToken - The model token
  * @param config.attrs - The attributes for the model
  * @param config.collection - The collection to use for the model
- * @param config.serializer - The serializer to use for serialization
  */
 export interface ModelConfig<TToken extends ModelToken> {
   attrs?: PartialModelAttrs<TToken>;
   collection?: DbCollection<InferTokenModel<TToken>>;
-  serializer?: Serializer<any>;
 }
 
 /**
