@@ -1,5 +1,4 @@
 import { DbCollection, DbRecordInput } from '@src/db';
-import type { Serializer } from '@src/serializer';
 
 import type {
   InferTokenModel,
@@ -36,16 +35,14 @@ export default class Model<TToken extends ModelToken> {
   protected _attrs: ModelAttrs<TToken>;
   protected _dbCollection: DbCollection<InferTokenModel<TToken>>;
   protected _status: 'new' | 'saved';
-  protected _serializer?: Serializer<any>;
 
-  constructor(token: TToken, { attrs, collection, serializer }: ModelConfig<TToken>) {
+  constructor(token: TToken, { attrs, collection }: ModelConfig<TToken>) {
     this.modelName = token.modelName;
 
     this._attrs = { ...attrs, id: attrs?.id ?? null } as ModelAttrs<TToken>;
     this._dbCollection =
       collection ?? new DbCollection<InferTokenModel<TToken>>(token.collectionName);
     this._status = this._attrs.id ? this._verifyStatus(this._attrs.id) : 'new';
-    this._serializer = serializer;
 
     this.initAttributeAccessors();
   }
@@ -154,9 +151,6 @@ export default class Model<TToken extends ModelToken> {
    * @returns The serialized model using the configured serializer or raw attributes
    */
   toJSON(): any {
-    if (this._serializer) {
-      return this._serializer.serialize(this as any);
-    }
     return { ...this._attrs };
   }
 

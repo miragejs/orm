@@ -1,20 +1,20 @@
 import { DbCollection, NumberIdentityManager } from '@src/db';
 import { Model, defineModel, defineToken } from '@src/model';
 
-interface UserModel {
+interface UserAttrs {
   id: string;
   email: string;
   name: string;
 }
 
-const UserToken = defineToken<UserModel>('user', 'users');
+const UserToken = defineToken<UserAttrs>('user', 'users');
 
 describe('Model', () => {
+  let collection: DbCollection<UserAttrs>;
   let model: Model<typeof UserToken>;
-  let collection: DbCollection<UserModel>;
 
   beforeEach(() => {
-    collection = new DbCollection<UserModel>('users');
+    collection = new DbCollection<UserAttrs>('users');
     model = new Model(UserToken, {
       attrs: {
         email: 'john@example.com',
