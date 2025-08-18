@@ -16,3 +16,4 @@ coverage
 # IDEs
 .vscode
 .idea
+.cursor
