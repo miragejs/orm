@@ -27,7 +27,7 @@ export interface ModelMeta {
  * @template TMeta - The metadata type containing model and collection names
  */
 export interface ModelToken<
-  TModel extends BaseModelAttrs<IdType> = BaseModelAttrs<string>,
+  TModel extends { id: any } = BaseModelAttrs<string>,
   _TSerialized = TModel,
   TMeta extends ModelMeta = ModelMeta,
 > {
@@ -51,12 +51,12 @@ export type InferTokenCollectionName<T> = InferTokenMeta<T>['collectionName'];
 declare class Model<TToken extends ModelToken> {
   readonly modelName: string;
   readonly id: InferTokenModel<TToken>['id'] | null;
-  readonly attrs: ModelAttrs<TToken>;
+  readonly attrs: NewModelAttrs<TToken>;
 
-  destroy(): ModelInstance<TToken>;
-  reload(): SavedModelInstance<TToken>;
-  save(): SavedModelInstance<TToken>;
-  update(attrs: PartialModelAttrs<TToken>): SavedModelInstance<TToken>;
+  destroy(): NewModelInstance<TToken>;
+  reload(): ModelInstance<TToken>;
+  save(): ModelInstance<TToken>;
+  update(attrs: PartialModelAttrs<TToken>): ModelInstance<TToken>;
   isNew(): boolean;
   isSaved(): boolean;
   toJSON(): any;
@@ -64,10 +64,16 @@ declare class Model<TToken extends ModelToken> {
 }
 
 /**
- * Type for model attributes based on ModelToken but allowing null id for new models
+ * Type for full model attributes (wrapper around InferTokenModel for consistency)
  * @template TToken - The model token
  */
-export type ModelAttrs<TToken extends ModelToken> = Omit<InferTokenModel<TToken>, 'id'> & {
+export type ModelAttrs<TToken extends ModelToken> = InferTokenModel<TToken>;
+
+/**
+ * Type for new model attributes (allowing null id for unsaved models)
+ * @template TToken - The model token
+ */
+export type NewModelAttrs<TToken extends ModelToken> = Omit<InferTokenModel<TToken>, 'id'> & {
   id: InferTokenModel<TToken>['id'] | null;
 };
 
@@ -75,13 +81,9 @@ export type ModelAttrs<TToken extends ModelToken> = Omit<InferTokenModel<TToken>
  * Type for partial model attributes (all fields optional except id which can be undefined)
  * @template TToken - The model token
  */
-export type PartialModelAttrs<TToken extends ModelToken> = Partial<Omit<ModelAttrs<TToken>, 'id'>>;
-
-/**
- * Type for saved model attributes (with required ID)
- * @template TToken - The model token
- */
-export type SavedModelAttrs<TToken extends ModelToken> = InferTokenModel<TToken>;
+export type PartialModelAttrs<TToken extends ModelToken> = Partial<
+  Omit<NewModelAttrs<TToken>, 'id'>
+>;
 
 /**
  * Configuration for creating a model
@@ -95,18 +97,20 @@ export interface ModelConfig<TToken extends ModelToken> {
 }
 
 /**
- * Type for new model instance with accessors for the attributes
+ * Type for new model instance with accessors for the attributes (nullable id)
+ * @template TToken - The model token
+ */
+export type NewModelInstance<TToken extends ModelToken> = Model<TToken> & {
+  [K in keyof NewModelAttrs<TToken>]: NewModelAttrs<TToken>[K];
+};
+
+/**
+ * Type for model instance with accessors for the attributes (required ID)
  * @template TToken - The model token
  */
 export type ModelInstance<TToken extends ModelToken> = Model<TToken> & {
   [K in keyof ModelAttrs<TToken>]: ModelAttrs<TToken>[K];
-};
-
-/**
- * Type for saved model instance (with required ID)
- * @template TToken - The model token
- */
-export type SavedModelInstance<TToken extends ModelToken> = ModelInstance<TToken> & {
+} & {
   id: InferTokenModel<TToken>['id'];
 };
 
@@ -115,5 +119,5 @@ export type SavedModelInstance<TToken extends ModelToken> = ModelInstance<TToken
  * @template TToken - The model token
  */
 export type ModelClass<TToken extends ModelToken> = {
-  new (config: ModelConfig<TToken>): ModelInstance<TToken>;
+  new (config: ModelConfig<TToken>): NewModelInstance<TToken>;
 };

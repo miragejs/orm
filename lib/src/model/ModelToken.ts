@@ -9,7 +9,7 @@ import type { BaseModelAttrs, ModelMeta, ModelToken } from './types';
  * @returns The model token
  */
 export function defineToken<
-  TModel extends BaseModelAttrs<IdType> = BaseModelAttrs<string>,
+  TModel extends { id: any } = BaseModelAttrs<string>,
   TSerialized = TModel,
   TMeta extends ModelMeta = ModelMeta,
 >(

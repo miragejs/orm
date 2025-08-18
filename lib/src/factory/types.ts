@@ -1,4 +1,4 @@
-import type { ModelToken, ModelAttrs, SavedModelAttrs, InferTokenModel } from '@src/model';
+import type { ModelToken, NewModelAttrs, ModelAttrs, ModelInstance } from '@src/model';
 
 export type TraitMap<TToken extends ModelToken> = Record<string, TraitDefinition<TToken>>;
 export type TraitName<TTraits extends TraitMap<any>> = Extract<keyof TTraits, string>;
@@ -13,28 +13,21 @@ declare class Factory<
   readonly collectionName: string;
   readonly attributes: FactoryAttrs<TToken>;
   readonly traits: TTraits;
-  readonly afterCreate?: (model: SavedModelAttrs<TToken>) => void;
+  readonly afterCreate?: (model: ModelInstance<TToken>) => void;
 }
 
 export type FactoryAttrs<TToken extends ModelToken> = Partial<{
-  [K in Exclude<keyof ModelAttrs<TToken>, 'id'>]:
-    | ModelAttrs<TToken>[K]
+  [K in Exclude<keyof NewModelAttrs<TToken>, 'id'>]:
+    | NewModelAttrs<TToken>[K]
     | ((
-        this: Record<keyof ModelAttrs<TToken>, any>,
-        modelId: NonNullable<InferTokenModel<TToken>['id']>,
-      ) => ModelAttrs<TToken>[K]);
+        this: Record<keyof NewModelAttrs<TToken>, any>,
+        modelId: NonNullable<ModelAttrs<TToken>['id']>,
+      ) => NewModelAttrs<TToken>[K]);
 }>;
 
 export type TraitDefinition<TToken extends ModelToken> = Partial<FactoryAttrs<TToken>> & {
-  afterCreate?: (model: SavedModelAttrs<TToken>) => void;
+  afterCreate?: (model: ModelInstance<TToken>) => void;
 };
-
-/**
- * Extract trait names from a factory instance
- * @template TFactory - The factory instance type
- */
-export type ExtractTraitNames<TFactory> =
-  TFactory extends Factory<any, infer TTraits> ? TraitName<TTraits> : never;
 
 /**
  * Configuration for creating a factory
@@ -50,7 +43,7 @@ export interface FactoryConfig<
 > {
   attributes: FactoryAttrs<TToken>;
   traits?: TTraits;
-  afterCreate?: (model: SavedModelAttrs<TToken>) => void;
+  afterCreate?: (model: ModelInstance<TToken>) => void;
 }
 
 /**
@@ -64,7 +57,7 @@ export type FactoryDefinition<
 > = {
   attributes?: Partial<FactoryAttrs<TToken>>;
   traits?: TTraits;
-  afterCreate?: (model: SavedModelAttrs<TToken>) => void;
+  afterCreate?: (model: ModelInstance<TToken>) => void;
 };
 
 export type FactoryInstance<

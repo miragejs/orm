@@ -1,7 +1,6 @@
-import { Factory, createFactory, extendFactory, type FactoryDefinition } from '@src/factory';
-import { defineModel, defineToken, type ModelAttrs } from '@src/model';
+import { Factory, createFactory, extendFactory } from '@src/factory';
+import { defineModel, defineToken } from '@src/model';
 
-// Define the UserAttrs interface
 interface UserAttrs {
   id: string;
   createdAt?: string | null;
@@ -10,8 +9,7 @@ interface UserAttrs {
   role?: string;
 }
 
-// Create token for User model
-const UserToken = defineToken<UserAttrs>('User', 'users');
+const UserToken = defineToken<UserAttrs>('user', 'users');
 const UserModel = defineModel(UserToken);
 
 describe('Factory', () => {
@@ -120,6 +118,7 @@ describe('Factory', () => {
 
     it('should extend with new afterCreate hook', () => {
       let hookCalled = false;
+
       const extendedFactory = extendFactory(factory, {
         afterCreate(model) {
           hookCalled = true;
@@ -127,7 +126,8 @@ describe('Factory', () => {
         },
       });
       const attrs = extendedFactory.build('1');
-      const model = new UserModel({ attrs });
+      const model = new UserModel({ attrs }).save();
+
       extendedFactory.processAfterCreateHooks(model);
 
       expect(hookCalled).toBe(true);

@@ -1,14 +1,14 @@
 import { DbCollection, DbRecordInput } from '@src/db';
 
 import type {
-  InferTokenModel,
   ModelAttrs,
   ModelClass,
-  ModelInstance,
   ModelConfig,
+  ModelInstance,
   ModelToken,
+  NewModelAttrs,
+  NewModelInstance,
   PartialModelAttrs,
-  SavedModelInstance,
 } from './types';
 
 /**
@@ -32,16 +32,15 @@ export function defineModel<TToken extends ModelToken>(token: TToken): ModelClas
 export default class Model<TToken extends ModelToken> {
   public readonly modelName: string;
 
-  protected _attrs: ModelAttrs<TToken>;
-  protected _dbCollection: DbCollection<InferTokenModel<TToken>>;
+  protected _attrs: NewModelAttrs<TToken>;
+  protected _dbCollection: DbCollection<ModelAttrs<TToken>>;
   protected _status: 'new' | 'saved';
 
   constructor(token: TToken, { attrs, collection }: ModelConfig<TToken>) {
     this.modelName = token.modelName;
 
-    this._attrs = { ...attrs, id: attrs?.id ?? null } as ModelAttrs<TToken>;
-    this._dbCollection =
-      collection ?? new DbCollection<InferTokenModel<TToken>>(token.collectionName);
+    this._attrs = { ...attrs, id: attrs?.id ?? null } as NewModelAttrs<TToken>;
+    this._dbCollection = collection ?? new DbCollection<ModelAttrs<TToken>>(token.collectionName);
     this._status = this._attrs.id ? this._verifyStatus(this._attrs.id) : 'new';
 
     this.initAttributeAccessors();
@@ -53,7 +52,7 @@ export default class Model<TToken extends ModelToken> {
    * Getter for the protected id attribute
    * @returns The id of the model
    */
-  get id(): InferTokenModel<TToken>['id'] | null {
+  get id(): ModelAttrs<TToken>['id'] | null {
     return this._attrs.id;
   }
 
@@ -61,7 +60,7 @@ export default class Model<TToken extends ModelToken> {
    * Getter for the model attributes
    * @returns A copy of the model attributes
    */
-  get attrs(): ModelAttrs<TToken> {
+  get attrs(): NewModelAttrs<TToken> {
     return { ...this._attrs };
   }
 
@@ -71,49 +70,49 @@ export default class Model<TToken extends ModelToken> {
    * Destroy the model from the database
    * @returns The model with new instance type
    */
-  destroy(): ModelInstance<TToken> {
+  destroy(): NewModelInstance<TToken> {
     if (this.isSaved() && this.id) {
-      this._dbCollection.remove(this.id as InferTokenModel<TToken>['id']);
-      this._attrs = { ...this._attrs, id: null } as ModelAttrs<TToken>;
+      this._dbCollection.remove(this.id as ModelAttrs<TToken>['id']);
+      this._attrs = { ...this._attrs, id: null } as NewModelAttrs<TToken>;
       this._status = 'new';
     }
 
-    return this as unknown as ModelInstance<TToken>;
+    return this as unknown as NewModelInstance<TToken>;
   }
 
   /**
    * Reload the model from the database
    * @returns The model with saved instance type
    */
-  reload(): SavedModelInstance<TToken> {
+  reload(): ModelInstance<TToken> {
     if (this.isSaved() && this.id) {
       this._attrs = this._dbCollection.find(
-        this.id as InferTokenModel<TToken>['id'],
-      ) as ModelAttrs<TToken>;
+        this.id as ModelAttrs<TToken>['id'],
+      ) as NewModelAttrs<TToken>;
     }
 
-    return this as unknown as SavedModelInstance<TToken>;
+    return this as unknown as ModelInstance<TToken>;
   }
 
   /**
    * Save the model to the database
    * @returns The model with saved instance type
    */
-  save(): SavedModelInstance<TToken> {
+  save(): ModelInstance<TToken> {
     if (this.isNew() || !this.id) {
       const modelRecord = this._dbCollection.insert(
-        this._attrs as DbRecordInput<InferTokenModel<TToken>>,
+        this._attrs as DbRecordInput<ModelAttrs<TToken>>,
       );
-      this._attrs = modelRecord as ModelAttrs<TToken>;
+      this._attrs = modelRecord as NewModelAttrs<TToken>;
       this._status = 'saved';
     } else {
       this._dbCollection.update(
-        this.id as InferTokenModel<TToken>['id'],
-        this._attrs as DbRecordInput<InferTokenModel<TToken>>,
+        this.id as ModelAttrs<TToken>['id'],
+        this._attrs as DbRecordInput<ModelAttrs<TToken>>,
       );
     }
 
-    return this as unknown as SavedModelInstance<TToken>;
+    return this as unknown as ModelInstance<TToken>;
   }
 
   /**
@@ -121,7 +120,7 @@ export default class Model<TToken extends ModelToken> {
    * @param attrs - The attributes to update
    * @returns The model with saved instance type
    */
-  update(attrs: PartialModelAttrs<TToken>): SavedModelInstance<TToken> {
+  update(attrs: PartialModelAttrs<TToken>): ModelInstance<TToken> {
     Object.assign(this._attrs, attrs);
     return this.save();
   }
@@ -183,8 +182,8 @@ export default class Model<TToken extends ModelToken> {
           get: () => {
             return this._attrs[key];
           },
-          set: (value: ModelAttrs<TToken>[keyof ModelAttrs<TToken>]) => {
-            this._attrs[key as keyof ModelAttrs<TToken>] = value;
+          set: (value: NewModelAttrs<TToken>[keyof NewModelAttrs<TToken>]) => {
+            this._attrs[key as keyof NewModelAttrs<TToken>] = value;
           },
           enumerable: true,
           configurable: true,
@@ -200,7 +199,7 @@ export default class Model<TToken extends ModelToken> {
    * @param id - The id of the model
    * @returns The status of the model
    */
-  private _verifyStatus(id: InferTokenModel<TToken>['id']): 'new' | 'saved' {
+  private _verifyStatus(id: ModelAttrs<TToken>['id']): 'new' | 'saved' {
     return this._dbCollection.find(id) ? 'saved' : 'new';
   }
 }

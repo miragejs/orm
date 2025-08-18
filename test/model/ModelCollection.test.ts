@@ -1,5 +1,5 @@
 import { DbCollection } from '@src/db';
-import { ModelCollection, defineModel, defineToken, type SavedModelInstance } from '@src/model';
+import { ModelCollection, defineModel, defineToken, type ModelInstance } from '@src/model';
 
 interface UserModel {
   id: string;
@@ -13,8 +13,8 @@ const UserModelClass = defineModel(UserToken);
 describe('ModelCollection', () => {
   let collection: DbCollection<UserModel>;
   let modelCollection: ModelCollection<typeof UserToken>;
-  let user1: SavedModelInstance<typeof UserToken>;
-  let user2: SavedModelInstance<typeof UserToken>;
+  let user1: ModelInstance<typeof UserToken>;
+  let user2: ModelInstance<typeof UserToken>;
 
   beforeEach(() => {
     collection = new DbCollection<UserModel>('users');

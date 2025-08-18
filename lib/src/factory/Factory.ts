@@ -1,11 +1,10 @@
 import type {
-  ModelToken,
-  ModelAttrs,
-  InferTokenModel,
-  SavedModelInstance,
-  SavedModelAttrs,
-  PartialModelAttrs,
   InferTokenId,
+  ModelAttrs,
+  ModelInstance,
+  ModelToken,
+  NewModelAttrs,
+  PartialModelAttrs,
 } from '@src/model';
 import { MirageError } from '@src/utils';
 
@@ -72,13 +71,13 @@ export default class Factory<
   public readonly token: TToken;
   public readonly attributes: FactoryAttrs<TToken>;
   public readonly traits: TTraits;
-  public readonly afterCreate?: (model: SavedModelAttrs<TToken>) => void;
+  public readonly afterCreate?: (model: ModelInstance<TToken>) => void;
 
   constructor(
     token: TToken,
     attributes: FactoryAttrs<TToken>,
     traits: TTraits,
-    afterCreate?: (model: SavedModelAttrs<TToken>) => void,
+    afterCreate?: (model: ModelInstance<TToken>) => void,
   ) {
     this.token = token;
     this.attributes = attributes;
@@ -93,9 +92,9 @@ export default class Factory<
    * @returns The built model.
    */
   build(
-    modelId: NonNullable<InferTokenModel<TToken>['id']>,
+    modelId: NonNullable<ModelAttrs<TToken>['id']>,
     ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TToken>)[]
-  ): SavedModelAttrs<TToken> {
+  ): ModelAttrs<TToken> {
     const traitNames: string[] = [];
     const defaults: PartialModelAttrs<TToken> = {};
 
@@ -119,7 +118,7 @@ export default class Factory<
       ...mergedAttributes,
       ...defaults,
       id: modelId,
-    } as SavedModelAttrs<TToken>;
+    } as ModelAttrs<TToken>;
   }
 
   /**
@@ -129,11 +128,11 @@ export default class Factory<
    * @returns The processed model.
    */
   processAfterCreateHooks(
-    model: SavedModelInstance<TToken>,
+    model: ModelInstance<TToken>,
     ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TToken>)[]
-  ): SavedModelInstance<TToken> {
+  ): ModelInstance<TToken> {
     const traitNames: string[] = traitsAndDefaults.filter((arg) => typeof arg === 'string');
-    const hooks: ((model: SavedModelAttrs<TToken>) => void)[] = [];
+    const hooks: ((model: ModelInstance<TToken>) => void)[] = [];
 
     if (this.afterCreate) {
       hooks.push(this.afterCreate);
@@ -147,10 +146,9 @@ export default class Factory<
       }
     });
 
-    // Convert model instance to attributes for hooks
-    const modelAttrs = model.attrs as SavedModelAttrs<TToken>;
+    // Execute hooks with the model instance
     hooks.forEach((hook) => {
-      hook(modelAttrs);
+      hook(model);
     });
 
     return model;
@@ -227,7 +225,7 @@ export default class Factory<
   private sortAttrs(
     attrs: FactoryAttrs<TToken>,
     modelId?: NonNullable<InferTokenId<TToken>>,
-  ): (keyof ModelAttrs<TToken>)[] {
+  ): (keyof NewModelAttrs<TToken>)[] {
     const visited = new Set<string>();
     const processing = new Set<string>();
 
@@ -240,7 +238,7 @@ export default class Factory<
       }
 
       processing.add(key);
-      const value = attrs[key as Exclude<keyof ModelAttrs<TToken>, 'id'>];
+      const value = attrs[key as Exclude<keyof NewModelAttrs<TToken>, 'id'>];
 
       if (typeof value === 'function') {
         // Create a proxy to track property access
@@ -266,6 +264,6 @@ export default class Factory<
     Object.keys(attrs).forEach(detectCycle);
 
     // Return keys in their original order
-    return Object.keys(attrs) as (keyof ModelAttrs<TToken>)[];
+    return Object.keys(attrs) as (keyof NewModelAttrs<TToken>)[];
   }
 }

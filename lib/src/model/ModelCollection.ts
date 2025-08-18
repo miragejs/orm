@@ -1,4 +1,4 @@
-import type { ModelInstance, ModelToken, PartialModelAttrs, SavedModelInstance } from './types';
+import type { ModelInstance, ModelToken, PartialModelAttrs, NewModelInstance } from './types';
 
 /**
  * Base model collection with core functionality
@@ -7,9 +7,9 @@ import type { ModelInstance, ModelToken, PartialModelAttrs, SavedModelInstance }
 abstract class BaseModelCollection<TToken extends ModelToken> {
   public readonly token: TToken;
   public readonly collectionName: string;
-  public models: Array<SavedModelInstance<TToken>>;
+  public models: Array<ModelInstance<TToken>>;
 
-  constructor(token: TToken, models: Array<SavedModelInstance<TToken>> = []) {
+  constructor(token: TToken, models: Array<ModelInstance<TToken>> = []) {
     this.token = token;
     this.collectionName = token.collectionName;
     this.models = [...models];
@@ -36,7 +36,7 @@ abstract class BaseModelCollection<TToken extends ModelToken> {
    * @param index - The index
    * @returns The model at the index or undefined if not found
    */
-  get(index: number): SavedModelInstance<TToken> | undefined {
+  get(index: number): ModelInstance<TToken> | undefined {
     return this.models[index];
   }
 
@@ -44,7 +44,7 @@ abstract class BaseModelCollection<TToken extends ModelToken> {
    * Convert the collection to a plain array
    * @returns Array of models
    */
-  toArray(): SavedModelInstance<TToken>[] {
+  toArray(): ModelInstance<TToken>[] {
     return [...this.models];
   }
 
@@ -69,7 +69,7 @@ abstract class BaseModelCollection<TToken extends ModelToken> {
    * Make the collection iterable
    * @returns An iterator for the models
    */
-  [Symbol.iterator](): Iterator<SavedModelInstance<TToken>> {
+  [Symbol.iterator](): Iterator<ModelInstance<TToken>> {
     return this.models[Symbol.iterator]();
   }
 }
@@ -86,9 +86,9 @@ class ArrayModelCollection<TToken extends ModelToken> extends BaseModelCollectio
    */
   filter(
     predicate: (
-      value: SavedModelInstance<TToken>,
+      value: ModelInstance<TToken>,
       index: number,
-      array: SavedModelInstance<TToken>[],
+      array: ModelInstance<TToken>[],
     ) => boolean,
   ): this {
     const filtered = this.models.filter(predicate);
@@ -102,11 +102,11 @@ class ArrayModelCollection<TToken extends ModelToken> extends BaseModelCollectio
    */
   find(
     predicate: (
-      value: SavedModelInstance<TToken>,
+      value: ModelInstance<TToken>,
       index: number,
-      array: SavedModelInstance<TToken>[],
+      array: ModelInstance<TToken>[],
     ) => boolean,
-  ): SavedModelInstance<TToken> | undefined {
+  ): ModelInstance<TToken> | undefined {
     return this.models.find(predicate);
   }
 
@@ -115,7 +115,7 @@ class ArrayModelCollection<TToken extends ModelToken> extends BaseModelCollectio
    * @param compareFn - The compare function
    * @returns A new sorted collection
    */
-  sort(compareFn?: (a: SavedModelInstance<TToken>, b: SavedModelInstance<TToken>) => number): this {
+  sort(compareFn?: (a: ModelInstance<TToken>, b: ModelInstance<TToken>) => number): this {
     const sorted = [...this.models].sort(compareFn);
     return new (this.constructor as any)(this.token, sorted);
   }
@@ -125,7 +125,7 @@ class ArrayModelCollection<TToken extends ModelToken> extends BaseModelCollectio
    * @param model - The model to check for
    * @returns True if the collection includes the model
    */
-  includes(model: SavedModelInstance<TToken>): boolean {
+  includes(model: ModelInstance<TToken>): boolean {
     return this.models.some((m) => m.toString() === model.toString());
   }
 
@@ -146,13 +146,9 @@ class ArrayModelCollection<TToken extends ModelToken> extends BaseModelCollectio
    * @returns A new concatenated collection
    */
   concat(
-    ...items: (
-      | SavedModelInstance<TToken>
-      | BaseModelCollection<TToken>
-      | SavedModelInstance<TToken>[]
-    )[]
+    ...items: (ModelInstance<TToken> | BaseModelCollection<TToken> | ModelInstance<TToken>[])[]
   ): this {
-    const flattened: SavedModelInstance<TToken>[] = [];
+    const flattened: ModelInstance<TToken>[] = [];
 
     for (const item of items) {
       if (item instanceof BaseModelCollection) {
@@ -175,10 +171,10 @@ class ArrayModelCollection<TToken extends ModelToken> extends BaseModelCollectio
    */
   forEach(
     callbackFn: (
-      value: SavedModelInstance<TToken>,
+      value: ModelInstance<TToken>,
       index: number,
-      array: SavedModelInstance<TToken>[],
-    ) => SavedModelInstance<TToken>,
+      array: ModelInstance<TToken>[],
+    ) => ModelInstance<TToken>,
   ): this {
     this.models.map((model, index, array) => callbackFn(model, index, array));
     return this;
@@ -195,7 +191,7 @@ class MutableModelCollection<TToken extends ModelToken> extends ArrayModelCollec
    * @param model - The model to add
    * @returns The collection
    */
-  add(model: ModelInstance<TToken> | SavedModelInstance<TToken>): this {
+  add(model: NewModelInstance<TToken> | ModelInstance<TToken>): this {
     this.models.push(model.save());
     return this;
   }
@@ -224,7 +220,7 @@ class MutableModelCollection<TToken extends ModelToken> extends ArrayModelCollec
    * @param model - The model to remove
    * @returns The collection
    */
-  remove(model: SavedModelInstance<TToken>): this {
+  remove(model: ModelInstance<TToken>): this {
     const index = this.models.findIndex((m) => m.toString() === model.toString());
     if (index !== -1) {
       this.models.splice(index, 1);
