@@ -74,13 +74,41 @@ abstract class BaseSchemaCollection<
   }
 
   /**
+   * Get a model by index.
+   * @param index - The index of the model to get.
+   * @returns The model instance or undefined if not found.
+   */
+  get(index: number): ModelInstance<TToken> | undefined {
+    const record = this.dbCollection.get(index);
+    return record ? this._createModelFromRecord(record) : undefined;
+  }
+
+  /**
    * Returns all model instances in the collection.
    * @returns All model instances in the collection.
    */
   all(): ModelCollection<TToken> {
-    const records = this.dbCollection.records;
+    const records = this.dbCollection.all();
     const models = records.map((record) => this._createModelFromRecord(record));
     return new ModelCollection(this.token, models);
+  }
+
+  /**
+   * Returns the first model in the collection.
+   * @returns The first model in the collection or null if the collection is empty.
+   */
+  first(): ModelInstance<TToken> | null {
+    const record = this.dbCollection.first();
+    return record ? this._createModelFromRecord(record) : null;
+  }
+
+  /**
+   * Returns the last model in the collection.
+   * @returns The last model in the collection or null if the collection is empty.
+   */
+  last(): ModelInstance<TToken> | null {
+    const record = this.dbCollection.last();
+    return record ? this._createModelFromRecord(record) : null;
   }
 
   /**
@@ -89,8 +117,7 @@ abstract class BaseSchemaCollection<
    * @returns The model instance or null if not found.
    */
   find(id: ModelAttrs<TToken>['id']): ModelInstance<TToken> | null {
-    if (id == null) return null;
-    const record = this.dbCollection.find(id as NonNullable<ModelAttrs<TToken>['id']>);
+    const record = this.dbCollection.find(id);
     return record ? this._createModelFromRecord(record) : null;
   }
 
@@ -100,47 +127,8 @@ abstract class BaseSchemaCollection<
    * @returns The model instance or null if not found.
    */
   findBy(query: DbRecordInput<ModelAttrs<TToken>>): ModelInstance<TToken> | null {
-    const record = this.dbCollection.findBy(query);
+    const record = this.dbCollection.find(query);
     return record ? this._createModelFromRecord(record) : null;
-  }
-
-  /**
-   * Returns the first model in the collection.
-   * @returns The first model in the collection or null if the collection is empty.
-   */
-  first(): ModelInstance<TToken> | null {
-    const records = this.dbCollection.records;
-    return records.length > 0 ? this._createModelFromRecord(records[0]) : null;
-  }
-
-  /**
-   * Returns the last model in the collection.
-   * @returns The last model in the collection or null if the collection is empty.
-   */
-  last(): ModelInstance<TToken> | null {
-    const records = this.dbCollection.records;
-    return records.length > 0 ? this._createModelFromRecord(records[records.length - 1]) : null;
-  }
-
-  /**
-   * Creates a new model instance (not persisted in the database).
-   * @param attrs - The attributes to create the model with. All required attributes must be provided.
-   * @returns The new model instance.
-   */
-  new(attrs: PartialModelAttrs<TToken>): NewModelInstance<TToken> {
-    return new this.modelClass({
-      attrs: attrs,
-      collection: this.dbCollection,
-    });
-  }
-
-  /**
-   * Removes a model from the collection.
-   * @param id - The id of the model to remove.
-   */
-  remove(id: NonNullable<ModelAttrs<TToken>['id']>): void {
-    if (id == null) return;
-    this.dbCollection.remove(id);
   }
 
   /**
@@ -163,7 +151,7 @@ abstract class BaseSchemaCollection<
   where(
     query: DbRecordInput<ModelAttrs<TToken>> | ((model: ModelInstance<TToken>) => boolean),
   ): ModelCollection<TToken> {
-    const records = this.dbCollection.records;
+    const records = this.dbCollection.all();
 
     if (typeof query === 'function') {
       const matchingRecords = records.filter((record) =>
@@ -172,10 +160,26 @@ abstract class BaseSchemaCollection<
       const models = matchingRecords.map((record) => this._createModelFromRecord(record));
       return new ModelCollection(this.token, models);
     } else {
-      const matchingRecords = this.dbCollection.where(query);
+      const matchingRecords = this.dbCollection.findMany(query);
       const models = matchingRecords.map((record) => this._createModelFromRecord(record));
       return new ModelCollection(this.token, models);
     }
+  }
+
+  /**
+   * Deletes a model from the collection.
+   * @param id - The id of the model to delete.
+   */
+  delete(id: ModelAttrs<TToken>['id']): void {
+    this.dbCollection.delete(id);
+  }
+
+  /**
+   * Deletes multiple models from the collection.
+   * @param ids - The ids of the models to delete.
+   */
+  deleteMany(ids: ModelAttrs<TToken>['id'][]): void {
+    this.dbCollection.deleteMany(ids);
   }
 
   /**
@@ -239,6 +243,15 @@ export default class SchemaCollection<
   ): ModelCollection<TToken> {
     const models = Array.from({ length: count }, () => this.create(...traitsAndDefaults));
     return new ModelCollection(this.token, models);
+  }
+
+  /**
+   * Creates a new model instance (not persisted in the database).
+   * @param attrs - The attributes to create the model with. All required attributes must be provided.
+   * @returns The new model instance.
+   */
+  new(attrs: PartialModelAttrs<TToken>): NewModelInstance<TToken> {
+    return new this.modelClass({ attrs: attrs, collection: this.dbCollection });
   }
 
   /**

@@ -38,251 +38,29 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
   }
 
   /**
-   * All records in the collection.
-   * @returns An array of all records in the collection.
-   */
-  get records(): TRecord[] {
-    return Array.from(this._records.values());
-  }
-
-  // -- QUERY METHODS --
-
-  /**
    * Returns all records in the collection
    * @returns An array of all records in the collection.
    */
   all(): TRecord[] {
-    return this.records;
-  }
-
-  /**
-   * Finds a record by its ID.
-   * @param id - The ID of the record to find.
-   * @returns The record with the specified ID, or `undefined` if not found.
-   */
-  find(id: TRecord['id']): TRecord | undefined;
-
-  /**
-   * Finds multiple records by their IDs.
-   * @param ids - The IDs of the records to find.
-   * @returns An array of records that match the IDs.
-   */
-  find(...ids: TRecord['id'][]): TRecord[];
-
-  /**
-   * Finds all records that match the given query.
-   * @param query - The query to match against.
-   * @returns An array of records that match the query.
-   */
-  find(query: DbQuery<TRecord>): TRecord[];
-
-  /**
-   * Finds a record or multiple records based on the query provided.
-   * @param queryOrId - The query or ID to match against.
-   * @param additionalIds - Additional IDs to find.
-   * @returns The record or records that match the query or ID.
-   */
-  find(
-    queryOrId: TRecord['id'] | DbQuery<TRecord>,
-    ...additionalIds: TRecord['id'][]
-  ): TRecord | TRecord[] | null {
-    // Handle multiple ID lookup
-    if (
-      (typeof queryOrId === 'string' || typeof queryOrId === 'number') &&
-      additionalIds.length > 0
-    ) {
-      const allIds = [queryOrId as TRecord['id'], ...additionalIds];
-      return allIds.map((id) => this._records.get(id)).filter(Boolean) as TRecord[];
-    }
-
-    // Handle single ID-based lookup
-    if (typeof queryOrId === 'string' || typeof queryOrId === 'number') {
-      return this._records.get(queryOrId as TRecord['id']) ?? null;
-    }
-
-    // Handle query-based lookup
-    const query = queryOrId as DbQuery<TRecord>;
-    if (typeof query === 'function') {
-      return this.records.filter(query);
-    }
-
-    // Handle object-based query
-    return this.records.filter((record) => this._matchesQuery(record, query));
-  }
-
-  /**
-   * Finds the first record that matches the given query.
-   * @param query - The query to match against.
-   * @returns The first record that matches the query, or `null` if not found.
-   */
-  findBy(query: DbQuery<TRecord>): TRecord | null {
-    if (typeof query === 'function') {
-      return this.records.find(query) ?? null;
-    }
-
-    return this.records.find((record) => this._matchesQuery(record, query)) ?? null;
-  }
-
-  /**
-   * Finds all records that match the given query.
-   * @param query - The query to match against.
-   * @returns An array of records that match the query.
-   */
-  where(query: DbQuery<TRecord>): TRecord[] {
-    if (typeof query === 'function') {
-      return this.records.filter(query);
-    }
-
-    return this.records.filter((record) => this._matchesQuery(record, query));
-  }
-
-  // -- MUTATION METHODS --
-
-  /**
-   * Inserts a new record into the collection.
-   * @param data - The record data to insert.
-   * @returns The inserted record.
-   */
-  insert(data: DbRecordInput<TRecord>): TRecord {
-    const record = this._prepareRecord(data);
-    this._records.set(record.id, record);
-    return record;
-  }
-
-  /**
-   * Inserts multiple records into the collection.
-   * @param data - An array of record data to insert.
-   * @returns An array of the inserted records.
-   */
-  insertMany(data: DbRecordInput<TRecord>[]): TRecord[] {
-    return data.map((record) => this.insert(record));
-  }
-
-  /**
-   * Updates a record by ID.
-   * @param id - The record ID to update.
-   * @param data - The new data to update the record with.
-   * @returns The updated record, or `undefined` if the record was not found.
-   */
-  update(id: TRecord['id'], data: DbRecordInput<TRecord>): TRecord | undefined;
-
-  /**
-   * Updates a record using partial data (must include ID).
-   * @param data - The partial record data including ID to update.
-   * @returns The updated record, or `undefined` if the record was not found.
-   */
-  update(data: DbRecordInput<TRecord> & { id: TRecord['id'] }): TRecord | undefined;
-
-  /**
-   * Updates records by query.
-   * @param query - The query to find records to update.
-   * @param data - The new data to update the records with.
-   * @returns Array of updated records.
-   */
-  update(query: DbRecordInput<TRecord>, data: DbRecordInput<TRecord>): TRecord[];
-
-  /**
-   * Updates all records with the provided data.
-   * @param data - The data to update all records with.
-   * @returns Array of all updated records.
-   */
-  update(data: DbRecordInput<TRecord>): TRecord[];
-
-  /**
-   * Updates a record or multiple records by ID or query.
-   * @param updateInputOrData - The ID or query to update.
-   * @param newData - The new data to update the record with.
-   * @returns The updated record or records, or `undefined` if the record was not found.
-   */
-  update(
-    updateInputOrData: TRecord['id'] | DbRecordInput<TRecord>,
-    newData?: DbRecordInput<TRecord>,
-  ): TRecord | TRecord[] | undefined {
-    // Case 1: update by ID with data
-    if (typeof updateInputOrData === 'string' || typeof updateInputOrData === 'number') {
-      if (!newData) {
-        throw new Error('New data is required when updating by ID');
-      }
-      const id = updateInputOrData as TRecord['id'];
-      const existingRecord = this._records.get(id);
-      if (!existingRecord) {
-        return undefined;
-      }
-      const updatedRecord = { ...existingRecord, ...newData } as TRecord;
-      this._records.set(id, updatedRecord);
-      return updatedRecord;
-    }
-
-    const updateObj = updateInputOrData as DbRecordInput<TRecord>;
-
-    // Case 2: update with object that has ID
-    if (updateObj.id && !newData) {
-      const id = updateObj.id;
-      const existingRecord = this._records.get(id);
-      if (!existingRecord) {
-        return undefined;
-      }
-      const updatedRecord = { ...existingRecord, ...updateObj } as TRecord;
-      this._records.set(id, updatedRecord);
-      return updatedRecord;
-    }
-
-    // Case 3: update by query with data
-    if (newData) {
-      const matchingRecords = this.where(updateObj);
-      const updatedRecords = matchingRecords.map((record) => {
-        const updated = { ...record, ...newData } as TRecord;
-        this._records.set(record.id, updated);
-        return updated;
-      });
-      return updatedRecords;
-    }
-
-    // Case 4: update all records with data
-    const allRecords = this.records;
-    const updatedRecords = allRecords.map((record) => {
-      const updated = { ...record, ...updateObj } as TRecord;
-      this._records.set(record.id, updated);
-      return updated;
-    });
-    return updatedRecords;
-  }
-
-  /**
-   * Removes a record from the collection by its ID.
-   * @param id - The ID of the record to remove.
-   * @returns `true` if the record was removed, `false` if it was not found.
-   */
-  remove(id: TRecord['id']): boolean {
-    return this._records.delete(id);
-  }
-
-  /**
-   * Removes all records that match the given query.
-   * @param query - The query to match against.
-   * @returns The number of records that were removed.
-   */
-  removeWhere(query: DbQuery<TRecord>): number {
-    const recordsToRemove = this.where(query);
-    recordsToRemove.forEach((record) => this.remove(record.id));
-    return recordsToRemove.length;
-  }
-
-  /**
-   * Removes all records from the collection.
-   */
-  clear(): void {
-    this._records.clear();
-    this.identityManager.reset();
+    return Array.from(this._records.values());
   }
 
   // -- UTILITY METHODS --
 
   /**
+   * Gets a record by its index position in the collection.
+   * @param index - The index of the record to get.
+   * @returns The record at the specified index, or `undefined` if out of bounds.
+   */
+  get(index: number): TRecord | undefined {
+    return this.all()[index];
+  }
+
+  /**
    * Returns the number of records in the collection.
    * @returns The number of records in the collection.
    */
-  get length(): number {
+  get size(): number {
     return this._records.size;
   }
 
@@ -308,7 +86,7 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
    * @returns The first record in the collection, or `undefined` if the collection is empty.
    */
   first(): TRecord | undefined {
-    return this.records[0];
+    return this.all()[0];
   }
 
   /**
@@ -316,8 +94,137 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
    * @returns The last record in the collection, or `undefined` if the collection is empty.
    */
   last(): TRecord | undefined {
-    const records = this.records;
+    const records = this.all();
     return records[records.length - 1];
+  }
+
+  // -- QUERY METHODS --
+
+  /**
+   * Finds the first record that matches the given ID or query.
+   * @param idOrQuery - The ID or query to match against.
+   * @returns The first record that matches, or `null` if not found.
+   */
+  find(idOrQuery: TRecord['id'] | DbQuery<TRecord>): TRecord | null {
+    // Handle ID-based lookup
+    if (typeof idOrQuery === 'string' || typeof idOrQuery === 'number') {
+      return this._records.get(idOrQuery as TRecord['id']) ?? null;
+    }
+
+    // Handle query-based lookup
+    const query = idOrQuery as DbQuery<TRecord>;
+    if (typeof query === 'function') {
+      return this.all().find(query) ?? null;
+    }
+
+    // Handle object-based query
+    return this.all().find((record) => this._matchesQuery(record, query)) ?? null;
+  }
+
+  /**
+   * Finds multiple records by their IDs or query.
+   * @param idsOrQuery - Array of IDs or a query to match against.
+   * @returns An array of records that match the IDs or query.
+   */
+  findMany(idsOrQuery: TRecord['id'][] | DbQuery<TRecord>): TRecord[] {
+    // Handle multiple ID lookup
+    if (Array.isArray(idsOrQuery)) {
+      return idsOrQuery.map((id) => this._records.get(id)).filter(Boolean) as TRecord[];
+    }
+
+    // Handle query-based lookup
+    const query = idsOrQuery as DbQuery<TRecord>;
+    if (typeof query === 'function') {
+      return this.all().filter(query);
+    }
+
+    // Handle object-based query
+    return this.all().filter((record) => this._matchesQuery(record, query));
+  }
+
+  // -- MUTATION METHODS --
+
+  /**
+   * Inserts a new record into the collection.
+   * @param data - The record data to insert.
+   * @returns The inserted record.
+   */
+  insert(data: DbRecordInput<TRecord>): TRecord {
+    const record = this._prepareRecord(data);
+    this._records.set(record.id, record);
+    return record;
+  }
+
+  /**
+   * Inserts multiple records into the collection.
+   * @param data - An array of record data to insert.
+   * @returns An array of the inserted records.
+   */
+  insertMany(data: DbRecordInput<TRecord>[]): TRecord[] {
+    return data.map((record) => this.insert(record));
+  }
+
+  /**
+   * Updates a single record by ID.
+   * @param id - The record ID to update.
+   * @param patch - The data to update the record with.
+   * @returns The updated record, or `null` if the record was not found.
+   */
+  update(id: TRecord['id'], patch: DbRecordInput<TRecord>): TRecord | null {
+    const existingRecord = this._records.get(id);
+    if (!existingRecord) {
+      return null;
+    }
+    const updatedRecord = { ...existingRecord, ...patch } as TRecord;
+    this._records.set(id, updatedRecord);
+    return updatedRecord;
+  }
+
+  /**
+   * Updates multiple records by IDs or query.
+   * @param idsOrQuery - Array of IDs or query to find records to update.
+   * @param patch - The data to update the records with.
+   * @returns Array of updated records.
+   */
+  updateMany(
+    idsOrQuery: TRecord['id'][] | DbQuery<TRecord>,
+    patch: DbRecordInput<TRecord>,
+  ): TRecord[] {
+    const recordsToUpdate = this.findMany(idsOrQuery);
+    const updatedRecords = recordsToUpdate.map((record) => {
+      const updated = { ...record, ...patch } as TRecord;
+      this._records.set(record.id, updated);
+      return updated;
+    });
+    return updatedRecords;
+  }
+
+  /**
+   * Deletes a record from the collection by its ID.
+   * @param id - The ID of the record to delete.
+   * @returns `true` if the record was deleted, `false` if it was not found.
+   */
+  delete(id: TRecord['id']): boolean {
+    return this._records.delete(id);
+  }
+
+  /**
+   * Deletes multiple records by IDs or query.
+   * @param idsOrQuery - Array of IDs or query to find records to delete.
+   * @returns The number of records that were deleted.
+   */
+  deleteMany(idsOrQuery: TRecord['id'][] | DbQuery<TRecord>): number {
+    const recordsToDelete = this.findMany(idsOrQuery);
+    recordsToDelete.forEach((record) => this.delete(record.id));
+    return recordsToDelete.length;
+  }
+
+  /**
+   * Removes all records from the collection.
+   */
+  clear(): void {
+    this._records.clear();
+    this.identityManager.reset();
   }
 
   // -- PRIVATE METHODS --

@@ -156,7 +156,7 @@ export default class DB<TCollections extends Record<string, DbCollection<any>>> 
     const data = {} as DbData<TCollections>;
 
     this._collections.forEach((collection, name) => {
-      data[name] = collection.records as DbCollectionData<TCollections[typeof name]>;
+      data[name] = collection.all() as DbCollectionData<TCollections[typeof name]>;
     });
 
     return data;

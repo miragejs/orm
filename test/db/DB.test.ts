@@ -138,8 +138,8 @@ describe('DB', () => {
         },
       });
       db.emptyData();
-      expect(db.users.length).toBe(0);
-      expect(db.posts.length).toBe(0);
+      expect(db.users.size).toBe(0);
+      expect(db.posts.size).toBe(0);
     });
 
     it('should handle empty database', () => {

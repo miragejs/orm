@@ -72,7 +72,7 @@ export default class Model<TToken extends ModelToken> {
    */
   destroy(): NewModelInstance<TToken> {
     if (this.isSaved() && this.id) {
-      this._dbCollection.remove(this.id as ModelAttrs<TToken>['id']);
+      this._dbCollection.delete(this.id as ModelAttrs<TToken>['id']);
       this._attrs = { ...this._attrs, id: null } as NewModelAttrs<TToken>;
       this._status = 'new';
     }

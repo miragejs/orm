@@ -143,9 +143,9 @@ describe('Schema', () => {
       expect(retrieved?.name).toBe('Updated Name');
     });
 
-    it('removes models from database', () => {
+    it('deletes models from database', () => {
       const user = schema.users.create();
-      schema.users.remove(user.id!);
+      schema.users.delete(user.id!);
       const retrieved = schema.users.find(user.id!);
       expect(retrieved).toBeNull();
     });
@@ -208,30 +208,28 @@ describe('Schema', () => {
           users: {
             model: UserToken,
             factory: userFactory,
-            identityManager: new StringIdentityManager(), // Override global default
+            identityManager: new StringIdentityManager(),
           },
           posts: {
             model: PostToken,
             factory: postFactory,
-            // Uses global NumberIdentityManager
           },
         },
         {
-          identityManager: new NumberIdentityManager(), // Global default
+          identityManager: new NumberIdentityManager(),
         },
       );
 
       const user = schemaWithNumberDefault.users.create();
       const post = schemaWithNumberDefault.posts.create();
 
-      expect(typeof user.id).toBe('string'); // Overridden with StringIdentityManager
-      expect(typeof post.id).toBe('number'); // Uses global NumberIdentityManager
+      expect(typeof user.id).toBe('string');
+      expect(typeof post.id).toBe('number');
     });
   });
 
   describe('collection registration', () => {
     it('registers collections during schema construction', () => {
-      // Schema collections should be available immediately after setup
       expect(schema.users).toBeDefined();
       expect(schema.posts).toBeDefined();
       expect(typeof schema.users.create).toBe('function');
