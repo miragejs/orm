@@ -1,7 +1,8 @@
+import { IdentityManager, type IdType } from '@src/id-manager';
 import { MirageError } from '@src/utils';
 
-import DbCollection, { type DbCollectionConfig, type DbRecord } from './DbCollection';
-import IdentityManager, { type IdType } from './IdentityManager';
+import DbCollection, { type DbCollectionConfig } from './DbCollection';
+import type { DbRecord } from './types';
 
 /**
  * Factory function for creating a DB instance with collection accessors
@@ -176,7 +177,7 @@ export default class DB<TCollections extends Record<string, DbCollection<any>>> 
   }
 }
 
-// -- TYPES --
+// -- Types --
 
 /**
  * Infers the collection type from data records

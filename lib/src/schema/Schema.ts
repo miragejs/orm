@@ -1,10 +1,6 @@
-import {
-  createDatabase,
-  StringIdentityManager,
-  type DbInstance,
-  type IdentityManager,
-} from '@src/db';
+import { createDatabase, type DbInstance } from '@src/db';
 import type { TraitMap } from '@src/factory';
+import { StringIdentityManager, type IdentityManager } from '@src/id-manager';
 import type { ModelToken } from '@src/model';
 
 import SchemaCollection, { createSchemaCollection } from './SchemaCollection';

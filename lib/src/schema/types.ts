@@ -1,5 +1,6 @@
-import type { IdentityManager, StringIdentityManager, DbCollection } from '@src/db';
+import type { DbCollection } from '@src/db';
 import type { Factory, TraitMap } from '@src/factory';
+import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
 import type { ModelToken, InferTokenModel } from '@src/model';
 
 export interface SchemaCollectionConfig<
@@ -26,7 +27,9 @@ export interface SchemaConfig<TIdentityManager extends IdentityManager = StringI
 /**
  * Maps schema collection configs to database collections
  */
-export type InferDbCollections<TCollections extends Record<string, SchemaCollectionConfig<any, any>>> = {
+export type InferDbCollections<
+  TCollections extends Record<string, SchemaCollectionConfig<any, any>>,
+> = {
   [K in keyof TCollections]: TCollections[K] extends SchemaCollectionConfig<infer TToken>
     ? DbCollection<InferTokenModel<TToken>>
     : never;

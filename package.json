@@ -12,8 +12,8 @@
   "scripts": {
     "build:prod": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm build",
     "build": "tsup lib/src/index.ts --dts --out-dir lib/dist",
-    "format": "prettier --write \"lib/src/**/*.ts\" \"test/**/*.ts\"",
-    "format:check": "prettier --check \"lib/src/**/*.ts\" \"test/**/*.ts\"",
+    "format": "prettier --check \"lib/src/**/*.ts\" \"test/**/*.ts\"",
+    "format:fix": "prettier --write \"lib/src/**/*.ts\" \"test/**/*.ts\"",
     "lint": "eslint lib/src test/ --ext .ts",
     "lint:fix": "pnpm lint --fix",
     "test": "vitest run",

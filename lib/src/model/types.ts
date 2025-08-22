@@ -1,4 +1,5 @@
-import type { DbCollection, IdType } from '@src/db';
+import type { DbCollection } from '@src/db';
+import type { IdType } from '@src/id-manager';
 
 // -- BASE TYPES --
 

@@ -1,5 +1,3 @@
-import type { IdType } from '@src/db';
-
 import type { BaseModelAttrs, ModelMeta, ModelToken } from './types';
 
 /**

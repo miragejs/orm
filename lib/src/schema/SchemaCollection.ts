@@ -1,5 +1,6 @@
-import type { DbCollection, DbRecordInput, IdentityManager } from '@src/db';
+import type { DbCollection, DbRecordInput } from '@src/db';
 import type { Factory, TraitMap, TraitName } from '@src/factory';
+import type { IdentityManager } from '@src/id-manager';
 import {
   ModelCollection,
   PartialModelAttrs,

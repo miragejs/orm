@@ -1,4 +1,5 @@
-import { createDatabase, DbCollection, IdentityManager } from '@src/db';
+import { createDatabase, DbCollection } from '@src/db';
+import { IdentityManager } from '@src/id-manager';
 import { MirageError } from '@src/utils';
 
 interface User {
@@ -60,7 +61,11 @@ describe('DB', () => {
 
   describe('identityManagerFor', () => {
     it('should return collection-specific identity manager', () => {
-      const usersManager = new IdentityManager<string>({ initialCounter: 'user-1' });
+      const idGenerator = (current: string) => {
+        const num = parseInt(current.split('-')[1]);
+        return `user-${num + 1}`;
+      };
+      const usersManager = new IdentityManager<string>({ initialCounter: 'user-1', idGenerator });
       const db = createDatabase().createCollection<{ id: string }>('users', {
         identityManager: usersManager,
       });
@@ -133,8 +138,8 @@ describe('DB', () => {
         },
       });
       db.emptyData();
-      expect(db.users.size).toBe(0);
-      expect(db.posts.size).toBe(0);
+      expect(db.users.length).toBe(0);
+      expect(db.posts.length).toBe(0);
     });
 
     it('should handle empty database', () => {

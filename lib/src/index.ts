@@ -1,3 +1,7 @@
+// Identity Manager
+export { StringIdentityManager, NumberIdentityManager, IdentityManager } from './id-manager';
+export type { IdType, IdGenerator, IdentityManagerConfig } from './id-manager';
+
 // Model
 export { defineToken, defineModel } from './model';
 export type {
@@ -6,7 +10,6 @@ export type {
   InferTokenMeta,
   InferTokenModel,
   InferTokenModelName,
-  InferTokenSerialized,
   ModelAttrs,
   ModelClass,
   ModelInstance,

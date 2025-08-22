@@ -1,4 +1,5 @@
-import { DbCollection, NumberIdentityManager } from '@src/db';
+import { DbCollection } from '@src/db';
+import { NumberIdentityManager } from '@src/id-manager';
 import { Model, defineModel, defineToken } from '@src/model';
 
 interface UserAttrs {

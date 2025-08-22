@@ -1,5 +1,5 @@
-import { StringIdentityManager, NumberIdentityManager } from '@src/db';
 import { createFactory } from '@src/factory';
+import { StringIdentityManager, NumberIdentityManager } from '@src/id-manager';
 import { defineToken } from '@src/model';
 import { createCollection, composeCollections, setupSchema } from '@src/schema';
 
@@ -133,11 +133,7 @@ describe('Schema Utils', () => {
         factory: categoryFactory,
       });
 
-      const composed = composeCollections([
-        usersCollection,
-        postsCollection,
-        categoriesCollection,
-      ]);
+      const composed = composeCollections([usersCollection, postsCollection, categoriesCollection]);
 
       expect(composed).toHaveProperty('users');
       expect(composed).toHaveProperty('posts');
@@ -222,7 +218,7 @@ describe('Schema Utils', () => {
         }),
       ]);
 
-      // Content module  
+      // Content module
       const contentModule = composeCollections([
         createCollection('posts', {
           model: PostToken,

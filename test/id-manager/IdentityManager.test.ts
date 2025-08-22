@@ -1,4 +1,4 @@
-import { IdentityManager, StringIdentityManager, NumberIdentityManager } from '@src/db';
+import { IdentityManager, StringIdentityManager, NumberIdentityManager } from '@src/id-manager';
 
 describe('IdentityManager', () => {
   describe('constructor', () => {
@@ -41,9 +41,9 @@ describe('IdentityManager', () => {
     it('should skip used IDs when finding next available', () => {
       manager.set('1');
       manager.set('3');
-      expect(manager.get()).toBe('2');
+      expect(manager.get()).toBe('2'); // Should find the gap
       manager.set('2');
-      expect(manager.get()).toBe('4');
+      expect(manager.get()).toBe('4'); // Should find next available after gap is filled
     });
   });
 
@@ -83,7 +83,7 @@ describe('IdentityManager', () => {
 
   describe('reset', () => {
     it('should clear used IDs and reset counter', () => {
-      const manager = new IdentityManager({ initialCounter: '1' });
+      const manager = new IdentityManager<string>({ initialCounter: '1' });
       manager.set('1');
       manager.set('2');
       manager.reset();
@@ -117,23 +117,19 @@ describe('IdentityManager', () => {
     });
 
     it('should handle non-numeric string IDs with error', () => {
-      const manager = new IdentityManager<string>({
-        initialCounter: 'abc',
-      });
-
-      expect(() => manager.fetch()).toThrow(
-        'Default ID generator only works with numeric string IDs',
-      );
+      expect(() => {
+        new IdentityManager<string>({
+          initialCounter: 'abc',
+        });
+      }).toThrow('Default ID generator only works with numeric string IDs');
     });
 
     it('should handle mixed numeric and non-numeric strings', () => {
-      const manager = new IdentityManager<string>({
-        initialCounter: '123abc',
-      });
-
-      expect(() => manager.fetch()).toThrow(
-        'Default ID generator only works with numeric string IDs',
-      );
+      expect(() => {
+        new IdentityManager<string>({
+          initialCounter: '123abc',
+        });
+      }).toThrow('Default ID generator only works with numeric string IDs');
     });
   });
 

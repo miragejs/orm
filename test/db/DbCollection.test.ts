@@ -1,4 +1,5 @@
-import { DbCollection, NumberIdentityManager, StringIdentityManager } from '@src/db';
+import { DbCollection } from '@src/db';
+import { NumberIdentityManager, StringIdentityManager } from '@src/id-manager';
 
 interface User {
   id: string;
@@ -21,7 +22,7 @@ describe('DbCollection', () => {
         { id: '2', name: 'Jane' },
       ];
       const collection = new DbCollection('users', { initialData });
-      expect(collection.size).toBe(2);
+      expect(collection.length).toBe(2);
       expect(collection.find('1')).toEqual({ id: '1', name: 'John' });
     });
   });
@@ -29,9 +30,9 @@ describe('DbCollection', () => {
   describe('size', () => {
     it('should return correct number of records', () => {
       const collection = new DbCollection<User>('users');
-      expect(collection.size).toBe(0);
+      expect(collection.length).toBe(0);
       collection.insert({ name: 'John' });
-      expect(collection.size).toBe(1);
+      expect(collection.length).toBe(1);
     });
   });
 
@@ -53,7 +54,7 @@ describe('DbCollection', () => {
 
     it('should return null if collection is empty', () => {
       const collection = new DbCollection<User>('users');
-      expect(collection.first()).toBeNull();
+      expect(collection.first()).toBeUndefined();
     });
   });
 
@@ -130,7 +131,7 @@ describe('DbCollection', () => {
     });
 
     it('should find records using predicate function', () => {
-      const results = collection.where((record) => record.age > 25);
+      const results = collection.where((record) => record.age! > 25);
       expect(results).toHaveLength(2);
       expect(results).toEqual(
         expect.arrayContaining([
@@ -162,7 +163,7 @@ describe('DbCollection', () => {
       const collection = new DbCollection<User>('users');
       const records = collection.insertMany([{ name: 'John' }, { name: 'Jane' }]);
       expect(records).toHaveLength(2);
-      expect(collection.size).toBe(2);
+      expect(collection.length).toBe(2);
     });
   });
 
@@ -182,7 +183,7 @@ describe('DbCollection', () => {
 
     it('should update record by query', () => {
       const updated = collection.update({ name: 'John' }, { age: 31 });
-      expect(updated).toEqual({ id: '1', name: 'John', age: 31 });
+      expect(updated).toEqual([{ id: '1', name: 'John', age: 31 }]);
     });
 
     it('should update all records when only attrs provided', () => {
@@ -208,13 +209,13 @@ describe('DbCollection', () => {
 
     it('should remove record by ID', () => {
       collection.remove('1');
-      expect(collection.size).toBe(1);
+      expect(collection.length).toBe(1);
       expect(collection.find('1')).toBeNull();
     });
 
     it('should remove records by query', () => {
-      collection.remove({ name: 'John' });
-      expect(collection.size).toBe(1);
+      collection.removeWhere({ name: 'John' });
+      expect(collection.length).toBe(1);
       expect(collection.find('1')).toBeNull();
     });
   });
@@ -225,7 +226,7 @@ describe('DbCollection', () => {
       collection.insert({ name: 'John' });
       collection.insert({ name: 'Jane' });
       collection.clear();
-      expect(collection.size).toBe(0);
+      expect(collection.length).toBe(0);
     });
   });
 });
@@ -271,7 +272,10 @@ describe('DbCollection Types', () => {
       const users = new DbCollection<User>('users', {
         identityManager: new StringIdentityManager({
           initialCounter: 'user-1',
-          idGenerator: (currentId) => `user-${Number(currentId) + 1}`,
+          idGenerator: (currentId: string) => {
+            const num = parseInt(currentId.split('-')[1]);
+            return `user-${num + 1}`;
+          },
         }),
       });
 

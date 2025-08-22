@@ -1,12 +1,7 @@
-import { NumberIdentityManager, StringIdentityManager } from '@src/db';
-import { createFactory, TraitMap } from '@src/factory';
+import { createFactory } from '@src/factory';
+import { NumberIdentityManager, StringIdentityManager } from '@src/id-manager';
 import { defineToken, ModelToken } from '@src/model';
-import {
-  SchemaCollection,
-  SchemaCollectionConfig,
-  setupSchema,
-  type SchemaInstance,
-} from '@src/schema';
+import { SchemaCollectionConfig, setupSchema, type SchemaInstance } from '@src/schema';
 
 // -- TEST MODELS --
 
