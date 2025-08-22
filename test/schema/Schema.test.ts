@@ -1,7 +1,7 @@
-import { NumberIdentityManager } from '@src/db';
-import { Factory } from '@src/factory';
-import { Model } from '@src/model';
-import { Schema, type SchemaInstance } from '@src/schema';
+import { createFactory } from '@src/factory';
+import { NumberIdentityManager, StringIdentityManager } from '@src/id-manager';
+import { defineToken, ModelToken } from '@src/model';
+import { SchemaCollectionConfig, setupSchema, type SchemaInstance } from '@src/schema';
 
 // -- TEST MODELS --
 
@@ -18,12 +18,17 @@ interface PostModel {
   userId: string;
 }
 
+// -- TEST MODEL TOKENS --
+
+const UserToken = defineToken<UserModel>('user', 'users');
+const PostToken = defineToken<PostModel>('post', 'posts');
+
 // -- TEST FACTORIES --
 
-const UserFactory = Factory.define<UserModel>({
+const userFactory = createFactory(UserToken, {
   attributes: {
-    email: 'john@example.com',
-    name: 'John Doe',
+    email: () => 'john@example.com',
+    name: () => 'John Doe',
   },
   traits: {
     admin: {
@@ -32,37 +37,38 @@ const UserFactory = Factory.define<UserModel>({
   },
 });
 
-const PostFactory = Factory.define<PostModel>({
+const postFactory = createFactory(PostToken, {
   attributes: {
-    content: 'This is a test post',
-    title: 'Hello World',
-    userId: '1',
+    content: () => 'This is a test post',
+    title: () => 'Hello World',
+    userId: () => '1',
   },
 });
 
 describe('Schema', () => {
   let schema: SchemaInstance<{
-    users: UserModel;
-    posts: PostModel;
+    users: SchemaCollectionConfig<ModelToken<UserModel>>;
+    posts: SchemaCollectionConfig<ModelToken<PostModel>>;
   }>;
 
   beforeEach(() => {
-    schema = Schema.setup<{
-      users: UserModel;
-      posts: PostModel;
-    }>({
-      models: {
-        users: Model.define<UserModel>(),
-        posts: Model.define<PostModel>(),
+    schema = setupSchema(
+      {
+        users: {
+          model: UserToken,
+          factory: userFactory,
+          identityManager: new StringIdentityManager(),
+        },
+        posts: {
+          model: PostToken,
+          factory: postFactory,
+          identityManager: new NumberIdentityManager(),
+        },
       },
-      factories: {
-        users: UserFactory,
-        posts: PostFactory,
+      {
+        identityManager: new StringIdentityManager(),
       },
-      identityManagers: {
-        posts: new NumberIdentityManager(),
-      },
-    });
+    );
   });
 
   describe('model registration', () => {
@@ -106,9 +112,9 @@ describe('Schema', () => {
     it('creates multiple models with createList', () => {
       const users = schema.users.createList(3, 'admin');
       expect(users.length).toBe(3);
-      expect(users[0].email).toBe('admin@example.com');
-      expect(users[1].email).toBe('admin@example.com');
-      expect(users[2].email).toBe('admin@example.com');
+      expect(users.models[0].email).toBe('admin@example.com');
+      expect(users.models[1].email).toBe('admin@example.com');
+      expect(users.models[2].email).toBe('admin@example.com');
     });
   });
 
@@ -137,9 +143,9 @@ describe('Schema', () => {
       expect(retrieved?.name).toBe('Updated Name');
     });
 
-    it('removes models from database', () => {
+    it('deletes models from database', () => {
       const user = schema.users.create();
-      schema.users.remove(user.id!);
+      schema.users.delete(user.id!);
       const retrieved = schema.users.find(user.id!);
       expect(retrieved).toBeNull();
     });
@@ -172,15 +178,72 @@ describe('Schema', () => {
     it('finds all models matching query', () => {
       const posts = schema.posts.where({ userId: '1' });
       expect(posts.length).toBe(2);
-      expect(posts[0].title).toBe('Post 1');
-      expect(posts[1].title).toBe('Post 2');
+      expect(posts.models[0].title).toBe('Post 1');
+      expect(posts.models[1].title).toBe('Post 2');
     });
 
     it('finds models using function query', () => {
-      const users = schema.users.where((user) => user.name.startsWith('J'));
+      const users = schema.users.where((user: any) => user.name.startsWith('J'));
       expect(users.length).toBe(2);
-      expect(users[0].name).toBe('John');
-      expect(users[1].name).toBe('Jane');
+      expect(users.models[0].name).toBe('John');
+      expect(users.models[1].name).toBe('Jane');
+    });
+  });
+
+  describe('identity manager configuration', () => {
+    it('uses collection-specific identity managers', () => {
+      const user = schema.users.create();
+      const post = schema.posts.create();
+
+      // Users use StringIdentityManager
+      expect(typeof user.id).toBe('string');
+
+      // Posts use NumberIdentityManager
+      expect(typeof post.id).toBe('number');
+    });
+
+    it('allows global identity manager override', () => {
+      const schemaWithNumberDefault = setupSchema(
+        {
+          users: {
+            model: UserToken,
+            factory: userFactory,
+            identityManager: new StringIdentityManager(),
+          },
+          posts: {
+            model: PostToken,
+            factory: postFactory,
+          },
+        },
+        {
+          identityManager: new NumberIdentityManager(),
+        },
+      );
+
+      const user = schemaWithNumberDefault.users.create();
+      const post = schemaWithNumberDefault.posts.create();
+
+      expect(typeof user.id).toBe('string');
+      expect(typeof post.id).toBe('number');
+    });
+  });
+
+  describe('collection registration', () => {
+    it('registers collections during schema construction', () => {
+      expect(schema.users).toBeDefined();
+      expect(schema.posts).toBeDefined();
+      expect(typeof schema.users.create).toBe('function');
+      expect(typeof schema.posts.create).toBe('function');
+    });
+
+    it('provides access to database instance', () => {
+      expect(schema.db).toBeDefined();
+      expect(typeof schema.db.getCollection).toBe('function');
+    });
+
+    it('provides access to identity manager', () => {
+      expect(schema.identityManager).toBeDefined();
+      expect(typeof schema.identityManager.get).toBe('function');
     });
   });
 });

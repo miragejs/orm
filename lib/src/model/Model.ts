@@ -1,19 +1,205 @@
-import { AllowedIdTypes } from '@src/db';
+import { DbCollection, DbRecordInput } from '@src/db';
 
-import BaseModel, { type ModelAttrs, type ModelClass } from './BaseModel';
+import type {
+  ModelAttrs,
+  ModelClass,
+  ModelConfig,
+  ModelInstance,
+  ModelToken,
+  NewModelAttrs,
+  NewModelInstance,
+  PartialModelAttrs,
+} from './types';
 
 /**
- * Model class that provides static methods for model management
+ * Define a model class with attribute accessors
+ * @template TToken - The model token
+ * @param token - The model token to define
+ * @returns A model class that can be instantiated with 'new'
  */
-export default class Model {
+export function defineModel<TToken extends ModelToken>(token: TToken): ModelClass<TToken> {
+  return class extends Model<TToken> {
+    constructor(config: ModelConfig<TToken>) {
+      super(token, config);
+    }
+  } as unknown as ModelClass<TToken>;
+}
+
+/**
+ * Base model class that handles core functionality
+ * @template TToken - The model token
+ */
+export default class Model<TToken extends ModelToken> {
+  public readonly modelName: string;
+
+  protected _attrs: NewModelAttrs<TToken>;
+  protected _dbCollection: DbCollection<ModelAttrs<TToken>>;
+  protected _status: 'new' | 'saved';
+
+  constructor(token: TToken, { attrs, collection }: ModelConfig<TToken>) {
+    this.modelName = token.modelName;
+
+    this._attrs = { ...attrs, id: attrs?.id ?? null } as NewModelAttrs<TToken>;
+    this._dbCollection = collection ?? new DbCollection<ModelAttrs<TToken>>(token.collectionName);
+    this._status = this._attrs.id ? this._verifyStatus(this._attrs.id) : 'new';
+
+    this.initAttributeAccessors();
+  }
+
+  // -- GETTERS --
+
   /**
-   * Creates a new model class with attribute accessors, or extends an existing model class
-   * @param ModelClass - The model class to enhance. If not provided, a base model class will be used.
-   * @returns An enhanced model class that can be instantiated with 'new'
+   * Getter for the protected id attribute
+   * @returns The id of the model
    */
-  static define<TAttrs extends ModelAttrs<AllowedIdTypes> = ModelAttrs<string>>(
-    ModelClass: ModelClass<TAttrs> = BaseModel.create<TAttrs>(),
-  ): ModelClass<TAttrs> {
-    return ModelClass as ModelClass<TAttrs>;
+  get id(): ModelAttrs<TToken>['id'] | null {
+    return this._attrs.id;
+  }
+
+  /**
+   * Getter for the model attributes
+   * @returns A copy of the model attributes
+   */
+  get attrs(): NewModelAttrs<TToken> {
+    return { ...this._attrs };
+  }
+
+  // -- MAIN METHODS --
+
+  /**
+   * Destroy the model from the database
+   * @returns The model with new instance type
+   */
+  destroy(): NewModelInstance<TToken> {
+    if (this.isSaved() && this.id) {
+      this._dbCollection.delete(this.id as ModelAttrs<TToken>['id']);
+      this._attrs = { ...this._attrs, id: null } as NewModelAttrs<TToken>;
+      this._status = 'new';
+    }
+
+    return this as unknown as NewModelInstance<TToken>;
+  }
+
+  /**
+   * Reload the model from the database
+   * @returns The model with saved instance type
+   */
+  reload(): ModelInstance<TToken> {
+    if (this.isSaved() && this.id) {
+      this._attrs = this._dbCollection.find(
+        this.id as ModelAttrs<TToken>['id'],
+      ) as NewModelAttrs<TToken>;
+    }
+
+    return this as unknown as ModelInstance<TToken>;
+  }
+
+  /**
+   * Save the model to the database
+   * @returns The model with saved instance type
+   */
+  save(): ModelInstance<TToken> {
+    if (this.isNew() || !this.id) {
+      const modelRecord = this._dbCollection.insert(
+        this._attrs as DbRecordInput<ModelAttrs<TToken>>,
+      );
+      this._attrs = modelRecord as NewModelAttrs<TToken>;
+      this._status = 'saved';
+    } else {
+      this._dbCollection.update(
+        this.id as ModelAttrs<TToken>['id'],
+        this._attrs as DbRecordInput<ModelAttrs<TToken>>,
+      );
+    }
+
+    return this as unknown as ModelInstance<TToken>;
+  }
+
+  /**
+   * Update the model attributes and save the model
+   * @param attrs - The attributes to update
+   * @returns The model with saved instance type
+   */
+  update(attrs: PartialModelAttrs<TToken>): ModelInstance<TToken> {
+    Object.assign(this._attrs, attrs);
+    return this.save();
+  }
+
+  // -- STATUS --
+
+  /**
+   * Check if the model is new
+   * @returns True if the model is new, false otherwise
+   */
+  isNew(): boolean {
+    return this._status === 'new';
+  }
+
+  /**
+   * Check if the model is saved
+   * @returns True if the model is saved, false otherwise
+   */
+  isSaved(): boolean {
+    return this._status === 'saved';
+  }
+
+  // -- SERIALIZATION --
+
+  /**
+   * Serialize the model to a JSON object
+   * @returns The serialized model using the configured serializer or raw attributes
+   */
+  toJSON(): any {
+    return { ...this._attrs };
+  }
+
+  /**
+   * Serialize the model to a string
+   * @returns The simple string representation of the model and its id
+   */
+  toString(): string {
+    let idLabel = this.id ? `(${this.id})` : '';
+    return `model:${this.modelName}${idLabel}`;
+  }
+
+  // -- ATTRIBUTE ACCESSORS --
+
+  /**
+   * Initialize attribute accessors for all attributes except id
+   */
+  protected initAttributeAccessors(): void {
+    // Remove old accessors
+    for (const key in this._attrs) {
+      if (key !== 'id' && Object.prototype.hasOwnProperty.call(this, key)) {
+        delete this[key as keyof this];
+      }
+    }
+
+    // Set up new accessors
+    for (const key in this._attrs) {
+      if (key !== 'id' && !Object.prototype.hasOwnProperty.call(this, key)) {
+        Object.defineProperty(this, key, {
+          get: () => {
+            return this._attrs[key];
+          },
+          set: (value: NewModelAttrs<TToken>[keyof NewModelAttrs<TToken>]) => {
+            this._attrs[key as keyof NewModelAttrs<TToken>] = value;
+          },
+          enumerable: true,
+          configurable: true,
+        });
+      }
+    }
+  }
+
+  // -- PRIVATE METHODS --
+
+  /**
+   * Verify the status of the model during initialization when the id is provided
+   * @param id - The id of the model
+   * @returns The status of the model
+   */
+  private _verifyStatus(id: ModelAttrs<TToken>['id']): 'new' | 'saved' {
+    return this._dbCollection.find(id) ? 'saved' : 'new';
   }
 }

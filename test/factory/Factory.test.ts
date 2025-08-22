@@ -1,24 +1,22 @@
-import { DbCollection } from '@src/db';
-import { BaseFactory, Factory, type FactoryDefinition } from '@src/factory';
-import { Model, type ModelAttrs } from '@src/model';
+import { Factory, createFactory, extendFactory } from '@src/factory';
+import { defineModel, defineToken } from '@src/model';
 
-interface UserAttrs extends ModelAttrs {
+interface UserAttrs {
+  id: string;
   createdAt?: string | null;
   email: string;
   name: string;
   role?: string;
 }
 
-const UserModel = Model.define<UserAttrs>();
+const UserToken = defineToken<UserAttrs>('user', 'users');
+const UserModel = defineModel(UserToken);
 
 describe('Factory', () => {
-  let collection: DbCollection<UserAttrs>;
-  let baseDefinition: FactoryDefinition<UserAttrs>;
-  let baseFactory: BaseFactory<UserAttrs>;
+  let factory: Factory<typeof UserToken>;
 
   beforeEach(() => {
-    collection = new DbCollection<UserAttrs>({ name: 'users' });
-    baseDefinition = {
+    factory = createFactory(UserToken, {
       attributes: {
         createdAt: null,
         email: (id: string) => `user${id}@example.com`,
@@ -31,14 +29,12 @@ describe('Factory', () => {
           role: 'admin',
         },
       },
-    };
-
-    baseFactory = Factory.define(baseDefinition);
+    });
   });
 
-  describe('define', () => {
+  describe('createFactory', () => {
     it('should create a factory with the given definition', () => {
-      const attrs = baseFactory.build('1');
+      const attrs = factory.build('1');
       expect(attrs).toEqual({
         createdAt: null,
         email: 'user1@example.com',
@@ -49,7 +45,7 @@ describe('Factory', () => {
     });
 
     it('should create a factory with traits', () => {
-      const attrs = baseFactory.build('1', 'admin');
+      const attrs = factory.build('1', 'admin');
       expect(attrs).toEqual({
         createdAt: null,
         email: 'admin1@example.com',
@@ -60,9 +56,9 @@ describe('Factory', () => {
     });
   });
 
-  describe('extend', () => {
+  describe('extendFactory', () => {
     it('should extend a factory with new attributes', () => {
-      const extendedFactory = Factory.extend(baseFactory, {
+      const extendedFactory = extendFactory(factory, {
         attributes: {
           email: (id: string) => `user${id}@example.com`,
           name: 'John',
@@ -81,7 +77,7 @@ describe('Factory', () => {
     });
 
     it('should extend a factory with new traits', () => {
-      const extendedFactory = Factory.extend(baseFactory, {
+      const extendedFactory = extendFactory(factory, {
         traits: {
           moderator: {
             role: 'moderator',
@@ -101,7 +97,7 @@ describe('Factory', () => {
     });
 
     it('should override existing traits', () => {
-      const extendedFactory = Factory.extend(baseFactory, {
+      const extendedFactory = extendFactory(factory, {
         traits: {
           admin: {
             role: 'superadmin',
@@ -122,14 +118,16 @@ describe('Factory', () => {
 
     it('should extend with new afterCreate hook', () => {
       let hookCalled = false;
-      const extendedFactory = Factory.extend(baseFactory, {
-        afterCreate(model: InstanceType<typeof UserModel>) {
+
+      const extendedFactory = extendFactory(factory, {
+        afterCreate(model) {
           hookCalled = true;
           model.createdAt = new Date('2024-01-01').toISOString();
         },
       });
       const attrs = extendedFactory.build('1');
-      const model = new UserModel({ name: 'User', attrs, collection });
+      const model = new UserModel({ attrs }).save();
+
       extendedFactory.processAfterCreateHooks(model);
 
       expect(hookCalled).toBe(true);
@@ -137,7 +135,7 @@ describe('Factory', () => {
     });
 
     it('should preserve original afterCreate hook if not overridden', () => {
-      const extendedFactory = Factory.extend(baseFactory, {
+      const extendedFactory = extendFactory(factory, {
         attributes: {
           email: (id: string) => `user${id}@example.com`,
           name: 'John',

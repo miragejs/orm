@@ -1,53 +1,269 @@
-import { type AllowedIdTypes } from '@src/db';
-import type { ModelAttrs } from '@src/model';
+import type {
+  InferTokenId,
+  ModelAttrs,
+  ModelInstance,
+  ModelToken,
+  NewModelAttrs,
+  PartialModelAttrs,
+} from '@src/model';
+import { MirageError } from '@src/utils';
 
-import BaseFactory, { type FactoryAttrs, type FactoryDefinition } from './BaseFactory';
+import type { FactoryAttrs, FactoryConfig, FactoryDefinition, TraitMap, TraitName } from './types';
 
 /**
- * Factory class for creating factories.
+ * Create a factory.
+ * @param token - The model token to define the factory for.
+ * @param config - The configuration for the factory.
+ * @returns The factory.
  */
-export default class Factory {
-  /**
-   * Define a factory.
-   * @param definition - The attributes, traits, and afterCreate hook to define the factory.
-   * @returns The factory.
-   */
-  static define<TAttrs extends ModelAttrs<AllowedIdTypes>>(
-    definition: FactoryDefinition<TAttrs>,
-  ): BaseFactory<TAttrs> {
-    const { attributes, traits, afterCreate } = definition;
-    return new BaseFactory<TAttrs>(attributes, traits, afterCreate);
+export function createFactory<
+  TToken extends ModelToken,
+  TTraits extends TraitMap<TToken> = TraitMap<TToken>,
+>(token: TToken, config: FactoryConfig<TToken, TTraits>): Factory<TToken, TTraits> {
+  return new Factory(
+    token,
+    config.attributes,
+    (config.traits ?? {}) as TTraits,
+    config.afterCreate,
+  );
+}
+
+/**
+ * Extend a factory.
+ * @param factory - The factory to extend.
+ * @param definition - The new attributes, traits, and afterCreate hook to add or override.
+ * @returns The extended factory.
+ */
+export function extendFactory<TToken extends ModelToken, TTraits extends TraitMap<TToken>>(
+  factory: Factory<TToken, TTraits>,
+  definition: FactoryDefinition<TToken, TTraits>,
+): Factory<TToken, TTraits> {
+  const { attributes = {}, traits = {} } = definition;
+
+  // Merge attributes, with new attributes taking precedence
+  const mergedAttributes = {
+    ...factory['_attributes'],
+    ...attributes,
+  };
+
+  // Merge traits, with new traits taking precedence
+  const mergedTraits = {
+    ...factory['_traits'],
+    ...traits,
+  } as TTraits;
+
+  // Create new factory with merged configuration
+  return new Factory<TToken, TTraits>(
+    factory['_token'],
+    mergedAttributes as FactoryAttrs<TToken>,
+    mergedTraits,
+    definition.afterCreate || factory['_afterCreate'],
+  );
+}
+
+/**
+ * Factory that builds model attributes.
+ */
+export default class Factory<
+  TToken extends ModelToken,
+  TTraits extends TraitMap<TToken> = TraitMap<TToken>,
+> {
+  private readonly _token: TToken;
+  private readonly _attributes: FactoryAttrs<TToken>;
+  private readonly _traits: TTraits;
+  private readonly _afterCreate?: (model: ModelInstance<TToken>) => void;
+
+  constructor(
+    token: TToken,
+    attributes: FactoryAttrs<TToken>,
+    traits: TTraits,
+    afterCreate?: (model: ModelInstance<TToken>) => void,
+  ) {
+    this._token = token;
+    this._attributes = attributes;
+    this._traits = traits;
+    this._afterCreate = afterCreate;
   }
 
   /**
-   * Extend a factory.
-   * @param factory - The factory to extend.
-   * @param definition - The new attributes, traits, and afterCreate hook to add or override.
-   * @returns The extended factory.
+   * Build a model with the given model ID and trait names or default values.
+   * @param modelId - The ID of the model to build.
+   * @param traitsAndDefaults - The names of the traits to apply or default values for attributes.
+   * @returns The built model.
    */
-  static extend<TAttrs extends ModelAttrs<AllowedIdTypes>>(
-    factory: BaseFactory<TAttrs>,
-    definition: Partial<FactoryDefinition<TAttrs>>,
-  ): BaseFactory<TAttrs> {
-    const { attributes = {}, traits = {} } = definition;
+  build(
+    modelId: NonNullable<ModelAttrs<TToken>['id']>,
+    ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TToken>)[]
+  ): ModelAttrs<TToken> {
+    const traitNames: string[] = [];
+    const defaults: PartialModelAttrs<TToken> = {};
 
-    // Merge attributes, with new attributes taking precedence
-    const mergedAttributes = {
-      ...factory.attributes,
-      ...attributes,
-    };
+    // Separate trait names from default values
+    traitsAndDefaults.forEach((arg) => {
+      if (typeof arg === 'string') {
+        traitNames.push(arg);
+      } else {
+        Object.assign(defaults, arg);
+      }
+    });
 
-    // Merge traits, with new traits taking precedence
-    const mergedTraits = {
-      ...factory.traits,
-      ...traits,
-    };
+    const processedAttributes = this._processAttributes(this._attributes, modelId);
+    const traitAttributes = this._buildWithTraits(traitNames, modelId);
 
-    // Create new factory with merged attributes and traits
-    return new BaseFactory<TAttrs>(
-      mergedAttributes as FactoryAttrs<TAttrs>,
-      mergedTraits,
-      definition.afterCreate || factory.afterCreate,
+    // Merge attributes in order: defaults override traits, traits override base attributes
+    const mergedAttributes = this._mergeAttributes(processedAttributes, traitAttributes);
+
+    // Add user defaults and the autogenerated id
+    return {
+      ...mergedAttributes,
+      ...defaults,
+      id: modelId,
+    } as ModelAttrs<TToken>;
+  }
+
+  /**
+   * Process the afterCreate hook and the trait hooks.
+   * @param model - The model to process.
+   * @param traitsAndDefaults - The traits and defaults that were applied.
+   * @returns The processed model.
+   */
+  processAfterCreateHooks(
+    model: ModelInstance<TToken>,
+    ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TToken>)[]
+  ): ModelInstance<TToken> {
+    const traitNames: string[] = traitsAndDefaults.filter((arg) => typeof arg === 'string');
+    const hooks: ((model: ModelInstance<TToken>) => void)[] = [];
+
+    if (this._afterCreate) {
+      hooks.push(this._afterCreate);
+    }
+
+    traitNames.forEach((name) => {
+      const trait = this._traits[name as TraitName<TTraits>];
+
+      if (trait?.afterCreate) {
+        hooks.push(trait.afterCreate);
+      }
+    });
+
+    // Execute hooks with the model instance
+    hooks.forEach((hook) => {
+      hook(model);
+    });
+
+    return model;
+  }
+
+  // -- PRIVATE METHODS --
+
+  private _processAttributes(
+    attrs: FactoryAttrs<TToken>,
+    modelId?: NonNullable<InferTokenId<TToken>>,
+  ): PartialModelAttrs<TToken> {
+    const keys = this._sortAttrs(attrs, modelId);
+
+    const result = keys.reduce(
+      (acc, key) => {
+        if (key === 'id') {
+          return acc;
+        }
+
+        const currentKey = key as keyof PartialModelAttrs<TToken>;
+        const value = attrs[currentKey];
+
+        if (typeof value === 'function') {
+          acc[key as string] = value.call(attrs, modelId);
+        } else {
+          acc[key as string] = value;
+        }
+
+        return acc;
+      },
+      {} as Record<string, any>,
     );
+
+    return result as PartialModelAttrs<TToken>;
+  }
+
+  private _buildWithTraits(
+    traitNames: string[],
+    modelId?: NonNullable<InferTokenId<TToken>>,
+  ): PartialModelAttrs<TToken> {
+    const result = traitNames.reduce(
+      (traitAttributes, name) => {
+        const trait = this._traits[name as TraitName<TTraits>];
+
+        if (trait) {
+          const { afterCreate, ...extension } = trait;
+
+          Object.entries(extension).forEach(([key, value]) => {
+            if (key !== 'id') {
+              traitAttributes[key] =
+                typeof value === 'function' ? value.call(this._attributes, modelId) : value;
+            }
+          });
+        }
+
+        return traitAttributes;
+      },
+      {} as Record<string, any>,
+    );
+
+    return result as PartialModelAttrs<TToken>;
+  }
+
+  private _mergeAttributes(
+    baseAttributes: PartialModelAttrs<TToken>,
+    overrideAttributes: PartialModelAttrs<TToken>,
+  ): PartialModelAttrs<TToken> {
+    return {
+      ...baseAttributes,
+      ...overrideAttributes,
+    };
+  }
+
+  private _sortAttrs(
+    attrs: FactoryAttrs<TToken>,
+    modelId?: NonNullable<InferTokenId<TToken>>,
+  ): (keyof NewModelAttrs<TToken>)[] {
+    const visited = new Set<string>();
+    const processing = new Set<string>();
+
+    const detectCycle = (key: string): boolean => {
+      if (processing.has(key)) {
+        throw new MirageError(`Circular dependency detected: ${key}`);
+      }
+      if (visited.has(key)) {
+        return false;
+      }
+
+      processing.add(key);
+      const value = attrs[key as Exclude<keyof NewModelAttrs<TToken>, 'id'>];
+
+      if (typeof value === 'function') {
+        // Create a proxy to track property access
+        const proxy = new Proxy(attrs, {
+          get(target, prop) {
+            if (typeof prop === 'string' && prop in target) {
+              detectCycle(prop);
+            }
+            return target[prop as keyof typeof target];
+          },
+        });
+
+        // Call the function with the proxy as this context
+        (value as Function).call(proxy, modelId);
+      }
+
+      processing.delete(key);
+      visited.add(key);
+      return false;
+    };
+
+    // Check each attribute for cycles
+    Object.keys(attrs).forEach(detectCycle);
+
+    // Return keys in their original order
+    return Object.keys(attrs) as (keyof NewModelAttrs<TToken>)[];
   }
 }

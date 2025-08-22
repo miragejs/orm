@@ -1,15 +1,5 @@
-export { default as DB } from './DB';
-export {
-  default as DbCollection,
-  type DbCollectionOptions,
-  type DbQuery,
-  type DbRecord,
-  type DbRecordInput,
-  type DbUpdateInput,
-} from './DbCollection';
-export {
-  default as IdentityManager,
-  type AllowedIdTypes,
-  type IdentityManagerOptions,
-} from './IdentityManager';
-export { default as NumberIdentityManager } from './NumberIdentityManager';
+export { default as DB, createDatabase } from './DB';
+export { default as DbCollection } from './DbCollection';
+export type { DbConfig, DbData, DbInstance } from './DB';
+export type { DbCollectionConfig } from './DbCollection';
+export type * from './types';

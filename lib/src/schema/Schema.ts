@@ -1,159 +1,113 @@
-import {
-  DB,
-  type AllowedIdTypes,
-  type DbCollection,
-  type DbRecord,
-  type IdentityManager,
-} from '@src/db';
-import { type FactoryInstance } from '@src/factory';
-import { Inflector } from '@src/inflector';
-import { Model, type ModelAttrs, type ModelClass } from '@src/model';
-import { Registry } from '@src/registry';
+import { createDatabase, type DbInstance } from '@src/db';
+import type { TraitMap } from '@src/factory';
+import { StringIdentityManager, type IdentityManager } from '@src/id-manager';
+import type { ModelToken } from '@src/model';
 
-import SchemaCollection from './SchemaCollection';
+import SchemaCollection, { createSchemaCollection } from './SchemaCollection';
+import type { SchemaCollectionConfig, SchemaConfig, InferDbCollections } from './types';
 
 /**
- * Schema class that manages model registration and provides type-safe access to models
- * @template TModels - The type map of collection names to their model attributes
+ * Sets up a schema with collections and global configuration
+ * @param collections - Collection configurations keyed by collection name
+ * @param config - Global schema configuration (optional)
+ * @returns A schema instance with collection properties
  */
-export default class Schema<TModels extends Models> {
-  private _collections: Map<string, SchemaCollection<any>> = new Map();
-  private _db!: DB<{
-    [K in keyof TModels]: DbCollection<TModels[K], NonNullable<TModels[K]['id']>>;
-  }>;
-  private _registry: Registry;
+export function setupSchema<TCollections extends Record<string, SchemaCollectionConfig<any, any>>>(
+  collections: TCollections,
+  config?: SchemaConfig<any>,
+): SchemaInstance<TCollections> {
+  return new Schema(collections, config ?? {}) as SchemaInstance<TCollections>;
+}
 
-  constructor(options: SchemaOptions<TModels>) {
-    this._registry = new Registry();
+/**
+ * Schema class that manages database and collections
+ * @template TCollections - The type map of collection names to their configurations
+ */
+export default class Schema<TCollections extends Record<string, SchemaCollectionConfig<any, any>>> {
+  private _collections: Map<string, SchemaCollection<any, any>> = new Map();
+  private _db: DbInstance<InferDbCollections<TCollections>>;
+  private _identityManager: IdentityManager<any>;
+  // private _serializer?: any; // Skip serializer for now
 
-    this.registerInflector(options.inflector);
-    this.registerModels(options.models);
-    this.registerFactories(options.factories);
-    this.registerIdentityManagers(options.identityManagers);
-    this.initializeDb(options.fixtures);
-    this.createCollections();
-  }
-
-  /**
-   * Create a new Schema instance with collection accessors
-   * @param options - The options for the schema
-   * @returns The new Schema instance with collection accessors
-   */
-  static setup<TModels extends Record<string, ModelAttrs<AllowedIdTypes>>>(
-    options: SchemaOptions<TModels>,
-  ): SchemaInstance<TModels> {
-    return new Schema(options) as SchemaInstance<TModels>;
+  constructor(collections: TCollections, config: SchemaConfig<any> = {}) {
+    this._db = createDatabase<InferDbCollections<TCollections>>({});
+    this._identityManager = config.identityManager ?? new StringIdentityManager();
+    this._registerCollections(collections);
   }
 
   /**
    * Get the database instance
-   * @returns The database instance
+   * @returns The database instance with proper collection typing
    */
-  get db(): DB<{
-    [K in keyof TModels]: DbCollection<TModels[K], NonNullable<TModels[K]['id']>>;
-  }> {
+  get db(): DbInstance<InferDbCollections<TCollections>> {
     return this._db;
+  }
+
+  /**
+   * Get the default identity manager
+   * @returns The default identity manager with proper typing
+   */
+  get identityManager(): IdentityManager<any> {
+    return this._identityManager;
   }
 
   /**
    * Get a schema collection by collection name
    * @param collectionName - The name of the collection
-   * @returns The schema collection for the collection
+   * @returns The schema collection for the collection with proper typing
    */
-  getCollection<K extends keyof TModels>(collectionName: K): SchemaCollection<TModels[K]> {
+  getCollection<K extends keyof TCollections>(
+    collectionName: K,
+  ): TCollections[K] extends SchemaCollectionConfig<infer TToken, infer TTraits>
+    ? SchemaCollection<TToken, TTraits>
+    : never {
     const collection = this._collections.get(collectionName as string);
     if (!collection) {
       throw new Error(`Collection '${String(collectionName)}' not found`);
     }
 
-    return collection as unknown as SchemaCollection<TModels[K]>;
+    return collection as TCollections[K] extends SchemaCollectionConfig<infer TToken, infer TTraits>
+      ? SchemaCollection<TToken, TTraits>
+      : never;
   }
 
-  private registerInflector(inflector?: Inflector): void {
-    if (inflector) {
-      Inflector.instance.register(inflector);
-    }
-  }
+  // -- PRIVATE METHODS --
 
   /**
-   * Register user-defined models in the registry
-   * @param models - The models to register
+   * Add a collection to the schema (internal method)
+   * @param collectionName - The name of the collection
+   * @param collection - The schema collection instance
    */
-  private registerModels(models: SchemaOptions<TModels>['models']): void {
-    if (models) {
-      Object.entries(models).forEach(([collectionName, modelClass]) => {
-        this._registry.models.set(collectionName, modelClass);
-      });
-    }
-  }
-
-  /**
-   * Register all factories in the registry and base model classes if they don't exist
-   * @param factories - The factories to register
-   */
-  private registerFactories(factories: SchemaOptions<TModels>['factories']): void {
-    Object.entries(factories).forEach(([collectionName, factory]) => {
-      if (!this._registry.models.has(collectionName)) {
-        this._registry.models.set(collectionName, Model.define<TModels[keyof TModels]>());
-      }
-      this._registry.factories.set(collectionName, factory);
-    });
-  }
-
-  /**
-   * Register model-specific identity managers in the registry
-   * @param identityManagers - The identity managers to register
-   */
-  private registerIdentityManagers(
-    identityManagers: SchemaOptions<TModels>['identityManagers'],
+  private _addCollection<TToken extends ModelToken, TTraits extends TraitMap<TToken>>(
+    collectionName: string,
+    collection: SchemaCollection<TToken, TTraits>,
   ): void {
-    if (identityManagers) {
-      Object.entries(identityManagers).forEach(([collectionName, manager]) => {
-        this._registry.identityManagers.set(collectionName, manager);
+    this._collections.set(collectionName, collection);
+
+    // Add collection as a property on the schema instance
+    if (!Object.prototype.hasOwnProperty.call(this, collectionName)) {
+      Object.defineProperty(this, collectionName, {
+        configurable: true,
+        enumerable: true,
+        get: () => this._collections.get(collectionName),
       });
     }
   }
 
   /**
-   * Initialize the database with fixtures
-   * @param fixtures - The initial data for the database
+   * Register collections from the configuration
+   * @param collections - Collection configurations to register
    */
-  private initializeDb(fixtures: SchemaOptions<TModels>['fixtures']): void {
-    this._db = DB.setup({
-      identityManagers: this._registry.identityManagers,
-      initialData: fixtures,
-    }) as DB<{
-      [K in keyof TModels]: DbCollection<TModels[K], NonNullable<TModels[K]['id']>>;
-    }>;
-  }
+  private _registerCollections(collections: TCollections): void {
+    // Create collections and add them to the schema
+    for (const [collectionName, collectionConfig] of Object.entries(collections)) {
+      const identityManager = collectionConfig.identityManager ?? this._identityManager;
+      const collection = createSchemaCollection(this, {
+        ...collectionConfig,
+        identityManager,
+      });
 
-  /**
-   * Create schema collections for all registered models
-   */
-  private createCollections(): void {
-    for (const [collectionName, modelClass] of this._registry.models.entries()) {
-      let dbCollection: DbCollection<any, any>;
-      if (this._db.hasCollection(collectionName)) {
-        dbCollection = this._db.getCollection(collectionName);
-      } else {
-        this._db.createCollection(collectionName);
-        dbCollection = this._db.getCollection(collectionName);
-      }
-
-      const factory = this._registry.factories.get(collectionName);
-      const collection = new SchemaCollection(collectionName, modelClass, dbCollection, factory);
-
-      this._collections.set(collectionName, collection);
-
-      if (!Object.prototype.hasOwnProperty.call(this, collectionName)) {
-        Object.defineProperty(this, collectionName, {
-          get: () => {
-            return this._collections.get(collectionName);
-          },
-          enumerable: true,
-          configurable: true,
-        });
-      }
+      this._addCollection(collectionName, collection);
     }
   }
 }
@@ -161,59 +115,15 @@ export default class Schema<TModels extends Models> {
 // -- TYPES --
 
 /**
- * Type for models where keys are plural collection names and values are model attributes
+ * Schema instance type with collection properties
+ * @template TCollections - The type map of collection names to their configurations
  */
-export type Models = Record<string, ModelAttrs<AllowedIdTypes>>;
-
-/**
- * Extracts collection names that have string IDs
- */
-type CollectionsWithStringIds<TModels extends Models> = {
-  [K in keyof TModels]: TModels[K]['id'] extends string ? K : never;
-}[keyof TModels];
-
-/**
- * Extracts collection names that have number IDs
- */
-type CollectionsWithNumberIds<TModels extends Models> = {
-  [K in keyof TModels]: TModels[K]['id'] extends number ? K : never;
-}[keyof TModels];
-
-/**
- * Base options for creating a Schema instance
- * @template TModels - The type map of collection names to their model attributes
- */
-type SchemaBaseOptions<TModels extends Models> = {
-  factories: Record<keyof TModels, FactoryInstance<any>>;
-  fixtures?: Record<keyof TModels, DbRecord<any, AllowedIdTypes>[]>;
-  inflector?: Inflector;
-  models?: Record<string, ModelClass<any>>;
-};
-
-/**
- * Options for creating a Schema instance
- * @template TModels - The type map of collection names to their model attributes
- */
-export type SchemaOptions<TModels extends Models> =
-  CollectionsWithNumberIds<TModels> extends never
-    ? SchemaBaseOptions<TModels> & {
-        // String IDs found - identityManagers is required with required string ID managers
-        identityManagers: {
-          application?: IdentityManager<string>;
-        } & Record<CollectionsWithStringIds<TModels>, IdentityManager<string>> &
-          Partial<Record<CollectionsWithNumberIds<TModels>, IdentityManager<number>>>;
-      }
-    : SchemaBaseOptions<TModels> & {
-        // No string IDs found - identityManagers is optional with optional collection properties
-        identityManagers?: {
-          application?: IdentityManager<number>;
-        } & Partial<Record<CollectionsWithNumberIds<TModels>, IdentityManager<number>>>;
-      };
-
-/**
- * Instance of Schema class with accessors for the collections
- * @template TModels - The type map of collection names to their model attributes
- */
-export type SchemaInstance<TModels extends Models> = Schema<TModels> & {
-  [K in keyof TModels]: SchemaCollection<TModels[K]>;
-};
+export type SchemaInstance<TCollections extends Record<string, SchemaCollectionConfig<any, any>>> =
+  Schema<TCollections> & {
+    [K in keyof TCollections]: TCollections[K] extends SchemaCollectionConfig<
+      infer TToken,
+      infer TTraits
+    >
+      ? SchemaCollection<TToken, TTraits>
+      : never;
+  };

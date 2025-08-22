@@ -1,8 +1,2 @@
-export {
-  default as BaseFactory,
-  type FactoryAttrs,
-  type FactoryDefinition,
-  type FactoryInstance,
-  type TraitDefinition,
-} from './BaseFactory';
-export { default as Factory } from './Factory';
+export { default as Factory, createFactory, extendFactory } from './Factory';
+export type * from './types';
