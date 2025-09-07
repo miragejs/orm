@@ -1,29 +1,9 @@
 import { IdentityManager, type IdType } from '@src/id-manager';
+import type { ModelAttrs, ModelToken } from '@src/model';
 import { MirageError } from '@src/utils';
 
 import DbCollection, { type DbCollectionConfig } from './DbCollection';
 import type { DbRecord } from './types';
-
-/**
- * Factory function for creating a DB instance with collection accessors
- * @template TCollections - The type of collections in the database
- * @param config - The configuration for the database
- * @param config.initialData - The initial data to populate collections
- * @returns A DB instance with typed collection accessors
- * @example
- * const db = createDatabase({
- *   users: [{ id: "1", name: 'John' }],
- *   posts: [{ id: "1", title: 'Hello world' }]
- * });
- *
- * db.users.records; // [{ id: "1", name: 'John' }]
- * db.posts.records; // [{ id: "1", title: 'Hello world' }]
- */
-export function createDatabase<TCollections extends Record<string, DbCollection<any>>>(
-  config?: DbConfig<TCollections>,
-): DbInstance<TCollections> {
-  return new DB<TCollections>(config) as DbInstance<TCollections>;
-}
 
 /**
  * A database for storing and managing collections of records.
@@ -175,6 +155,27 @@ export default class DB<TCollections extends Record<string, DbCollection<any>>> 
       }
     });
   }
+}
+
+/**
+ * Factory function for creating a DB instance with collection accessors
+ * @template TCollections - The type of collections in the database
+ * @param config - The configuration for the database
+ * @param config.initialData - The initial data to populate collections
+ * @returns A DB instance with typed collection accessors
+ * @example
+ * const db = createDatabase({
+ *   users: [{ id: "1", name: 'John' }],
+ *   posts: [{ id: "1", title: 'Hello world' }]
+ * });
+ *
+ * db.users.records; // [{ id: "1", name: 'John' }]
+ * db.posts.records; // [{ id: "1", title: 'Hello world' }]
+ */
+export function createDatabase<TCollections extends Record<string, DbCollection<any>>>(
+  config?: DbConfig<TCollections>,
+): DbInstance<TCollections> {
+  return new DB<TCollections>(config) as DbInstance<TCollections>;
 }
 
 // -- Types --

@@ -1,27 +1,51 @@
 import { DbCollection } from '@src/db';
 import { NumberIdentityManager } from '@src/id-manager';
-import { Model, defineModel, defineToken } from '@src/model';
+import { defineModel, defineToken, NewModelInstance } from '@src/model';
 
-interface UserAttrs {
-  id: string;
-  email: string;
-  name: string;
-}
+describe('defineModel', () => {
+  it('should create a model class with attribute accessors', () => {
+    interface TestModel {
+      id: string;
+      value: string;
+    }
 
-const UserToken = defineToken<UserAttrs>('user', 'users');
+    const TestToken = defineToken<TestModel>('test', 'tests');
+    const TestModelClass = defineModel(TestToken);
+    const testCollection = new DbCollection<TestModel>('tests');
+
+    const test = new TestModelClass({
+      attrs: { value: 'test value' },
+      collection: testCollection,
+    });
+
+    expect(test.value).toBe('test value');
+    expect(test.isNew()).toBe(true);
+    expect(typeof test.save).toBe('function');
+  });
+});
 
 describe('Model', () => {
-  let collection: DbCollection<UserAttrs>;
-  let model: Model<typeof UserToken>;
+  // Setup test user model
+  interface UserAttrs {
+    id: string;
+    email: string;
+    name: string;
+  }
+  const UserToken = defineToken<UserAttrs>('user', 'users');
+  const UserModel = defineModel(UserToken);
+  const userDbCollection = new DbCollection<UserAttrs>('users');
+
+  let model: NewModelInstance<typeof UserToken>;
 
   beforeEach(() => {
-    collection = new DbCollection<UserAttrs>('users');
-    model = new Model(UserToken, {
+    userDbCollection.clear();
+
+    model = new UserModel({
       attrs: {
         email: 'john@example.com',
         name: 'John',
       },
-      collection,
+      collection: userDbCollection,
     });
   });
 
@@ -51,23 +75,23 @@ describe('Model', () => {
       const id = model.id;
       model.update({ name: 'Jane' });
       expect(model.id).toBe(id);
-      expect(model.attrs.name).toBe('Jane');
+      expect(model.name).toBe('Jane');
     });
 
     it('should handle destroy operation', () => {
       const user = model.save();
       const id = user.id;
       user.destroy();
-      expect(collection.find(id)).toBeNull();
+      expect(userDbCollection.find(id)).toBeNull();
     });
 
     it('should handle reload operation', () => {
       const user = model.save();
       const id = user.id;
-      collection.update(id, { name: 'Jane', email: 'jane@example.com' });
+      userDbCollection.update(id, { name: 'Jane', email: 'jane@example.com' });
       user.reload();
-      expect(user.attrs.name).toBe('Jane');
-      expect(user.attrs.email).toBe('jane@example.com');
+      expect(user.name).toBe('Jane');
+      expect(user.email).toBe('jane@example.com');
     });
   });
 
@@ -76,7 +100,7 @@ describe('Model', () => {
       model.save();
       const json = model.toJSON();
       expect(json).toEqual({
-        id: model.id,
+        id: '1',
         name: 'John',
         email: 'john@example.com',
       });
@@ -90,75 +114,51 @@ describe('Model', () => {
 
   describe('default string ID behavior', () => {
     it('should use string IDs by default', () => {
-      interface CommentModel {
+      interface CommentAttrs {
         id: string;
         text: string;
-        userId: string;
       }
 
-      const CommentToken = defineToken<CommentModel>('comment', 'comments');
-      const CommentModelClass = defineModel(CommentToken);
-      const commentCollection = new DbCollection<CommentModel>('comments');
-      const comment = new CommentModelClass({
-        attrs: { text: 'Great post!', userId: '1' },
-        collection: commentCollection,
+      const CommentToken = defineToken<CommentAttrs>('comment', 'comments');
+      const CommentModel = defineModel(CommentToken);
+
+      const comment = new CommentModel({
+        attrs: { text: 'Great post!' },
       });
+      expect(comment.id).toBeNull();
 
       comment.save();
+
       expect(typeof comment.id).toBe('string');
       expect(comment.text).toBe('Great post!');
-      expect(comment.userId).toBe('1');
     });
   });
 
   describe('explicit number ID behavior', () => {
     it('should work with number IDs when explicitly typed', () => {
-      interface PostModel {
+      interface PostAttrs {
         id: number;
         title: string;
         content: string;
       }
 
-      const PostToken = defineToken<
-        PostModel,
-        PostModel,
-        { modelName: 'post'; collectionName: 'posts' }
-      >('post', 'posts');
-      const PostModelClass = defineModel(PostToken);
-      const postCollection = new DbCollection<PostModel>('posts', {
+      const PostToken = defineToken<PostAttrs>('post', 'posts');
+      const PostModel = defineModel(PostToken);
+
+      const postCollection = new DbCollection<PostAttrs>('posts', {
         identityManager: new NumberIdentityManager(),
       });
-      const post = new PostModelClass({
+      const post = new PostModel({
         attrs: { title: 'My Post', content: 'Content here' },
         collection: postCollection,
       });
+      expect(post.id).toBeNull();
 
       post.save();
+
+      expect(post.id).toBeDefined();
       expect(typeof post.id).toBe('number');
       expect(post.title).toBe('My Post');
-      expect(post.content).toBe('Content here');
-    });
-  });
-
-  describe('defineModel factory function', () => {
-    it('should create a model class with attribute accessors', () => {
-      interface TestModel {
-        id: string;
-        value: string;
-      }
-
-      const TestToken = defineToken<TestModel>('test', 'tests');
-      const TestModelClass = defineModel(TestToken);
-      const testCollection = new DbCollection<TestModel>('tests');
-
-      const test = new TestModelClass({
-        attrs: { value: 'test value' },
-        collection: testCollection,
-      });
-
-      expect(test.value).toBe('test value');
-      expect(test.isNew()).toBe(true);
-      expect(typeof test.save).toBe('function');
     });
   });
 });

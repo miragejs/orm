@@ -6,9 +6,16 @@ import type {
   NewModelAttrs,
   PartialModelAttrs,
 } from '@src/model';
+import { ModelRelationships } from '@src/model';
 import { MirageError } from '@src/utils';
 
-import type { FactoryAttrs, FactoryConfig, FactoryDefinition, TraitMap, TraitName } from './types';
+import type {
+  FactoryAttrs,
+  FactoryConfig,
+  FactoryDefinition,
+  ModelTraits,
+  TraitName,
+} from './types';
 
 /**
  * Create a factory.
@@ -18,8 +25,12 @@ import type { FactoryAttrs, FactoryConfig, FactoryDefinition, TraitMap, TraitNam
  */
 export function createFactory<
   TToken extends ModelToken,
-  TTraits extends TraitMap<TToken> = TraitMap<TToken>,
->(token: TToken, config: FactoryConfig<TToken, TTraits>): Factory<TToken, TTraits> {
+  TRelationships extends ModelRelationships | undefined = undefined,
+  TTraits extends ModelTraits<TToken, TRelationships> = ModelTraits<TToken, TRelationships>,
+>(
+  token: TToken,
+  config: FactoryConfig<TToken, TRelationships, TTraits>,
+): Factory<TToken, TRelationships, TTraits> {
   return new Factory(
     token,
     config.attributes,
@@ -34,30 +45,34 @@ export function createFactory<
  * @param definition - The new attributes, traits, and afterCreate hook to add or override.
  * @returns The extended factory.
  */
-export function extendFactory<TToken extends ModelToken, TTraits extends TraitMap<TToken>>(
-  factory: Factory<TToken, TTraits>,
-  definition: FactoryDefinition<TToken, TTraits>,
-): Factory<TToken, TTraits> {
+export function extendFactory<
+  TToken extends ModelToken,
+  TRelationships extends ModelRelationships | undefined = undefined,
+  TTraits extends ModelTraits<TToken, TRelationships> = ModelTraits<TToken, TRelationships>,
+>(
+  factory: Factory<TToken, TRelationships, TTraits>,
+  definition: FactoryDefinition<TToken, TRelationships, TTraits>,
+): Factory<TToken, TRelationships, TTraits> {
   const { attributes = {}, traits = {} } = definition;
 
   // Merge attributes, with new attributes taking precedence
   const mergedAttributes = {
-    ...factory['_attributes'],
+    ...factory.attributes,
     ...attributes,
   };
 
   // Merge traits, with new traits taking precedence
   const mergedTraits = {
-    ...factory['_traits'],
+    ...factory.traits,
     ...traits,
   } as TTraits;
 
   // Create new factory with merged configuration
-  return new Factory<TToken, TTraits>(
-    factory['_token'],
+  return new Factory<TToken, TRelationships, TTraits>(
+    factory.token,
     mergedAttributes as FactoryAttrs<TToken>,
     mergedTraits,
-    definition.afterCreate || factory['_afterCreate'],
+    definition.afterCreate || factory.afterCreate,
   );
 }
 
@@ -65,24 +80,25 @@ export function extendFactory<TToken extends ModelToken, TTraits extends TraitMa
  * Factory that builds model attributes.
  */
 export default class Factory<
-  TToken extends ModelToken,
-  TTraits extends TraitMap<TToken> = TraitMap<TToken>,
+  TToken extends ModelToken = ModelToken,
+  TRelationships extends ModelRelationships | undefined = undefined,
+  TTraits extends ModelTraits<TToken, TRelationships> = ModelTraits<TToken, TRelationships>,
 > {
-  private readonly _token: TToken;
-  private readonly _attributes: FactoryAttrs<TToken>;
-  private readonly _traits: TTraits;
-  private readonly _afterCreate?: (model: ModelInstance<TToken>) => void;
+  readonly token: TToken;
+  readonly attributes: FactoryAttrs<TToken>;
+  readonly traits: TTraits;
+  readonly afterCreate?: (model: any) => void;
 
   constructor(
     token: TToken,
     attributes: FactoryAttrs<TToken>,
     traits: TTraits,
-    afterCreate?: (model: ModelInstance<TToken>) => void,
+    afterCreate?: (model: any) => void,
   ) {
-    this._token = token;
-    this._attributes = attributes;
-    this._traits = traits;
-    this._afterCreate = afterCreate;
+    this.token = token;
+    this.attributes = attributes;
+    this.traits = traits;
+    this.afterCreate = afterCreate;
   }
 
   /**
@@ -107,7 +123,7 @@ export default class Factory<
       }
     });
 
-    const processedAttributes = this._processAttributes(this._attributes, modelId);
+    const processedAttributes = this._processAttributes(this.attributes, modelId);
     const traitAttributes = this._buildWithTraits(traitNames, modelId);
 
     // Merge attributes in order: defaults override traits, traits override base attributes
@@ -128,18 +144,18 @@ export default class Factory<
    * @returns The processed model.
    */
   processAfterCreateHooks(
-    model: ModelInstance<TToken>,
+    model: any,
     ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TToken>)[]
-  ): ModelInstance<TToken> {
+  ): any {
     const traitNames: string[] = traitsAndDefaults.filter((arg) => typeof arg === 'string');
-    const hooks: ((model: ModelInstance<TToken>) => void)[] = [];
+    const hooks: ((model: any) => void)[] = [];
 
-    if (this._afterCreate) {
-      hooks.push(this._afterCreate);
+    if (this.afterCreate) {
+      hooks.push(this.afterCreate);
     }
 
     traitNames.forEach((name) => {
-      const trait = this._traits[name as TraitName<TTraits>];
+      const trait = this.traits[name as TraitName<TTraits>];
 
       if (trait?.afterCreate) {
         hooks.push(trait.afterCreate);
@@ -169,7 +185,7 @@ export default class Factory<
         }
 
         const currentKey = key as keyof PartialModelAttrs<TToken>;
-        const value = attrs[currentKey];
+        const value = (attrs as any)[currentKey];
 
         if (typeof value === 'function') {
           acc[key as string] = value.call(attrs, modelId);
@@ -191,7 +207,7 @@ export default class Factory<
   ): PartialModelAttrs<TToken> {
     const result = traitNames.reduce(
       (traitAttributes, name) => {
-        const trait = this._traits[name as TraitName<TTraits>];
+        const trait = this.traits[name as TraitName<TTraits>];
 
         if (trait) {
           const { afterCreate, ...extension } = trait;
@@ -199,7 +215,7 @@ export default class Factory<
           Object.entries(extension).forEach(([key, value]) => {
             if (key !== 'id') {
               traitAttributes[key] =
-                typeof value === 'function' ? value.call(this._attributes, modelId) : value;
+                typeof value === 'function' ? value.call(this.attributes, modelId) : value;
             }
           });
         }
@@ -267,3 +283,9 @@ export default class Factory<
     return Object.keys(attrs) as (keyof NewModelAttrs<TToken>)[];
   }
 }
+
+export type FactoryInstance<
+  TToken extends ModelToken,
+  TRelationships extends ModelRelationships | undefined = undefined,
+  TTraits extends ModelTraits<TToken, TRelationships> = ModelTraits<TToken, TRelationships>,
+> = Factory<TToken, TRelationships, TTraits>;

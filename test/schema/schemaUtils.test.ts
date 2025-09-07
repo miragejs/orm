@@ -4,7 +4,6 @@ import { defineToken } from '@src/model';
 import { createCollection, composeCollections, setupSchema } from '@src/schema';
 
 // -- TEST MODELS --
-
 interface UserModel {
   id: string;
   email: string;
@@ -24,13 +23,11 @@ interface CategoryModel {
 }
 
 // -- TEST MODEL TOKENS --
-
 const UserToken = defineToken<UserModel>('user', 'users');
 const PostToken = defineToken<PostModel>('post', 'posts');
 const CategoryToken = defineToken<CategoryModel>('category', 'categories');
 
 // -- TEST FACTORIES --
-
 const userFactory = createFactory(UserToken, {
   attributes: {
     email: () => 'test@example.com',

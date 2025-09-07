@@ -155,10 +155,10 @@ describe('ModelCollection', () => {
       const commentModelCollection = new ModelCollection(CommentToken, [comment1, comment2]);
 
       expect(commentModelCollection.length).toBe(2);
-      expect(commentModelCollection.get(0)?.text).toBe('First comment');
-      expect(commentModelCollection.get(1)?.text).toBe('Second comment');
-      expect(typeof commentModelCollection.get(0)?.id).toBe('string');
-      expect(typeof commentModelCollection.get(1)?.id).toBe('string');
+      expect(commentModelCollection.at(0)?.text).toBe('First comment');
+      expect(commentModelCollection.at(1)?.text).toBe('Second comment');
+      expect(typeof commentModelCollection.at(0)?.id).toBe('string');
+      expect(typeof commentModelCollection.at(1)?.id).toBe('string');
     });
   });
 });

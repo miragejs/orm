@@ -7,12 +7,13 @@ export { defineToken, defineModel } from './model';
 export type {
   InferTokenCollectionName,
   InferTokenId,
-  InferTokenMeta,
   InferTokenModel,
   InferTokenModelName,
   ModelAttrs,
   ModelClass,
+  ModelForeignKeys,
   ModelInstance,
+  ModelRelationships,
   ModelToken,
   NewModelAttrs,
   NewModelInstance,
@@ -26,7 +27,7 @@ export type {
   FactoryAttrs,
   FactoryConfig,
   FactoryDefinition,
-  TraitMap,
+  ModelTraits,
   TraitName,
 } from './factory';
 
@@ -37,4 +38,21 @@ export type {
   SchemaCollectionConfig,
   SchemaConfig,
   SchemaInstance,
+  SchemaCollections,
 } from './schema';
+
+// Relationships
+export { belongsTo, hasMany } from './relationships';
+export type {
+  BelongsTo,
+  HasMany,
+  Relationships,
+} from './relationships';
+
+// Database
+export { createDatabase } from './db';
+export type { DbInstance } from './db';
+
+// Serializer
+export { Serializer } from './serializer';
+export type { SerializerConfig } from './serializer';

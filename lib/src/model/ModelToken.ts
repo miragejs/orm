@@ -1,4 +1,4 @@
-import type { BaseModelAttrs, ModelMeta, ModelToken } from './types';
+import type { BaseModelAttrs, ModelToken, ModelSerialization } from './types';
 
 /**
  * Define a model token
@@ -8,15 +8,19 @@ import type { BaseModelAttrs, ModelMeta, ModelToken } from './types';
  */
 export function defineToken<
   TModel extends { id: any } = BaseModelAttrs<string>,
-  TSerialized = TModel,
-  TMeta extends ModelMeta = ModelMeta,
+  TSerialization extends ModelSerialization<TModel, TModel[]> = ModelSerialization<
+    TModel,
+    TModel[]
+  >,
+  const TModelName extends string = string,
+  const TCollectionName extends string = string,
 >(
-  modelName: TMeta['modelName'],
-  collectionName: TMeta['collectionName'],
-): ModelToken<TModel, TSerialized, TMeta> {
+  modelName: TModelName,
+  collectionName: TCollectionName,
+): ModelToken<TModel, TSerialization, TModelName, TCollectionName> {
   return {
     modelName,
     collectionName,
     key: Symbol(modelName),
-  } as ModelToken<TModel, TSerialized, TMeta>;
+  };
 }

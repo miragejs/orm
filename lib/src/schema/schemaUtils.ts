@@ -17,7 +17,7 @@ import type { SchemaCollectionConfig, CollectionModule, ComposeCollections } fro
  */
 export function createCollection<
   TName extends string,
-  TConfig extends SchemaCollectionConfig<any, any>,
+  TConfig extends SchemaCollectionConfig<any, any, any>,
 >(name: TName, config: TConfig): CollectionModule<TName, TConfig> {
   return {
     [name]: config,
