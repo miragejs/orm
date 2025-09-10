@@ -43,11 +43,7 @@ export type {
 
 // Relationships
 export { belongsTo, hasMany } from './relationships';
-export type {
-  BelongsTo,
-  HasMany,
-  Relationships,
-} from './relationships';
+export type { BelongsTo, HasMany, Relationships } from './relationships';
 
 // Database
 export { createDatabase } from './db';
