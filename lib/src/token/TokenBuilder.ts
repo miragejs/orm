@@ -1,6 +1,4 @@
-import { ModelSerialization } from '@src/model/types';
-
-import { ModelToken } from './types';
+import type { ModelToken, ModelSerialization } from './types';
 
 /**
  * A fluent builder for creating strongly-typed model tokens.
@@ -8,8 +6,8 @@ import { ModelToken } from './types';
  * The TokenBuilder provides a type-safe way to construct ModelToken instances with
  * configurable model attributes and serialization types. It follows the builder pattern,
  * allowing method chaining to progressively refine the token's type parameters.
- * @template TModel - The model attributes type (must have an 'id' property)
- * @template TSer - The serialization configuration extending ModelSerialization
+ * @template TModelAttrs - The model attributes type (must have an 'id' property)
+ * @template TSerialization - The serialization configuration extending ModelSerialization
  * @template TModelName - The string literal type for the model name
  * @template TCollectionName - The string literal type for the collection name
  * @example
@@ -31,8 +29,8 @@ import { ModelToken } from './types';
  * ```
  */
 export default class TokenBuilder<
-  TModel extends { id: any },
-  TSer extends ModelSerialization<any, any>,
+  TModelAttrs extends { id: any },
+  TSerialization extends ModelSerialization<any, any>,
   TModelName extends string,
   TCollectionName extends string,
 > {
@@ -61,7 +59,33 @@ export default class TokenBuilder<
    * const builder = token('user', 'users').attrs<UserAttrs>();
    * ```
    */
-  attrs<T extends { id: any }>() {
+  attrs<T extends { id: any }>(): TokenBuilder<
+    T,
+    ModelSerialization<T>,
+    TModelName,
+    TCollectionName
+  >;
+
+  /**
+   * Sets the model attributes type and resets serialization to default.
+   *
+   * This method allows you to specify the exact shape of your model attributes,
+   * providing strong typing for the resulting token. When called, it resets the
+   * serialization types to the default ModelSerialization<T, T[]>.
+   * @param defaultAttrs - Default attributes for JavaScript usage (type inference)
+   * @template T - The model attributes type (must extend { id: any })
+   * @returns A new TokenBuilder instance with the specified model type
+   * @example
+   * ```javascript
+   * const builder = token('user', 'users').attrs({ id: '', name: '', email: '' });
+   * ```
+   */
+  attrs<T extends { id: any }>(
+    defaultAttrs: T,
+  ): TokenBuilder<T, ModelSerialization<T>, TModelName, TCollectionName>;
+
+  // eslint-disable-next-line jsdoc/require-jsdoc -- Implementation
+  attrs<T extends { id: any }>(_defaultAttrs?: T) {
     return new TokenBuilder<T, ModelSerialization<T>, TModelName, TCollectionName>(
       this._modelName,
       this._collectionName,
@@ -74,12 +98,12 @@ export default class TokenBuilder<
    * This method allows you to specify custom serialization types for both individual
    * models and collections, which is useful when your API returns data in a different
    * format than your internal model representation.
-   * @template SerializedModel - The type for serialized individual models (defaults to TModel)
+   * @template SerializedModel - The type for serialized individual models (defaults to TModelAttrs)
    * @template SerializedCollection - The type for serialized collections (defaults to SerializedModel[])
    * @returns A new TokenBuilder instance with the specified serialization types
    * @example
    * ```typescript
-   * interface User { id: string; name: string; }
+   * interface UserAttrs { id: string; name: string; }
    * interface User { id: string; displayName: string; }
    * interface UserList { users: User[]; total: number; }
    *
@@ -88,10 +112,55 @@ export default class TokenBuilder<
    *   .serialization<User, UserList>();
    * ```
    */
-  serialization<SerializedModel = TModel, SerializedCollection = SerializedModel[]>() {
+  serialization<
+    SerializedModel = TModelAttrs,
+    SerializedCollection = SerializedModel[],
+  >(): TokenBuilder<
+    TModelAttrs,
+    ModelSerialization<SerializedModel, SerializedCollection>,
+    TModelName,
+    TCollectionName
+  >;
+
+  /**
+   * Overrides the serialization types explicitly, independent from model attributes.
+   *
+   * This method allows you to specify custom serialization types for both individual
+   * models and collections, which is useful when your API returns data in a different
+   * format than your internal model representation.
+   * @template TSerializedModel - The type for serialized individual models (defaults to TModelAttrs)
+   * @template TSerializedCollection - The type for serialized collections (defaults to TSerializedModel[])
+   * @param model - An example object with model response
+   * @param collection - An example object with collection response
+   * @returns A new TokenBuilder instance with the specified serialization types
+   * @example
+   * ```typescript
+   * interface User { id: string; name: string; }
+   * interface UserList { users: User[]; total: number; }
+   *
+   * const builder = token('user', 'users')
+   *   .attrs<UserAttrs>()
+   *   .serialization<User, UserList>();
+   * ```
+   */
+  serialization<TSerializedModel, TSerializedCollection>(
+    _model?: TSerializedModel,
+    _collection?: TSerializedCollection,
+  ): TokenBuilder<
+    TModelAttrs,
+    ModelSerialization<TSerializedModel, TSerializedCollection>,
+    TModelName,
+    TCollectionName
+  >;
+
+  // eslint-disable-next-line jsdoc/require-jsdoc -- Implementation
+  serialization<TSerializedModel = TModelAttrs, TSerializedCollection = TSerializedModel[]>(
+    _model?: TSerializedModel,
+    _collection?: TSerializedCollection,
+  ) {
     return new TokenBuilder<
-      TModel,
-      ModelSerialization<SerializedModel, SerializedCollection>,
+      TModelAttrs,
+      ModelSerialization<TSerializedModel, TSerializedCollection>,
       TModelName,
       TCollectionName
     >(this._modelName, this._collectionName);
@@ -110,11 +179,9 @@ export default class TokenBuilder<
    *   .attrs<UserAttrs>()
    *   .create();
    *
-   * // Use the token for type-safe operations
-   * const userCollection = db.getCollection(userToken);
    * ```
    */
-  create(): ModelToken<TModel, TSer, TModelName, TCollectionName> {
+  create(): ModelToken<TModelAttrs, TSerialization, TModelName, TCollectionName> {
     return {
       modelName: this._modelName,
       collectionName: this._collectionName,

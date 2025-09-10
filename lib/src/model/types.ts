@@ -1,7 +1,7 @@
+import type { BelongsTo, HasMany, Relationships } from '@src/associations';
 import type { DbCollection } from '@src/db';
 import type { IdType } from '@src/id-manager';
-import type { BelongsTo, HasMany, Relationships } from '@src/relationships';
-import type { SchemaCollectionConfig, SchemaCollections, SchemaInstance } from '@src/schema';
+import type { SchemaCollections, SchemaInstance } from '@src/schema';
 
 import type Model from './Model';
 import type ModelCollection from './ModelCollection';

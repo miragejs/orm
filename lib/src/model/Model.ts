@@ -1,5 +1,5 @@
+import type { Relationships } from '@src/associations';
 import { DbCollection, type DbRecordInput } from '@src/db';
-import type { Relationships } from '@src/relationships';
 import type { SchemaCollections, SchemaInstance } from '@src/schema';
 
 import ModelCollection from './ModelCollection';

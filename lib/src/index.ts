@@ -42,8 +42,8 @@ export type {
 } from './schema';
 
 // Relationships
-export { belongsTo, hasMany } from './relationships';
-export type { BelongsTo, HasMany, Relationships } from './relationships';
+export { belongsTo, hasMany, associations } from './associations';
+export type { BelongsTo, HasMany, Relationships } from './associations';
 
 // Database
 export { createDatabase } from './db';

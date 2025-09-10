@@ -1,7 +1,7 @@
 import { createFactory } from '@src/factory';
 import { NumberIdentityManager, StringIdentityManager } from '@src/id-manager';
 import { defineToken, ModelCollection, ModelToken } from '@src/model';
-import { hasMany, belongsTo } from '@src/relationships';
+import { hasMany, belongsTo } from '@src/associations';
 import { setupSchema } from '@src/schema';
 
 // -- TEST MODELS --

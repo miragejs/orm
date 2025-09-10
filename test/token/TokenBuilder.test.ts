@@ -159,10 +159,10 @@ describe('TokenBuilder', () => {
         };
       }
 
-        const complexToken = builder
-          .attrs<ComplexModel>()
-          .serialization<ComplexSerializedModel, ComplexCollection>()
-          .create();
+      const complexToken = builder
+        .attrs<ComplexModel>()
+        .serialization<ComplexSerializedModel, ComplexCollection>()
+        .create();
 
       expect(complexToken.modelName).toBe('test');
       expect(complexToken.collectionName).toBe('tests');
@@ -182,11 +182,11 @@ describe('TokenBuilder', () => {
         displayName: string;
       }
 
-        // Pattern 1: attrs then serialization
-        const token1 = builder.attrs<UserAttrs>().serialization<User>().create();
+      // Pattern 1: attrs then serialization
+      const token1 = builder.attrs<UserAttrs>().serialization<User>().create();
 
-        // Pattern 2: serialization then attrs (should reset serialization)
-        const token2 = builder.serialization<User>().attrs<UserAttrs>().create();
+      // Pattern 2: serialization then attrs (should reset serialization)
+      const token2 = builder.serialization<User>().attrs<UserAttrs>().create();
 
       expect(token1.modelName).toBe('test');
       expect(token2.modelName).toBe('test');
