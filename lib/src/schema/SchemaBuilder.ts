@@ -56,9 +56,7 @@ export default class SchemaBuilder<
    * });
    * ```
    */
-  collections<C extends SchemaCollections>(
-    collections: C,
-  ): SchemaBuilder<C, TIdentityManager> {
+  collections<C extends SchemaCollections>(collections: C): SchemaBuilder<C, TIdentityManager> {
     const builder = new SchemaBuilder<C, TIdentityManager>();
     builder._collections = collections;
     builder._identityManager = this._identityManager;
@@ -82,9 +80,7 @@ export default class SchemaBuilder<
    *   .identityManager(new StringIdentityManager());
    * ```
    */
-  identityManager<I extends IdentityManager>(
-    identityManager: I,
-  ): SchemaBuilder<TCollections, I> {
+  identityManager<I extends IdentityManager>(identityManager: I): SchemaBuilder<TCollections, I> {
     const builder = new SchemaBuilder<TCollections, I>();
     builder._collections = this._collections;
     builder._identityManager = identityManager;

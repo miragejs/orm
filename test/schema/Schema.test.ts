@@ -1,7 +1,7 @@
+import { hasMany, belongsTo } from '@src/associations';
 import { createFactory } from '@src/factory';
 import { NumberIdentityManager, StringIdentityManager } from '@src/id-manager';
-import { defineToken, ModelCollection, ModelToken } from '@src/model';
-import { hasMany, belongsTo } from '@src/associations';
+import { defineToken, ModelCollection } from '@src/model';
 import { setupSchema } from '@src/schema';
 
 // -- TEST MODELS --
@@ -9,6 +9,7 @@ interface UserAttrs {
   id: string;
   email: string;
   name: string;
+  postIds: string[];
 }
 
 interface PostAttrs {

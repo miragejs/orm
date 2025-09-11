@@ -13,6 +13,8 @@ import type {
   ModelUpdateAttrs,
   NewModelAttrs,
   NewModelInstance,
+  RelationshipDef,
+  RelationshipDefs,
   RelationshipNames,
   RelationshipTargetModel,
   RelationshipsByToken,
@@ -33,6 +35,7 @@ export default class Model<
   protected _attrs: NewModelAttrs<TToken>;
   protected _dbCollection: DbCollection<ModelAttrs<TToken>>;
   protected _relationships?: RelationshipsByToken<TSchema, TToken>;
+  protected _relationshipDefs?: RelationshipDefs;
   protected _schema?: SchemaInstance<TSchema>;
   protected _status: 'new' | 'saved';
 
@@ -47,6 +50,7 @@ export default class Model<
     this._dbCollection = collection ?? new DbCollection<ModelAttrs<TToken>>(token.collectionName);
     this._relationships = relationships;
     this._schema = schema;
+    this._relationshipDefs = this._parseRelationshipDefs(relationships);
 
     this._status = this._attrs.id ? this._verifyStatus(this._attrs.id) : 'new';
 
@@ -268,6 +272,51 @@ export default class Model<
     }
   }
 
+  /**
+   * Parse relationships configuration into internal relationship definitions
+   * This includes finding inverse relationships for bidirectional updates
+   * @param relationships - The relationships configuration from schema
+   * @returns Parsed relationship definitions with inverse information
+   */
+  private _parseRelationshipDefs(
+    relationships?: RelationshipsByToken<TSchema, TToken>,
+  ): RelationshipDefs | undefined {
+    if (!relationships || !this._schema) return undefined;
+
+    const relationshipDefs: RelationshipDefs = {};
+
+    // Parse each relationship and find its inverse
+    for (const relationshipName in relationships) {
+      const relationship = relationships[relationshipName];
+      const relationshipDef: RelationshipDef = {
+        relationship,
+      };
+
+      // Look for inverse relationship in the target model's collection
+      const targetCollectionName = relationship.targetToken.collectionName;
+      const targetCollection = this._schema.getCollection(targetCollectionName);
+
+      if (targetCollection.relationships) {
+        for (const inverseRelationshipName in targetCollection.relationships) {
+          const inverseRelationship = targetCollection.relationships[inverseRelationshipName];
+          if (inverseRelationship.targetToken.modelName === this.modelName) {
+            relationshipDef.inverse = {
+              targetToken: relationship.targetToken,
+              relationshipName: inverseRelationshipName,
+              type: inverseRelationship.type,
+              foreignKey: inverseRelationship.foreignKey,
+            };
+            break;
+          }
+        }
+      }
+
+      relationshipDefs[relationshipName] = relationshipDef;
+    }
+
+    return relationshipDefs;
+  }
+
   // -- RELATIONSHIP MANAGEMENT --
 
   /**
@@ -293,7 +342,7 @@ export default class Model<
 
       if (targetModel && !Array.isArray(targetModel)) {
         this._linkBelongsTo(relationship, targetModel);
-        this._updateInverseRelationship(relationship, targetModel, 'link');
+        this._updateInverseRelationship(relationshipName as string, targetModel, 'link');
       }
     } else if (type === 'hasMany') {
       // For hasMany, unlink all previous and link all new
@@ -303,7 +352,7 @@ export default class Model<
         this._linkHasMany(relationship, targetModel);
         // Update inverse relationships for all target models
         targetModel.forEach((model) => {
-          this._updateInverseRelationship(relationship, model, 'link');
+          this._updateInverseRelationship(relationshipName as string, model, 'link');
         });
       }
     }
@@ -339,12 +388,12 @@ export default class Model<
       this._unlinkBelongsTo(relationship);
 
       if (currentTarget) {
-        this._updateInverseRelationship(relationship, currentTarget, 'unlink');
+        this._updateInverseRelationship(relationshipName as string, currentTarget, 'unlink');
       }
     } else if (type === 'hasMany') {
       if (targetModel) {
         this._unlinkHasManyItem(relationship, targetModel);
-        this._updateInverseRelationship(relationship, targetModel, 'unlink');
+        this._updateInverseRelationship(relationshipName as string, targetModel, 'unlink');
       } else {
         // Get all current target models before unlinking
         const currentTargets = this._getRelatedModel(relationshipName as string) as any[];
@@ -352,7 +401,7 @@ export default class Model<
 
         if (currentTargets && Array.isArray(currentTargets)) {
           currentTargets.forEach((target) => {
-            this._updateInverseRelationship(relationship, target, 'unlink');
+            this._updateInverseRelationship(relationshipName as string, target, 'unlink');
           });
         }
       }
@@ -480,72 +529,66 @@ export default class Model<
 
   /**
    * Update the inverse relationship on the target model
-   * @param relationship - The current relationship being updated
+   * @param relationshipName - The name of the relationship being updated
    * @param targetModel - The target model to update
    * @param action - Whether to 'link' or 'unlink'
    */
   private _updateInverseRelationship(
-    relationship: Relationships,
+    relationshipName: string,
     targetModel: any,
     action: 'link' | 'unlink',
   ): void {
-    if (!this._schema) return;
+    if (!this._relationshipDefs || !this._schema) return;
 
-    const currentModelToken = this.modelName;
+    const relationshipDef = this._relationshipDefs[relationshipName];
+    if (!relationshipDef?.inverse) {
+      // No inverse relationship defined, so don't update the target model
+      return;
+    }
 
-    // Get the target model's collection from schema to access its relationships
-    const targetCollectionName = relationship.targetToken.collectionName;
+    const { inverse } = relationshipDef;
+    const { type, foreignKey } = inverse;
+
+    // Get the target model's ID to find it in the database
+    const targetModelId = targetModel.id;
+    if (!targetModelId) return;
+
+    // Get the target collection from schema
+    const targetCollectionName = relationshipDef.relationship.targetToken.collectionName;
     const targetCollection = this._schema.getCollection(targetCollectionName);
 
-    if (!targetCollection.relationships) return;
+    // Find the target model in the database
+    const targetDbRecord = this._schema.db.getCollection(targetCollectionName).find(targetModelId);
+    if (!targetDbRecord) return;
 
-    // Find the inverse relationship in the target collection's relationships
-    for (const inverseName in targetCollection.relationships) {
-      const inverseRelationship = targetCollection.relationships[inverseName];
-      if (inverseRelationship.targetToken.modelName === currentModelToken) {
-        const { foreignKey, type } = inverseRelationship;
+    // Prepare the update object for the target model
+    const updateAttrs: any = {};
 
-        // Prepare the update object for the target model
-        const updateAttrs: any = {};
+    if (type === 'hasMany') {
+      // Update hasMany relationship - add/remove this model's ID
+      const currentIds = (targetDbRecord[foreignKey] as any[]) || [];
 
-        if (type === 'hasMany') {
-          // Update hasMany relationship - add/remove this model's ID
-          const currentIds = (targetModel[foreignKey] as any[]) || [];
-
-          if (action === 'link') {
-            // Add this model's ID if not already present
-            if (!currentIds.includes(this.id)) {
-              updateAttrs[foreignKey] = [...currentIds, this.id];
-            }
-          } else {
-            // Remove this model's ID
-            updateAttrs[foreignKey] = currentIds.filter((id) => id !== this.id);
-          }
-        } else if (type === 'belongsTo') {
-          // Update belongsTo relationship - set/unset this model's ID
-          if (action === 'link') {
-            updateAttrs[foreignKey] = this.id;
-          } else {
-            updateAttrs[foreignKey] = null;
-          }
+      if (action === 'link') {
+        // Add this model's ID if not already present
+        if (!currentIds.includes(this.id)) {
+          updateAttrs[foreignKey] = [...currentIds, this.id];
         }
-
-        // Use the target model's update method instead of directly modifying _attrs
-        if (Object.keys(updateAttrs).length > 0) {
-          // Temporarily disable inverse updates to prevent infinite recursion
-          const originalUpdateInverse = targetModel._updateInverseRelationship;
-          targetModel._updateInverseRelationship = () => {};
-
-          try {
-            targetModel.update(updateAttrs);
-          } finally {
-            // Restore the original method
-            targetModel._updateInverseRelationship = originalUpdateInverse;
-          }
-        }
-
-        break;
+      } else {
+        // Remove this model's ID
+        updateAttrs[foreignKey] = currentIds.filter((id) => id !== this.id);
       }
+    } else if (type === 'belongsTo') {
+      // Update belongsTo relationship - set/unset this model's ID
+      if (action === 'link') {
+        updateAttrs[foreignKey] = this.id;
+      } else {
+        updateAttrs[foreignKey] = null;
+      }
+    }
+
+    // Update the target model directly in the database to avoid recursion
+    if (Object.keys(updateAttrs).length > 0) {
+      this._schema.db.getCollection(targetCollectionName).update(targetModelId, updateAttrs);
     }
   }
 
@@ -620,7 +663,7 @@ export default class Model<
             );
             const previousTarget = targetCollection.find(previousValue);
             if (previousTarget) {
-              this._updateInverseRelationship(relationship, previousTarget, 'unlink');
+              this._updateInverseRelationship(relationshipName, previousTarget, 'unlink');
             }
           }
 
@@ -631,12 +674,12 @@ export default class Model<
             );
             const newTarget = targetCollection.find(value);
             if (newTarget) {
-              this._updateInverseRelationship(relationship, newTarget, 'link');
+              this._updateInverseRelationship(relationshipName, newTarget, 'link');
             }
           }
         } else if (type === 'hasMany' && Array.isArray(value)) {
           // For hasMany, we need to handle the array of IDs
-          const previousIds = Array.isArray(previousValue) ? previousValue : [];
+          const previousIds = Array.isArray(previousValue) ? previousValue : ([] as any[]);
           const newIds = value;
 
           // Unlink from removed targets
@@ -648,7 +691,7 @@ export default class Model<
             removedIds.forEach((id: any) => {
               const target = targetCollection.find(id);
               if (target) {
-                this._updateInverseRelationship(relationship, target, 'unlink');
+                this._updateInverseRelationship(relationshipName, target, 'unlink');
               }
             });
           }
@@ -662,7 +705,7 @@ export default class Model<
             addedIds.forEach((id: any) => {
               const target = targetCollection.find(id);
               if (target) {
-                this._updateInverseRelationship(relationship, target, 'link');
+                this._updateInverseRelationship(relationshipName, target, 'link');
               }
             });
           }

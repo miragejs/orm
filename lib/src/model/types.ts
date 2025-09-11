@@ -121,6 +121,32 @@ type MaxDepth = readonly [unknown, unknown, unknown, unknown, unknown];
 // -- RELATIONSHIP TYPES --
 
 /**
+ * Internal relationship definition with inverse relationship information
+ * Used internally by Model to track bidirectional relationships
+ */
+export interface RelationshipDef {
+  /** The original relationship configuration */
+  relationship: Relationships;
+  /** The inverse relationship information, if it exists */
+  inverse?: {
+    /** The target model token that has the inverse relationship */
+    targetToken: ModelToken;
+    /** The name of the inverse relationship in the target model */
+    relationshipName: string;
+    /** The type of the inverse relationship */
+    type: 'belongsTo' | 'hasMany';
+    /** The foreign key used by the inverse relationship */
+    foreignKey: string;
+  };
+}
+
+/**
+ * Parsed relationship definitions for internal use by Model class
+ * Maps relationship names to their definitions including inverse information
+ */
+export type RelationshipDefs = Record<string, RelationshipDef>;
+
+/**
  * Model relationships configuration object
  * @example { posts: HasMany<PostToken>, author: BelongsTo<UserToken, 'authorId'> }
  */
