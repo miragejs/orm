@@ -1,5 +1,5 @@
 import { associations } from '@src/associations';
-import { createFactory } from '@src/factory';
+import { factory } from '@src/factory';
 import { NumberIdentityManager, StringIdentityManager } from '@src/id-manager';
 import { schema, SchemaBuilder, collection } from '@src/schema';
 import { token } from '@src/token';
@@ -23,19 +23,19 @@ describe('SchemaBuilder', () => {
   const postToken = token('post', 'posts').attrs<PostAttrs>().create();
 
   // Test factories
-  const userFactory = createFactory(userToken, {
-    attributes: {
+  const userFactory = factory(userToken)
+    .attrs({
       name: () => 'Test User',
       email: () => 'test@example.com',
-    },
-  });
+    })
+    .create();
 
-  const postFactory = createFactory(postToken, {
-    attributes: {
+  const postFactory = factory(postToken)
+    .attrs({
       title: () => 'Test Post',
       content: () => 'Test content',
-    },
-  });
+    })
+    .create();
 
   // Test identity managers
   const appIdentityManager = new StringIdentityManager();

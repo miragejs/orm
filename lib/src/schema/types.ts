@@ -1,7 +1,7 @@
 import type { DbCollection } from '@src/db';
-import type { Factory, ModelTraits } from '@src/factory';
+import type { Factory } from '@src/factory';
 import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
-import type { ModelToken, InferTokenModel, InferTokenId, InferTokenModelName } from '@src/model';
+import type { ModelToken, InferTokenModel, InferTokenId } from '@src/model';
 import type { ModelRelationships } from '@src/model';
 
 import type SchemaCollection from './SchemaCollection';
@@ -10,15 +10,15 @@ import type SchemaCollection from './SchemaCollection';
  * Type for schema collection config
  * @template TToken - The model token
  * @template TRelationships - The model relationships
- * @template TTraits - The model traits
+ * @template TFactory - The factory type
  */
 export interface SchemaCollectionConfig<
   TToken extends ModelToken,
   TRelationships extends ModelRelationships | undefined = undefined,
-  TTraits extends ModelTraits<TToken, TRelationships> = ModelTraits<TToken, TRelationships>,
+  TFactory extends Factory<TToken, any> = Factory<TToken, any>,
 > {
   model: TToken;
-  factory?: Factory<TToken, TRelationships, TTraits>;
+  factory?: TFactory;
   relationships?: TRelationships;
   identityManager?: IdentityManager<InferTokenId<TToken>>;
 }
@@ -44,9 +44,9 @@ export type SchemaCollectionAccessors<TCollections extends SchemaCollections> = 
   [K in keyof TCollections]: TCollections[K] extends SchemaCollectionConfig<
     infer TToken,
     infer TRelationships,
-    infer TTraits
+    infer TFactory
   >
-    ? SchemaCollection<TCollections, TToken, TRelationships, TTraits>
+    ? SchemaCollection<TCollections, TToken, TRelationships, TFactory>
     : never;
 };
 

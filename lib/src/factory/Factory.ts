@@ -1,99 +1,31 @@
 import type {
   InferTokenId,
   ModelAttrs,
-  ModelInstance,
   ModelToken,
   NewModelAttrs,
   PartialModelAttrs,
 } from '@src/model';
-import { ModelRelationships } from '@src/model';
 import { MirageError } from '@src/utils';
 
-import type {
-  FactoryAttrs,
-  FactoryConfig,
-  FactoryDefinition,
-  ModelTraits,
-  TraitName,
-} from './types';
-
-/**
- * Create a factory.
- * @param token - The model token to define the factory for.
- * @param config - The configuration for the factory.
- * @returns The factory.
- */
-export function createFactory<
-  TToken extends ModelToken,
-  TRelationships extends ModelRelationships | undefined = undefined,
-  TTraits extends ModelTraits<TToken, TRelationships> = ModelTraits<TToken, TRelationships>,
->(
-  token: TToken,
-  config: FactoryConfig<TToken, TRelationships, TTraits>,
-): Factory<TToken, TRelationships, TTraits> {
-  return new Factory(
-    token,
-    config.attributes,
-    (config.traits ?? {}) as TTraits,
-    config.afterCreate,
-  );
-}
-
-/**
- * Extend a factory.
- * @param factory - The factory to extend.
- * @param definition - The new attributes, traits, and afterCreate hook to add or override.
- * @returns The extended factory.
- */
-export function extendFactory<
-  TToken extends ModelToken,
-  TRelationships extends ModelRelationships | undefined = undefined,
-  TTraits extends ModelTraits<TToken, TRelationships> = ModelTraits<TToken, TRelationships>,
->(
-  factory: Factory<TToken, TRelationships, TTraits>,
-  definition: FactoryDefinition<TToken, TRelationships, TTraits>,
-): Factory<TToken, TRelationships, TTraits> {
-  const { attributes = {}, traits = {} } = definition;
-
-  // Merge attributes, with new attributes taking precedence
-  const mergedAttributes = {
-    ...factory.attributes,
-    ...attributes,
-  };
-
-  // Merge traits, with new traits taking precedence
-  const mergedTraits = {
-    ...factory.traits,
-    ...traits,
-  } as TTraits;
-
-  // Create new factory with merged configuration
-  return new Factory<TToken, TRelationships, TTraits>(
-    factory.token,
-    mergedAttributes as FactoryAttrs<TToken>,
-    mergedTraits,
-    definition.afterCreate || factory.afterCreate,
-  );
-}
+import type { FactoryAttrs, FactoryAfterCreateHook, ModelTraits, TraitName } from './types';
 
 /**
  * Factory that builds model attributes.
  */
 export default class Factory<
   TToken extends ModelToken = ModelToken,
-  TRelationships extends ModelRelationships | undefined = undefined,
-  TTraits extends ModelTraits<TToken, TRelationships> = ModelTraits<TToken, TRelationships>,
+  TTraits extends ModelTraits<TToken> = ModelTraits<TToken>,
 > {
   readonly token: TToken;
   readonly attributes: FactoryAttrs<TToken>;
   readonly traits: TTraits;
-  readonly afterCreate?: (model: any) => void;
+  readonly afterCreate?: FactoryAfterCreateHook;
 
   constructor(
     token: TToken,
     attributes: FactoryAttrs<TToken>,
     traits: TTraits,
-    afterCreate?: (model: any) => void,
+    afterCreate?: FactoryAfterCreateHook,
   ) {
     this.token = token;
     this.attributes = attributes;
@@ -148,7 +80,7 @@ export default class Factory<
     ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TToken>)[]
   ): any {
     const traitNames: string[] = traitsAndDefaults.filter((arg) => typeof arg === 'string');
-    const hooks: ((model: any) => void)[] = [];
+    const hooks: FactoryAfterCreateHook[] = [];
 
     if (this.afterCreate) {
       hooks.push(this.afterCreate);
@@ -286,6 +218,5 @@ export default class Factory<
 
 export type FactoryInstance<
   TToken extends ModelToken,
-  TRelationships extends ModelRelationships | undefined = undefined,
-  TTraits extends ModelTraits<TToken, TRelationships> = ModelTraits<TToken, TRelationships>,
-> = Factory<TToken, TRelationships, TTraits>;
+  TTraits extends ModelTraits<TToken> = ModelTraits<TToken>,
+> = Factory<TToken, TTraits>;

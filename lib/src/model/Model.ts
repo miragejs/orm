@@ -51,7 +51,6 @@ export default class Model<
     this._relationships = relationships;
     this._schema = schema;
     this._relationshipDefs = this._parseRelationshipDefs(relationships);
-
     this._status = this._attrs.id ? this._verifyStatus(this._attrs.id) : 'new';
 
     this._initForeignKeys();

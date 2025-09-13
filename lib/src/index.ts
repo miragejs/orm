@@ -21,15 +21,8 @@ export type {
 } from './model';
 
 // Factory
-export { createFactory, extendFactory } from './factory';
-export type {
-  Factory,
-  FactoryAttrs,
-  FactoryConfig,
-  FactoryDefinition,
-  ModelTraits,
-  TraitName,
-} from './factory';
+export { factory } from './factory';
+export type { Factory, FactoryAttrs, ModelTraits, TraitName } from './factory';
 
 // Schema
 export { setupSchema, createCollection, composeCollections } from './schema';

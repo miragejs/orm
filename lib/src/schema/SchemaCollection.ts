@@ -1,5 +1,6 @@
 import type { DbCollection, DbRecordInput } from '@src/db';
-import type { Factory, ModelTraits, TraitName } from '@src/factory';
+import { SchemaFactory } from '@src/factory';
+import type { Factory, FactoryTraitNames } from '@src/factory';
 import type { IdentityManager } from '@src/id-manager';
 import {
   ModelCollection,
@@ -22,13 +23,13 @@ import type { SchemaCollectionConfig, SchemaCollections } from './types';
  * @template TSchema - The schema collections type for enhanced type inference
  * @template TToken - The model token type (most important for users)
  * @template TRelationships - The raw relationships configuration for this collection (inferred from config)
- * @template TTraits - The factory traits type (inferred from config)
+ * @template TFactory - The factory type (inferred from config)
  */
 abstract class BaseSchemaCollection<
   TSchema extends SchemaCollections = SchemaCollections,
   TToken extends ModelToken = ModelToken,
   TRelationships extends ModelRelationships | undefined = undefined,
-  TTraits extends ModelTraits<TToken, TRelationships> = ModelTraits<TToken, TRelationships>,
+  TFactory extends Factory<TToken, any> = Factory<TToken, any>,
 > {
   protected readonly token: TToken;
   protected readonly collectionName: string;
@@ -36,7 +37,7 @@ abstract class BaseSchemaCollection<
 
   protected readonly schema: SchemaInstance<TSchema>;
   protected readonly dbCollection: DbCollection<ModelAttrs<TToken>>;
-  protected readonly factory?: Factory<TToken, TRelationships, TTraits>;
+  protected readonly factory?: SchemaFactory<TSchema, TToken, TFactory>;
   public readonly relationships?: TRelationships;
   protected readonly identityManager?: IdentityManager<ModelAttrs<TToken>['id']>;
 
@@ -44,7 +45,7 @@ abstract class BaseSchemaCollection<
     schema: SchemaInstance<TSchema>,
     config: {
       model: TToken;
-      factory?: Factory<TToken, TRelationships, TTraits>;
+      factory?: TFactory;
       identityManager?: IdentityManager<ModelAttrs<TToken>['id']>;
       relationships?: TRelationships;
     },
@@ -56,10 +57,14 @@ abstract class BaseSchemaCollection<
     this.modelClass = defineModel<TToken, TSchema>(model);
 
     this.schema = schema;
-    this.factory = factory;
     this.relationships = relationships;
     this.identityManager = identityManager;
     this.dbCollection = this._initializeDbCollection(identityManager);
+
+    // Create schema-aware factory wrapper if factory exists
+    if (factory) {
+      this.factory = new SchemaFactory(factory, schema);
+    }
   }
 
   /**
@@ -212,27 +217,26 @@ abstract class BaseSchemaCollection<
  * @template TSchema - The schema collections type for enhanced type inference
  * @template TToken - The model token type (most important for users)
  * @template TRelationships - The raw relationships configuration for this collection (inferred from config)
- * @template TTraits - The factory traits type (inferred from config)
+ * @template TFactory - The factory type (inferred from config)
  */
 export default class SchemaCollection<
   TSchema extends SchemaCollections = SchemaCollections,
   TToken extends ModelToken = ModelToken,
   TRelationships extends ModelRelationships | undefined = undefined,
-  TTraits extends ModelTraits<TToken, TRelationships> = ModelTraits<TToken, TRelationships>,
-> extends BaseSchemaCollection<TSchema, TToken, TRelationships, TTraits> {
+  TFactory extends Factory<TToken, any> = Factory<TToken, any>,
+> extends BaseSchemaCollection<TSchema, TToken, TRelationships, TFactory> {
   /**
    * Create a new model for the collection.
    * @param traitsAndDefaults - The traits or default values to use for the model.
    * @returns The new model instance.
    */
   create(
-    ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TToken>)[]
+    ...traitsAndDefaults: (FactoryTraitNames<TFactory> | PartialModelAttrs<TToken>)[]
   ): ModelInstance<TToken, TSchema> {
     if (this.factory) {
       const attrs = this.factory.build(this.dbCollection.nextId, ...traitsAndDefaults);
       const model = this.new(attrs as PartialModelAttrs<TToken>).save();
-      this.factory.processAfterCreateHooks(model, ...traitsAndDefaults);
-      return model;
+      return this.factory.processAfterCreateHooks(model, ...traitsAndDefaults);
     }
 
     const defaults =
@@ -253,7 +257,7 @@ export default class SchemaCollection<
    */
   createList(
     count: number,
-    ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TToken>)[]
+    ...traitsAndDefaults: (FactoryTraitNames<TFactory> | PartialModelAttrs<TToken>)[]
   ): ModelCollection<TToken, TSchema> {
     const models = Array.from({ length: count }, () => this.create(...traitsAndDefaults));
     return new ModelCollection(this.token, models);
@@ -281,14 +285,14 @@ export default class SchemaCollection<
    */
   findOrCreateBy(
     query: DbRecordInput<ModelAttrs<TToken>>,
-    ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TToken>)[]
+    ...traitsAndDefaults: (FactoryTraitNames<TFactory> | PartialModelAttrs<TToken>)[]
   ): ModelInstance<TToken, TSchema> {
     const existingModel = this.findBy(query);
     if (existingModel) {
       return existingModel;
     }
 
-    const newModel = this.create(query as PartialModelAttrs<TToken>, ...traitsAndDefaults);
+    const newModel = this.create(...traitsAndDefaults, query as PartialModelAttrs<TToken>);
     return newModel;
   }
 }
@@ -305,8 +309,8 @@ export function createSchemaCollection<
 >(
   schema: SchemaInstance<TSchema>,
   config: TConfig,
-): TConfig extends SchemaCollectionConfig<infer TToken, infer TRelationships, infer TTraits>
-  ? SchemaCollection<TSchema, TToken, TRelationships, TTraits>
+): TConfig extends SchemaCollectionConfig<infer TToken, infer TRelationships, infer TFactory>
+  ? SchemaCollection<TSchema, TToken, TRelationships, TFactory>
   : never {
   return new SchemaCollection(schema, config) as any;
 }

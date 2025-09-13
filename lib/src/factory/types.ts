@@ -1,19 +1,50 @@
-import type { ModelToken, NewModelAttrs, ModelAttrs } from '@src/model';
-import type { ModelRelationships } from '@src/model';
+import type { ModelToken, NewModelAttrs, ModelAttrs, ModelInstance } from '@src/model';
+import type { SchemaCollections, SchemaInstance } from '@src/schema';
 
-export type TraitDefinition<
-  TToken extends ModelToken,
-  TRelationships extends ModelRelationships | undefined = undefined,
-> = Partial<FactoryAttrs<TToken>> & {
-  afterCreate?: (model: any) => void;
+/**
+ * Factory afterCreate hook type - handles simple model instances without schema/relationships
+ */
+export type FactoryAfterCreateHook = (model: any) => void;
+
+/**
+ * Schema-aware afterCreate hook type - handles full ModelInstance with schema and relationships
+ * @template TSchema - The schema collections type
+ * @template TToken - The model token
+ */
+export type SchemaAfterCreateHook<TSchema extends SchemaCollections, TToken extends ModelToken> = (
+  model: ModelInstance<TToken, TSchema>,
+  schema: SchemaInstance<TSchema>,
+) => void;
+
+export type TraitDefinition<TToken extends ModelToken> = Partial<FactoryAttrs<TToken>> & {
+  afterCreate?: FactoryAfterCreateHook;
 };
 
-export type ModelTraits<
-  TToken extends ModelToken,
-  TRelationships extends ModelRelationships | undefined = undefined,
-> = Record<string, TraitDefinition<TToken, TRelationships>>;
+export type ModelTraits<TToken extends ModelToken> = Record<string, TraitDefinition<TToken>>;
 
-export type TraitName<TTraits extends ModelTraits<any, any>> = Extract<keyof TTraits, string>;
+export type TraitName<TTraits extends ModelTraits<any>> = Extract<keyof TTraits, string>;
+
+/**
+ * Schema trait definition with enhanced afterCreate hook
+ * @template TSchema - The schema collections type
+ * @template TToken - The model token
+ */
+export type SchemaTraitDefinition<
+  TSchema extends SchemaCollections,
+  TToken extends ModelToken,
+> = Partial<FactoryAttrs<TToken>> & {
+  afterCreate?: SchemaAfterCreateHook<TSchema, TToken>;
+};
+
+/**
+ * Schema factory traits collection
+ * @template TSchema - The schema collections type
+ * @template TToken - The model token
+ */
+export type SchemaFactoryTraits<
+  TSchema extends SchemaCollections,
+  TToken extends ModelToken,
+> = Record<string, SchemaTraitDefinition<TSchema, TToken>>;
 
 export type FactoryAttrs<TToken extends ModelToken> = Partial<{
   [K in Exclude<keyof NewModelAttrs<TToken>, 'id'>]:
@@ -24,37 +55,22 @@ export type FactoryAttrs<TToken extends ModelToken> = Partial<{
       ) => NewModelAttrs<TToken>[K]);
 }>;
 
-/**
- * Configuration for creating a factory
- * @template TToken - The model token
- * @template TTraits - The traits object type
- * @template TRelationships - The relationships configuration
- * @param config.attributes - The attributes for the factory
- * @param config.traits - The traits for the factory
- * @param config.afterCreate - The afterCreate hook for the factory
- */
-export interface FactoryConfig<
-  TToken extends ModelToken,
-  TRelationships extends ModelRelationships | undefined = undefined,
-  TTraits extends ModelTraits<TToken, TRelationships> = ModelTraits<TToken, TRelationships>,
-> {
-  attributes: FactoryAttrs<TToken>;
-  traits?: TTraits;
-  afterCreate?: (model: any) => void;
-}
+// -- NEW BUILDER TYPES --
 
 /**
- * Definition for extending a factory (attributes are partially optional)
- * @template TToken - The model token
- * @template TTraits - The traits object type
- * @template TRelationships - The relationships configuration
+ * Infer traits from a factory type
+ * @template TFactory - The factory type
  */
-export type FactoryDefinition<
-  TToken extends ModelToken,
-  TRelationships extends ModelRelationships | undefined = undefined,
-  TTraits extends ModelTraits<TToken, TRelationships> = ModelTraits<TToken, TRelationships>,
-> = {
-  attributes?: Partial<FactoryAttrs<TToken>>;
-  traits?: TTraits;
-  afterCreate?: (model: any) => void;
-};
+export type InferFactoryTraits<TFactory> = TFactory extends { traits: infer TTraits }
+  ? TTraits
+  : {};
+
+/**
+ * Extract trait names from a factory type
+ * @template TFactory - The factory type
+ */
+export type FactoryTraitNames<TFactory> = TFactory extends { traits: infer TTraits }
+  ? TTraits extends Record<string, any>
+    ? Extract<keyof TTraits, string>
+    : never
+  : never;

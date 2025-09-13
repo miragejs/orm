@@ -1,4 +1,4 @@
-import type { Factory, ModelTraits } from '@src/factory';
+import type { Factory } from '@src/factory';
 import type { IdentityManager } from '@src/id-manager';
 import type { ModelToken, ModelRelationships } from '@src/model';
 // import type { Serializer } from '@src/serializer';
@@ -13,7 +13,7 @@ import type { SchemaCollectionConfig } from './types';
  * the builder pattern, allowing method chaining to progressively configure the collection.
  * @template TToken - The model token type
  * @template TRelationships - The model relationships configuration
- * @template TTraits - The factory traits type
+ * @template TFactory - The factory type
  * @template TIdentityManager - The identity manager type
  * @template TSerializer - The serializer type (temporarily disabled)
  * @example
@@ -31,12 +31,12 @@ import type { SchemaCollectionConfig } from './types';
 export default class CollectionBuilder<
   TToken extends ModelToken = never,
   TRelationships extends ModelRelationships | undefined = undefined,
-  TTraits extends ModelTraits<TToken, TRelationships> = ModelTraits<TToken, TRelationships>,
+  TFactory extends Factory<TToken, any> = Factory<TToken, any>,
   TIdentityManager extends IdentityManager = never,
   // TSerializer extends Serializer<any, any> = never,
 > {
   private _token?: TToken;
-  private _factory?: Factory<TToken, TRelationships, TTraits>;
+  private _factory?: TFactory;
   private _relationships?: TRelationships;
   // private _serializer?: TSerializer;
   private _identityManager?: TIdentityManager;
@@ -62,13 +62,8 @@ export default class CollectionBuilder<
    */
   token<T extends ModelToken>(
     token: T,
-  ): CollectionBuilder<T, TRelationships, ModelTraits<T, TRelationships>, TIdentityManager> {
-    const builder = new CollectionBuilder<
-      T,
-      TRelationships,
-      ModelTraits<T, TRelationships>,
-      TIdentityManager
-    >();
+  ): CollectionBuilder<T, TRelationships, Factory<T, any>, TIdentityManager> {
+    const builder = new CollectionBuilder<T, TRelationships, Factory<T, any>, TIdentityManager>();
     builder._token = token;
     builder._factory = this._factory as any;
     builder._relationships = this._relationships;
@@ -92,26 +87,12 @@ export default class CollectionBuilder<
    *   .factory(userFactory);
    * ```
    */
-  factory<F extends Factory<TToken, TRelationships, any>>(
+  factory<F extends Factory<TToken, any>>(
     factory: F,
-  ): CollectionBuilder<
-    TToken,
-    TRelationships,
-    F extends Factory<TToken, TRelationships, infer TTraits>
-      ? TTraits
-      : ModelTraits<TToken, TRelationships>,
-    TIdentityManager
-  > {
-    const builder = new CollectionBuilder<
-      TToken,
-      TRelationships,
-      F extends Factory<TToken, TRelationships, infer TTraits>
-        ? TTraits
-        : ModelTraits<TToken, TRelationships>,
-      TIdentityManager
-    >();
+  ): CollectionBuilder<TToken, TRelationships, F, TIdentityManager> {
+    const builder = new CollectionBuilder<TToken, TRelationships, F, TIdentityManager>();
     builder._token = this._token;
-    builder._factory = factory as any;
+    builder._factory = factory;
     builder._relationships = this._relationships;
     // builder._serializer = this._serializer as any;
     builder._identityManager = this._identityManager;
@@ -138,8 +119,8 @@ export default class CollectionBuilder<
    */
   relationships<R extends ModelRelationships>(
     relationships: R,
-  ): CollectionBuilder<TToken, R, ModelTraits<TToken, R>, TIdentityManager> {
-    const builder = new CollectionBuilder<TToken, R, ModelTraits<TToken, R>, TIdentityManager>();
+  ): CollectionBuilder<TToken, R, Factory<TToken, any>, TIdentityManager> {
+    const builder = new CollectionBuilder<TToken, R, Factory<TToken, any>, TIdentityManager>();
     builder._token = this._token;
     builder._factory = this._factory as any;
     builder._relationships = relationships;
@@ -195,8 +176,8 @@ export default class CollectionBuilder<
    */
   identityManager<I extends IdentityManager<any>>(
     identityManager: I,
-  ): CollectionBuilder<TToken, TRelationships, TTraits, I> {
-    const builder = new CollectionBuilder<TToken, TRelationships, TTraits, I>();
+  ): CollectionBuilder<TToken, TRelationships, TFactory, I> {
+    const builder = new CollectionBuilder<TToken, TRelationships, TFactory, I>();
     builder._token = this._token;
     builder._factory = this._factory;
     builder._relationships = this._relationships;
@@ -220,7 +201,7 @@ export default class CollectionBuilder<
    *   .build();
    * ```
    */
-  build(): SchemaCollectionConfig<TToken, TRelationships, TTraits> {
+  build(): SchemaCollectionConfig<TToken, TRelationships, TFactory> {
     if (!this._token) {
       throw new Error('CollectionBuilder: token is required. Call .token() before .build()');
     }

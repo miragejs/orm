@@ -1,5 +1,5 @@
 import { hasMany, belongsTo } from '@src/associations';
-import { createFactory } from '@src/factory';
+import { factory } from '@src/factory';
 import { NumberIdentityManager, StringIdentityManager } from '@src/id-manager';
 import { defineToken, ModelCollection } from '@src/model';
 import { setupSchema } from '@src/schema';
@@ -31,30 +31,30 @@ const CommentToken = defineToken<CommentAttrs>('comment', 'comments');
 type UserToken = (typeof UserToken)['modelName'];
 
 // -- TEST FACTORIES --
-const userFactory = createFactory(UserToken, {
-  attributes: {
+const userFactory = factory(UserToken)
+  .attrs({
     email: () => 'john@example.com',
     name: () => 'John Doe',
-  },
-  traits: {
+  })
+  .traits({
     admin: {
       email: 'admin@example.com',
     },
-  },
-});
+  })
+  .create();
 
-const postFactory = createFactory(PostToken, {
-  attributes: {
+const postFactory = factory(PostToken)
+  .attrs({
     content: () => 'This is a test post',
     title: () => 'Hello World',
-  },
-});
+  })
+  .create();
 
-const commentFactory = createFactory(CommentToken, {
-  attributes: {
+const commentFactory = factory(CommentToken)
+  .attrs({
     content: () => 'Great post!',
-  },
-});
+  })
+  .create();
 
 describe('Schema', () => {
   const schema = setupSchema(

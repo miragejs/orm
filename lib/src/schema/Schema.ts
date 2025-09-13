@@ -46,9 +46,9 @@ export default class Schema<
   ): TCollections[K] extends SchemaCollectionConfig<
     infer TToken,
     infer TRelationships,
-    infer TTraits
+    infer TFactory
   >
-    ? SchemaCollection<TCollections, TToken, TRelationships, TTraits>
+    ? SchemaCollection<TCollections, TToken, TRelationships, TFactory>
     : never {
     const collection = this._collections.get(collectionName as string);
     if (!collection) {
