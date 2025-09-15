@@ -1,8 +1,8 @@
-import { hasMany } from '@src/associations';
+import { associations } from '@src/associations';
 import { Factory } from '@src/factory';
 import { NumberIdentityManager, StringIdentityManager } from '@src/id-manager';
 import { model } from '@src/model';
-import { collection, CollectionBuilder, associations } from '@src/schema';
+import { collection, CollectionBuilder } from '@src/schema';
 
 describe('CollectionBuilder', () => {
   // Test templates
@@ -80,7 +80,7 @@ describe('CollectionBuilder', () => {
   describe('relationships method', () => {
     it('should set relationships and return a new builder instance', () => {
       const relationships = {
-        posts: hasMany(PostModel),
+        posts: associations.hasMany(PostModel),
       };
 
       const builder = collection().model(UserModel).relationships(relationships);
@@ -90,7 +90,7 @@ describe('CollectionBuilder', () => {
 
     it('should preserve other configurations when setting relationships', () => {
       const relationships = {
-        posts: hasMany(PostModel),
+        posts: associations.hasMany(PostModel),
       };
 
       const builder = collection()
@@ -114,14 +114,6 @@ describe('CollectionBuilder', () => {
 
       const config = builder.build();
       expect(config.relationships).toBe(relationships);
-    });
-  });
-
-  describe('serializer method', () => {
-    it('should be temporarily disabled', () => {
-      // Serializer method is temporarily disabled
-      const builder = collection().model(UserModel);
-      expect(builder.serializer).toBeUndefined();
     });
   });
 
@@ -157,7 +149,7 @@ describe('CollectionBuilder', () => {
 
     it('should create a complete SchemaCollectionConfig with all options', () => {
       const relationships = {
-        posts: hasMany(PostModel),
+        posts: associations.hasMany(PostModel),
       };
 
       const config = collection()
@@ -185,7 +177,7 @@ describe('CollectionBuilder', () => {
   describe('fluent interface', () => {
     it('should support method chaining in different orders', () => {
       const relationships = {
-        posts: hasMany(PostModel),
+        posts: associations.hasMany(PostModel),
       };
 
       // Order 1: token -> factory -> relationships -> identityManager
@@ -248,7 +240,7 @@ describe('CollectionBuilder', () => {
   describe('type safety', () => {
     it('should maintain type safety throughout the builder chain', () => {
       const relationships = {
-        posts: hasMany(PostModel),
+        posts: associations.hasMany(PostModel),
       };
 
       // This should compile without type errors

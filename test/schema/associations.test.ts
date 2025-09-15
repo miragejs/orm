@@ -1,5 +1,5 @@
+import { associations } from '@src/associations';
 import { model } from '@src/model';
-import { associations } from '@src/schema';
 
 describe('associations', () => {
   // Test templates
