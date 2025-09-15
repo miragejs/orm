@@ -42,6 +42,15 @@ export default class ModelCollection<
   }
 
   /**
+   * Get a model by index
+   * @param index - The index of the model to get
+   * @returns The model at the given index or undefined
+   */
+  at(index: number): ModelInstance<TTemplate, TSchema, TDepth> | undefined {
+    return this.models[index];
+  }
+
+  /**
    * Get the first model in the collection
    * @returns The first model or null if the collection is empty
    */
@@ -57,213 +66,96 @@ export default class ModelCollection<
     return this.models[this.models.length - 1] || null;
   }
 
-  // -- ARRAY METHODS --
-
-  /**
-   * Get a model by index
-   * @param index - The index of the model to get
-   * @returns The model at the given index or undefined
-   */
-  at(index: number): ModelInstance<TTemplate, TSchema, TDepth> | undefined {
-    return this.models[index];
-  }
-
-  /**
-   * Add a model to the end of the collection
-   * @param model - The model to add
-   */
-  push(model: ModelInstance<TTemplate, TSchema, TDepth>): void {
-    this.models.push(model);
-  }
-
-  /**
-   * Remove and return the last model from the collection
-   * @returns The last model or undefined if the collection is empty
-   */
-  pop(): ModelInstance<TTemplate, TSchema, TDepth> | undefined {
-    return this.models.pop();
-  }
-
-  /**
-   * Add a model to the beginning of the collection
-   * @param model - The model to add
-   */
-  unshift(model: ModelInstance<TTemplate, TSchema, TDepth>): void {
-    this.models.unshift(model);
-  }
-
-  /**
-   * Remove and return the first model from the collection
-   * @returns The first model or undefined if the collection is empty
-   */
-  shift(): ModelInstance<TTemplate, TSchema, TDepth> | undefined {
-    return this.models.shift();
-  }
-
-  /**
-   * Remove models from the collection
-   * @param start - The start index
-   * @param deleteCount - The number of models to remove
-   * @param items - Models to add in place of the removed models
-   * @returns An array of the removed models
-   */
-  splice(
-    start: number,
-    deleteCount?: number,
-    ...items: ModelInstance<TTemplate, TSchema, TDepth>[]
-  ): ModelInstance<TTemplate, TSchema, TDepth>[] {
-    return this.models.splice(start, deleteCount ?? 0, ...items);
-  }
-
-  /**
-   * Create a new collection with a subset of models
-   * @param start - The start index
-   * @param end - The end index (optional)
-   * @returns A new ModelCollection with the sliced models
-   */
-  slice(start?: number, end?: number): ModelCollection<TTemplate, TSchema, TDepth> {
-    const slicedModels = this.models.slice(start, end);
-    return new ModelCollection(this._template, slicedModels);
-  }
-
-  // -- ITERATION METHODS --
+  // -- ARRAY-LIKE ITERATION METHODS --
 
   /**
    * Execute a function for each model in the collection
-   * @param callback - The function to execute for each model
+   * @param cb - The function to execute for each model
    */
   forEach(
-    callback: (
-      model: ModelInstance<TTemplate, TSchema, TDepth>,
-      index: number,
-      collection: this,
-    ) => void,
+    cb: (model: ModelInstance<TTemplate, TSchema, TDepth>, index: number, collection: this) => void,
   ): void {
-    this.models.forEach((model, index) => callback(model, index, this));
+    this.models.forEach((model, index) => cb(model, index, this));
   }
 
   /**
    * Create a new array with the results of calling a function for each model
-   * @param callback - The function to call for each model
+   * @param cb - The function to call for each model
    * @returns A new array with the results
    */
-  map<U>(
-    callback: (
+  map(
+    cb: (
       model: ModelInstance<TTemplate, TSchema, TDepth>,
       index: number,
       collection: this,
-    ) => U,
-  ): U[] {
-    return this.models.map((model, index) => callback(model, index, this));
+    ) => ModelInstance<TTemplate, TSchema, TDepth>,
+  ): ModelCollection<TTemplate, TSchema, TDepth> {
+    const mappedModels = this.models.map((model, index) => cb(model, index, this));
+    return new ModelCollection(this._template, mappedModels);
   }
 
   /**
    * Create a new collection with models that pass a test
-   * @param callback - The test function
+   * @param cb - The test function
    * @returns A new ModelCollection with the filtered models
    */
   filter(
-    callback: (
+    cb: (
       model: ModelInstance<TTemplate, TSchema, TDepth>,
       index: number,
       collection: this,
     ) => boolean,
   ): ModelCollection<TTemplate, TSchema, TDepth> {
-    const filteredModels = this.models.filter((model, index) => callback(model, index, this));
+    const filteredModels = this.models.filter((model, index) => cb(model, index, this));
     return new ModelCollection(this._template, filteredModels);
   }
 
   /**
    * Find the first model that satisfies a test
-   * @param callback - The test function
+   * @param cb - The test function
    * @returns The first model that passes the test, or undefined
    */
   find(
-    callback: (
+    cb: (
       model: ModelInstance<TTemplate, TSchema, TDepth>,
       index: number,
       collection: this,
     ) => boolean,
   ): ModelInstance<TTemplate, TSchema, TDepth> | undefined {
-    return this.models.find((model, index) => callback(model, index, this));
+    return this.models.find((model, index) => cb(model, index, this));
   }
 
   /**
    * Check if at least one model satisfies a test
-   * @param callback - The test function
+   * @param cb - The test function
    * @returns True if at least one model passes the test
    */
   some(
-    callback: (
+    cb: (
       model: ModelInstance<TTemplate, TSchema, TDepth>,
       index: number,
       collection: this,
     ) => boolean,
   ): boolean {
-    return this.models.some((model, index) => callback(model, index, this));
+    return this.models.some((model, index) => cb(model, index, this));
   }
 
   /**
    * Check if all models satisfy a test
-   * @param callback - The test function
+   * @param cb - The test function
    * @returns True if all models pass the test
    */
   every(
-    callback: (
+    cb: (
       model: ModelInstance<TTemplate, TSchema, TDepth>,
       index: number,
       collection: this,
     ) => boolean,
   ): boolean {
-    return this.models.every((model, index) => callback(model, index, this));
+    return this.models.every((model, index) => cb(model, index, this));
   }
 
-  /**
-   * Reduce the collection to a single value
-   * @param callback - The reducer function
-   * @param initialValue - The initial value for the reduction
-   * @returns The final accumulated value
-   */
-  reduce<U>(
-    callback: (
-      accumulator: U,
-      model: ModelInstance<TTemplate, TSchema, TDepth>,
-      index: number,
-      collection: this,
-    ) => U,
-    initialValue: U,
-  ): U {
-    return this.models.reduce(
-      (acc, model, index) => callback(acc, model, index, this),
-      initialValue,
-    );
-  }
-
-  // -- UTILITY METHODS --
-
-  /**
-   * Sort the models in the collection
-   * @param compareFn - The comparison function
-   * @returns A new sorted ModelCollection
-   */
-  sort(
-    compareFn?: (
-      a: ModelInstance<TTemplate, TSchema, TDepth>,
-      b: ModelInstance<TTemplate, TSchema, TDepth>,
-    ) => number,
-  ): ModelCollection<TTemplate, TSchema, TDepth> {
-    const sortedModels = [...this.models].sort(compareFn);
-    return new ModelCollection(this._template, sortedModels);
-  }
-
-  /**
-   * Reverse the order of models in the collection
-   * @returns A new reversed ModelCollection
-   */
-  reverse(): ModelCollection<TTemplate, TSchema, TDepth> {
-    const reversedModels = [...this.models].reverse();
-    return new ModelCollection(this._template, reversedModels);
-  }
+  // -- ARRAY-LIKE UTILITY METHODS --
 
   /**
    * Concatenate this collection with other collections or arrays
@@ -302,6 +194,30 @@ export default class ModelCollection<
   }
 
   /**
+   * Sort the models in the collection
+   * @param compareFn - The comparison function
+   * @returns A new sorted ModelCollection
+   */
+  sort(
+    compareFn?: (
+      a: ModelInstance<TTemplate, TSchema, TDepth>,
+      b: ModelInstance<TTemplate, TSchema, TDepth>,
+    ) => number,
+  ): ModelCollection<TTemplate, TSchema, TDepth> {
+    const sortedModels = [...this.models].sort(compareFn);
+    return new ModelCollection(this._template, sortedModels);
+  }
+
+  /**
+   * Reverse the order of models in the collection
+   * @returns A new reversed ModelCollection
+   */
+  reverse(): ModelCollection<TTemplate, TSchema, TDepth> {
+    const reversedModels = [...this.models].reverse();
+    return new ModelCollection(this._template, reversedModels);
+  }
+
+  /**
    * Convert the collection to a plain array
    * @returns An array of the models
    */
@@ -332,7 +248,7 @@ export default class ModelCollection<
    * @param model - The model to add
    */
   add(model: ModelInstance<TTemplate, TSchema, TDepth>): void {
-    this.push(model);
+    this.models.push(model);
   }
 
   /**
@@ -354,7 +270,9 @@ export default class ModelCollection<
    * @returns The collection instance for chaining
    */
   save(): this {
-    this.models.forEach((model) => model.save());
+    this.models = this.models.map(
+      (model) => model.save() as ModelInstance<TTemplate, TSchema, TDepth>,
+    );
     return this;
   }
 
@@ -385,7 +303,9 @@ export default class ModelCollection<
    * @returns The collection instance for chaining
    */
   update(attrs: ModelUpdateAttrs<TTemplate, TSchema>): this {
-    this.models.forEach((model) => model.update(attrs));
+    this.models = this.models.map(
+      (model) => model.update(attrs) as ModelInstance<TTemplate, TSchema, TDepth>,
+    );
     return this;
   }
 }

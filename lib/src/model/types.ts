@@ -69,7 +69,11 @@ export type NewModelAttrs<TTemplate extends ModelTemplate> = Omit<ModelAttrs<TTe
  * Type for partial model attributes (all fields optional, id excluded)
  * @template TTemplate - The model template
  */
-export type PartialModelAttrs<TTemplate extends ModelTemplate> = Partial<ModelAttrs<TTemplate>>;
+export type PartialModelAttrs<TTemplate extends ModelTemplate> = Partial<
+  Omit<ModelAttrs<TTemplate>, 'id'>
+> & {
+  id?: ModelAttrs<TTemplate>['id'];
+};
 
 /**
  * Type for update method that includes attributes, foreign keys, and relationship model instances

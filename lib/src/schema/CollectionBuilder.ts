@@ -120,7 +120,12 @@ export default class CollectionBuilder<
   relationships<R extends ModelRelationships>(
     relationships: R,
   ): CollectionBuilder<TTemplate, R, Factory<TTemplate, any>, TIdentityManager> {
-    const builder = new CollectionBuilder<TTemplate, R, Factory<TTemplate, any>, TIdentityManager>();
+    const builder = new CollectionBuilder<
+      TTemplate,
+      R,
+      Factory<TTemplate, any>,
+      TIdentityManager
+    >();
     builder._template = this._template;
     builder._factory = this._factory as any;
     builder._relationships = relationships;

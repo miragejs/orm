@@ -11,16 +11,19 @@ export type FactoryAfterCreateHook = (model: any) => void;
  * @template TSchema - The schema collections type
  * @template TTemplate - The model template
  */
-export type SchemaAfterCreateHook<TSchema extends SchemaCollections, TTemplate extends ModelTemplate> = (
-  model: ModelInstance<TTemplate, TSchema>,
-  schema: SchemaInstance<TSchema>,
-) => void;
+export type SchemaAfterCreateHook<
+  TSchema extends SchemaCollections,
+  TTemplate extends ModelTemplate,
+> = (model: ModelInstance<TTemplate, TSchema>, schema: SchemaInstance<TSchema>) => void;
 
 export type TraitDefinition<TTemplate extends ModelTemplate> = Partial<FactoryAttrs<TTemplate>> & {
   afterCreate?: FactoryAfterCreateHook;
 };
 
-export type ModelTraits<TTemplate extends ModelTemplate> = Record<string, TraitDefinition<TTemplate>>;
+export type ModelTraits<TTemplate extends ModelTemplate> = Record<
+  string,
+  TraitDefinition<TTemplate>
+>;
 
 export type TraitName<TTraits extends ModelTraits<any>> = Extract<keyof TTraits, string>;
 
