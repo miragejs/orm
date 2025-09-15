@@ -71,29 +71,3 @@ export type SchemaDbCollections<TCollections extends SchemaCollections> = {
       >
     : never;
 };
-
-// -- COLLECTION UTILITIES TYPES --
-
-/**
- * Represents a single collection module with a collection name as key
- * @template TName - The collection name
- * @template TConfig - The collection configuration
- */
-export type CollectionModule<
-  TName extends string = string,
-  TConfig extends SchemaCollectionConfig<any, any, any> = SchemaCollectionConfig<any, any, any>,
-> = {
-  [K in TName]: TConfig;
-};
-
-/**
- * Converts an array of collection modules to a union of their types
- */
-type CollectionModulesToUnion<T extends readonly CollectionModule[]> = T[number];
-
-/**
- * Merges an array of collection modules into a single collections object
- */
-export type ComposeCollections<T extends readonly CollectionModule[]> = UnionToIntersection<
-  CollectionModulesToUnion<T>
->;
