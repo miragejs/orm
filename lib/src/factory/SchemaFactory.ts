@@ -1,4 +1,4 @@
-import type { ModelAttrs, ModelInstance, ModelToken, PartialModelAttrs } from '@src/model';
+import type { ModelAttrs, ModelInstance, ModelTemplate, PartialModelAttrs } from '@src/model';
 import type { SchemaCollections, SchemaInstance } from '@src/schema';
 
 import type Factory from './Factory';
@@ -12,16 +12,16 @@ import type {
 /**
  * Schema-aware factory wrapper that provides enhanced afterCreate hooks with schema context
  * @template TSchema - The schema collections type
- * @template TToken - The model token
+ * @template TTemplate - The model template
  * @template TFactory - The original factory type
  */
 export default class SchemaFactory<
   TSchema extends SchemaCollections,
-  TToken extends ModelToken,
-  TFactory extends Factory<TToken, any>,
+  TTemplate extends ModelTemplate,
+  TFactory extends Factory<TTemplate, any>,
 > {
-  private schemaAfterCreate?: SchemaAfterCreateHook<TSchema, TToken>;
-  private schemaTraits: SchemaFactoryTraits<TSchema, TToken> = {};
+  private schemaAfterCreate?: SchemaAfterCreateHook<TSchema, TTemplate>;
+  private schemaTraits: SchemaFactoryTraits<TSchema, TTemplate> = {};
 
   constructor(
     private originalFactory: TFactory,
@@ -41,7 +41,7 @@ export default class SchemaFactory<
    * @param hook - The schema-aware afterCreate hook
    * @returns This instance for chaining
    */
-  afterCreate(hook: SchemaAfterCreateHook<TSchema, TToken>): this {
+  afterCreate(hook: SchemaAfterCreateHook<TSchema, TTemplate>): this {
     this.schemaAfterCreate = hook;
     return this;
   }
@@ -51,7 +51,7 @@ export default class SchemaFactory<
    * @param traits - The schema-aware traits
    * @returns This instance for chaining
    */
-  traits(traits: SchemaFactoryTraits<TSchema, TToken>): this {
+  traits(traits: SchemaFactoryTraits<TSchema, TTemplate>): this {
     this.schemaTraits = { ...this.schemaTraits, ...traits };
     return this;
   }
@@ -63,9 +63,9 @@ export default class SchemaFactory<
    * @returns The built model attributes
    */
   build(
-    modelId: NonNullable<ModelAttrs<TToken>['id']>,
-    ...traitsAndDefaults: (FactoryTraitNames<TFactory> | PartialModelAttrs<TToken>)[]
-  ): ModelAttrs<TToken> {
+    modelId: NonNullable<ModelAttrs<TTemplate>['id']>,
+    ...traitsAndDefaults: (FactoryTraitNames<TFactory> | PartialModelAttrs<TTemplate>)[]
+  ): ModelAttrs<TTemplate> {
     return this.originalFactory.build(modelId, ...(traitsAndDefaults as any));
   }
 
@@ -76,9 +76,9 @@ export default class SchemaFactory<
    * @returns The model instance
    */
   processAfterCreateHooks(
-    model: ModelInstance<TToken, TSchema>,
-    ...traitsAndDefaults: (FactoryTraitNames<TFactory> | PartialModelAttrs<TToken>)[]
-  ): ModelInstance<TToken, TSchema> {
+    model: ModelInstance<TTemplate, TSchema>,
+    ...traitsAndDefaults: (FactoryTraitNames<TFactory> | PartialModelAttrs<TTemplate>)[]
+  ): ModelInstance<TTemplate, TSchema> {
     const traitNames: string[] = traitsAndDefaults.filter((arg) => typeof arg === 'string');
 
     // Collect factory hooks (simple model-only hooks)
@@ -94,7 +94,7 @@ export default class SchemaFactory<
     });
 
     // Collect schema-aware hooks (model + schema hooks)
-    const schemaHooks: SchemaAfterCreateHook<TSchema, TToken>[] = [];
+    const schemaHooks: SchemaAfterCreateHook<TSchema, TTemplate>[] = [];
     if (this.schemaAfterCreate) {
       schemaHooks.push(this.schemaAfterCreate);
     }

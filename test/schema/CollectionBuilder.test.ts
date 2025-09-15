@@ -1,12 +1,11 @@
+import { hasMany } from '@src/associations';
 import { Factory } from '@src/factory';
 import { NumberIdentityManager, StringIdentityManager } from '@src/id-manager';
-import { belongsTo, hasMany } from '@src/associations';
-// import { Serializer } from '@src/serializer';
+import { model } from '@src/model';
 import { collection, CollectionBuilder, associations } from '@src/schema';
-import { token } from '@src/token';
 
 describe('CollectionBuilder', () => {
-  // Test tokens
+  // Test templates
   interface UserAttrs {
     id: string;
     name: string;
@@ -20,11 +19,11 @@ describe('CollectionBuilder', () => {
     authorId: string;
   }
 
-  const userToken = token('user', 'users').attrs<UserAttrs>().create();
-  const postToken = token('post', 'posts').attrs<PostAttrs>().create();
+  const UserModel = model('user', 'users').attrs<UserAttrs>().create();
+  const PostModel = model('post', 'posts').attrs<PostAttrs>().create();
 
   // Test factory
-  const userFactory = new Factory(userToken, {
+  const userFactory = new Factory(UserModel, {
     name: () => 'Test User',
     email: () => 'test@example.com',
   });
@@ -44,36 +43,36 @@ describe('CollectionBuilder', () => {
     });
   });
 
-  describe('token method', () => {
-    it('should set the token and return a new builder instance', () => {
-      const builder = collection().token(userToken);
+  describe('model method', () => {
+    it('should set the model template and return a new builder instance', () => {
+      const builder = collection().model(UserModel);
       expect(builder).toBeInstanceOf(CollectionBuilder);
       expect(builder).not.toBe(collection());
     });
 
-    it('should preserve other configurations when setting token', () => {
+    it('should preserve other configurations when setting template', () => {
       const builder = collection()
         .factory(userFactory as any)
-        .token(userToken);
+        .model(UserModel);
 
       const config = builder.build();
-      expect(config.model).toBe(userToken);
+      expect(config.model).toBe(UserModel);
       expect(config.factory).toBe(userFactory);
     });
   });
 
   describe('factory method', () => {
     it('should set the factory and return a new builder instance', () => {
-      const builder = collection().token(userToken).factory(userFactory);
+      const builder = collection().model(UserModel).factory(userFactory);
 
       expect(builder).toBeInstanceOf(CollectionBuilder);
     });
 
     it('should preserve other configurations when setting factory', () => {
-      const builder = collection().token(userToken).factory(userFactory);
+      const builder = collection().model(UserModel).factory(userFactory);
 
       const config = builder.build();
-      expect(config.model).toBe(userToken);
+      expect(config.model).toBe(UserModel);
       expect(config.factory).toBe(userFactory);
     });
   });
@@ -81,37 +80,37 @@ describe('CollectionBuilder', () => {
   describe('relationships method', () => {
     it('should set relationships and return a new builder instance', () => {
       const relationships = {
-        posts: hasMany(postToken),
+        posts: hasMany(PostModel),
       };
 
-      const builder = collection().token(userToken).relationships(relationships);
+      const builder = collection().model(UserModel).relationships(relationships);
 
       expect(builder).toBeInstanceOf(CollectionBuilder);
     });
 
     it('should preserve other configurations when setting relationships', () => {
       const relationships = {
-        posts: hasMany(postToken),
+        posts: hasMany(PostModel),
       };
 
       const builder = collection()
-        .token(userToken)
+        .model(UserModel)
         .factory(userFactory)
         .relationships(relationships);
 
       const config = builder.build();
-      expect(config.model).toBe(userToken);
+      expect(config.model).toBe(UserModel);
       expect(config.factory).toBe(userFactory);
       expect(config.relationships).toBe(relationships);
     });
 
     it('should work with associations helper', () => {
       const relationships = {
-        posts: associations.hasMany(postToken),
-        profile: associations.belongsTo(userToken, { foreignKey: 'profileId' }),
+        posts: associations.hasMany(PostModel),
+        profile: associations.belongsTo(UserModel, { foreignKey: 'profileId' }),
       };
 
-      const builder = collection().token(userToken).relationships(relationships);
+      const builder = collection().model(UserModel).relationships(relationships);
 
       const config = builder.build();
       expect(config.relationships).toBe(relationships);
@@ -121,36 +120,36 @@ describe('CollectionBuilder', () => {
   describe('serializer method', () => {
     it('should be temporarily disabled', () => {
       // Serializer method is temporarily disabled
-      const builder = collection().token(userToken);
+      const builder = collection().model(UserModel);
       expect(builder.serializer).toBeUndefined();
     });
   });
 
   describe('identityManager method', () => {
     it('should set the identity manager and return a new builder instance', () => {
-      const builder = collection().token(userToken).identityManager(userIdentityManager);
+      const builder = collection().model(UserModel).identityManager(userIdentityManager);
 
       expect(builder).toBeInstanceOf(CollectionBuilder);
     });
 
     it('should preserve other configurations when setting identity manager', () => {
       const builder = collection()
-        .token(userToken)
+        .model(UserModel)
         .factory(userFactory)
         .identityManager(userIdentityManager);
 
       const config = builder.build();
-      expect(config.model).toBe(userToken);
+      expect(config.model).toBe(UserModel);
       expect(config.factory).toBe(userFactory);
       expect(config.identityManager).toBe(userIdentityManager);
     });
   });
 
   describe('build method', () => {
-    it('should create a SchemaCollectionConfig with token only', () => {
-      const config = collection().token(userToken).build();
+    it('should create a SchemaCollectionConfig with model template only', () => {
+      const config = collection().model(UserModel).build();
 
-      expect(config.model).toBe(userToken);
+      expect(config.model).toBe(UserModel);
       expect(config.factory).toBeUndefined();
       expect(config.relationships).toBeUndefined();
       expect(config.identityManager).toBeUndefined();
@@ -158,27 +157,27 @@ describe('CollectionBuilder', () => {
 
     it('should create a complete SchemaCollectionConfig with all options', () => {
       const relationships = {
-        posts: hasMany(postToken),
+        posts: hasMany(PostModel),
       };
 
       const config = collection()
-        .token(userToken)
+        .model(UserModel)
         .factory(userFactory)
         .relationships(relationships)
         .identityManager(userIdentityManager)
         .build();
 
-      expect(config.model).toBe(userToken);
+      expect(config.model).toBe(UserModel);
       expect(config.factory).toBe(userFactory);
       expect(config.relationships).toBe(relationships);
       expect(config.identityManager).toBe(userIdentityManager);
     });
 
-    it('should throw error when token is not set', () => {
+    it('should throw error when template is not set', () => {
       const builder = collection();
 
       expect(() => builder.build()).toThrow(
-        'CollectionBuilder: token is required. Call .token() before .build()',
+        'CollectionBuilder: template is required. Call .model() before .build()',
       );
     });
   });
@@ -186,12 +185,12 @@ describe('CollectionBuilder', () => {
   describe('fluent interface', () => {
     it('should support method chaining in different orders', () => {
       const relationships = {
-        posts: hasMany(postToken),
+        posts: hasMany(PostModel),
       };
 
       // Order 1: token -> factory -> relationships -> identityManager
       const config1 = collection()
-        .token(userToken)
+        .model(UserModel)
         .factory(userFactory)
         .relationships(relationships)
         .identityManager(userIdentityManager)
@@ -201,16 +200,16 @@ describe('CollectionBuilder', () => {
       const config2 = collection()
         .factory(userFactory as any)
         .relationships(relationships as any)
-        .token(userToken)
+        .model(UserModel)
         .identityManager(userIdentityManager)
         .build();
 
-      expect(config1.model).toBe(userToken);
+      expect(config1.model).toBe(UserModel);
       expect(config1.factory).toBe(userFactory);
       expect(config1.relationships).toBe(relationships);
       expect(config1.identityManager).toBe(userIdentityManager);
 
-      expect(config2.model).toBe(userToken);
+      expect(config2.model).toBe(UserModel);
       expect(config2.factory).toBe(userFactory);
       expect(config2.relationships).toBe(relationships);
       expect(config2.identityManager).toBe(userIdentityManager);
@@ -218,13 +217,13 @@ describe('CollectionBuilder', () => {
 
     it('should allow overriding configurations', () => {
       const initialFactory = userFactory;
-      const newFactory = new Factory(userToken, {
+      const newFactory = new Factory(UserModel, {
         name: () => 'New User',
         email: () => 'new@example.com',
       });
 
       const config = collection()
-        .token(userToken)
+        .model(UserModel)
         .factory(initialFactory)
         .factory(newFactory) // Override
         .build();
@@ -237,9 +236,9 @@ describe('CollectionBuilder', () => {
       const stringIdManager = new StringIdentityManager();
       const numberIdManager = new NumberIdentityManager();
 
-      const config1 = collection().token(userToken).identityManager(stringIdManager).build();
+      const config1 = collection().model(UserModel).identityManager(stringIdManager).build();
 
-      const config2 = collection().token(postToken).identityManager(numberIdManager).build();
+      const config2 = collection().model(PostModel).identityManager(numberIdManager).build();
 
       expect(config1.identityManager).toBe(stringIdManager);
       expect(config2.identityManager).toBe(numberIdManager);
@@ -249,12 +248,12 @@ describe('CollectionBuilder', () => {
   describe('type safety', () => {
     it('should maintain type safety throughout the builder chain', () => {
       const relationships = {
-        posts: hasMany(postToken),
+        posts: hasMany(PostModel),
       };
 
       // This should compile without type errors
       const config = collection()
-        .token(userToken)
+        .model(UserModel)
         .factory(userFactory)
         .relationships(relationships)
         .identityManager(userIdentityManager)

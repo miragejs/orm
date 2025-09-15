@@ -9,7 +9,7 @@ import type {
   ModelConfig,
   ModelId,
   ModelInstance,
-  ModelToken,
+  ModelTemplate,
   ModelUpdateAttrs,
   NewModelAttrs,
   NewModelInstance,
@@ -17,41 +17,42 @@ import type {
   RelationshipDefs,
   RelationshipNames,
   RelationshipTargetModel,
-  RelationshipsByToken,
-  SerializedModel,
+  RelationshipsByTemplate,
 } from './types';
 
 /**
  * Model class for managing model instances with relationships
- * @template TToken - The model token (most important for users)
+ * @template TTemplate - The model template (most important for users)
  * @template TSchema - The schema collections type for enhanced type inference
  */
 export default class Model<
-  TToken extends ModelToken = ModelToken,
+  TTemplate extends ModelTemplate = ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
 > {
   public readonly modelName: string;
+  public readonly collectionName: string;
 
-  protected _attrs: NewModelAttrs<TToken>;
-  protected _dbCollection: DbCollection<ModelAttrs<TToken>>;
-  protected _relationships?: RelationshipsByToken<TSchema, TToken>;
+  protected _attrs: NewModelAttrs<TTemplate>;
+  protected _dbCollection: DbCollection<ModelAttrs<TTemplate>>;
   protected _relationshipDefs?: RelationshipDefs;
   protected _schema?: SchemaInstance<TSchema>;
   protected _status: 'new' | 'saved';
 
   constructor(
-    token: TToken,
-    { attrs, collection, relationships, schema }: ModelConfig<TToken, TSchema>,
+    template: TTemplate,
+    { attrs, dbCollection, relationships, schema }: ModelConfig<TTemplate, TSchema>,
   ) {
-    this.modelName = token.modelName;
+    this.modelName = template.modelName;
+    this.collectionName = template.collectionName;
 
-    this._attrs = { ...attrs, id: attrs?.id ?? null } as NewModelAttrs<TToken>;
-    // TODO: Rename collection to dbCollection
-    this._dbCollection = collection ?? new DbCollection<ModelAttrs<TToken>>(token.collectionName);
-    this._relationships = relationships;
+    // Merge template attrs with provided attrs, with provided attrs taking precedence
+    const mergedAttrs = { ...template.attrs, ...attrs };
+    this._attrs = { ...mergedAttrs, id: attrs?.id ?? null } as NewModelAttrs<TTemplate>;
+    this._dbCollection =
+      dbCollection ?? new DbCollection<ModelAttrs<TTemplate>>(template.collectionName);
     this._schema = schema;
-    this._relationshipDefs = this._parseRelationshipDefs(relationships);
     this._status = this._attrs.id ? this._verifyStatus(this._attrs.id) : 'new';
+    this._relationshipDefs = this._parseRelationshipDefs(relationships);
 
     this._initForeignKeys();
     this._initAttributeAccessors();
@@ -64,7 +65,7 @@ export default class Model<
    * Getter for the protected id attribute
    * @returns The id of the model
    */
-  get id(): ModelAttrs<TToken>['id'] | null {
+  get id(): ModelAttrs<TTemplate>['id'] | null {
     return this._attrs.id;
   }
 
@@ -72,7 +73,7 @@ export default class Model<
    * Getter for the model attributes
    * @returns A copy of the model attributes
    */
-  get attrs(): NewModelAttrs<TToken> {
+  get attrs(): NewModelAttrs<TTemplate> {
     return { ...this._attrs };
   }
 
@@ -82,50 +83,51 @@ export default class Model<
    * Destroy the model from the database
    * @returns The model with new instance type
    */
-  destroy(): NewModelInstance<TToken, TSchema> {
+  destroy(): NewModelInstance<TTemplate, TSchema> {
     if (this.isSaved() && this.id) {
-      this._dbCollection.delete(this.id as ModelAttrs<TToken>['id']);
-      this._attrs = { ...this._attrs, id: null } as NewModelAttrs<TToken>;
+      this._dbCollection.delete(this.id as ModelAttrs<TTemplate>['id']);
+      this._attrs = { ...this._attrs, id: null } as NewModelAttrs<TTemplate>;
       this._status = 'new';
     }
 
-    return this as unknown as NewModelInstance<TToken, TSchema>;
+    return this as unknown as NewModelInstance<TTemplate, TSchema>;
   }
 
   /**
    * Reload the model from the database
    * @returns The model with saved instance type
    */
-  reload(): ModelInstance<TToken, TSchema> {
+  reload(): ModelInstance<TTemplate, TSchema> {
     if (this.isSaved() && this.id) {
-      this._attrs =
-        this._dbCollection.find(this.id as ModelAttrs<TToken>['id']) ??
-        ({} as NewModelAttrs<TToken>);
+      const record = this._dbCollection.find(this.id as ModelAttrs<TTemplate>['id']);
+
+      if (record) {
+        this._attrs = { ...record } as NewModelAttrs<TTemplate>;
+        this._initAttributeAccessors();
+      }
     }
 
-    return this as unknown as ModelInstance<TToken, TSchema>;
+    return this as unknown as ModelInstance<TTemplate, TSchema>;
   }
 
   /**
    * Save the model to the database
    * @returns The model with saved instance type
    */
-  save(): ModelInstance<TToken, TSchema> {
+  save(): ModelInstance<TTemplate, TSchema> {
     if (this.isNew() || !this.id) {
-      const modelRecord = this._dbCollection.insert(
-        this._attrs as DbRecordInput<ModelAttrs<TToken>>,
-      );
+      const record = this._dbCollection.insert(this._attrs as DbRecordInput<ModelAttrs<TTemplate>>);
 
-      this._attrs = modelRecord as NewModelAttrs<TToken>;
+      this._attrs = { ...record } as NewModelAttrs<TTemplate>;
       this._status = 'saved';
     } else {
       this._dbCollection.update(
-        this.id as ModelAttrs<TToken>['id'],
-        this._attrs as DbRecordInput<ModelAttrs<TToken>>,
+        this.id as ModelAttrs<TTemplate>['id'],
+        this._attrs as DbRecordInput<ModelAttrs<TTemplate>>,
       );
     }
 
-    return this as unknown as ModelInstance<TToken, TSchema>;
+    return this as unknown as ModelInstance<TTemplate, TSchema>;
   }
 
   /**
@@ -133,7 +135,7 @@ export default class Model<
    * @param attrs - The attributes to update (includes both regular attributes and relationship model instances)
    * @returns The model with saved instance type
    */
-  update(attrs: ModelUpdateAttrs<TToken, TSchema>): ModelInstance<TToken, TSchema> {
+  update(attrs: ModelUpdateAttrs<TTemplate, TSchema>): ModelInstance<TTemplate, TSchema> {
     const regularAttrs: any = {};
 
     // Process each attribute being updated
@@ -179,8 +181,8 @@ export default class Model<
    * Serialize the model to a JSON object
    * @returns The serialized model using the configured serializer or raw attributes
    */
-  toJSON(): SerializedModel<TToken> {
-    return { ...this._attrs } as SerializedModel<TToken>;
+  toJSON(): ModelAttrs<TTemplate> {
+    return { ...this._attrs } as ModelAttrs<TTemplate>;
   }
 
   /**
@@ -212,13 +214,13 @@ export default class Model<
 
         Object.defineProperty(this, key, {
           get: () => {
-            return this._attrs[key];
+            return this._attrs[key as keyof NewModelAttrs<TTemplate>];
           },
-          set: (value: NewModelAttrs<TToken>[keyof NewModelAttrs<TToken>]) => {
+          set: (value: NewModelAttrs<TTemplate>[keyof NewModelAttrs<TTemplate>]) => {
             if (isForeignKey) {
               this._handleForeignKeyChange(key, value);
             } else {
-              this._attrs[key as keyof NewModelAttrs<TToken>] = value;
+              this._attrs[key as keyof NewModelAttrs<TTemplate>] = value;
             }
           },
           enumerable: true,
@@ -232,18 +234,18 @@ export default class Model<
    * Initialize foreign key attributes if they don't exist
    */
   private _initForeignKeys(): void {
-    if (!this._relationships) return;
+    if (!this._relationshipDefs) return;
 
-    for (const relationshipName in this._relationships) {
-      const relationship = this._relationships[relationshipName];
-      const { foreignKey, type } = relationship;
+    for (const relationshipName in this._relationshipDefs) {
+      const relationshipDef = this._relationshipDefs[relationshipName];
+      const { foreignKey, type } = relationshipDef.relationship;
 
       // Initialize foreign key if it doesn't exist in attrs
       if (!(foreignKey in this._attrs)) {
         if (type === 'belongsTo') {
-          this._attrs[foreignKey as keyof NewModelAttrs<TToken>] = null as any;
+          this._attrs[foreignKey as keyof NewModelAttrs<TTemplate>] = null as any;
         } else if (type === 'hasMany') {
-          this._attrs[foreignKey as keyof NewModelAttrs<TToken>] = [] as any;
+          this._attrs[foreignKey as keyof NewModelAttrs<TTemplate>] = [] as any;
         }
       }
     }
@@ -253,16 +255,16 @@ export default class Model<
    * Initialize relationship accessors for all relationships
    */
   private _initRelationshipAccessors(): void {
-    if (!this._relationships) return;
+    if (!this._relationshipDefs) return;
 
-    for (const relationshipName in this._relationships) {
+    for (const relationshipName in this._relationshipDefs) {
       if (!Object.prototype.hasOwnProperty.call(this, relationshipName)) {
         Object.defineProperty(this, relationshipName, {
           get: () => {
             return this._getRelatedModel(relationshipName);
           },
           set: (value: any | any[] | null) => {
-            this.link(relationshipName, value);
+            this.link(relationshipName as keyof RelationshipsByTemplate<TSchema, TTemplate>, value);
           },
           enumerable: true,
           configurable: true,
@@ -278,7 +280,7 @@ export default class Model<
    * @returns Parsed relationship definitions with inverse information
    */
   private _parseRelationshipDefs(
-    relationships?: RelationshipsByToken<TSchema, TToken>,
+    relationships?: RelationshipsByTemplate<TSchema, TTemplate>,
   ): RelationshipDefs | undefined {
     if (!relationships || !this._schema) return undefined;
 
@@ -292,15 +294,15 @@ export default class Model<
       };
 
       // Look for inverse relationship in the target model's collection
-      const targetCollectionName = relationship.targetToken.collectionName;
+      const targetCollectionName = relationship.targetModel.collectionName;
       const targetCollection = this._schema.getCollection(targetCollectionName);
 
       if (targetCollection.relationships) {
         for (const inverseRelationshipName in targetCollection.relationships) {
           const inverseRelationship = targetCollection.relationships[inverseRelationshipName];
-          if (inverseRelationship.targetToken.modelName === this.modelName) {
+          if (inverseRelationship.targetModel.modelName === this.modelName) {
             relationshipDef.inverse = {
-              targetToken: relationship.targetToken,
+              targetModel: relationship.targetModel,
               relationshipName: inverseRelationshipName,
               type: inverseRelationship.type,
               foreignKey: inverseRelationship.foreignKey,
@@ -324,14 +326,15 @@ export default class Model<
    * @param targetModel - The model to link to (or null to unlink)
    * @returns This model instance for chaining
    */
-  link<K extends RelationshipNames<RelationshipsByToken<TSchema, TToken>>>(
+  link<K extends RelationshipNames<RelationshipsByTemplate<TSchema, TTemplate>>>(
     relationshipName: K,
-    targetModel: RelationshipTargetModel<TSchema, RelationshipsByToken<TSchema, TToken>, K>,
+    targetModel: RelationshipTargetModel<TSchema, RelationshipsByTemplate<TSchema, TTemplate>, K>,
   ): this {
-    if (!this._relationships || !this._schema) return this;
+    if (!this._relationshipDefs || !this._schema) return this;
 
-    const relationship = this._relationships?.[relationshipName];
-    if (!relationship) return this;
+    const relationshipDef = this._relationshipDefs?.[relationshipName as string];
+    if (!relationshipDef) return this;
+    const relationship = relationshipDef.relationship;
 
     const { type } = relationship;
 
@@ -370,14 +373,15 @@ export default class Model<
    * @param targetModel - The specific model to unlink (optional for hasMany, unlinks all if not provided)
    * @returns This model instance for chaining
    */
-  unlink<K extends RelationshipNames<RelationshipsByToken<TSchema, TToken>>>(
+  unlink<K extends RelationshipNames<RelationshipsByTemplate<TSchema, TTemplate>>>(
     relationshipName: K,
-    targetModel?: RelationshipTargetModel<TSchema, RelationshipsByToken<TSchema, TToken>, K>,
+    targetModel?: RelationshipTargetModel<TSchema, RelationshipsByTemplate<TSchema, TTemplate>, K>,
   ): this {
-    if (!this._relationships || !this._schema) return this;
+    if (!this._relationshipDefs || !this._schema) return this;
 
-    const relationship = this._relationships?.[relationshipName];
-    if (!relationship) return this;
+    const relationshipDef = this._relationshipDefs?.[relationshipName as string];
+    if (!relationshipDef) return this;
+    const relationship = relationshipDef.relationship;
 
     const { type } = relationship;
 
@@ -420,23 +424,25 @@ export default class Model<
    * @returns The related model(s) or null/empty array
    */
   protected _getRelatedModel(relationshipName: string): any | any[] | null {
-    if (!this._schema || !this._relationships) return null;
+    if (!this._schema || !this._relationshipDefs) return null;
 
-    const relationship = this._relationships[relationshipName] as Relationships;
+    const relationshipDef = this._relationshipDefs[relationshipName];
+    if (!relationshipDef) return null;
+    const relationship = relationshipDef.relationship;
     if (!relationship) return null;
 
-    const { type, foreignKey, targetToken } = relationship;
+    const { type, foreignKey, targetModel } = relationship;
 
     // Use symbol-based access for proper type inference
-    const targetCollection = (this._schema as any)[targetToken.collectionName];
+    const targetCollection = (this._schema as any)[targetModel.collectionName];
 
     if (!targetCollection) {
-      console.warn(`Collection for token ${targetToken.modelName} not found in schema`);
+      console.warn(`Collection for template ${targetModel.modelName} not found in schema`);
       return null;
     }
 
     if (type === 'belongsTo') {
-      const foreignKeyValue = this._attrs[foreignKey as keyof NewModelAttrs<TToken>];
+      const foreignKeyValue = this._attrs[foreignKey as keyof NewModelAttrs<TTemplate>];
 
       if (foreignKeyValue === null || foreignKeyValue === undefined) {
         return null;
@@ -445,17 +451,17 @@ export default class Model<
       return targetCollection.find(foreignKeyValue);
     } else if (type === 'hasMany') {
       const foreignKeyValues =
-        (this._attrs[foreignKey as keyof NewModelAttrs<TToken>] as ModelId<TToken>[]) || [];
+        (this._attrs[foreignKey as keyof NewModelAttrs<TTemplate>] as ModelId<TTemplate>[]) || [];
 
       if (!Array.isArray(foreignKeyValues) || foreignKeyValues.length === 0) {
-        return new ModelCollection(targetToken, []);
+        return new ModelCollection(targetModel, []);
       }
 
       const relatedModels = foreignKeyValues
-        .map((id: ModelId<TToken>) => targetCollection.find(id))
+        .map((id: ModelId<TTemplate>) => targetCollection.find(id))
         .filter((model: ModelInstance<any, any> | null) => model !== null);
 
-      return new ModelCollection(targetToken, relatedModels);
+      return new ModelCollection(targetModel, relatedModels);
     }
 
     return null;
@@ -468,9 +474,9 @@ export default class Model<
    */
   private _handleForeignKeyChange(
     foreignKey: string,
-    value: ModelId<TToken> | ModelId<TToken>[] | null,
+    value: ModelId<TTemplate> | ModelId<TTemplate>[] | null,
   ): void {
-    this._attrs[foreignKey as keyof NewModelAttrs<TToken>] = value as any;
+    this._attrs[foreignKey as keyof NewModelAttrs<TTemplate>] = value as any;
   }
 
   /**
@@ -480,7 +486,7 @@ export default class Model<
    */
   private _linkBelongsTo(relationship: Relationships, targetModel: any): void {
     const { foreignKey } = relationship;
-    this._attrs[foreignKey as keyof NewModelAttrs<TToken>] = targetModel.id as any;
+    this._attrs[foreignKey as keyof NewModelAttrs<TTemplate>] = targetModel.id as any;
   }
 
   /**
@@ -489,7 +495,7 @@ export default class Model<
    */
   private _unlinkBelongsTo(relationship: Relationships): void {
     const { foreignKey } = relationship;
-    this._attrs[foreignKey as keyof NewModelAttrs<TToken>] = null as any;
+    this._attrs[foreignKey as keyof NewModelAttrs<TTemplate>] = null as any;
   }
 
   /**
@@ -499,7 +505,7 @@ export default class Model<
    */
   private _linkHasMany(relationship: Relationships, targetModels: any[]): void {
     const { foreignKey } = relationship;
-    this._attrs[foreignKey as keyof NewModelAttrs<TToken>] = targetModels.map(
+    this._attrs[foreignKey as keyof NewModelAttrs<TTemplate>] = targetModels.map(
       (model) => model.id,
     ) as any;
   }
@@ -510,7 +516,7 @@ export default class Model<
    */
   private _unlinkHasMany(relationship: Relationships): void {
     const { foreignKey } = relationship;
-    this._attrs[foreignKey as keyof NewModelAttrs<TToken>] = [] as any;
+    this._attrs[foreignKey as keyof NewModelAttrs<TTemplate>] = [] as any;
   }
 
   /**
@@ -521,9 +527,9 @@ export default class Model<
   private _unlinkHasManyItem(relationship: Relationships, targetModel: any): void {
     const { foreignKey } = relationship;
     const currentIds =
-      (this._attrs[foreignKey as keyof NewModelAttrs<TToken>] as ModelId<TToken>[]) || [];
-    const newIds = currentIds.filter((id: ModelId<TToken>) => id !== targetModel.id);
-    this._attrs[foreignKey as keyof NewModelAttrs<TToken>] = newIds as any;
+      (this._attrs[foreignKey as keyof NewModelAttrs<TTemplate>] as ModelId<TTemplate>[]) || [];
+    const newIds = currentIds.filter((id: ModelId<TTemplate>) => id !== targetModel.id);
+    this._attrs[foreignKey as keyof NewModelAttrs<TTemplate>] = newIds as any;
   }
 
   /**
@@ -553,7 +559,7 @@ export default class Model<
     if (!targetModelId) return;
 
     // Get the target collection from schema
-    const targetCollectionName = relationshipDef.relationship.targetToken.collectionName;
+    const targetCollectionName = relationshipDef.relationship.targetModel.collectionName;
     const targetCollection = this._schema.getCollection(targetCollectionName);
 
     // Find the target model in the database
@@ -597,11 +603,11 @@ export default class Model<
    * @returns True if the attribute is a foreign key
    */
   private _isForeignKey(attributeName: string): boolean {
-    if (!this._relationships) return false;
+    if (!this._relationshipDefs) return false;
 
-    for (const relationshipName in this._relationships) {
-      const relationship = this._relationships[relationshipName];
-      if (relationship.foreignKey === attributeName) {
+    for (const relationshipName in this._relationshipDefs) {
+      const relationshipDef = this._relationshipDefs[relationshipName];
+      if (relationshipDef.relationship.foreignKey === attributeName) {
         return true;
       }
     }
@@ -614,8 +620,8 @@ export default class Model<
    * @returns True if the attribute is a relationship name
    */
   private _isRelationshipAttribute(attributeName: string): boolean {
-    if (!this._relationships) return false;
-    return attributeName in (this._relationships || {});
+    if (!this._relationshipDefs) return false;
+    return attributeName in this._relationshipDefs;
   }
 
   /**
@@ -634,22 +640,23 @@ export default class Model<
    * @private
    */
   private _updateForeignKey(foreignKeyName: any, value: any): void {
-    if (!this._relationships) {
+    if (!this._relationshipDefs) {
       return;
     }
 
     // Find the relationship that uses this foreign key
-    for (const relationshipName in this._relationships) {
-      const relationship = this._relationships[relationshipName] as Relationships;
+    for (const relationshipName in this._relationshipDefs) {
+      const relationshipDef = this._relationshipDefs[relationshipName];
+      const relationship = relationshipDef.relationship;
 
       if (relationship.foreignKey === foreignKeyName) {
         const { type } = relationship;
 
         // Get the previous value for inverse relationship cleanup
-        const previousValue = this._attrs[foreignKeyName as keyof NewModelAttrs<TToken>];
+        const previousValue = this._attrs[foreignKeyName as keyof NewModelAttrs<TTemplate>];
 
         // Update the foreign key attribute
-        this._attrs[foreignKeyName as keyof NewModelAttrs<TToken>] = value as any;
+        this._attrs[foreignKeyName as keyof NewModelAttrs<TTemplate>] = value as any;
 
         if (!this._schema) return;
 
@@ -658,7 +665,7 @@ export default class Model<
           // Unlink from previous target if it exists
           if (previousValue && this._schema.db) {
             const targetCollection = this._schema.db.getCollection(
-              relationship.targetToken.collectionName,
+              relationship.targetModel.collectionName,
             );
             const previousTarget = targetCollection.find(previousValue);
             if (previousTarget) {
@@ -669,7 +676,7 @@ export default class Model<
           // Link to new target if value is not null
           if (value && this._schema.db) {
             const targetCollection = this._schema.db.getCollection(
-              relationship.targetToken.collectionName,
+              relationship.targetModel.collectionName,
             );
             const newTarget = targetCollection.find(value);
             if (newTarget) {
@@ -685,7 +692,7 @@ export default class Model<
           const removedIds = previousIds.filter((id: any) => !newIds.includes(id));
           if (removedIds.length > 0 && this._schema.db) {
             const targetCollection = this._schema.db.getCollection(
-              relationship.targetToken.collectionName,
+              relationship.targetModel.collectionName,
             );
             removedIds.forEach((id: any) => {
               const target = targetCollection.find(id);
@@ -699,7 +706,7 @@ export default class Model<
           const addedIds = newIds.filter((id: any) => !previousIds.includes(id));
           if (addedIds.length > 0 && this._schema.db) {
             const targetCollection = this._schema.db.getCollection(
-              relationship.targetToken.collectionName,
+              relationship.targetModel.collectionName,
             );
             addedIds.forEach((id: any) => {
               const target = targetCollection.find(id);
@@ -715,7 +722,7 @@ export default class Model<
     }
 
     // Handle direct foreign key updates that don't match any relationship
-    this._attrs[foreignKeyName as keyof NewModelAttrs<TToken>] = value as any;
+    this._attrs[foreignKeyName as keyof NewModelAttrs<TTemplate>] = value as any;
   }
 
   // -- PRIVATE METHODS --
@@ -725,25 +732,25 @@ export default class Model<
    * @param id - The id of the model
    * @returns The status of the model
    */
-  private _verifyStatus(id: ModelAttrs<TToken>['id']): 'new' | 'saved' {
+  private _verifyStatus(id: ModelAttrs<TTemplate>['id']): 'new' | 'saved' {
     return this._dbCollection.find(id) ? 'saved' : 'new';
   }
 }
 
 /**
  * Define a model class with attribute accessors
- * @template TToken - The model token
+ * @template TTemplate - The model template
  * @template TSchema - The full schema collections config for enhanced type inference
- * @param token - The model token to define
+ * @param template - The model template to define
  * @returns A model class that can be instantiated with 'new'
  */
-export function defineModel<
-  TToken extends ModelToken,
+export function defineModelClass<
+  TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
->(token: TToken): ModelClass<TToken, TSchema> {
-  return class extends Model<TToken, TSchema> {
-    constructor(config: ModelConfig<TToken, TSchema>) {
-      super(token, config);
+>(template: TTemplate): ModelClass<TTemplate, TSchema> {
+  return class extends Model<TTemplate, TSchema> {
+    constructor(config: ModelConfig<TTemplate, TSchema>) {
+      super(template, config);
     }
-  } as ModelClass<TToken, TSchema>;
+  } as ModelClass<TTemplate, TSchema>;
 }

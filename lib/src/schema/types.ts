@@ -1,26 +1,26 @@
 import type { DbCollection } from '@src/db';
 import type { Factory } from '@src/factory';
 import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
-import type { ModelToken, InferTokenModel, InferTokenId } from '@src/model';
+import type { ModelTemplate, InferTemplateModel, InferTemplateId } from '@src/model';
 import type { ModelRelationships } from '@src/model';
 
 import type SchemaCollection from './SchemaCollection';
 
 /**
  * Type for schema collection config
- * @template TToken - The model token
+ * @template TTemplate - The model template
  * @template TRelationships - The model relationships
  * @template TFactory - The factory type
  */
 export interface SchemaCollectionConfig<
-  TToken extends ModelToken,
+  TTemplate extends ModelTemplate,
   TRelationships extends ModelRelationships | undefined = undefined,
-  TFactory extends Factory<TToken, any> = Factory<TToken, any>,
+  TFactory extends Factory<TTemplate, any> = Factory<TTemplate, any>,
 > {
-  model: TToken;
+  model: TTemplate;
   factory?: TFactory;
   relationships?: TRelationships;
-  identityManager?: IdentityManager<InferTokenId<TToken>>;
+  identityManager?: IdentityManager<InferTemplateId<TTemplate>>;
 }
 
 /**
@@ -42,11 +42,11 @@ export type SchemaCollections = Record<string, SchemaCollectionConfig<any, any, 
  */
 export type SchemaCollectionAccessors<TCollections extends SchemaCollections> = {
   [K in keyof TCollections]: TCollections[K] extends SchemaCollectionConfig<
-    infer TToken,
+    infer TTemplate,
     infer TRelationships,
     infer TFactory
   >
-    ? SchemaCollection<TCollections, TToken, TRelationships, TFactory>
+    ? SchemaCollection<TCollections, TTemplate, TRelationships, TFactory>
     : never;
 };
 
@@ -54,8 +54,8 @@ export type SchemaCollectionAccessors<TCollections extends SchemaCollections> = 
  * Maps schema collection configs to database collections
  */
 export type SchemaDbCollections<TCollections extends SchemaCollections> = {
-  [K in keyof TCollections]: TCollections[K] extends SchemaCollectionConfig<infer TToken, any, any>
-    ? DbCollection<InferTokenModel<TToken>>
+  [K in keyof TCollections]: TCollections[K] extends SchemaCollectionConfig<infer TTemplate, any, any>
+    ? DbCollection<InferTemplateModel<TTemplate>>
     : never;
 };
 

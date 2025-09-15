@@ -1,7 +1,7 @@
 import type {
-  InferTokenId,
   ModelAttrs,
-  ModelToken,
+  ModelId,
+  ModelTemplate,
   NewModelAttrs,
   PartialModelAttrs,
 } from '@src/model';
@@ -13,24 +13,32 @@ import type { FactoryAttrs, FactoryAfterCreateHook, ModelTraits, TraitName } fro
  * Factory that builds model attributes.
  */
 export default class Factory<
-  TToken extends ModelToken = ModelToken,
-  TTraits extends ModelTraits<TToken> = ModelTraits<TToken>,
+  TTemplate extends ModelTemplate = ModelTemplate,
+  TTraits extends ModelTraits<TTemplate> = ModelTraits<TTemplate>,
 > {
-  readonly token: TToken;
-  readonly attributes: FactoryAttrs<TToken>;
+  private readonly _template: TTemplate;
+  readonly attributes: FactoryAttrs<TTemplate>;
   readonly traits: TTraits;
   readonly afterCreate?: FactoryAfterCreateHook;
 
   constructor(
-    token: TToken,
-    attributes: FactoryAttrs<TToken>,
-    traits: TTraits,
+    template: TTemplate,
+    attributes: FactoryAttrs<TTemplate>,
+    traits: TTraits = {} as TTraits,
     afterCreate?: FactoryAfterCreateHook,
   ) {
-    this.token = token;
+    this._template = template;
     this.attributes = attributes;
     this.traits = traits;
     this.afterCreate = afterCreate;
+  }
+
+  /**
+   * Get the model template
+   * @returns The model template
+   */
+  get template(): TTemplate {
+    return this._template;
   }
 
   /**
@@ -40,11 +48,11 @@ export default class Factory<
    * @returns The built model.
    */
   build(
-    modelId: NonNullable<ModelAttrs<TToken>['id']>,
-    ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TToken>)[]
-  ): ModelAttrs<TToken> {
+    modelId: NonNullable<ModelAttrs<TTemplate>['id']>,
+    ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TTemplate>)[]
+  ): ModelAttrs<TTemplate> {
     const traitNames: string[] = [];
-    const defaults: PartialModelAttrs<TToken> = {};
+    const defaults: PartialModelAttrs<TTemplate> = {};
 
     // Separate trait names from default values
     traitsAndDefaults.forEach((arg) => {
@@ -66,7 +74,7 @@ export default class Factory<
       ...mergedAttributes,
       ...defaults,
       id: modelId,
-    } as ModelAttrs<TToken>;
+    } as ModelAttrs<TTemplate>;
   }
 
   /**
@@ -77,7 +85,7 @@ export default class Factory<
    */
   processAfterCreateHooks(
     model: any,
-    ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TToken>)[]
+    ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TTemplate>)[]
   ): any {
     const traitNames: string[] = traitsAndDefaults.filter((arg) => typeof arg === 'string');
     const hooks: FactoryAfterCreateHook[] = [];
@@ -105,9 +113,9 @@ export default class Factory<
   // -- PRIVATE METHODS --
 
   private _processAttributes(
-    attrs: FactoryAttrs<TToken>,
-    modelId?: NonNullable<InferTokenId<TToken>>,
-  ): PartialModelAttrs<TToken> {
+    attrs: FactoryAttrs<TTemplate>,
+    modelId?: NonNullable<ModelId<TTemplate>>,
+  ): PartialModelAttrs<TTemplate> {
     const keys = this._sortAttrs(attrs, modelId);
 
     const result = keys.reduce(
@@ -116,7 +124,7 @@ export default class Factory<
           return acc;
         }
 
-        const currentKey = key as keyof PartialModelAttrs<TToken>;
+        const currentKey = key as keyof PartialModelAttrs<TTemplate>;
         const value = (attrs as any)[currentKey];
 
         if (typeof value === 'function') {
@@ -130,13 +138,13 @@ export default class Factory<
       {} as Record<string, any>,
     );
 
-    return result as PartialModelAttrs<TToken>;
+    return result as PartialModelAttrs<TTemplate>;
   }
 
   private _buildWithTraits(
     traitNames: string[],
-    modelId?: NonNullable<InferTokenId<TToken>>,
-  ): PartialModelAttrs<TToken> {
+    modelId?: NonNullable<ModelId<TTemplate>>,
+  ): PartialModelAttrs<TTemplate> {
     const result = traitNames.reduce(
       (traitAttributes, name) => {
         const trait = this.traits[name as TraitName<TTraits>];
@@ -157,13 +165,13 @@ export default class Factory<
       {} as Record<string, any>,
     );
 
-    return result as PartialModelAttrs<TToken>;
+    return result as PartialModelAttrs<TTemplate>;
   }
 
   private _mergeAttributes(
-    baseAttributes: PartialModelAttrs<TToken>,
-    overrideAttributes: PartialModelAttrs<TToken>,
-  ): PartialModelAttrs<TToken> {
+    baseAttributes: PartialModelAttrs<TTemplate>,
+    overrideAttributes: PartialModelAttrs<TTemplate>,
+  ): PartialModelAttrs<TTemplate> {
     return {
       ...baseAttributes,
       ...overrideAttributes,
@@ -171,9 +179,9 @@ export default class Factory<
   }
 
   private _sortAttrs(
-    attrs: FactoryAttrs<TToken>,
-    modelId?: NonNullable<InferTokenId<TToken>>,
-  ): (keyof NewModelAttrs<TToken>)[] {
+    attrs: FactoryAttrs<TTemplate>,
+    modelId?: NonNullable<ModelId<TTemplate>>,
+  ): (keyof NewModelAttrs<TTemplate>)[] {
     const visited = new Set<string>();
     const processing = new Set<string>();
 
@@ -186,7 +194,7 @@ export default class Factory<
       }
 
       processing.add(key);
-      const value = attrs[key as Exclude<keyof NewModelAttrs<TToken>, 'id'>];
+      const value = attrs[key as Exclude<keyof NewModelAttrs<TTemplate>, 'id'>];
 
       if (typeof value === 'function') {
         // Create a proxy to track property access
@@ -212,11 +220,11 @@ export default class Factory<
     Object.keys(attrs).forEach(detectCycle);
 
     // Return keys in their original order
-    return Object.keys(attrs) as (keyof NewModelAttrs<TToken>)[];
+    return Object.keys(attrs) as (keyof NewModelAttrs<TTemplate>)[];
   }
 }
 
 export type FactoryInstance<
-  TToken extends ModelToken,
-  TTraits extends ModelTraits<TToken> = ModelTraits<TToken>,
-> = Factory<TToken, TTraits>;
+  TTemplate extends ModelTemplate,
+  TTraits extends ModelTraits<TTemplate> = ModelTraits<TTemplate>,
+> = Factory<TTemplate, TTraits>;

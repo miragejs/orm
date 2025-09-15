@@ -1,4 +1,4 @@
-export { default as Model, defineModel } from './Model';
+export { default as Model, defineModelClass } from './Model';
 export { default as ModelCollection } from './ModelCollection';
-export { defineToken } from './ModelToken';
+export { default as ModelBuilder, model } from './ModelBuilder';
 export type * from './types';

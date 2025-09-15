@@ -1,6 +1,5 @@
 import { Factory, FactoryBuilder, factory } from '@src/factory';
-import { defineModel } from '@src/model';
-import { token } from '@src/token';
+import { model } from '@src/model';
 
 interface UserAttrs {
   id: string;
@@ -10,12 +9,24 @@ interface UserAttrs {
   role?: string;
 }
 
-const UserToken = token('user', 'users').attrs<UserAttrs>().create();
+// Extended type for models that have been processed by afterCreate hooks
+interface ProcessedUserAttrs extends UserAttrs {
+  processed?: boolean;
+  adminProcessed?: boolean;
+  premiumProcessed?: boolean;
+  baseProcessed?: boolean;
+  extendedProcessed?: boolean;
+}
+
+const UserModel = model('user', 'users').attrs<UserAttrs>().create();
+const ProcessedUserModel = model('processedUser', 'processedUsers')
+  .attrs<ProcessedUserAttrs>()
+  .create();
 
 describe('FactoryBuilder', () => {
   describe('basic factory creation', () => {
     it('should create factory using builder pattern', () => {
-      const userFactory = factory(UserToken)
+      const userFactory = factory(UserModel)
         .attrs({
           createdAt: null,
           email: (id: string) => `user${id}@example.com`,
@@ -28,13 +39,13 @@ describe('FactoryBuilder', () => {
             role: 'admin',
           },
         })
-        .afterCreate((model) => {
-          model.createdAt = new Date('2024-01-01').toISOString();
+        .afterCreate((user) => {
+          user.createdAt = new Date('2024-01-01').toISOString();
         })
         .create();
 
       expect(userFactory).toBeInstanceOf(Factory);
-      expect(userFactory.token).toBe(UserToken);
+      expect(userFactory.template).toBe(UserModel);
 
       const attrs = userFactory.build('1');
       expect(attrs).toEqual({
@@ -56,7 +67,7 @@ describe('FactoryBuilder', () => {
     });
 
     it('should support method chaining', () => {
-      const builder = factory(UserToken);
+      const builder = factory(UserModel);
       expect(builder).toBeInstanceOf(FactoryBuilder);
 
       const builderWithAttrs = builder.attrs({ name: 'Test User' });
@@ -72,7 +83,7 @@ describe('FactoryBuilder', () => {
     });
 
     it('should merge attributes when called multiple times', () => {
-      const userFactory = factory(UserToken)
+      const userFactory = factory(UserModel)
         .attrs({ name: 'John' })
         .attrs({ email: 'john@example.com' })
         .attrs({ role: 'user' })
@@ -88,7 +99,7 @@ describe('FactoryBuilder', () => {
       let hookCalled = false;
       let modelReceived: any = null;
 
-      const userFactory = factory(UserToken)
+      const userFactory = factory(ProcessedUserModel)
         .attrs({ name: 'John' })
         .afterCreate((model) => {
           hookCalled = true;
@@ -97,18 +108,18 @@ describe('FactoryBuilder', () => {
         })
         .create();
 
-      const model = { id: '1', name: 'John' };
-      userFactory.processAfterCreateHooks(model);
+      const user: ProcessedUserAttrs = { id: '1', name: 'John', email: 'john@example.com' };
+      userFactory.processAfterCreateHooks(user);
 
       expect(hookCalled).toBe(true);
-      expect(modelReceived).toBe(model);
-      expect(model.processed).toBe(true);
+      expect(modelReceived).toBe(user);
+      expect(user.processed).toBe(true);
     });
   });
 
   describe('traits functionality', () => {
     it('should add traits and return new builder with merged traits', () => {
-      const builder1 = factory(UserToken).traits({
+      const builder1 = factory(UserModel).traits({
         admin: { role: 'admin' },
       });
 
@@ -130,7 +141,7 @@ describe('FactoryBuilder', () => {
     it('should handle trait afterCreate hooks', () => {
       const hooksCalled: string[] = [];
 
-      const userFactory = factory(UserToken)
+      const userFactory = factory(ProcessedUserModel)
         .attrs({ name: 'John' })
         .traits({
           admin: {
@@ -150,19 +161,24 @@ describe('FactoryBuilder', () => {
         })
         .create();
 
-      const model = { id: '1', name: 'John', role: 'admin' };
-      userFactory.processAfterCreateHooks(model, 'admin');
+      const user: ProcessedUserAttrs = {
+        id: '1',
+        name: 'John',
+        role: 'admin',
+        email: 'admin1@example.com',
+      };
+      userFactory.processAfterCreateHooks(user, 'admin');
 
       expect(hooksCalled).toEqual(['admin']);
-      expect(model.adminProcessed).toBe(true);
-      expect(model.premiumProcessed).toBeUndefined();
+      expect(user.adminProcessed).toBe(true);
+      expect(user.premiumProcessed).toBeUndefined();
     });
   });
 
   describe('factory extension', () => {
     it('should extend existing factory using static method', () => {
       // Create base factory
-      const baseFactory = factory(UserToken)
+      const baseFactory = factory(UserModel)
         .attrs({
           email: (id: string) => `user${id}@example.com`,
           name: 'John Doe',
@@ -205,7 +221,7 @@ describe('FactoryBuilder', () => {
     it('should preserve afterCreate hooks when extending', () => {
       const hooksCalled: string[] = [];
 
-      const baseFactory = factory(UserToken)
+      const baseFactory = factory(ProcessedUserModel)
         .attrs({ name: 'John' })
         .afterCreate((model) => {
           hooksCalled.push('base');
@@ -220,27 +236,27 @@ describe('FactoryBuilder', () => {
         })
         .create();
 
-      const model = { id: '1', name: 'John' };
-      extendedFactory.processAfterCreateHooks(model);
+      const user: ProcessedUserAttrs = { id: '1', name: 'John', email: 'john@example.com' };
+      extendedFactory.processAfterCreateHooks(user);
 
       // Should call the extended hook (overwrites base)
       expect(hooksCalled).toEqual(['extended']);
-      expect(model.extendedProcessed).toBe(true);
-      expect(model.baseProcessed).toBeUndefined();
+      expect(user.extendedProcessed).toBe(true);
+      expect(user.baseProcessed).toBeUndefined();
     });
   });
 
   describe('builder extend method', () => {
     it('should extend builder with additional configuration', () => {
-      const baseBuilder = factory(UserToken)
+      const baseBuilder = factory(ProcessedUserModel)
         .attrs({ name: 'John' })
         .traits({ admin: { role: 'admin' } });
 
       const extendedBuilder = baseBuilder.extend({
         attributes: { email: 'john@example.com' },
         traits: { premium: { role: 'premium' } },
-        afterCreate: (model) => {
-          model.processed = true;
+        afterCreate: (user) => {
+          user.processed = true;
         },
       });
 

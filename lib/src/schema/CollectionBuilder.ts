@@ -1,6 +1,6 @@
 import type { Factory } from '@src/factory';
 import type { IdentityManager } from '@src/id-manager';
-import type { ModelToken, ModelRelationships } from '@src/model';
+import type { ModelTemplate, ModelRelationships } from '@src/model';
 // import type { Serializer } from '@src/serializer';
 
 import type { SchemaCollectionConfig } from './types';
@@ -9,9 +9,9 @@ import type { SchemaCollectionConfig } from './types';
  * A fluent builder for creating schema collection configurations.
  *
  * The CollectionBuilder provides a type-safe way to construct SchemaCollectionConfig instances
- * with configurable token, factory, relationships, serializer, and identity manager. It follows
+ * with configurable model template, factory, relationships, serializer, and identity manager. It follows
  * the builder pattern, allowing method chaining to progressively configure the collection.
- * @template TToken - The model token type
+ * @template TTemplate - The model template type
  * @template TRelationships - The model relationships configuration
  * @template TFactory - The factory type
  * @template TIdentityManager - The identity manager type
@@ -19,23 +19,23 @@ import type { SchemaCollectionConfig } from './types';
  * @example
  * ```typescript
  * const userCollection = collection
- *   .token(userToken)
+ *   .model(userTemplate)
  *   .factory(userFactory)
  *   .relationships({
- *     posts: associations.hasMany(postToken),
+ *     posts: associations.hasMany(postTemplate),
  *   })
  *   .identityManager(userIdentityManager)
  *   .build();
  * ```
  */
 export default class CollectionBuilder<
-  TToken extends ModelToken = never,
+  TTemplate extends ModelTemplate = never,
   TRelationships extends ModelRelationships | undefined = undefined,
-  TFactory extends Factory<TToken, any> = Factory<TToken, any>,
+  TFactory extends Factory<TTemplate, any> = Factory<TTemplate, any>,
   TIdentityManager extends IdentityManager = never,
   // TSerializer extends Serializer<any, any> = never,
 > {
-  private _token?: TToken;
+  private _template?: TTemplate;
   private _factory?: TFactory;
   private _relationships?: TRelationships;
   // private _serializer?: TSerializer;
@@ -48,23 +48,23 @@ export default class CollectionBuilder<
   constructor() {}
 
   /**
-   * Sets the model token for this collection.
+   * Sets the model template for this collection.
    *
-   * The token defines the model type, serialization types, and collection name
+   * The template defines the model type, and collection name
    * for this collection configuration.
-   * @template T - The model token type
-   * @param token - The model token instance
-   * @returns A new CollectionBuilder instance with the specified token
+   * @template T - The model template type
+   * @param template - The model template instance
+   * @returns A new CollectionBuilder instance with the specified template
    * @example
    * ```typescript
-   * const builder = collection.token(userToken);
+   * const builder = collection.model(userTemplate);
    * ```
    */
-  token<T extends ModelToken>(
-    token: T,
+  model<T extends ModelTemplate>(
+    template: T,
   ): CollectionBuilder<T, TRelationships, Factory<T, any>, TIdentityManager> {
     const builder = new CollectionBuilder<T, TRelationships, Factory<T, any>, TIdentityManager>();
-    builder._token = token;
+    builder._template = template;
     builder._factory = this._factory as any;
     builder._relationships = this._relationships;
     // builder._serializer = this._serializer as any;
@@ -83,15 +83,15 @@ export default class CollectionBuilder<
    * @example
    * ```typescript
    * const builder = collection
-   *   .token(userToken)
+   *   .model(userTemplate)
    *   .factory(userFactory);
    * ```
    */
-  factory<F extends Factory<TToken, any>>(
+  factory<F extends Factory<TTemplate, any>>(
     factory: F,
-  ): CollectionBuilder<TToken, TRelationships, F, TIdentityManager> {
-    const builder = new CollectionBuilder<TToken, TRelationships, F, TIdentityManager>();
-    builder._token = this._token;
+  ): CollectionBuilder<TTemplate, TRelationships, F, TIdentityManager> {
+    const builder = new CollectionBuilder<TTemplate, TRelationships, F, TIdentityManager>();
+    builder._template = this._template;
     builder._factory = factory;
     builder._relationships = this._relationships;
     // builder._serializer = this._serializer as any;
@@ -110,18 +110,18 @@ export default class CollectionBuilder<
    * @example
    * ```typescript
    * const builder = collection
-   *   .token(userToken)
+   *   .model(userTemplate)
    *   .relationships({
-   *     posts: associations.hasMany(postToken),
-   *     profile: associations.belongsTo(profileToken),
+   *     posts: associations.hasMany(postTemplate),
+   *     profile: associations.belongsTo(profileTemplate),
    *   });
    * ```
    */
   relationships<R extends ModelRelationships>(
     relationships: R,
-  ): CollectionBuilder<TToken, R, Factory<TToken, any>, TIdentityManager> {
-    const builder = new CollectionBuilder<TToken, R, Factory<TToken, any>, TIdentityManager>();
-    builder._token = this._token;
+  ): CollectionBuilder<TTemplate, R, Factory<TTemplate, any>, TIdentityManager> {
+    const builder = new CollectionBuilder<TTemplate, R, Factory<TTemplate, any>, TIdentityManager>();
+    builder._template = this._template;
     builder._factory = this._factory as any;
     builder._relationships = relationships;
     // builder._serializer = this._serializer as any;
@@ -141,7 +141,7 @@ export default class CollectionBuilder<
    * @example
    * ```typescript
    * const builder = collection
-   *   .token(userToken)
+   *   .model(userTemplate)
    *   .serializer(userSerializer);
    * ```
    */
@@ -170,15 +170,15 @@ export default class CollectionBuilder<
    * @example
    * ```typescript
    * const builder = collection
-   *   .token(userToken)
+   *   .model(userTemplate)
    *   .identityManager(new StringIdentityManager());
    * ```
    */
   identityManager<I extends IdentityManager<any>>(
     identityManager: I,
-  ): CollectionBuilder<TToken, TRelationships, TFactory, I> {
-    const builder = new CollectionBuilder<TToken, TRelationships, TFactory, I>();
-    builder._token = this._token;
+  ): CollectionBuilder<TTemplate, TRelationships, TFactory, I> {
+    const builder = new CollectionBuilder<TTemplate, TRelationships, TFactory, I>();
+    builder._template = this._template;
     builder._factory = this._factory;
     builder._relationships = this._relationships;
     // builder._serializer = this._serializer as any;
@@ -190,24 +190,24 @@ export default class CollectionBuilder<
    * Creates the final SchemaCollectionConfig with all configured options.
    *
    * This method produces the immutable collection configuration that can be used
-   * in schema construction. A token must be set before calling build().
+   * in schema construction. A template must be set before calling build().
    * @returns The configured SchemaCollectionConfig instance
-   * @throws Error if no token has been configured
+   * @throws Error if no template has been configured
    * @example
    * ```typescript
    * const userCollection = collection
-   *   .token(userToken)
+   *   .model(userTemplate)
    *   .factory(userFactory)
    *   .build();
    * ```
    */
-  build(): SchemaCollectionConfig<TToken, TRelationships, TFactory> {
-    if (!this._token) {
-      throw new Error('CollectionBuilder: token is required. Call .token() before .build()');
+  build(): SchemaCollectionConfig<TTemplate, TRelationships, TFactory> {
+    if (!this._template) {
+      throw new Error('CollectionBuilder: template is required. Call .model() before .build()');
     }
 
     return {
-      model: this._token,
+      model: this._template,
       factory: this._factory,
       relationships: this._relationships,
       identityManager: this._identityManager as any,
@@ -219,22 +219,22 @@ export default class CollectionBuilder<
  * Creates a new CollectionBuilder instance for building collection configurations.
  *
  * This is the main entry point for creating collection configurations in the builder-based
- * schema API. The returned CollectionBuilder can be configured with token, factory,
+ * schema API. The returned CollectionBuilder can be configured with model template, factory,
  * relationships, and identity manager before building the final configuration.
  * @returns A new CollectionBuilder instance ready for configuration
  * @example
  * ```typescript
  * // Basic collection configuration
  * const userCollection = collection
- *   .token(userToken)
+ *   .model(userTemplate)
  *   .build();
  *
  * // Full collection configuration
  * const userCollection = collection
- *   .token(userToken)
+ *   .model(userTemplate)
  *   .factory(userFactory)
  *   .relationships({
- *     posts: associations.hasMany(postToken),
+ *     posts: associations.hasMany(postTemplate),
  *   })
  *   .identityManager(userIdentityManager)
  *   .build();

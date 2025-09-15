@@ -1,25 +1,25 @@
 import type { SchemaCollections } from '@src/schema';
 
-import type { Depth, ModelInstance, ModelToken, ModelUpdateAttrs } from './types';
+import type { Depth, ModelInstance, ModelTemplate, ModelUpdateAttrs } from './types';
 
 /**
  * A collection of models with array-like interface
- * @template TToken - The model token (most important for users)
+ * @template TTemplate - The model template (most important for users)
  * @template TSchema - The schema collections type for enhanced type inference
  * @template TDepth - The recursion depth counter (internal)
  */
 export default class ModelCollection<
-  TToken extends ModelToken = ModelToken,
+  TTemplate extends ModelTemplate = ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
   TDepth extends Depth = [],
 > {
-  public readonly token: TToken;
+  private readonly _template: TTemplate;
   public readonly collectionName: string;
-  public models: Array<ModelInstance<TToken, TSchema, TDepth>>;
+  public models: Array<ModelInstance<TTemplate, TSchema, TDepth>>;
 
-  constructor(token: TToken, models: Array<ModelInstance<TToken, TSchema, TDepth>> = []) {
-    this.token = token;
-    this.collectionName = token.collectionName;
+  constructor(template: TTemplate, models: Array<ModelInstance<TTemplate, TSchema, TDepth>> = []) {
+    this._template = template;
+    this.collectionName = template.collectionName;
     this.models = [...models];
   }
 
@@ -45,7 +45,7 @@ export default class ModelCollection<
    * Get the first model in the collection
    * @returns The first model or null if the collection is empty
    */
-  first(): ModelInstance<TToken, TSchema> | null {
+  first(): ModelInstance<TTemplate, TSchema, TDepth> | null {
     return this.models[0] || null;
   }
 
@@ -53,7 +53,7 @@ export default class ModelCollection<
    * Get the last model in the collection
    * @returns The last model or null if the collection is empty
    */
-  last(): ModelInstance<TToken, TSchema> | null {
+  last(): ModelInstance<TTemplate, TSchema, TDepth> | null {
     return this.models[this.models.length - 1] || null;
   }
 
@@ -64,7 +64,7 @@ export default class ModelCollection<
    * @param index - The index of the model to get
    * @returns The model at the given index or undefined
    */
-  at(index: number): ModelInstance<TToken, TSchema> | undefined {
+  at(index: number): ModelInstance<TTemplate, TSchema, TDepth> | undefined {
     return this.models[index];
   }
 
@@ -72,7 +72,7 @@ export default class ModelCollection<
    * Add a model to the end of the collection
    * @param model - The model to add
    */
-  push(model: ModelInstance<TToken, TSchema>): void {
+  push(model: ModelInstance<TTemplate, TSchema, TDepth>): void {
     this.models.push(model);
   }
 
@@ -80,7 +80,7 @@ export default class ModelCollection<
    * Remove and return the last model from the collection
    * @returns The last model or undefined if the collection is empty
    */
-  pop(): ModelInstance<TToken, TSchema> | undefined {
+  pop(): ModelInstance<TTemplate, TSchema, TDepth> | undefined {
     return this.models.pop();
   }
 
@@ -88,7 +88,7 @@ export default class ModelCollection<
    * Add a model to the beginning of the collection
    * @param model - The model to add
    */
-  unshift(model: ModelInstance<TToken, TSchema>): void {
+  unshift(model: ModelInstance<TTemplate, TSchema, TDepth>): void {
     this.models.unshift(model);
   }
 
@@ -96,7 +96,7 @@ export default class ModelCollection<
    * Remove and return the first model from the collection
    * @returns The first model or undefined if the collection is empty
    */
-  shift(): ModelInstance<TToken, TSchema> | undefined {
+  shift(): ModelInstance<TTemplate, TSchema, TDepth> | undefined {
     return this.models.shift();
   }
 
@@ -110,8 +110,8 @@ export default class ModelCollection<
   splice(
     start: number,
     deleteCount?: number,
-    ...items: ModelInstance<TToken, TSchema>[]
-  ): ModelInstance<TToken, TSchema>[] {
+    ...items: ModelInstance<TTemplate, TSchema, TDepth>[]
+  ): ModelInstance<TTemplate, TSchema, TDepth>[] {
     return this.models.splice(start, deleteCount ?? 0, ...items);
   }
 
@@ -121,9 +121,9 @@ export default class ModelCollection<
    * @param end - The end index (optional)
    * @returns A new ModelCollection with the sliced models
    */
-  slice(start?: number, end?: number): ModelCollection<TToken, TSchema> {
+  slice(start?: number, end?: number): ModelCollection<TTemplate, TSchema, TDepth> {
     const slicedModels = this.models.slice(start, end);
-    return new ModelCollection(this.token, slicedModels);
+    return new ModelCollection(this._template, slicedModels);
   }
 
   // -- ITERATION METHODS --
@@ -133,7 +133,11 @@ export default class ModelCollection<
    * @param callback - The function to execute for each model
    */
   forEach(
-    callback: (model: ModelInstance<TToken, TSchema>, index: number, collection: this) => void,
+    callback: (
+      model: ModelInstance<TTemplate, TSchema, TDepth>,
+      index: number,
+      collection: this,
+    ) => void,
   ): void {
     this.models.forEach((model, index) => callback(model, index, this));
   }
@@ -144,7 +148,11 @@ export default class ModelCollection<
    * @returns A new array with the results
    */
   map<U>(
-    callback: (model: ModelInstance<TToken, TSchema>, index: number, collection: this) => U,
+    callback: (
+      model: ModelInstance<TTemplate, TSchema, TDepth>,
+      index: number,
+      collection: this,
+    ) => U,
   ): U[] {
     return this.models.map((model, index) => callback(model, index, this));
   }
@@ -155,10 +163,14 @@ export default class ModelCollection<
    * @returns A new ModelCollection with the filtered models
    */
   filter(
-    callback: (model: ModelInstance<TToken, TSchema>, index: number, collection: this) => boolean,
-  ): ModelCollection<TToken, TSchema> {
+    callback: (
+      model: ModelInstance<TTemplate, TSchema, TDepth>,
+      index: number,
+      collection: this,
+    ) => boolean,
+  ): ModelCollection<TTemplate, TSchema, TDepth> {
     const filteredModels = this.models.filter((model, index) => callback(model, index, this));
-    return new ModelCollection(this.token, filteredModels);
+    return new ModelCollection(this._template, filteredModels);
   }
 
   /**
@@ -167,8 +179,12 @@ export default class ModelCollection<
    * @returns The first model that passes the test, or undefined
    */
   find(
-    callback: (model: ModelInstance<TToken, TSchema>, index: number, collection: this) => boolean,
-  ): ModelInstance<TToken, TSchema> | undefined {
+    callback: (
+      model: ModelInstance<TTemplate, TSchema, TDepth>,
+      index: number,
+      collection: this,
+    ) => boolean,
+  ): ModelInstance<TTemplate, TSchema, TDepth> | undefined {
     return this.models.find((model, index) => callback(model, index, this));
   }
 
@@ -178,7 +194,11 @@ export default class ModelCollection<
    * @returns True if at least one model passes the test
    */
   some(
-    callback: (model: ModelInstance<TToken, TSchema>, index: number, collection: this) => boolean,
+    callback: (
+      model: ModelInstance<TTemplate, TSchema, TDepth>,
+      index: number,
+      collection: this,
+    ) => boolean,
   ): boolean {
     return this.models.some((model, index) => callback(model, index, this));
   }
@@ -189,7 +209,11 @@ export default class ModelCollection<
    * @returns True if all models pass the test
    */
   every(
-    callback: (model: ModelInstance<TToken, TSchema>, index: number, collection: this) => boolean,
+    callback: (
+      model: ModelInstance<TTemplate, TSchema, TDepth>,
+      index: number,
+      collection: this,
+    ) => boolean,
   ): boolean {
     return this.models.every((model, index) => callback(model, index, this));
   }
@@ -203,7 +227,7 @@ export default class ModelCollection<
   reduce<U>(
     callback: (
       accumulator: U,
-      model: ModelInstance<TToken, TSchema>,
+      model: ModelInstance<TTemplate, TSchema, TDepth>,
       index: number,
       collection: this,
     ) => U,
@@ -223,19 +247,22 @@ export default class ModelCollection<
    * @returns A new sorted ModelCollection
    */
   sort(
-    compareFn?: (a: ModelInstance<TToken, TSchema>, b: ModelInstance<TToken, TSchema>) => number,
-  ): ModelCollection<TToken, TSchema> {
+    compareFn?: (
+      a: ModelInstance<TTemplate, TSchema, TDepth>,
+      b: ModelInstance<TTemplate, TSchema, TDepth>,
+    ) => number,
+  ): ModelCollection<TTemplate, TSchema, TDepth> {
     const sortedModels = [...this.models].sort(compareFn);
-    return new ModelCollection(this.token, sortedModels);
+    return new ModelCollection(this._template, sortedModels);
   }
 
   /**
    * Reverse the order of models in the collection
    * @returns A new reversed ModelCollection
    */
-  reverse(): ModelCollection<TToken, TSchema> {
+  reverse(): ModelCollection<TTemplate, TSchema, TDepth> {
     const reversedModels = [...this.models].reverse();
-    return new ModelCollection(this.token, reversedModels);
+    return new ModelCollection(this._template, reversedModels);
   }
 
   /**
@@ -244,13 +271,16 @@ export default class ModelCollection<
    * @returns A new ModelCollection with all models
    */
   concat(
-    ...others: (ModelCollection<TToken, TSchema> | ModelInstance<TToken, TSchema>[])[]
-  ): ModelCollection<TToken, TSchema> {
+    ...others: (
+      | ModelCollection<TTemplate, TSchema, TDepth>
+      | ModelInstance<TTemplate, TSchema, TDepth>[]
+    )[]
+  ): ModelCollection<TTemplate, TSchema, TDepth> {
     const allModels = [
       ...this.models,
       ...others.flatMap((other) => (Array.isArray(other) ? other : other.models)),
     ];
-    return new ModelCollection(this.token, allModels);
+    return new ModelCollection(this._template, allModels);
   }
 
   /**
@@ -258,7 +288,7 @@ export default class ModelCollection<
    * @param model - The model to check for
    * @returns True if the model is in the collection
    */
-  includes(model: ModelInstance<TToken, TSchema>): boolean {
+  includes(model: ModelInstance<TTemplate, TSchema, TDepth>): boolean {
     return this.models.includes(model);
   }
 
@@ -267,7 +297,7 @@ export default class ModelCollection<
    * @param model - The model to find
    * @returns The index of the model, or -1 if not found
    */
-  indexOf(model: ModelInstance<TToken, TSchema>): number {
+  indexOf(model: ModelInstance<TTemplate, TSchema, TDepth>): number {
     return this.models.indexOf(model);
   }
 
@@ -275,7 +305,7 @@ export default class ModelCollection<
    * Convert the collection to a plain array
    * @returns An array of the models
    */
-  toArray(): ModelInstance<TToken, TSchema>[] {
+  toArray(): ModelInstance<TTemplate, TSchema, TDepth>[] {
     return [...this.models];
   }
 
@@ -291,7 +321,7 @@ export default class ModelCollection<
    * Make the collection iterable
    * @returns An iterator for the models
    */
-  [Symbol.iterator](): Iterator<ModelInstance<TToken, TSchema>> {
+  [Symbol.iterator](): Iterator<ModelInstance<TTemplate, TSchema, TDepth>> {
     return this.models[Symbol.iterator]();
   }
 
@@ -301,7 +331,7 @@ export default class ModelCollection<
    * Add a model to the end of the collection (alias for push)
    * @param model - The model to add
    */
-  add(model: ModelInstance<TToken, TSchema>): void {
+  add(model: ModelInstance<TTemplate, TSchema, TDepth>): void {
     this.push(model);
   }
 
@@ -310,7 +340,7 @@ export default class ModelCollection<
    * @param model - The model to remove
    * @returns True if the model was removed, false if not found
    */
-  remove(model: ModelInstance<TToken, TSchema>): boolean {
+  remove(model: ModelInstance<TTemplate, TSchema, TDepth>): boolean {
     const index = this.indexOf(model);
     if (index !== -1) {
       this.models.splice(index, 1);
@@ -343,7 +373,9 @@ export default class ModelCollection<
    * @returns The collection instance for chaining
    */
   reload(): this {
-    this.models = this.models.map((model) => model.reload() as ModelInstance<TToken, TSchema>);
+    this.models = this.models.map(
+      (model) => model.reload() as ModelInstance<TTemplate, TSchema, TDepth>,
+    );
     return this;
   }
 
@@ -352,7 +384,7 @@ export default class ModelCollection<
    * @param attrs - The attributes to update
    * @returns The collection instance for chaining
    */
-  update(attrs: ModelUpdateAttrs<TToken, TSchema>): this {
+  update(attrs: ModelUpdateAttrs<TTemplate, TSchema>): this {
     this.models.forEach((model) => model.update(attrs));
     return this;
   }

@@ -1,21 +1,21 @@
 import { DbCollection } from '@src/db';
 import { NumberIdentityManager } from '@src/id-manager';
-import { defineModel, defineToken, NewModelInstance } from '@src/model';
+import { defineModelClass, model, NewModelInstance } from '@src/model';
 
-describe('defineModel', () => {
+describe('defineModelClass', () => {
   it('should create a model class with attribute accessors', () => {
     interface TestModel {
       id: string;
       value: string;
     }
 
-    const TestToken = defineToken<TestModel>('test', 'tests');
-    const TestModelClass = defineModel(TestToken);
-    const testCollection = new DbCollection<TestModel>('tests');
+    const TestModel = model('test', 'tests').attrs<TestModel>().create();
+    const TestModelClass = defineModelClass(TestModel);
+    const testDbCollection = new DbCollection<TestModel>('tests');
 
     const test = new TestModelClass({
       attrs: { value: 'test value' },
-      collection: testCollection,
+      dbCollection: testDbCollection,
     });
 
     expect(test.value).toBe('test value');
@@ -28,77 +28,75 @@ describe('Model', () => {
   // Setup test user model
   interface UserAttrs {
     id: string;
-    email: string;
     name: string;
+    email: string;
   }
-  const UserToken = defineToken<UserAttrs>('user', 'users');
-  const UserModel = defineModel(UserToken);
+  const UserModel = model('user', 'users').attrs<UserAttrs>().create();
+  const UserModelClass = defineModelClass(UserModel);
   const userDbCollection = new DbCollection<UserAttrs>('users');
 
-  let model: NewModelInstance<typeof UserToken>;
+  let user: NewModelInstance<typeof UserModel>;
 
   beforeEach(() => {
     userDbCollection.clear();
 
-    model = new UserModel({
+    user = new UserModelClass({
       attrs: {
-        email: 'john@example.com',
         name: 'John',
+        email: 'john@example.com',
       },
-      collection: userDbCollection,
+      dbCollection: userDbCollection,
     });
   });
 
   describe('constructor', () => {
     it('should initialize with default values', () => {
-      expect(model.attrs).toEqual({ name: 'John', email: 'john@example.com', id: null });
-      expect(model.modelName).toBe('user');
-      expect(model.isNew()).toBe(true);
+      expect(user.attrs).toEqual({ name: 'John', email: 'john@example.com', id: null });
+      expect(user.modelName).toBe('user');
+      expect(user.isNew()).toBe(true);
     });
   });
 
   describe('core functionality', () => {
     it('should provide id getter', () => {
-      expect(model.id).toBeNull();
-      model.save();
-      expect(model.id).toBe('1');
+      expect(user.id).toBeNull();
+      user.save();
+      expect(user.id).toBe('1');
     });
 
     it('should handle save operation', () => {
-      model.save();
-      expect(model.isSaved()).toBe(true);
-      expect(model.id).toBeDefined();
+      user.save();
+      expect(user.isSaved()).toBe(true);
+      expect(user.id).toBeDefined();
     });
 
     it('should handle update operation', () => {
-      model.save();
-      const id = model.id;
-      model.update({ name: 'Jane' });
-      expect(model.id).toBe(id);
-      expect(model.name).toBe('Jane');
+      user.save();
+      const id = user.id;
+      user.update({ name: 'Jane' });
+      expect(user.id).toBe(id);
+      expect(user.name).toBe('Jane');
     });
 
     it('should handle destroy operation', () => {
-      const user = model.save();
-      const id = user.id;
-      user.destroy();
+      const savedUser = user.save();
+      const id = savedUser.id;
+      savedUser.destroy();
       expect(userDbCollection.find(id)).toBeNull();
     });
 
     it('should handle reload operation', () => {
-      const user = model.save();
-      const id = user.id;
-      userDbCollection.update(id, { name: 'Jane', email: 'jane@example.com' });
-      user.reload();
-      expect(user.name).toBe('Jane');
-      expect(user.email).toBe('jane@example.com');
+      const savedUser = user.save();
+      savedUser.name = 'Jane';
+      savedUser.reload();
+      expect(savedUser.name).toBe('John');
     });
   });
 
   describe('serialization', () => {
     it('should serialize to JSON', () => {
-      model.save();
-      const json = model.toJSON();
+      user.save();
+      const json = user.toJSON();
       expect(json).toEqual({
         id: '1',
         name: 'John',
@@ -107,8 +105,8 @@ describe('Model', () => {
     });
 
     it('should convert to string', () => {
-      model.save();
-      expect(model.toString()).toBe(`model:user(${model.id})`);
+      user.save();
+      expect(user.toString()).toBe(`model:user(${user.id})`);
     });
   });
 
@@ -118,17 +116,14 @@ describe('Model', () => {
         id: string;
         text: string;
       }
+      const CommentModel = model('comment', 'comments').attrs<CommentAttrs>().create();
+      const CommentModelClass = defineModelClass(CommentModel);
 
-      const CommentToken = defineToken<CommentAttrs>('comment', 'comments');
-      const CommentModel = defineModel(CommentToken);
-
-      const comment = new CommentModel({
+      const comment = new CommentModelClass({
         attrs: { text: 'Great post!' },
       });
       expect(comment.id).toBeNull();
-
       comment.save();
-
       expect(typeof comment.id).toBe('string');
       expect(comment.text).toBe('Great post!');
     });
@@ -141,21 +136,18 @@ describe('Model', () => {
         title: string;
         content: string;
       }
-
-      const PostToken = defineToken<PostAttrs>('post', 'posts');
-      const PostModel = defineModel(PostToken);
-
-      const postCollection = new DbCollection<PostAttrs>('posts', {
+      const PostModel = model('post', 'posts').attrs<PostAttrs>().create();
+      const PostModelClass = defineModelClass(PostModel);
+      const postDbCollection = new DbCollection<PostAttrs>('posts', {
         identityManager: new NumberIdentityManager(),
       });
-      const post = new PostModel({
+
+      const post = new PostModelClass({
         attrs: { title: 'My Post', content: 'Content here' },
-        collection: postCollection,
+        dbCollection: postDbCollection,
       });
       expect(post.id).toBeNull();
-
       post.save();
-
       expect(post.id).toBeDefined();
       expect(typeof post.id).toBe('number');
       expect(post.title).toBe('My Post');

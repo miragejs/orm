@@ -3,18 +3,18 @@ export { StringIdentityManager, NumberIdentityManager, IdentityManager } from '.
 export type { IdType, IdGenerator, IdentityManagerConfig } from './id-manager';
 
 // Model
-export { defineToken, defineModel } from './model';
+export { defineModelClass, ModelBuilder, model } from './model';
 export type {
-  InferTokenCollectionName,
-  InferTokenId,
-  InferTokenModel,
-  InferTokenModelName,
+  InferTemplateCollectionName,
+  InferTemplateId,
+  InferTemplateModel,
+  InferTemplateModelName,
   ModelAttrs,
   ModelClass,
   ModelForeignKeys,
   ModelInstance,
   ModelRelationships,
-  ModelToken,
+  ModelTemplate,
   NewModelAttrs,
   NewModelInstance,
   PartialModelAttrs,
@@ -25,7 +25,7 @@ export { factory } from './factory';
 export type { Factory, FactoryAttrs, ModelTraits, TraitName } from './factory';
 
 // Schema
-export { setupSchema, createCollection, composeCollections } from './schema';
+export { setupSchema } from './schema';
 export type {
   CollectionModule,
   SchemaCollectionConfig,

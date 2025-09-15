@@ -1,24 +1,24 @@
-import type { ModelToken } from '@src/model';
+import type { ModelTemplate } from '@src/model';
 
 import Factory from './Factory';
 import type { FactoryAttrs, FactoryAfterCreateHook, ModelTraits } from './types';
 
 /**
  * Builder class for creating factories with fluent API
- * @template TToken - The model token
+ * @template TTemplate - The model template
  * @template TTraits - The traits type
  */
 export default class FactoryBuilder<
-  TToken extends ModelToken,
-  TTraits extends ModelTraits<TToken> = {},
+  TTemplate extends ModelTemplate,
+  TTraits extends ModelTraits<TTemplate> = {},
 > {
-  protected _token: TToken;
-  protected _attributes: FactoryAttrs<TToken> = {};
+  protected _template: TTemplate;
+  protected _attributes: FactoryAttrs<TTemplate> = {};
   protected _traits: TTraits = {} as TTraits;
   protected _afterCreate?: FactoryAfterCreateHook;
 
-  constructor(token: TToken) {
-    this._token = token;
+  constructor(template: TTemplate) {
+    this._template = template;
   }
 
   /**
@@ -26,10 +26,10 @@ export default class FactoryBuilder<
    * @param existingFactory - The factory to extend
    * @returns A new factory builder based on the existing factory
    */
-  static extend<TToken extends ModelToken, TTraits extends ModelTraits<TToken>>(
-    existingFactory: Factory<TToken, TTraits>,
-  ): FactoryBuilder<TToken, TTraits> {
-    const builder = new FactoryBuilder<TToken, TTraits>(existingFactory.token);
+  static extend<TTemplate extends ModelTemplate, TTraits extends ModelTraits<TTemplate>>(
+    existingFactory: Factory<TTemplate, TTraits>,
+  ): FactoryBuilder<TTemplate, TTraits> {
+    const builder = new FactoryBuilder<TTemplate, TTraits>(existingFactory.template);
     builder._attributes = { ...existingFactory.attributes };
     builder._traits = { ...existingFactory.traits };
     builder._afterCreate = existingFactory.afterCreate;
@@ -41,7 +41,7 @@ export default class FactoryBuilder<
    * @param attributes - The factory attributes
    * @returns The builder instance for chaining
    */
-  attrs(attributes: FactoryAttrs<TToken>): this {
+  attrs(attributes: FactoryAttrs<TTemplate>): this {
     this._attributes = { ...this._attributes, ...attributes };
     return this;
   }
@@ -51,10 +51,10 @@ export default class FactoryBuilder<
    * @param traits - The traits to add
    * @returns A new builder instance with the added traits
    */
-  traits<TNewTraits extends ModelTraits<TToken>>(
+  traits<TNewTraits extends ModelTraits<TTemplate>>(
     traits: TNewTraits,
-  ): FactoryBuilder<TToken, TTraits & TNewTraits> {
-    const builder = new FactoryBuilder<TToken, TTraits & TNewTraits>(this._token);
+  ): FactoryBuilder<TTemplate, TTraits & TNewTraits> {
+    const builder = new FactoryBuilder<TTemplate, TTraits & TNewTraits>(this._template);
     builder._attributes = this._attributes;
     builder._traits = { ...this._traits, ...traits } as TTraits & TNewTraits;
     builder._afterCreate = this._afterCreate;
@@ -80,11 +80,11 @@ export default class FactoryBuilder<
    * @returns A new extended factory builder
    */
   extend(definition: {
-    attributes?: Partial<FactoryAttrs<TToken>>;
-    traits?: ModelTraits<TToken>;
+    attributes?: Partial<FactoryAttrs<TTemplate>>;
+    traits?: ModelTraits<TTemplate>;
     afterCreate?: FactoryAfterCreateHook;
-  }): FactoryBuilder<TToken, TTraits> {
-    const builder = new FactoryBuilder<TToken, TTraits>(this._token);
+  }): FactoryBuilder<TTemplate, TTraits> {
+    const builder = new FactoryBuilder<TTemplate, TTraits>(this._template);
 
     // Merge attributes
     builder._attributes = {
@@ -108,18 +108,18 @@ export default class FactoryBuilder<
    * Build the final factory instance
    * @returns The factory instance
    */
-  create(): Factory<TToken, TTraits> {
-    return new Factory(this._token, this._attributes, this._traits, this._afterCreate);
+  create(): Factory<TTemplate, TTraits> {
+    return new Factory(this._template, this._attributes, this._traits, this._afterCreate);
   }
 }
 
 /**
  * Create a factory builder
- * @param token - Model token
+ * @param template - Model template
  * @returns Factory builder
  */
-export function factory<TToken extends ModelToken, TTraits extends ModelTraits<TToken>>(
-  token: TToken,
-): FactoryBuilder<TToken, TTraits> {
-  return new FactoryBuilder(token);
+export function factory<TTemplate extends ModelTemplate, TTraits extends ModelTraits<TTemplate>>(
+  template: TTemplate,
+): FactoryBuilder<TTemplate, TTraits> {
+  return new FactoryBuilder(template);
 }

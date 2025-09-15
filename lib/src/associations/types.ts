@@ -1,32 +1,32 @@
-import type { InferTokenModelName, ModelToken } from '../model';
+import type { InferTemplateModelName, ModelTemplate } from '../model';
 
 /**
  * BelongsTo relationship - this model contains a foreign key to another model
  * Example: Post belongsTo User (Post has authorId pointing to User.id)
- * @template TTarget - The target model token this relationship points to
+ * @template TTarget - The target model template this relationship points to
  * @template TForeign - The foreign key field name (defaults to "{targetModelName}Id")
  */
 export type BelongsTo<
-  TTarget extends ModelToken,
-  TForeign extends string = `${InferTokenModelName<TTarget>}Id`,
+  TTarget extends ModelTemplate,
+  TForeign extends string = `${InferTemplateModelName<TTarget>}Id`,
 > = {
   foreignKey: TForeign;
-  targetToken: TTarget;
+  targetModel: TTarget;
   type: 'belongsTo';
 };
 
 /**
  * HasMany relationship - this model can have multiple related models
  * Example: User hasMany Posts (User has postIds array containing Post.id values)
- * @template TTarget - The target model token this relationship points to
+ * @template TTarget - The target model template this relationship points to
  * @template TForeign - The foreign key array field name (defaults to "{targetModelName}Ids")
  */
 export type HasMany<
-  TTarget extends ModelToken,
-  TForeign extends string = `${InferTokenModelName<TTarget>}Ids`,
+  TTarget extends ModelTemplate,
+  TForeign extends string = `${InferTemplateModelName<TTarget>}Ids`,
 > = {
   foreignKey: TForeign;
-  targetToken: TTarget;
+  targetModel: TTarget;
   type: 'hasMany';
 };
 

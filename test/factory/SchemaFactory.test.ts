@@ -1,6 +1,6 @@
 import { factory } from '@src/factory';
 import SchemaFactory from '@src/factory/SchemaFactory';
-import { token } from '@src/token';
+import { model } from '@src/model';
 import { describe, expect, it } from 'vitest';
 
 describe('SchemaFactory', () => {
@@ -10,7 +10,7 @@ describe('SchemaFactory', () => {
     email: string;
   }
 
-  const UserToken = token('user', 'users').attrs<UserAttrs>().create();
+  const UserTemplate = model('user', 'users').attrs<UserAttrs>().create();
 
   // Mock schema instance for testing
   const mockSchemaInstance = {
@@ -22,7 +22,7 @@ describe('SchemaFactory', () => {
     it('should execute factory hooks with model only', () => {
       const factoryHookCalls: any[] = [];
 
-      const userFactory = factory(UserToken)
+      const userFactory = factory(UserTemplate)
         .attrs({ name: 'Jane', email: 'jane@example.com' })
         .afterCreate((model) => {
           factoryHookCalls.push({ type: 'factory', model, schema: undefined });
@@ -45,7 +45,7 @@ describe('SchemaFactory', () => {
     it('should execute schema-aware hooks with model and schema', () => {
       const schemaHookCalls: any[] = [];
 
-      const userFactory = factory(UserToken)
+      const userFactory = factory(UserTemplate)
         .attrs({ name: 'Bob', email: 'bob@example.com' })
         .create();
 
@@ -70,7 +70,7 @@ describe('SchemaFactory', () => {
     it('should execute both factory and schema-aware hooks in correct order', () => {
       const hookCalls: string[] = [];
 
-      const userFactory = factory(UserToken)
+      const userFactory = factory(UserTemplate)
         .attrs({ name: 'Alice', email: 'alice@example.com' })
         .afterCreate((model) => {
           hookCalls.push('factory-hook');
@@ -93,7 +93,7 @@ describe('SchemaFactory', () => {
     it('should execute schema-aware trait hooks', () => {
       const traitHookCalls: any[] = [];
 
-      const userFactory = factory(UserToken)
+      const userFactory = factory(UserTemplate)
         .attrs({ name: 'Charlie', email: 'charlie@example.com' })
         .create();
 

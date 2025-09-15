@@ -8,10 +8,10 @@ import type {
 
 /**
  * Serializer class that handles model serialization
- * @template TToken - The model token
+ * @template TTemplate - The model template
  * @template TConfig - The serializer configuration type
- * @template TSerializedModel - The serialized model type (inferred from token by default)
- * @template TSerializedCollection - The serialized collection type (inferred from token by default)
+ * @template TSerializedModel - The serialized model type (inferred from template by default)
+ * @template TSerializedCollection - The serialized collection type (inferred from template by default)
  */
 export default class Serializer<
   TToken extends ModelToken,
@@ -52,7 +52,7 @@ export default class Serializer<
   /**
    * Serialize multiple model instances
    * @param models - Array of model instances to serialize
-   * @returns The serialized collection (format depends on token's collection serialization type)
+   * @returns The serialized collection (format depends on template's collection serialization type)
    */
   serializeCollection(models: ModelInstance<TToken>[]): TSerializedCollection {
     if (this.root) {
@@ -89,7 +89,7 @@ export default class Serializer<
 
 /**
  * Configuration for creating a serializer
- * @template TToken - The model token
+ * @template TTemplate - The model template
  */
 export interface SerializerConfig<TToken extends ModelToken> {
   attrs?: (keyof InferTokenModel<TToken>)[];

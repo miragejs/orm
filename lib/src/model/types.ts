@@ -14,109 +14,112 @@ export type BaseModelAttrs<TId extends IdType> = {
   id: TId;
 };
 
-// -- Token Types --
+// -- TEMPLATE TYPES --
 
 /**
- * Serialization types for model and collection
- * @template TSerializedModel - The serialized model type
- * @template TSerializedCollection - The serialized collection type (defaults to TSerializedModel[])
- */
-export interface ModelSerialization<
-  TSerializedModel = any,
-  TSerializedCollection = TSerializedModel[],
-> {
-  model: TSerializedModel;
-  collection: TSerializedCollection;
-}
-
-/**
- * Model token interface
+ * Model template interface
  * @template TModel - The model attributes type
- * @template TSerializationTypes - The serialization types (model and collection)
  * @template TModelName - The key/identifier for the model
+ * @template TCollectionName - The collection name
  */
-export interface ModelToken<
-  TModel extends { id: any } = BaseModelAttrs<string>,
-  _TSerialization extends ModelSerialization<any, any> = ModelSerialization<TModel, TModel[]>,
+export interface ModelTemplate<
+  TModel extends { id: any } = { id: any },
   TModelName extends string = string,
   TCollectionName extends string = string,
 > {
-  readonly modelName: TModelName;
-  readonly collectionName: TCollectionName;
   readonly key: symbol;
+  readonly attrs: Partial<TModel>;
+  readonly collectionName: TCollectionName;
+  readonly modelName: TModelName;
 }
 
-// -- INFERENCE TOKEN TYPES --
+// -- INFERENCE TEMPLATE TYPES --
 
-export type InferTokenModel<T> = T extends ModelToken<infer M, any, any> ? M : never;
-export type InferTokenId<T> = InferTokenModel<T>['id'];
-export type InferTokenModelName<T> = T extends ModelToken<any, any, infer Name, any> ? Name : never;
-export type InferTokenCollectionName<T> =
-  T extends ModelToken<any, any, any, infer Name> ? Name : never;
-export type InferTokenSerializationTypes<T> = T extends ModelToken<any, infer S, any> ? S : never;
-export type InferTokenSerializedModel<T> = InferTokenSerializationTypes<T>['model'];
-export type InferTokenSerializedCollection<T> = InferTokenSerializationTypes<T>['collection'];
+export type InferTemplateModel<T> = T extends ModelTemplate<infer M, any, any> ? M : never;
+export type InferTemplateId<T> = InferTemplateModel<T>['id'];
+export type InferTemplateModelName<T> =
+  T extends ModelTemplate<any, infer Name, any> ? Name : never;
+export type InferTemplateCollectionName<T> =
+  T extends ModelTemplate<any, any, infer Name> ? Name : never;
+export type InferTemplateAttrs<T> = T extends ModelTemplate<any, any, any> ? T['attrs'] : never;
 
 // -- ATTRIBUTE TYPES --
 
 /**
  * Type for model id
- * @template TToken - The model token
+ * @template TTemplate - The model template
  */
-export type ModelId<TToken extends ModelToken> = InferTokenId<TToken>;
+export type ModelId<TTemplate extends ModelTemplate> = InferTemplateId<TTemplate>;
 
 /**
  * Type for full model attributes
- * @template TToken - The model token
+ * @template TTemplate - The model template
  */
-export type ModelAttrs<TToken extends ModelToken> = InferTokenModel<TToken>;
+export type ModelAttrs<TTemplate extends ModelTemplate> = InferTemplateModel<TTemplate>;
 
 /**
  * Type for new model attributes (allowing null id for unsaved models)
- * @template TToken - The model token
+ * @template TTemplate - The model template
  */
-export type NewModelAttrs<TToken extends ModelToken> = Omit<ModelAttrs<TToken>, 'id'> & {
-  id: ModelAttrs<TToken>['id'] | null;
+export type NewModelAttrs<TTemplate extends ModelTemplate> = Omit<ModelAttrs<TTemplate>, 'id'> & {
+  id: ModelAttrs<TTemplate>['id'] | null;
+};
+
+export type InitialModelAttrs<TTemplate extends ModelTemplate> = Omit<
+  ModelAttrs<TTemplate>,
+  'id'
+> & {
+  id?: ModelAttrs<TTemplate>['id'];
 };
 
 /**
  * Type for partial model attributes (all fields optional, id excluded)
- * @template TToken - The model token
+ * @template TTemplate - The model template
  */
-export type PartialModelAttrs<TToken extends ModelToken> = Partial<Omit<ModelAttrs<TToken>, 'id'>>;
+export type PartialModelAttrs<TTemplate extends ModelTemplate> = Partial<
+  Omit<ModelAttrs<TTemplate>, 'id'>
+>;
 
 /**
  * Type for update method that includes attributes, foreign keys, and relationship model instances
- * @template TToken - The model token
+ * @template TTemplate - The model template
  * @template TSchema - The schema collections type
  */
 export type ModelUpdateAttrs<
-  TToken extends ModelToken,
+  TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
-  TRelationships extends ModelRelationships = RelationshipsByToken<TSchema, TToken>,
+  TRelationships extends ModelRelationships = RelationshipsByTemplate<TSchema, TTemplate>,
 > =
   // Regular attributes (partial, excluding id)
   TRelationships extends ModelRelationships
-    ? Partial<Omit<ModelAttrs<TToken>, 'id'>> & // Foreign key direct updates (e.g., authorId: "123", postIds: ["1", "2"])
+    ? Partial<Omit<ModelAttrs<TTemplate>, 'id'>> & // Foreign key direct updates (e.g., authorId: "123", postIds: ["1", "2"])
         Partial<ModelForeignKeys<TRelationships>> &
         // Relationship model instance updates (e.g., author: userInstance, posts: [post1, post2])
         Partial<RelationshipUpdateValues<TRelationships, TSchema>>
-    : Partial<Omit<ModelAttrs<TToken>, 'id'>>;
+    : Partial<Omit<ModelAttrs<TTemplate>, 'id'>>;
 
 /**
  * Type for model attribute getters/setters
- * @template TToken - The model token
+ * @template TTemplate - The model template
  */
-export type ModelAttrAccessors<TToken extends ModelToken> = {
-  [K in keyof Omit<ModelAttrs<TToken>, 'id'>]: ModelAttrs<TToken>[K];
+export type ModelAttrAccessors<TTemplate extends ModelTemplate> = {
+  [K in keyof Omit<ModelAttrs<TTemplate>, 'id'>]: ModelAttrs<TTemplate>[K];
 };
-
-export type SerializedModel<TToken extends ModelToken> = InferTokenSerializedModel<TToken>;
 
 // -- DEPTH COUNTER TO PREVENT INFINITE RECURSION FOR RELATIONSHIPS --
 export type Depth = readonly unknown[];
 type Next<T extends Depth> = readonly [unknown, ...T];
 type MaxDepth = readonly [unknown, unknown, unknown, unknown, unknown];
+
+// -- UTILITY TYPES --
+
+/**
+ * Utility type to convert union to intersection
+ * @template U - The union type to convert
+ */
+type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void
+  ? I
+  : never;
 
 // -- RELATIONSHIP TYPES --
 
@@ -129,8 +132,8 @@ export interface RelationshipDef {
   relationship: Relationships;
   /** The inverse relationship information, if it exists */
   inverse?: {
-    /** The target model token that has the inverse relationship */
-    targetToken: ModelToken;
+    /** The target model template that has the inverse relationship */
+    targetModel: ModelTemplate;
     /** The name of the inverse relationship in the target model */
     relationshipName: string;
     /** The type of the inverse relationship */
@@ -148,7 +151,7 @@ export type RelationshipDefs = Record<string, RelationshipDef>;
 
 /**
  * Model relationships configuration object
- * @example { posts: HasMany<PostToken>, author: BelongsTo<UserToken, 'authorId'> }
+ * @example { posts: HasMany<PostTemplate>, author: BelongsTo<UserTemplate, 'authorId'> }
  */
 export type ModelRelationships = Record<string, Relationships>;
 
@@ -262,88 +265,93 @@ export type ModelRelationshipAccessors<
     };
 
 /**
- * Type for collection by token model
+ * Type for collection by template model
  * @template TSchema - The schema collections
- * @template TToken - The model token
+ * @template TTemplate - The model template
  */
-export type CollectionByToken<TSchema extends SchemaCollections, TToken extends ModelToken> = {
-  [K in keyof TSchema]: InferTokenModel<TSchema[K]['model']> extends InferTokenModel<TToken>
+export type CollectionByTemplate<
+  TSchema extends SchemaCollections,
+  TTemplate extends ModelTemplate,
+> = {
+  [K in keyof TSchema]: InferTemplateModel<
+    TSchema[K]['model']
+  > extends InferTemplateModel<TTemplate>
     ? K
     : never;
 }[keyof TSchema];
 
 /**
- * Type for relationships by token model
+ * Type for relationships by template model
  * @template TSchema - The schema collections
- * @template TToken - The model token
+ * @template TTemplate - The model template
  */
-export type RelationshipsByToken<
+export type RelationshipsByTemplate<
   TSchema extends SchemaCollections,
-  TToken extends ModelToken,
-> = TSchema[CollectionByToken<TSchema, TToken>]['relationships'] extends ModelRelationships
-  ? TSchema[CollectionByToken<TSchema, TToken>]['relationships']
+  TTemplate extends ModelTemplate,
+> = TSchema[CollectionByTemplate<TSchema, TTemplate>]['relationships'] extends ModelRelationships
+  ? TSchema[CollectionByTemplate<TSchema, TTemplate>]['relationships']
   : {}; // Default to empty object instead of using NonNullable
 
 // -- MODEL CLASS TYPES --
 
 /**
  * Type for new model instance with accessors for the attributes (nullable id)
- * @template TToken - The model token (most important for users)
+ * @template TTemplate - The model template (most important for users)
  * @template TSchema - The schema collections type for enhanced type inference
  * @template TDepth - The recursion depth counter (internal)
  */
 export type NewModelInstance<
-  TToken extends ModelToken,
+  TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
   TDepth extends Depth = [],
-> = Model<TToken, TSchema> &
-  ModelAttrAccessors<TToken> &
-  ModelForeignKeys<RelationshipsByToken<TSchema, TToken>> &
-  ModelRelationshipAccessors<RelationshipsByToken<TSchema, TToken>, TSchema, TDepth>;
+> = Model<TTemplate, TSchema> &
+  ModelAttrAccessors<TTemplate> &
+  ModelForeignKeys<RelationshipsByTemplate<TSchema, TTemplate>> &
+  ModelRelationshipAccessors<RelationshipsByTemplate<TSchema, TTemplate>, TSchema, TDepth>;
 
 /**
  * Type for model instance with accessors for the attributes (required ID)
  * @template TSchema - The schema collections type for enhanced type inference
- * @template TToken - The model token
+ * @template TTemplate - The model template
  * @template TRelationships - The relationships configuration
  * @template TDepth - The recursion depth counter (internal)
  */
 export type ModelInstance<
-  TToken extends ModelToken,
-  TSchema extends SchemaCollections,
+  TTemplate extends ModelTemplate,
+  TSchema extends SchemaCollections = SchemaCollections,
   TDepth extends Depth = [],
-> = Model<TToken, TSchema> & {
+> = Model<TTemplate, TSchema> & {
   // Required id for saved models
-  id: ModelId<TToken>;
-} & ModelAttrAccessors<TToken> &
-  ModelForeignKeys<RelationshipsByToken<TSchema, TToken>> &
-  ModelRelationshipAccessors<RelationshipsByToken<TSchema, TToken>, TSchema, TDepth>;
+  id: ModelId<TTemplate>;
+} & ModelAttrAccessors<TTemplate> &
+  ModelForeignKeys<RelationshipsByTemplate<TSchema, TTemplate>> &
+  ModelRelationshipAccessors<RelationshipsByTemplate<TSchema, TTemplate>, TSchema, TDepth>;
 
 /**
  * Configuration for creating a model
- * @template TToken - The model token (most important for users)
+ * @template TTemplate - The model template (most important for users)
  * @template TSchema - The schema collections type for enhanced type inference
  * @template TRelationships - The relationships configuration (inferred from usage)
  */
 export interface ModelConfig<
-  TToken extends ModelToken,
+  TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
 > {
-  attrs?: PartialModelAttrs<TToken>;
-  collection?: DbCollection<InferTokenModel<TToken>>;
-  relationships?: RelationshipsByToken<TSchema, TToken>;
+  attrs?: InitialModelAttrs<TTemplate>;
+  dbCollection?: DbCollection<ModelAttrs<TTemplate>>;
+  relationships?: RelationshipsByTemplate<TSchema, TTemplate>;
   schema?: SchemaInstance<TSchema>;
 }
 
 /**
  * Type for model class with attribute accessors
- * @template TToken - The model token (most important for users)
+ * @template TTemplate - The model template (most important for users)
  * @template TSchema - The schema collections type for enhanced type inference
  * @template TRelationships - The relationships configuration
  */
 export type ModelClass<
-  TToken extends ModelToken,
+  TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
 > = {
-  new (config: ModelConfig<TToken, TSchema>): NewModelInstance<TToken, TSchema>;
+  new (config: ModelConfig<TTemplate, TSchema>): NewModelInstance<TTemplate, TSchema>;
 };

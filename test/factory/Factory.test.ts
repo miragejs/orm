@@ -1,5 +1,5 @@
 import { Factory } from '@src/factory';
-import { token } from '@src/token';
+import { model } from '@src/model';
 
 interface UserAttrs {
   id: string;
@@ -10,7 +10,7 @@ interface UserAttrs {
   age?: number;
 }
 
-const UserToken = token('user', 'users').attrs<UserAttrs>().create();
+const UserModel = model('user', 'users').attrs<UserAttrs>().create();
 
 describe('Factory', () => {
   describe('constructor', () => {
@@ -32,30 +32,28 @@ describe('Factory', () => {
         model.processed = true;
       };
 
-      const factory = new Factory(UserToken, attributes, traits, afterCreate);
-
-      expect(factory.token).toBe(UserToken);
-      expect(factory.attributes).toBe(attributes);
-      expect(factory.traits).toBe(traits);
-      expect(factory.afterCreate).toBe(afterCreate);
+      const userFactory = new Factory(UserModel, attributes, traits, afterCreate);
+      expect(userFactory.template).toBe(UserModel);
+      expect(userFactory.attributes).toBe(attributes);
+      expect(userFactory.traits).toBe(traits);
+      expect(userFactory.afterCreate).toBe(afterCreate);
     });
 
     it('should initialize without afterCreate hook', () => {
       const attributes = { name: 'John', email: 'john@example.com' };
-      const traits = {};
 
-      const factory = new Factory(UserToken, attributes, traits);
+      const userFactory = new Factory(UserModel, attributes);
 
-      expect(factory.token).toBe(UserToken);
-      expect(factory.attributes).toBe(attributes);
-      expect(factory.traits).toBe(traits);
-      expect(factory.afterCreate).toBeUndefined();
+      expect(userFactory.template).toBe(UserModel);
+      expect(userFactory.attributes).toBe(attributes);
+      expect(userFactory.traits).toEqual({});
+      expect(userFactory.afterCreate).toBeUndefined();
     });
   });
 
   describe('build method', () => {
-    const factory = new Factory(
-      UserToken,
+    const userFactory = new Factory(
+      UserModel,
       {
         createdAt: null,
         email: (id: string) => `user${id}@example.com`,
@@ -75,7 +73,7 @@ describe('Factory', () => {
     );
 
     it('should build model attributes with given ID', () => {
-      const attrs = factory.build('123');
+      const attrs = userFactory.build('123');
 
       expect(attrs).toEqual({
         id: '123',
@@ -87,7 +85,7 @@ describe('Factory', () => {
     });
 
     it('should build model attributes with trait', () => {
-      const attrs = factory.build('456', 'admin');
+      const attrs = userFactory.build('456', 'admin');
 
       expect(attrs).toEqual({
         id: '456',
@@ -99,7 +97,7 @@ describe('Factory', () => {
     });
 
     it('should build model attributes with multiple traits', () => {
-      const attrs = factory.build('789', 'admin', 'premium');
+      const attrs = userFactory.build('789', 'admin', 'premium');
 
       expect(attrs).toEqual({
         id: '789',
@@ -112,7 +110,7 @@ describe('Factory', () => {
     });
 
     it('should build model attributes with default overrides', () => {
-      const attrs = factory.build('101', { name: 'Jane Doe', age: 30 });
+      const attrs = userFactory.build('101', { name: 'Jane Doe', age: 30 });
 
       expect(attrs).toEqual({
         id: '101',
@@ -125,7 +123,7 @@ describe('Factory', () => {
     });
 
     it('should build model attributes with traits and default overrides', () => {
-      const attrs = factory.build('202', 'admin', { name: 'Super Admin', age: 35 });
+      const attrs = userFactory.build('202', 'admin', { name: 'Super Admin', age: 35 });
 
       expect(attrs).toEqual({
         id: '202',
@@ -139,7 +137,7 @@ describe('Factory', () => {
 
     it('should handle function attributes correctly', () => {
       const dynamicFactory = new Factory(
-        UserToken,
+        UserModel,
         {
           email: (id: string) => `dynamic${id}@test.com`,
           name: function (this: any, id: string) {
@@ -162,7 +160,7 @@ describe('Factory', () => {
 
     it('should handle static values', () => {
       const staticFactory = new Factory(
-        UserToken,
+        UserModel,
         {
           email: 'static@example.com',
           name: 'Static User',
@@ -190,7 +188,7 @@ describe('Factory', () => {
       let modelReceived: any = null;
 
       const factory = new Factory(
-        UserToken,
+        UserModel,
         { name: 'John', email: 'john@example.com' },
         {},
         (model) => {
@@ -212,7 +210,7 @@ describe('Factory', () => {
       const hooksCalled: string[] = [];
 
       const factory = new Factory(
-        UserToken,
+        UserModel,
         { name: 'John', email: 'john@example.com' },
         {
           admin: {
@@ -244,7 +242,7 @@ describe('Factory', () => {
       const hooksCalled: string[] = [];
 
       const factory = new Factory(
-        UserToken,
+        UserModel,
         { name: 'John', email: 'john@example.com' },
         {
           admin: {
@@ -272,7 +270,7 @@ describe('Factory', () => {
       const hooksCalled: string[] = [];
 
       const factory = new Factory(
-        UserToken,
+        UserModel,
         { name: 'John', email: 'john@example.com' },
         {
           admin: {
@@ -294,7 +292,7 @@ describe('Factory', () => {
     });
 
     it('should handle models without hooks gracefully', () => {
-      const factory = new Factory(UserToken, { name: 'John' }, {});
+      const factory = new Factory(UserModel, { name: 'John' });
 
       const model = { id: '1', name: 'John' };
       const result = factory.processAfterCreateHooks(model);
@@ -308,7 +306,7 @@ describe('Factory', () => {
       const hooksCalled: string[] = [];
 
       const factory = new Factory(
-        UserToken,
+        UserModel,
         { name: 'John', email: 'john@example.com' },
         {
           admin: {
@@ -331,7 +329,7 @@ describe('Factory', () => {
     it('should throw error for circular dependencies in attributes', () => {
       expect(() => {
         const factory = new Factory(
-          UserToken,
+          UserModel,
           {
             email: function (this: any) {
               return this.name + '@example.com';
@@ -348,7 +346,7 @@ describe('Factory', () => {
     });
 
     it('should handle non-existent traits gracefully', () => {
-      const factory = new Factory(UserToken, { name: 'John', email: 'john@example.com' }, {});
+      const factory = new Factory(UserModel, { name: 'John', email: 'john@example.com' });
 
       // This should not throw an error
       const attrs = factory.build('1', 'nonExistentTrait' as any);

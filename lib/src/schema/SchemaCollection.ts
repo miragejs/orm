@@ -5,12 +5,12 @@ import type { IdentityManager } from '@src/id-manager';
 import {
   ModelCollection,
   PartialModelAttrs,
-  defineModel,
+  defineModelClass,
   type ModelAttrs,
   type ModelClass,
   type ModelInstance,
   type ModelRelationships,
-  type ModelToken,
+  type ModelTemplate,
   type NewModelAttrs,
   type NewModelInstance,
 } from '@src/model';
@@ -21,40 +21,40 @@ import type { SchemaCollectionConfig, SchemaCollections } from './types';
 /**
  * Base schema collection with query functionality.
  * @template TSchema - The schema collections type for enhanced type inference
- * @template TToken - The model token type (most important for users)
+ * @template TTemplate - The model template type (most important for users)
  * @template TRelationships - The raw relationships configuration for this collection (inferred from config)
  * @template TFactory - The factory type (inferred from config)
  */
 abstract class BaseSchemaCollection<
   TSchema extends SchemaCollections = SchemaCollections,
-  TToken extends ModelToken = ModelToken,
+  TTemplate extends ModelTemplate = ModelTemplate,
   TRelationships extends ModelRelationships | undefined = undefined,
-  TFactory extends Factory<TToken, any> = Factory<TToken, any>,
+  TFactory extends Factory<TTemplate, any> = Factory<TTemplate, any>,
 > {
-  protected readonly token: TToken;
+  protected readonly _template: TTemplate;
   protected readonly collectionName: string;
-  protected readonly modelClass: ModelClass<TToken, TSchema>;
+  protected readonly modelClass: ModelClass<TTemplate, TSchema>;
 
   protected readonly schema: SchemaInstance<TSchema>;
-  protected readonly dbCollection: DbCollection<ModelAttrs<TToken>>;
-  protected readonly factory?: SchemaFactory<TSchema, TToken, TFactory>;
+  protected readonly dbCollection: DbCollection<ModelAttrs<TTemplate>>;
+  protected readonly factory?: SchemaFactory<TSchema, TTemplate, TFactory>;
   public readonly relationships?: TRelationships;
-  protected readonly identityManager?: IdentityManager<ModelAttrs<TToken>['id']>;
+  protected readonly identityManager?: IdentityManager<ModelAttrs<TTemplate>['id']>;
 
   constructor(
     schema: SchemaInstance<TSchema>,
     config: {
-      model: TToken;
+      model: TTemplate;
       factory?: TFactory;
-      identityManager?: IdentityManager<ModelAttrs<TToken>['id']>;
+      identityManager?: IdentityManager<ModelAttrs<TTemplate>['id']>;
       relationships?: TRelationships;
     },
   ) {
     const { model, factory, identityManager, relationships } = config;
 
-    this.token = model;
+    this._template = model;
     this.collectionName = model.collectionName;
-    this.modelClass = defineModel<TToken, TSchema>(model);
+    this.modelClass = defineModelClass<TTemplate, TSchema>(model);
 
     this.schema = schema;
     this.relationships = relationships;
@@ -72,7 +72,7 @@ abstract class BaseSchemaCollection<
    * @param index - The index of the model to get.
    * @returns The model instance or undefined if not found.
    */
-  at(index: number): ModelInstance<TToken, TSchema> | undefined {
+  at(index: number): ModelInstance<TTemplate, TSchema> | undefined {
     const record = this.dbCollection.get(index);
     return record ? this._createModelFromRecord(record) : undefined;
   }
@@ -81,17 +81,17 @@ abstract class BaseSchemaCollection<
    * Returns all model instances in the collection.
    * @returns All model instances in the collection.
    */
-  all(): ModelCollection<TToken, TSchema> {
+  all(): ModelCollection<TTemplate, TSchema> {
     const records = this.dbCollection.all();
     const models = records.map((record) => this._createModelFromRecord(record));
-    return new ModelCollection(this.token, models);
+    return new ModelCollection(this._template, models);
   }
 
   /**
    * Returns the first model in the collection.
    * @returns The first model in the collection or null if the collection is empty.
    */
-  first(): ModelInstance<TToken, TSchema> | null {
+  first(): ModelInstance<TTemplate, TSchema> | null {
     const record = this.dbCollection.first();
     return record ? this._createModelFromRecord(record) : null;
   }
@@ -100,7 +100,7 @@ abstract class BaseSchemaCollection<
    * Returns the last model in the collection.
    * @returns The last model in the collection or null if the collection is empty.
    */
-  last(): ModelInstance<TToken, TSchema> | null {
+  last(): ModelInstance<TTemplate, TSchema> | null {
     const record = this.dbCollection.last();
     return record ? this._createModelFromRecord(record) : null;
   }
@@ -110,7 +110,7 @@ abstract class BaseSchemaCollection<
    * @param id - The id of the model to find.
    * @returns The model instance or null if not found.
    */
-  find(id: ModelAttrs<TToken>['id']): ModelInstance<TToken, TSchema> | null {
+  find(id: ModelAttrs<TTemplate>['id']): ModelInstance<TTemplate, TSchema> | null {
     const record = this.dbCollection.find(id);
     return record ? this._createModelFromRecord(record) : null;
   }
@@ -120,7 +120,7 @@ abstract class BaseSchemaCollection<
    * @param query - The query to find the model by.
    * @returns The model instance or null if not found.
    */
-  findBy(query: DbRecordInput<ModelAttrs<TToken>>): ModelInstance<TToken, TSchema> | null {
+  findBy(query: DbRecordInput<ModelAttrs<TTemplate>>): ModelInstance<TTemplate, TSchema> | null {
     const record = this.dbCollection.find(query);
     return record ? this._createModelFromRecord(record) : null;
   }
@@ -130,23 +130,25 @@ abstract class BaseSchemaCollection<
    * @param query - The query to find the models by.
    * @returns All models matching the query.
    */
-  where(query: DbRecordInput<ModelAttrs<TToken>>): ModelCollection<TToken, TSchema>;
+  where(query: DbRecordInput<ModelAttrs<TTemplate>>): ModelCollection<TTemplate, TSchema>;
   /**
    * Finds all models matching the query.
    * @param query - The function to filter models by.
    * @returns All models matching the query.
    */
   where(
-    query: (model: ModelInstance<TToken, TSchema>) => boolean,
-  ): ModelCollection<TToken, TSchema>;
+    query: (model: ModelInstance<TTemplate, TSchema>) => boolean,
+  ): ModelCollection<TTemplate, TSchema>;
   /**
    * Finds all models matching the query.
    * @param query - The query to find the models by.
    * @returns All models matching the query.
    */
   where(
-    query: DbRecordInput<ModelAttrs<TToken>> | ((model: ModelInstance<TToken, TSchema>) => boolean),
-  ): ModelCollection<TToken, TSchema> {
+    query:
+      | DbRecordInput<ModelAttrs<TTemplate>>
+      | ((model: ModelInstance<TTemplate, TSchema>) => boolean),
+  ): ModelCollection<TTemplate, TSchema> {
     const records = this.dbCollection.all();
 
     if (typeof query === 'function') {
@@ -154,11 +156,11 @@ abstract class BaseSchemaCollection<
         query(this._createModelFromRecord(record)),
       );
       const models = matchingRecords.map((record) => this._createModelFromRecord(record));
-      return new ModelCollection(this.token, models);
+      return new ModelCollection(this._template, models);
     } else {
       const matchingRecords = this.dbCollection.findMany(query);
       const models = matchingRecords.map((record) => this._createModelFromRecord(record));
-      return new ModelCollection(this.token, models);
+      return new ModelCollection(this._template, models);
     }
   }
 
@@ -166,7 +168,7 @@ abstract class BaseSchemaCollection<
    * Deletes a model from the collection.
    * @param id - The id of the model to delete.
    */
-  delete(id: ModelAttrs<TToken>['id']): void {
+  delete(id: ModelAttrs<TTemplate>['id']): void {
     this.dbCollection.delete(id);
   }
 
@@ -174,7 +176,7 @@ abstract class BaseSchemaCollection<
    * Deletes multiple models from the collection.
    * @param ids - The ids of the models to delete.
    */
-  deleteMany(ids: ModelAttrs<TToken>['id'][]): void {
+  deleteMany(ids: ModelAttrs<TTemplate>['id'][]): void {
     this.dbCollection.deleteMany(ids);
   }
 
@@ -183,10 +185,12 @@ abstract class BaseSchemaCollection<
    * @param record - The database record to create the model from (must have ID).
    * @returns The model instance.
    */
-  protected _createModelFromRecord(record: ModelAttrs<TToken>): ModelInstance<TToken, TSchema> {
+  protected _createModelFromRecord(
+    record: ModelAttrs<TTemplate>,
+  ): ModelInstance<TTemplate, TSchema> {
     return new this.modelClass({
-      attrs: record as NewModelAttrs<TToken>,
-      collection: this.dbCollection,
+      attrs: record as NewModelAttrs<TTemplate>,
+      dbCollection: this.dbCollection,
       relationships: this.relationships,
       schema: this.schema,
     }).save();
@@ -199,15 +203,15 @@ abstract class BaseSchemaCollection<
    * @private
    */
   private _initializeDbCollection(
-    identityManager?: IdentityManager<ModelAttrs<TToken>['id']>,
-  ): DbCollection<ModelAttrs<TToken>> {
+    identityManager?: IdentityManager<ModelAttrs<TTemplate>['id']>,
+  ): DbCollection<ModelAttrs<TTemplate>> {
     if (!this.schema.db.hasCollection(this.collectionName)) {
       this.schema.db.createCollection(this.collectionName, {
         identityManager: identityManager,
       });
     }
-    return this.schema.db.getCollection(this.token.collectionName) as unknown as DbCollection<
-      ModelAttrs<TToken>
+    return this.schema.db.getCollection(this._template.collectionName) as unknown as DbCollection<
+      ModelAttrs<TTemplate>
     >;
   }
 }
@@ -215,32 +219,33 @@ abstract class BaseSchemaCollection<
 /**
  * Schema collection for managing models of a specific type
  * @template TSchema - The schema collections type for enhanced type inference
- * @template TToken - The model token type (most important for users)
+ * @template TTemplate - The model template type (most important for users)
  * @template TRelationships - The raw relationships configuration for this collection (inferred from config)
  * @template TFactory - The factory type (inferred from config)
  */
 export default class SchemaCollection<
   TSchema extends SchemaCollections = SchemaCollections,
-  TToken extends ModelToken = ModelToken,
+  TTemplate extends ModelTemplate = ModelTemplate,
   TRelationships extends ModelRelationships | undefined = undefined,
-  TFactory extends Factory<TToken, any> = Factory<TToken, any>,
-> extends BaseSchemaCollection<TSchema, TToken, TRelationships, TFactory> {
+  TFactory extends Factory<TTemplate, any> = Factory<TTemplate, any>,
+> extends BaseSchemaCollection<TSchema, TTemplate, TRelationships, TFactory> {
   /**
    * Create a new model for the collection.
    * @param traitsAndDefaults - The traits or default values to use for the model.
    * @returns The new model instance.
    */
   create(
-    ...traitsAndDefaults: (FactoryTraitNames<TFactory> | PartialModelAttrs<TToken>)[]
-  ): ModelInstance<TToken, TSchema> {
+    ...traitsAndDefaults: (FactoryTraitNames<TFactory> | PartialModelAttrs<TTemplate>)[]
+  ): ModelInstance<TTemplate, TSchema> {
     if (this.factory) {
       const attrs = this.factory.build(this.dbCollection.nextId, ...traitsAndDefaults);
-      const model = this.new(attrs as PartialModelAttrs<TToken>).save();
+      const model = this.new(attrs as PartialModelAttrs<TTemplate>).save();
       return this.factory.processAfterCreateHooks(model, ...traitsAndDefaults);
     }
 
     const defaults =
-      traitsAndDefaults.find((arg) => typeof arg !== 'string') || ({} as PartialModelAttrs<TToken>);
+      traitsAndDefaults.find((arg) => typeof arg !== 'string') ||
+      ({} as PartialModelAttrs<TTemplate>);
     const model = this.new({
       ...defaults,
       id: this.dbCollection.nextId,
@@ -257,10 +262,10 @@ export default class SchemaCollection<
    */
   createList(
     count: number,
-    ...traitsAndDefaults: (FactoryTraitNames<TFactory> | PartialModelAttrs<TToken>)[]
-  ): ModelCollection<TToken, TSchema> {
+    ...traitsAndDefaults: (FactoryTraitNames<TFactory> | PartialModelAttrs<TTemplate>)[]
+  ): ModelCollection<TTemplate, TSchema> {
     const models = Array.from({ length: count }, () => this.create(...traitsAndDefaults));
-    return new ModelCollection(this.token, models);
+    return new ModelCollection(this._template, models);
   }
 
   /**
@@ -268,10 +273,10 @@ export default class SchemaCollection<
    * @param attrs - The attributes to create the model with. All required attributes must be provided.
    * @returns The new model instance.
    */
-  new(attrs?: PartialModelAttrs<TToken>): NewModelInstance<TToken, TSchema> {
+  new(attrs?: PartialModelAttrs<TTemplate>): NewModelInstance<TTemplate, TSchema> {
     return new this.modelClass({
       attrs: attrs,
-      collection: this.dbCollection,
+      dbCollection: this.dbCollection,
       relationships: this.relationships,
       schema: this.schema,
     });
@@ -284,15 +289,15 @@ export default class SchemaCollection<
    * @returns The model instance.
    */
   findOrCreateBy(
-    query: DbRecordInput<ModelAttrs<TToken>>,
-    ...traitsAndDefaults: (FactoryTraitNames<TFactory> | PartialModelAttrs<TToken>)[]
-  ): ModelInstance<TToken, TSchema> {
+    query: DbRecordInput<ModelAttrs<TTemplate>>,
+    ...traitsAndDefaults: (FactoryTraitNames<TFactory> | PartialModelAttrs<TTemplate>)[]
+  ): ModelInstance<TTemplate, TSchema> {
     const existingModel = this.findBy(query);
     if (existingModel) {
       return existingModel;
     }
 
-    const newModel = this.create(...traitsAndDefaults, query as PartialModelAttrs<TToken>);
+    const newModel = this.create(...traitsAndDefaults, query as PartialModelAttrs<TTemplate>);
     return newModel;
   }
 }
@@ -309,8 +314,8 @@ export function createSchemaCollection<
 >(
   schema: SchemaInstance<TSchema>,
   config: TConfig,
-): TConfig extends SchemaCollectionConfig<infer TToken, infer TRelationships, infer TFactory>
-  ? SchemaCollection<TSchema, TToken, TRelationships, TFactory>
+): TConfig extends SchemaCollectionConfig<infer TTemplate, infer TRelationships, infer TFactory>
+  ? SchemaCollection<TSchema, TTemplate, TRelationships, TFactory>
   : never {
   return new SchemaCollection(schema, config) as any;
 }

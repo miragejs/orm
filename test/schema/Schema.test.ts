@@ -1,7 +1,8 @@
 import { hasMany, belongsTo } from '@src/associations';
 import { factory } from '@src/factory';
 import { NumberIdentityManager, StringIdentityManager } from '@src/id-manager';
-import { defineToken, ModelCollection } from '@src/model';
+import { model } from '@src/model';
+import { ModelCollection } from '@src/model';
 import { setupSchema } from '@src/schema';
 
 // -- TEST MODELS --
@@ -24,14 +25,12 @@ interface CommentAttrs {
 }
 
 // -- TEST MODEL TOKENS --
-const UserToken = defineToken<UserAttrs>('user', 'users');
-const PostToken = defineToken<PostAttrs>('post', 'posts');
-const CommentToken = defineToken<CommentAttrs>('comment', 'comments');
-
-type UserToken = (typeof UserToken)['modelName'];
+const UserModel = model('user', 'users').attrs<UserAttrs>().create();
+const PostModel = model('post', 'posts').attrs<PostAttrs>().create();
+const CommentModel = model('comment', 'comments').attrs<CommentAttrs>().create();
 
 // -- TEST FACTORIES --
-const userFactory = factory(UserToken)
+const userFactory = factory(UserModel)
   .attrs({
     email: () => 'john@example.com',
     name: () => 'John Doe',
@@ -43,14 +42,14 @@ const userFactory = factory(UserToken)
   })
   .create();
 
-const postFactory = factory(PostToken)
+const postFactory = factory(PostModel)
   .attrs({
     content: () => 'This is a test post',
     title: () => 'Hello World',
   })
   .create();
 
-const commentFactory = factory(CommentToken)
+const commentFactory = factory(CommentModel)
   .attrs({
     content: () => 'Great post!',
   })
@@ -60,12 +59,12 @@ describe('Schema', () => {
   const schema = setupSchema(
     {
       users: {
-        model: UserToken,
+        model: UserModel,
         factory: userFactory,
         identityManager: new StringIdentityManager(),
       },
       posts: {
-        model: PostToken,
+        model: PostModel,
         factory: postFactory,
         identityManager: new NumberIdentityManager(),
       },
@@ -234,12 +233,12 @@ describe('Schema', () => {
       const schemaWithNumberDefault: ReturnType<typeof setupSchema> = setupSchema(
         {
           users: {
-            model: UserToken,
+            model: UserModel,
             factory: userFactory,
             identityManager: new StringIdentityManager(),
           },
           posts: {
-            model: PostToken,
+            model: PostModel,
             factory: postFactory,
           },
         },
@@ -261,26 +260,26 @@ describe('Schema with Relationships', () => {
   // Setup test schema with relationships
   const schema = setupSchema({
     users: {
-      model: UserToken,
+      model: UserModel,
       factory: userFactory,
       relationships: {
-        posts: hasMany(PostToken),
+        posts: hasMany(PostModel),
       },
     },
     posts: {
-      model: PostToken,
+      model: PostModel,
       factory: postFactory,
       relationships: {
-        author: belongsTo(UserToken, { foreignKey: 'authorId' }),
-        comments: hasMany(CommentToken),
+        author: belongsTo(UserModel, { foreignKey: 'authorId' }),
+        comments: hasMany(CommentModel),
       },
     },
     comments: {
-      model: CommentToken,
+      model: CommentModel,
       factory: commentFactory,
       relationships: {
-        user: belongsTo(UserToken),
-        post: belongsTo(PostToken),
+        user: belongsTo(UserModel),
+        post: belongsTo(PostModel),
       },
     },
   });

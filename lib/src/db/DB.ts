@@ -1,5 +1,4 @@
 import { IdentityManager, type IdType } from '@src/id-manager';
-import type { ModelAttrs, ModelToken } from '@src/model';
 import { MirageError } from '@src/utils';
 
 import DbCollection, { type DbCollectionConfig } from './DbCollection';
