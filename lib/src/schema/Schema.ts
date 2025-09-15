@@ -84,19 +84,6 @@ export default class Schema<
 }
 
 /**
- * Sets up a schema with collections and global configuration
- * @param collections - Collection configurations keyed by collection name
- * @param config - Global schema configuration (optional)
- * @returns A complete schema instance with collection properties
- */
-export function setupSchema<
-  TCollections extends SchemaCollections,
-  TConfig extends SchemaConfig<any> = SchemaConfig<StringIdentityManager>,
->(collections: TCollections, config?: TConfig): SchemaInstance<TCollections, TConfig> {
-  return new Schema(collections, config) as SchemaInstance<TCollections, TConfig>;
-}
-
-/**
  * Type for a complete schema instance with collections
  * Provides both string-based property access and symbol-based relationship resolution
  */

@@ -11,7 +11,6 @@ import {
   type ModelInstance,
   type ModelRelationships,
   type ModelTemplate,
-  type NewModelAttrs,
   type NewModelInstance,
 } from '@src/model';
 
@@ -189,7 +188,7 @@ abstract class BaseSchemaCollection<
     record: ModelAttrs<TTemplate>,
   ): ModelInstance<TTemplate, TSchema> {
     return new this.modelClass({
-      attrs: record as NewModelAttrs<TTemplate>,
+      attrs: record as PartialModelAttrs<TTemplate>,
       dbCollection: this.dbCollection,
       relationships: this.relationships,
       schema: this.schema,
@@ -230,6 +229,20 @@ export default class SchemaCollection<
   TFactory extends Factory<TTemplate, any> = Factory<TTemplate, any>,
 > extends BaseSchemaCollection<TSchema, TTemplate, TRelationships, TFactory> {
   /**
+   * Creates a new model instance (not persisted in the database).
+   * @param attrs - The attributes to create the model with. All required attributes must be provided.
+   * @returns The new model instance.
+   */
+  new(attrs?: PartialModelAttrs<TTemplate>): NewModelInstance<TTemplate, TSchema> {
+    return new this.modelClass({
+      attrs: attrs,
+      dbCollection: this.dbCollection,
+      relationships: this.relationships,
+      schema: this.schema,
+    });
+  }
+
+  /**
    * Create a new model for the collection.
    * @param traitsAndDefaults - The traits or default values to use for the model.
    * @returns The new model instance.
@@ -237,20 +250,22 @@ export default class SchemaCollection<
   create(
     ...traitsAndDefaults: (FactoryTraitNames<TFactory> | PartialModelAttrs<TTemplate>)[]
   ): ModelInstance<TTemplate, TSchema> {
+    const defaults =
+      traitsAndDefaults.find((arg) => typeof arg !== 'string') ||
+      ({} as PartialModelAttrs<TTemplate>);
+    const nextId = defaults.id ?? this.dbCollection.nextId;
+
+    if (defaults.id) {
+      this.identityManager?.set(defaults.id);
+    }
+
     if (this.factory) {
-      const attrs = this.factory.build(this.dbCollection.nextId, ...traitsAndDefaults);
+      const attrs = this.factory.build(nextId, ...traitsAndDefaults);
       const model = this.new(attrs as PartialModelAttrs<TTemplate>).save();
       return this.factory.processAfterCreateHooks(model, ...traitsAndDefaults);
     }
 
-    const defaults =
-      traitsAndDefaults.find((arg) => typeof arg !== 'string') ||
-      ({} as PartialModelAttrs<TTemplate>);
-    const model = this.new({
-      ...defaults,
-      id: this.dbCollection.nextId,
-    }).save();
-
+    const model = this.new({ ...defaults, id: nextId }).save();
     return model;
   }
 
@@ -266,20 +281,6 @@ export default class SchemaCollection<
   ): ModelCollection<TTemplate, TSchema> {
     const models = Array.from({ length: count }, () => this.create(...traitsAndDefaults));
     return new ModelCollection(this._template, models);
-  }
-
-  /**
-   * Creates a new model instance (not persisted in the database).
-   * @param attrs - The attributes to create the model with. All required attributes must be provided.
-   * @returns The new model instance.
-   */
-  new(attrs?: PartialModelAttrs<TTemplate>): NewModelInstance<TTemplate, TSchema> {
-    return new this.modelClass({
-      attrs: attrs,
-      dbCollection: this.dbCollection,
-      relationships: this.relationships,
-      schema: this.schema,
-    });
   }
 
   /**

@@ -65,20 +65,11 @@ export type NewModelAttrs<TTemplate extends ModelTemplate> = Omit<ModelAttrs<TTe
   id: ModelAttrs<TTemplate>['id'] | null;
 };
 
-export type InitialModelAttrs<TTemplate extends ModelTemplate> = Omit<
-  ModelAttrs<TTemplate>,
-  'id'
-> & {
-  id?: ModelAttrs<TTemplate>['id'];
-};
-
 /**
  * Type for partial model attributes (all fields optional, id excluded)
  * @template TTemplate - The model template
  */
-export type PartialModelAttrs<TTemplate extends ModelTemplate> = Partial<
-  Omit<ModelAttrs<TTemplate>, 'id'>
->;
+export type PartialModelAttrs<TTemplate extends ModelTemplate> = Partial<ModelAttrs<TTemplate>>;
 
 /**
  * Type for update method that includes attributes, foreign keys, and relationship model instances
@@ -337,7 +328,7 @@ export interface ModelConfig<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
 > {
-  attrs?: InitialModelAttrs<TTemplate>;
+  attrs?: PartialModelAttrs<TTemplate>;
   dbCollection?: DbCollection<ModelAttrs<TTemplate>>;
   relationships?: RelationshipsByTemplate<TSchema, TTemplate>;
   schema?: SchemaInstance<TSchema>;

@@ -1,7 +1,12 @@
 import type { DbCollection } from '@src/db';
 import type { Factory } from '@src/factory';
 import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
-import type { ModelTemplate, InferTemplateModel, InferTemplateId } from '@src/model';
+import type {
+  ModelTemplate,
+  InferTemplateModel,
+  InferTemplateId,
+  ModelForeignKeys,
+} from '@src/model';
 import type { ModelRelationships } from '@src/model';
 
 import type SchemaCollection from './SchemaCollection';
@@ -51,11 +56,19 @@ export type SchemaCollectionAccessors<TCollections extends SchemaCollections> = 
 };
 
 /**
- * Maps schema collection configs to database collections
+ * Maps schema collection configs to database collections with inferred foreign keys
+ * This ensures that database records include foreign key fields based on defined relationships
  */
 export type SchemaDbCollections<TCollections extends SchemaCollections> = {
-  [K in keyof TCollections]: TCollections[K] extends SchemaCollectionConfig<infer TTemplate, any, any>
-    ? DbCollection<InferTemplateModel<TTemplate>>
+  [K in keyof TCollections]: TCollections[K] extends SchemaCollectionConfig<
+    infer TTemplate,
+    infer TRelationships,
+    any
+  >
+    ? DbCollection<
+        InferTemplateModel<TTemplate> &
+          (TRelationships extends ModelRelationships ? ModelForeignKeys<TRelationships> : {})
+      >
     : never;
 };
 

@@ -26,7 +26,7 @@ import type { SchemaCollections, SchemaConfig } from './types';
  */
 export default class SchemaBuilder<
   TCollections extends SchemaCollections = {},
-  TIdentityManager extends IdentityManager = StringIdentityManager,
+  TIdentityManager extends IdentityManager<any> = StringIdentityManager,
   // TSerializer extends Serializer<any, any> = never,
 > {
   private _collections?: TCollections;
@@ -80,7 +80,9 @@ export default class SchemaBuilder<
    *   .identityManager(new StringIdentityManager());
    * ```
    */
-  identityManager<I extends IdentityManager>(identityManager: I): SchemaBuilder<TCollections, I> {
+  identityManager<I extends IdentityManager<any>>(
+    identityManager: I,
+  ): SchemaBuilder<TCollections, I> {
     const builder = new SchemaBuilder<TCollections, I>();
     builder._collections = this._collections;
     builder._identityManager = identityManager;

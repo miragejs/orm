@@ -25,7 +25,7 @@ export { factory } from './factory';
 export type { Factory, FactoryAttrs, ModelTraits, TraitName } from './factory';
 
 // Schema
-export { setupSchema } from './schema';
+export { schema } from './schema';
 export type {
   CollectionModule,
   SchemaCollectionConfig,

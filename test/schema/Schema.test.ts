@@ -3,14 +3,13 @@ import { factory } from '@src/factory';
 import { NumberIdentityManager, StringIdentityManager } from '@src/id-manager';
 import { model } from '@src/model';
 import { ModelCollection } from '@src/model';
-import { setupSchema } from '@src/schema';
+import { schema } from '@src/schema';
 
 // -- TEST MODELS --
 interface UserAttrs {
   id: string;
   email: string;
   name: string;
-  postIds: string[];
 }
 
 interface PostAttrs {
@@ -24,7 +23,6 @@ interface CommentAttrs {
   content: string;
 }
 
-// -- TEST MODEL TOKENS --
 const UserModel = model('user', 'users').attrs<UserAttrs>().create();
 const PostModel = model('post', 'posts').attrs<PostAttrs>().create();
 const CommentModel = model('comment', 'comments').attrs<CommentAttrs>().create();
@@ -56,8 +54,8 @@ const commentFactory = factory(CommentModel)
   .create();
 
 describe('Schema', () => {
-  const schema = setupSchema(
-    {
+  const appSchema = schema()
+    .collections({
       users: {
         model: UserModel,
         factory: userFactory,
@@ -68,76 +66,74 @@ describe('Schema', () => {
         factory: postFactory,
         identityManager: new NumberIdentityManager(),
       },
-    },
-    {
-      identityManager: new StringIdentityManager(),
-    },
-  );
+    })
+    .identityManager(new StringIdentityManager())
+    .build();
 
   beforeEach(() => {
-    schema.db.emptyData();
+    appSchema.db.emptyData();
   });
 
   describe('model registration', () => {
     it('registers models and creates collections', () => {
-      const users = schema.getCollection('users');
-      const posts = schema.getCollection('posts');
+      const users = appSchema.getCollection('users');
+      const posts = appSchema.getCollection('posts');
       expect(users).toBeDefined();
       expect(posts).toBeDefined();
     });
 
     it('throws error for non-existent model', () => {
-      expect(() => schema.getCollection('nonExistent' as any)).toThrow();
+      expect(() => appSchema.getCollection('nonExistent' as any)).toThrow();
     });
   });
 
   describe('collection registration', () => {
     it('registers collections during schema construction', () => {
-      expect(schema.users).toBeDefined();
-      expect(schema.posts).toBeDefined();
-      expect(typeof schema.users.create).toBe('function');
-      expect(typeof schema.posts.create).toBe('function');
+      expect(appSchema.users).toBeDefined();
+      expect(appSchema.posts).toBeDefined();
+      expect(typeof appSchema.users.create).toBe('function');
+      expect(typeof appSchema.posts.create).toBe('function');
     });
 
     it('provides access to database instance', () => {
-      expect(schema.db).toBeDefined();
-      expect(typeof schema.db.getCollection).toBe('function');
+      expect(appSchema.db).toBeDefined();
+      expect(typeof appSchema.db.getCollection).toBe('function');
     });
 
     it('provides access to identity manager', () => {
-      expect(schema.identityManager).toBeDefined();
-      expect(typeof schema.identityManager.get).toBe('function');
+      expect(appSchema.identityManager).toBeDefined();
+      expect(typeof appSchema.identityManager.get).toBe('function');
     });
   });
 
   describe('collection access', () => {
     it('provides access to collections via property accessors', () => {
-      expect(schema.users).toBeDefined();
-      expect(schema.posts).toBeDefined();
+      expect(appSchema.users).toBeDefined();
+      expect(appSchema.posts).toBeDefined();
     });
 
     it('creates models with factory defaults', () => {
-      const user = schema.users.create();
+      const user = appSchema.users.create();
       expect(user.name).toBe('John Doe');
       expect(user.email).toBe('john@example.com');
 
-      const post = schema.posts.create();
+      const post = appSchema.posts.create();
       expect(post.title).toBe('Hello World');
       expect(post.content).toBe('This is a test post');
     });
 
     it('creates models with custom attributes', () => {
-      const user = schema.users.create({ name: 'Jane' });
+      const user = appSchema.users.create({ name: 'Jane' });
       expect(user.name).toBe('Jane');
       expect(user.email).toBe('john@example.com');
 
-      const post = schema.posts.create({ title: 'Custom Title' });
+      const post = appSchema.posts.create({ title: 'Custom Title' });
       expect(post.title).toBe('Custom Title');
       expect(post.content).toBe('This is a test post');
     });
 
     it('creates multiple models with createList', () => {
-      const users = schema.users.createList(3, 'admin');
+      const users = appSchema.users.createList(3, 'admin');
       expect(users.length).toBe(3);
       expect(users.models[0].email).toBe('admin@example.com');
       expect(users.models[1].email).toBe('admin@example.com');
@@ -147,70 +143,70 @@ describe('Schema', () => {
 
   describe('database integration', () => {
     it('persists models to database', () => {
-      const user = schema.users.create();
+      const user = appSchema.users.create();
       expect(user.isSaved()).toBe(true);
       expect(user.id).toBeDefined();
-      expect(schema.db.users.find(user.id)).toBeDefined();
+      expect(appSchema.db.users.find(user.id)).toBeDefined();
 
-      const post = schema.posts.create();
+      const post = appSchema.posts.create();
       expect(post.isSaved()).toBe(true);
       expect(post.id).toBeDefined();
-      expect(schema.db.posts.find(post.id)).toBeDefined();
+      expect(appSchema.db.posts.find(post.id)).toBeDefined();
     });
 
     it('retrieves models from database', () => {
-      const user = schema.users.create();
-      const retrieved = schema.users.find(user.id)!;
+      const user = appSchema.users.create();
+      const retrieved = appSchema.users.find(user.id)!;
       expect(retrieved).toBeDefined();
       expect(retrieved.name).toBe(user.name);
     });
 
     it('updates models in database', () => {
-      const user = schema.users.create();
+      const user = appSchema.users.create();
       user.update({ name: 'Updated Name' });
-      const retrieved = schema.users.find(user.id)!;
+      const retrieved = appSchema.users.find(user.id)!;
       expect(retrieved.name).toBe('Updated Name');
     });
 
     it('deletes models from database', () => {
-      const user = schema.users.create();
-      schema.users.delete(user.id);
-      const retrieved = schema.users.find(user.id);
+      const user = appSchema.users.create();
+      appSchema.users.delete(user.id);
+      const retrieved = appSchema.users.find(user.id);
       expect(retrieved).toBeNull();
     });
   });
 
   describe('querying', () => {
     beforeEach(() => {
-      schema.users.create({ name: 'John', email: 'john@example.com' });
-      schema.users.create({ name: 'Jane', email: 'jane@example.com' });
-      schema.posts.create({ title: 'Post 1' });
-      schema.posts.create({ title: 'Post 2' });
+      appSchema.users.create({ name: 'John', email: 'john@example.com' });
+      appSchema.users.create({ name: 'Jane', email: 'jane@example.com' });
+      appSchema.posts.create({ title: 'Post 1' });
+      appSchema.posts.create({ title: 'Post 2' });
     });
 
     it('finds models by query', () => {
-      const user = schema.users.findBy({ name: 'John' })!;
+      const user = appSchema.users.findBy({ name: 'John' })!;
       expect(user).toBeDefined();
       expect(user.email).toBe('john@example.com');
 
-      const post = schema.posts.findBy({ title: 'Post 1' })!;
+      const post = appSchema.posts.findBy({ title: 'Post 1' })!;
       expect(post).toBeDefined();
     });
 
     it('finds or creates models by query', () => {
-      const user = schema.users.findOrCreateBy({ name: 'New User' });
+      const user = appSchema.users.findOrCreateBy({ name: 'New User' });
       expect(user).toBeDefined();
       expect(user.name).toBe('New User');
     });
 
     it('finds all models matching query', () => {
-      const posts = schema.posts.where({ title: 'Post 1' });
+      const posts = appSchema.posts.where({ title: 'Post 1' });
       expect(posts.length).toBe(1);
       expect(posts.models[0].title).toBe('Post 1');
     });
 
     it('finds models using function query', () => {
-      const users = schema.users.where((user: any) => user.name.startsWith('J'));
+      const users = appSchema.users.where((user: any) => user.name.startsWith('J'));
       expect(users.length).toBe(2);
       expect(users.models[0].name).toBe('John');
       expect(users.models[1].name).toBe('Jane');
@@ -219,8 +215,8 @@ describe('Schema', () => {
 
   describe('identity manager configuration', () => {
     it('uses collection-specific identity managers', () => {
-      const user = schema.users.create();
-      const post = schema.posts.create();
+      const user = appSchema.users.create();
+      const post = appSchema.posts.create();
 
       // Users use StringIdentityManager
       expect(typeof user.id).toBe('string');
@@ -230,8 +226,8 @@ describe('Schema', () => {
     });
 
     it('allows global identity manager override', () => {
-      const schemaWithNumberDefault: ReturnType<typeof setupSchema> = setupSchema(
-        {
+      const schemaWithNumberDefault = schema()
+        .collections({
           users: {
             model: UserModel,
             factory: userFactory,
@@ -241,11 +237,9 @@ describe('Schema', () => {
             model: PostModel,
             factory: postFactory,
           },
-        },
-        {
-          identityManager: new NumberIdentityManager(),
-        },
-      );
+        })
+        .identityManager(new NumberIdentityManager())
+        .build();
 
       const user = schemaWithNumberDefault.users.create();
       const post = schemaWithNumberDefault.posts.create();
@@ -256,42 +250,44 @@ describe('Schema', () => {
   });
 });
 
-describe('Schema with Relationships', () => {
+describe('Schema with relationships', () => {
   // Setup test schema with relationships
-  const schema = setupSchema({
-    users: {
-      model: UserModel,
-      factory: userFactory,
-      relationships: {
-        posts: hasMany(PostModel),
+  const appSchema = schema()
+    .collections({
+      users: {
+        model: UserModel,
+        factory: userFactory,
+        relationships: {
+          posts: hasMany(PostModel),
+        },
       },
-    },
-    posts: {
-      model: PostModel,
-      factory: postFactory,
-      relationships: {
-        author: belongsTo(UserModel, { foreignKey: 'authorId' }),
-        comments: hasMany(CommentModel),
+      posts: {
+        model: PostModel,
+        factory: postFactory,
+        relationships: {
+          author: belongsTo(UserModel, { foreignKey: 'authorId' }),
+          comments: hasMany(CommentModel),
+        },
       },
-    },
-    comments: {
-      model: CommentModel,
-      factory: commentFactory,
-      relationships: {
-        user: belongsTo(UserModel),
-        post: belongsTo(PostModel),
+      comments: {
+        model: CommentModel,
+        factory: commentFactory,
+        relationships: {
+          user: belongsTo(UserModel),
+          post: belongsTo(PostModel),
+        },
       },
-    },
-  });
+    })
+    .build();
 
   beforeEach(() => {
-    schema.db.emptyData();
+    appSchema.db.emptyData();
   });
 
   describe('relationship initialization', () => {
     it('should initialize with relationships', () => {
-      const user = schema.users.create({ name: 'John', email: 'john@example.com' });
-      const post = schema.posts.create({
+      const user = appSchema.users.create({ name: 'John', email: 'john@example.com' });
+      const post = appSchema.posts.create({
         title: 'My Post',
         content: 'Content here',
       });
@@ -301,14 +297,14 @@ describe('Schema with Relationships', () => {
 
       expect(user.posts).toBeDefined();
       expect(user.posts.at(0)?.content).toBe('Content here');
-      expect(schema.users.first()?.posts.at(0)?.content).toBe('Content here');
+      expect(appSchema.users.first()?.posts.at(0)?.content).toBe('Content here');
     });
 
     it('should create relationship accessors', () => {
       // First create some related models
-      const user = schema.users.create({ name: 'John', email: 'john@example.com' });
-      const post = schema.posts.create({ title: 'My Post', content: 'Content here' });
-      const comment = schema.comments.create({
+      const user = appSchema.users.create({ name: 'John', email: 'john@example.com' });
+      const post = appSchema.posts.create({ title: 'My Post', content: 'Content here' });
+      const comment = appSchema.comments.create({
         content: 'Great post!',
       });
 
@@ -329,25 +325,25 @@ describe('Schema with Relationships', () => {
 
   describe('link', () => {
     it('should link belongsTo relationship', () => {
-      const user = schema.users.create({ name: 'John', email: 'john@example.com' });
-      const post = schema.posts.create({ title: 'My Post', content: 'Content here' });
+      const user = appSchema.users.create({ name: 'John', email: 'john@example.com' });
+      const post = appSchema.posts.create({ title: 'My Post', content: 'Content here' });
 
       post.link('author', user);
       expect(post.authorId).toBe(user.id);
-      expect(schema.db.users.find(user.id)?.postIds).toEqual([post.id]);
+      expect(appSchema.db.users.find(user.id)?.postIds).toEqual([post.id]);
     });
 
     it('should link hasMany relationship', () => {
-      const user = schema.users.create({ name: 'John', email: 'john@example.com' });
-      const post1 = schema.posts.create({ title: 'Post 1', content: 'Content 1' });
-      const post2 = schema.posts.create({ title: 'Post 2', content: 'Content 2' });
+      const user = appSchema.users.create({ name: 'John', email: 'john@example.com' });
+      const post1 = appSchema.posts.create({ title: 'Post 1', content: 'Content 1' });
+      const post2 = appSchema.posts.create({ title: 'Post 2', content: 'Content 2' });
 
       user.link('posts', [post1, post2]);
       expect(user.postIds).toEqual([post1.id, post2.id]);
     });
 
     it('should handle null/empty links', () => {
-      const post = schema.posts.create({ title: 'My Post', content: 'Content here' });
+      const post = appSchema.posts.create({ title: 'My Post', content: 'Content here' });
 
       post.link('author', null);
       expect(post.authorId).toBeNull();
@@ -356,23 +352,23 @@ describe('Schema with Relationships', () => {
 
   describe('unlink method', () => {
     it('should unlink belongsTo relationship', () => {
-      const post = schema.posts.create({ title: 'My Post', content: 'Content here' });
+      const post = appSchema.posts.create({ title: 'My Post', content: 'Content here' });
 
       post.unlink('author');
       expect(post.authorId).toBeNull();
     });
 
     it('should unlink hasMany relationship', () => {
-      const user = schema.users.create({ name: 'John', email: 'john@example.com' });
+      const user = appSchema.users.create({ name: 'John', email: 'john@example.com' });
 
       user.unlink('posts');
       expect(user.postIds).toEqual([]);
     });
 
     it('should unlink specific item from hasMany relationship', () => {
-      const user = schema.users.create({ name: 'John', email: 'john@example.com' });
-      const post1 = schema.posts.create({ title: 'Post 1', content: 'Content 1' });
-      const post2 = schema.posts.create({ title: 'Post 2', content: 'Content 2' });
+      const user = appSchema.users.create({ name: 'John', email: 'john@example.com' });
+      const post1 = appSchema.posts.create({ title: 'Post 1', content: 'Content 1' });
+      const post2 = appSchema.posts.create({ title: 'Post 2', content: 'Content 2' });
 
       // First link both posts
       user.link('posts', [post1, post2]);
@@ -386,8 +382,8 @@ describe('Schema with Relationships', () => {
 
   describe('relationship accessors', () => {
     it('should get belongsTo relationship through accessor', () => {
-      const user = schema.users.create({ name: 'John', email: 'john@example.com' });
-      const post = schema.posts.create({
+      const user = appSchema.users.create({ name: 'John', email: 'john@example.com' });
+      const post = appSchema.posts.create({
         title: 'My Post',
         content: 'Content here',
       });
@@ -401,9 +397,9 @@ describe('Schema with Relationships', () => {
     });
 
     it('should get hasMany relationship through accessor', () => {
-      const user = schema.users.create({ name: 'John', email: 'john@example.com' });
-      const post1 = schema.posts.create({ title: 'Post 1', content: 'Content 1' });
-      const post2 = schema.posts.create({ title: 'Post 2', content: 'Content 2' });
+      const user = appSchema.users.create({ name: 'John', email: 'john@example.com' });
+      const post1 = appSchema.posts.create({ title: 'Post 1', content: 'Content 1' });
+      const post2 = appSchema.posts.create({ title: 'Post 2', content: 'Content 2' });
 
       // Link posts to user
       user.link('posts', [post1, post2]);
@@ -414,8 +410,8 @@ describe('Schema with Relationships', () => {
     });
 
     it('should set relationship through accessor', () => {
-      const user = schema.users.create({ name: 'John', email: 'john@example.com' });
-      const post = schema.posts.create({ title: 'My Post', content: 'Content here' });
+      const user = appSchema.users.create({ name: 'John', email: 'john@example.com' });
+      const post = appSchema.posts.create({ title: 'My Post', content: 'Content here' });
 
       // Set relationship through accessor
       post.author = user;
@@ -425,7 +421,7 @@ describe('Schema with Relationships', () => {
 
   describe('foreign key handling', () => {
     it('should handle foreign key changes automatically', () => {
-      const post = schema.posts.create({ title: 'My Post', content: 'Content here' });
+      const post = appSchema.posts.create({ title: 'My Post', content: 'Content here' });
 
       // Direct foreign key assignment should work
       post.authorId = 'user-123';
@@ -433,7 +429,7 @@ describe('Schema with Relationships', () => {
     });
 
     it('should detect foreign key attributes correctly', () => {
-      const post = schema.posts.create({ title: 'My Post', content: 'Content here' });
+      const post = appSchema.posts.create({ title: 'My Post', content: 'Content here' });
 
       // Access the private method for testing
       const isForeignKey = (post as any)._isForeignKey('authorId');
@@ -446,14 +442,14 @@ describe('Schema with Relationships', () => {
 
   describe('error handling', () => {
     it('should handle missing relationships gracefully', () => {
-      const post = schema.posts.create({ title: 'My Post', content: 'Content here' });
+      const post = appSchema.posts.create({ title: 'My Post', content: 'Content here' });
 
       expect(() => post.link('author', null)).not.toThrow();
       expect(() => post.unlink('author')).not.toThrow();
     });
 
     it('should handle invalid relationship names gracefully', () => {
-      const post = schema.posts.create({ title: 'My Post', content: 'Content here' });
+      const post = appSchema.posts.create({ title: 'My Post', content: 'Content here' });
 
       // @ts-expect-error - Invalid relationship name
       expect(() => post.link('nonexistentRelationship', null)).not.toThrow();
@@ -464,8 +460,8 @@ describe('Schema with Relationships', () => {
 
   describe('update with relationships', () => {
     it('should update belongsTo relationship via foreign key', () => {
-      const user = schema.users.create({ name: 'John', email: 'john@example.com' });
-      const post = schema.posts.create({ title: 'My Post', content: 'Content here' });
+      const user = appSchema.users.create({ name: 'John', email: 'john@example.com' });
+      const post = appSchema.posts.create({ title: 'My Post', content: 'Content here' });
 
       // Update using foreign key
       post.update({ authorId: user.id });
@@ -473,12 +469,12 @@ describe('Schema with Relationships', () => {
       expect(post.authorId).toBe(user.id);
       expect(post.author?.name).toBe('John');
       // Verify bidirectional update
-      expect(schema.db.users.find(user.id)?.postIds).toEqual([post.id]);
+      expect(appSchema.db.users.find(user.id)?.postIds).toEqual([post.id]);
     });
 
     it('should update belongsTo relationship via model instance', () => {
-      const user = schema.users.create({ name: 'John', email: 'john@example.com' });
-      const post = schema.posts.create({ title: 'My Post', content: 'Content here' });
+      const user = appSchema.users.create({ name: 'John', email: 'john@example.com' });
+      const post = appSchema.posts.create({ title: 'My Post', content: 'Content here' });
 
       // Update using model instance
       post.update({ author: user });
@@ -486,13 +482,13 @@ describe('Schema with Relationships', () => {
       expect(post.authorId).toBe(user.id);
       expect(post.author?.name).toBe('John');
       // Verify bidirectional update
-      expect(schema.db.users.find(user.id)?.postIds).toEqual([post.id]);
+      expect(appSchema.db.users.find(user.id)?.postIds).toEqual([post.id]);
     });
 
     it('should update hasMany relationship via foreign key array', () => {
-      const user = schema.users.create({ name: 'John', email: 'john@example.com' });
-      const post1 = schema.posts.create({ title: 'Post 1', content: 'Content 1' });
-      const post2 = schema.posts.create({ title: 'Post 2', content: 'Content 2' });
+      const user = appSchema.users.create({ name: 'John', email: 'john@example.com' });
+      const post1 = appSchema.posts.create({ title: 'Post 1', content: 'Content 1' });
+      const post2 = appSchema.posts.create({ title: 'Post 2', content: 'Content 2' });
 
       // Update using foreign key array
       user.update({ postIds: [post1.id, post2.id] });
@@ -500,14 +496,14 @@ describe('Schema with Relationships', () => {
       expect(user.postIds).toEqual([post1.id, post2.id]);
       expect(user.posts).toHaveLength(2);
       // Verify bidirectional updates
-      expect(schema.db.posts.find(post1.id)?.authorId).toBe(user.id);
-      expect(schema.db.posts.find(post2.id)?.authorId).toBe(user.id);
+      expect(appSchema.db.posts.find(post1.id)?.authorId).toBe(user.id);
+      expect(appSchema.db.posts.find(post2.id)?.authorId).toBe(user.id);
     });
 
     it('should update hasMany relationship via model instances', () => {
-      const user = schema.users.create({ name: 'John', email: 'john@example.com' });
-      const post1 = schema.posts.create({ title: 'Post 1', content: 'Content 1' });
-      const post2 = schema.posts.create({ title: 'Post 2', content: 'Content 2' });
+      const user = appSchema.users.create({ name: 'John', email: 'john@example.com' });
+      const post1 = appSchema.posts.create({ title: 'Post 1', content: 'Content 1' });
+      const post2 = appSchema.posts.create({ title: 'Post 2', content: 'Content 2' });
 
       // Update using model instances
       user.update({ posts: [post1, post2] });
@@ -515,13 +511,13 @@ describe('Schema with Relationships', () => {
       expect(user.postIds).toEqual([post1.id, post2.id]);
       expect(user.posts).toHaveLength(2);
       // Verify bidirectional updates
-      expect(schema.db.posts.find(post1.id)?.authorId).toBe(user.id);
-      expect(schema.db.posts.find(post2.id)?.authorId).toBe(user.id);
+      expect(appSchema.db.posts.find(post1.id)?.authorId).toBe(user.id);
+      expect(appSchema.db.posts.find(post2.id)?.authorId).toBe(user.id);
     });
 
     it('should handle mixed attribute and relationship updates', () => {
-      const user = schema.users.create({ name: 'John', email: 'john@example.com' });
-      const post = schema.posts.create({ title: 'Old Title', content: 'Content here' });
+      const user = appSchema.users.create({ name: 'John', email: 'john@example.com' });
+      const post = appSchema.posts.create({ title: 'Old Title', content: 'Content here' });
 
       // Update both regular attributes and relationships
       post.update({
@@ -535,12 +531,12 @@ describe('Schema with Relationships', () => {
       expect(post.authorId).toBe(user.id);
       expect(post.author?.name).toBe('John');
       // Verify bidirectional update
-      expect(schema.db.users.find(user.id)?.postIds).toEqual([post.id]);
+      expect(appSchema.db.users.find(user.id)?.postIds).toEqual([post.id]);
     });
 
     it('should handle null/empty relationship updates', () => {
-      const user = schema.users.create({ name: 'John', email: 'john@example.com' });
-      const post = schema.posts.create({
+      const user = appSchema.users.create({ name: 'John', email: 'john@example.com' });
+      const post = appSchema.posts.create({
         title: 'My Post',
         content: 'Content here',
       });
