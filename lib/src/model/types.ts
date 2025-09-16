@@ -35,27 +35,12 @@ export interface ModelTemplate<
 
 // -- INFERENCE TEMPLATE TYPES --
 
-export type InferTemplateModel<T> = T extends ModelTemplate<infer M, any, any> ? M : never;
-export type InferTemplateId<T> = InferTemplateModel<T>['id'];
-export type InferTemplateModelName<T> =
-  T extends ModelTemplate<any, infer Name, any> ? Name : never;
-export type InferTemplateCollectionName<T> =
-  T extends ModelTemplate<any, any, infer Name> ? Name : never;
-export type InferTemplateAttrs<T> = T extends ModelTemplate<any, any, any> ? T['attrs'] : never;
+export type ModelAttrs<T> = T extends ModelTemplate<infer M, any, any> ? M : never;
+export type ModelId<T> = ModelAttrs<T>['id'];
+export type ModelName<T> = T extends ModelTemplate<any, infer Name, any> ? Name : never;
+export type ModelCollectionName<T> = T extends ModelTemplate<any, any, infer Name> ? Name : never;
 
 // -- ATTRIBUTE TYPES --
-
-/**
- * Type for model id
- * @template TTemplate - The model template
- */
-export type ModelId<TTemplate extends ModelTemplate> = InferTemplateId<TTemplate>;
-
-/**
- * Type for full model attributes
- * @template TTemplate - The model template
- */
-export type ModelAttrs<TTemplate extends ModelTemplate> = InferTemplateModel<TTemplate>;
 
 /**
  * Type for new model attributes (allowing null id for unsaved models)
@@ -102,19 +87,10 @@ export type ModelAttrAccessors<TTemplate extends ModelTemplate> = {
 };
 
 // -- DEPTH COUNTER TO PREVENT INFINITE RECURSION FOR RELATIONSHIPS --
+
 export type Depth = readonly unknown[];
 type Next<T extends Depth> = readonly [unknown, ...T];
 type MaxDepth = readonly [unknown, unknown, unknown, unknown, unknown];
-
-// -- UTILITY TYPES --
-
-/**
- * Utility type to convert union to intersection
- * @template U - The union type to convert
- */
-type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void
-  ? I
-  : never;
 
 // -- RELATIONSHIP TYPES --
 
@@ -268,11 +244,7 @@ export type CollectionByTemplate<
   TSchema extends SchemaCollections,
   TTemplate extends ModelTemplate,
 > = {
-  [K in keyof TSchema]: InferTemplateModel<
-    TSchema[K]['model']
-  > extends InferTemplateModel<TTemplate>
-    ? K
-    : never;
+  [K in keyof TSchema]: ModelAttrs<TSchema[K]['model']> extends ModelAttrs<TTemplate> ? K : never;
 }[keyof TSchema];
 
 /**

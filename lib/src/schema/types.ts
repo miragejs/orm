@@ -1,12 +1,7 @@
 import type { DbCollection } from '@src/db';
 import type { Factory } from '@src/factory';
 import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
-import type {
-  ModelTemplate,
-  InferTemplateModel,
-  InferTemplateId,
-  ModelForeignKeys,
-} from '@src/model';
+import type { ModelTemplate, ModelAttrs, ModelId, ModelForeignKeys } from '@src/model';
 import type { ModelRelationships } from '@src/model';
 
 import type SchemaCollection from './SchemaCollection';
@@ -25,7 +20,7 @@ export interface SchemaCollectionConfig<
   model: TTemplate;
   factory?: TFactory;
   relationships?: TRelationships;
-  identityManager?: IdentityManager<InferTemplateId<TTemplate>>;
+  identityManager?: IdentityManager<ModelId<TTemplate>>;
 }
 
 /**
@@ -66,7 +61,7 @@ export type SchemaDbCollections<TCollections extends SchemaCollections> = {
     any
   >
     ? DbCollection<
-        InferTemplateModel<TTemplate> &
+        ModelAttrs<TTemplate> &
           (TRelationships extends ModelRelationships ? ModelForeignKeys<TRelationships> : {})
       >
     : never;

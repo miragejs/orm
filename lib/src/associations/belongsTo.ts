@@ -1,4 +1,4 @@
-import type { InferTemplateModelName, ModelTemplate } from '../model';
+import type { ModelName, ModelTemplate } from '../model';
 
 import type { BelongsTo } from './types';
 
@@ -9,7 +9,7 @@ import type { BelongsTo } from './types';
  */
 export default function belongsTo<TTarget extends ModelTemplate>(
   targetModel: TTarget,
-): BelongsTo<TTarget, `${InferTemplateModelName<TTarget>}Id`>;
+): BelongsTo<TTarget, `${ModelName<TTarget>}Id`>;
 export default function belongsTo<TTarget extends ModelTemplate, TForeign extends string>(
   targetModel: TTarget,
   opts: { foreignKey: TForeign },
@@ -23,7 +23,7 @@ export default function belongsTo<TTarget extends ModelTemplate, TForeign extend
  */
 export default function belongsTo<
   TTarget extends ModelTemplate,
-  TForeign extends string = `${InferTemplateModelName<TTarget>}Id`,
+  TForeign extends string = `${ModelName<TTarget>}Id`,
 >(targetModel: TTarget, opts?: { foreignKey: TForeign }): BelongsTo<TTarget, TForeign> {
   const defaultForeignKey = `${targetModel.modelName}Id`;
   const foreignKey = (opts?.foreignKey ?? defaultForeignKey) as TForeign;

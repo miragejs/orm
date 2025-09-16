@@ -1,4 +1,4 @@
-import type { InferTemplateModelName, ModelTemplate } from '../model';
+import type { ModelName, ModelTemplate } from '../model';
 
 import type { HasMany } from './types';
 
@@ -9,7 +9,7 @@ import type { HasMany } from './types';
  */
 export default function hasMany<TTarget extends ModelTemplate>(
   targetModel: TTarget,
-): HasMany<TTarget, `${InferTemplateModelName<TTarget>}Ids`>;
+): HasMany<TTarget, `${ModelName<TTarget>}Ids`>;
 export default function hasMany<TTarget extends ModelTemplate, TForeign extends string>(
   targetModel: TTarget,
   opts: { foreignKey: TForeign },
@@ -23,7 +23,7 @@ export default function hasMany<TTarget extends ModelTemplate, TForeign extends 
  */
 export default function hasMany<
   TTarget extends ModelTemplate,
-  TForeign extends string = `${InferTemplateModelName<TTarget>}Id`,
+  TForeign extends string = `${ModelName<TTarget>}Id`,
 >(targetModel: TTarget, opts?: { foreignKey: TForeign }): HasMany<TTarget, TForeign> {
   const defaultForeignKey = `${targetModel.modelName}Ids` as TForeign;
   const foreignKey = (opts?.foreignKey ?? defaultForeignKey) as TForeign;
