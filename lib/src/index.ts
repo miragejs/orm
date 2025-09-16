@@ -1,20 +1,22 @@
 // Identity Manager
-export { StringIdentityManager, NumberIdentityManager, IdentityManager } from './id-manager';
+export { IdentityManager, StringIdentityManager, NumberIdentityManager } from './id-manager';
 export type { IdType, IdGenerator, IdentityManagerConfig } from './id-manager';
 
 // Model
-export { defineModelClass, ModelBuilder, model } from './model';
+export { defineModelClass, model } from './model';
 export type {
-  InferTemplateCollectionName,
-  InferTemplateId,
-  InferTemplateModel,
-  InferTemplateModelName,
   ModelAttrs,
+  ModelBuilder,
   ModelClass,
+  ModelCollection,
+  ModelCollectionName,
   ModelForeignKeys,
+  ModelId,
   ModelInstance,
+  ModelName,
   ModelRelationships,
   ModelTemplate,
+  ModelUpdateAttrs,
   NewModelAttrs,
   NewModelInstance,
   PartialModelAttrs,
@@ -22,16 +24,24 @@ export type {
 
 // Factory
 export { factory } from './factory';
-export type { Factory, FactoryAttrs, ModelTraits, TraitName } from './factory';
+export type {
+  Factory,
+  FactoryAttrs,
+  FactoryBuilder,
+  FactoryInstance,
+  ModelTraits,
+  TraitName,
+} from './factory';
 
 // Schema
 export { schema } from './schema';
 export type {
-  CollectionModule,
+  SchemaBuilder,
+  SchemaCollection,
   SchemaCollectionConfig,
+  SchemaCollections,
   SchemaConfig,
   SchemaInstance,
-  SchemaCollections,
 } from './schema';
 
 // Relationships
