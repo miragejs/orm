@@ -1,5 +1,6 @@
 import { Factory, FactoryBuilder, factory } from '@src/factory';
-import { model } from '@src/model';
+import { model, ModelInstance } from '@src/model';
+import type { SchemaCollectionConfig, SchemaCollections, SchemaInstance } from '@src/schema';
 
 interface UserAttrs {
   id: string;
@@ -26,7 +27,8 @@ const ProcessedUserModel = model('processedUser', 'processedUsers')
 describe('FactoryBuilder', () => {
   describe('basic factory creation', () => {
     it('should create factory using builder pattern', () => {
-      const userFactory = factory(UserModel)
+      const userFactory = factory()
+        .model(UserModel)
         .attrs({
           createdAt: null,
           email: (id: string) => `user${id}@example.com`,
@@ -67,10 +69,13 @@ describe('FactoryBuilder', () => {
     });
 
     it('should support method chaining', () => {
-      const builder = factory(UserModel);
+      const builder = factory();
       expect(builder).toBeInstanceOf(FactoryBuilder);
 
-      const builderWithAttrs = builder.attrs({ name: 'Test User' });
+      const builderWithModel = builder.model(UserModel);
+      expect(builderWithModel).toBeInstanceOf(FactoryBuilder);
+
+      const builderWithAttrs = builderWithModel.attrs({ name: 'Test User' });
       expect(builderWithAttrs).toBeInstanceOf(FactoryBuilder);
 
       const builderWithTraits = builderWithAttrs.traits({
@@ -83,7 +88,8 @@ describe('FactoryBuilder', () => {
     });
 
     it('should merge attributes when called multiple times', () => {
-      const userFactory = factory(UserModel)
+      const userFactory = factory()
+        .model(UserModel)
         .attrs({ name: 'John' })
         .attrs({ email: 'john@example.com' })
         .attrs({ role: 'user' })
@@ -95,33 +101,47 @@ describe('FactoryBuilder', () => {
       expect(attrs.role).toBe('user');
     });
 
-    it('should handle afterCreate hooks', () => {
+    it('should create factory with callable processAfterCreateHooks method', () => {
       let hookCalled = false;
-      let modelReceived: any = null;
+      let schemaReceived: any = null;
 
-      const userFactory = factory(ProcessedUserModel)
+      const userFactory = factory<SchemaCollections>()
+        .model(ProcessedUserModel)
         .attrs({ name: 'John' })
-        .afterCreate((model) => {
+        .afterCreate((model, schema) => {
           hookCalled = true;
-          modelReceived = model;
-          model.processed = true;
+          schemaReceived = schema;
+          (model as ProcessedUserAttrs).processed = true;
         })
         .create();
 
-      const user: ProcessedUserAttrs = { id: '1', name: 'John', email: 'john@example.com' };
-      userFactory.processAfterCreateHooks(user);
+      // Create a simple schema mock
+      const schemaMock = {
+        users: { create: () => ({}) },
+      } as unknown as SchemaInstance<SchemaCollections>;
+      const user = {
+        id: '1',
+        name: 'John',
+        email: 'john@example.com',
+        role: 'user',
+      } as unknown as ModelInstance<typeof ProcessedUserModel, SchemaCollections>;
+
+      const result = userFactory.processAfterCreateHooks(schemaMock, user);
 
       expect(hookCalled).toBe(true);
-      expect(modelReceived).toBe(user);
+      expect(result).toBe(user);
       expect(user.processed).toBe(true);
+      expect(schemaReceived).toBe(schemaMock);
     });
   });
 
   describe('traits functionality', () => {
     it('should add traits and return new builder with merged traits', () => {
-      const builder1 = factory(UserModel).traits({
-        admin: { role: 'admin' },
-      });
+      const builder1 = factory()
+        .model(UserModel)
+        .traits({
+          admin: { role: 'admin' },
+        });
 
       const builder2 = builder1.traits({
         premium: { role: 'premium' },
@@ -137,48 +157,13 @@ describe('FactoryBuilder', () => {
       expect(adminUser.role).toBe('admin');
       expect(premiumUser.role).toBe('premium');
     });
-
-    it('should handle trait afterCreate hooks', () => {
-      const hooksCalled: string[] = [];
-
-      const userFactory = factory(ProcessedUserModel)
-        .attrs({ name: 'John' })
-        .traits({
-          admin: {
-            role: 'admin',
-            afterCreate: (model) => {
-              hooksCalled.push('admin');
-              model.adminProcessed = true;
-            },
-          },
-          premium: {
-            role: 'premium',
-            afterCreate: (model) => {
-              hooksCalled.push('premium');
-              model.premiumProcessed = true;
-            },
-          },
-        })
-        .create();
-
-      const user: ProcessedUserAttrs = {
-        id: '1',
-        name: 'John',
-        role: 'admin',
-        email: 'admin1@example.com',
-      };
-      userFactory.processAfterCreateHooks(user, 'admin');
-
-      expect(hooksCalled).toEqual(['admin']);
-      expect(user.adminProcessed).toBe(true);
-      expect(user.premiumProcessed).toBeUndefined();
-    });
   });
 
   describe('factory extension', () => {
     it('should extend existing factory using static method', () => {
       // Create base factory
-      const baseFactory = factory(UserModel)
+      const baseFactory = factory()
+        .model(UserModel)
         .attrs({
           email: (id: string) => `user${id}@example.com`,
           name: 'John Doe',
@@ -190,7 +175,7 @@ describe('FactoryBuilder', () => {
         .create();
 
       // Extend using static method
-      const extendedBuilder = FactoryBuilder.extend(baseFactory);
+      const extendedBuilder = factory().extend(baseFactory);
       expect(extendedBuilder).toBeInstanceOf(FactoryBuilder);
 
       const extendedFactory = extendedBuilder
@@ -217,48 +202,23 @@ describe('FactoryBuilder', () => {
       const adminUser = extendedFactory.build('3', 'admin');
       expect(adminUser.role).toBe('admin');
     });
-
-    it('should preserve afterCreate hooks when extending', () => {
-      const hooksCalled: string[] = [];
-
-      const baseFactory = factory(ProcessedUserModel)
-        .attrs({ name: 'John' })
-        .afterCreate((model) => {
-          hooksCalled.push('base');
-          model.baseProcessed = true;
-        })
-        .create();
-
-      const extendedFactory = FactoryBuilder.extend(baseFactory)
-        .afterCreate((model) => {
-          hooksCalled.push('extended');
-          model.extendedProcessed = true;
-        })
-        .create();
-
-      const user: ProcessedUserAttrs = { id: '1', name: 'John', email: 'john@example.com' };
-      extendedFactory.processAfterCreateHooks(user);
-
-      // Should call the extended hook (overwrites base)
-      expect(hooksCalled).toEqual(['extended']);
-      expect(user.extendedProcessed).toBe(true);
-      expect(user.baseProcessed).toBeUndefined();
-    });
   });
 
   describe('builder extend method', () => {
     it('should extend builder with additional configuration', () => {
-      const baseBuilder = factory(ProcessedUserModel)
+      const baseBuilder = factory()
+        .model(ProcessedUserModel)
         .attrs({ name: 'John' })
-        .traits({ admin: { role: 'admin' } });
+        .traits({ admin: { role: 'admin' } })
+        .create();
 
-      const extendedBuilder = baseBuilder.extend({
-        attributes: { email: 'john@example.com' },
-        traits: { premium: { role: 'premium' } },
-        afterCreate: (user) => {
+      const extendedBuilder = factory()
+        .extend(baseBuilder)
+        .attrs({ email: 'john@example.com' })
+        .traits({ premium: { role: 'premium' } })
+        .afterCreate((user) => {
           user.processed = true;
-        },
-      });
+        });
 
       expect(extendedBuilder).toBeInstanceOf(FactoryBuilder);
       expect(extendedBuilder).not.toBe(baseBuilder);

@@ -27,12 +27,7 @@ export default class Schema<
 
   constructor(collections: TCollections, config?: TConfig) {
     this.db = createDatabase<SchemaDbCollections<TCollections>>();
-
-    this.identityManager = (config?.identityManager ??
-      new StringIdentityManager()) as TConfig extends SchemaConfig<infer TIdentityManager>
-      ? TIdentityManager
-      : StringIdentityManager;
-
+    this.identityManager = config?.identityManager ?? new StringIdentityManager();
     this._registerCollections(collections);
   }
 
@@ -44,11 +39,11 @@ export default class Schema<
   getCollection<K extends keyof TCollections>(
     collectionName: K,
   ): TCollections[K] extends SchemaCollectionConfig<
-    infer TToken,
+    infer TTemplate,
     infer TRelationships,
     infer TFactory
   >
-    ? SchemaCollection<TCollections, TToken, TRelationships, TFactory>
+    ? SchemaCollection<TCollections, TTemplate, TRelationships, TFactory>
     : never {
     const collection = this._collections.get(collectionName as string);
     if (!collection) {
@@ -66,7 +61,7 @@ export default class Schema<
       const { model, factory, relationships } = collectionConfig;
       const identityManager = collectionConfig.identityManager ?? this.identityManager;
 
-      const collection = createSchemaCollection(this as SchemaInstance<TCollections>, {
+      const collection = createSchemaCollection(this as SchemaInstance<TCollections, TConfig>, {
         model,
         factory,
         identityManager,

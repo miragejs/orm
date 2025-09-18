@@ -29,7 +29,6 @@ describe('associations', () => {
   describe('belongsTo', () => {
     it('should create a belongsTo relationship with default foreign key', () => {
       const relationship = associations.belongsTo(userTemplate);
-
       expect(relationship.type).toBe('belongsTo');
       expect(relationship.targetModel).toBe(userTemplate);
       expect(relationship.foreignKey).toBe('userId');
@@ -37,7 +36,6 @@ describe('associations', () => {
 
     it('should create a belongsTo relationship with custom foreign key', () => {
       const relationship = associations.belongsTo(userTemplate, { foreignKey: 'authorId' });
-
       expect(relationship.type).toBe('belongsTo');
       expect(relationship.targetModel).toBe(userTemplate);
       expect(relationship.foreignKey).toBe('authorId');
@@ -46,14 +44,12 @@ describe('associations', () => {
     it('should work with different template types', () => {
       const userRelationship = associations.belongsTo(userTemplate);
       const postRelationship = associations.belongsTo(postTemplate);
-
       expect(userRelationship.foreignKey).toBe('userId');
       expect(postRelationship.foreignKey).toBe('postId');
     });
 
     it('should preserve target template information', () => {
       const relationship = associations.belongsTo(userTemplate);
-
       expect(relationship.targetModel.modelName).toBe('user');
       expect(relationship.targetModel.collectionName).toBe('users');
     });
@@ -62,7 +58,6 @@ describe('associations', () => {
   describe('hasMany', () => {
     it('should create a hasMany relationship with default foreign key', () => {
       const relationship = associations.hasMany(postTemplate);
-
       expect(relationship.type).toBe('hasMany');
       expect(relationship.targetModel).toBe(postTemplate);
       expect(relationship.foreignKey).toBe('postIds');
@@ -70,7 +65,6 @@ describe('associations', () => {
 
     it('should create a hasMany relationship with custom foreign key', () => {
       const relationship = associations.hasMany(postTemplate, { foreignKey: 'myPostIds' });
-
       expect(relationship.type).toBe('hasMany');
       expect(relationship.targetModel).toBe(postTemplate);
       expect(relationship.foreignKey).toBe('myPostIds');
@@ -79,14 +73,12 @@ describe('associations', () => {
     it('should work with different template types', () => {
       const postRelationship = associations.hasMany(postTemplate);
       const commentRelationship = associations.hasMany(commentTemplate);
-
       expect(postRelationship.foreignKey).toBe('postIds');
       expect(commentRelationship.foreignKey).toBe('commentIds');
     });
 
     it('should preserve target template information', () => {
       const relationship = associations.hasMany(postTemplate);
-
       expect(relationship.targetModel.modelName).toBe('post');
       expect(relationship.targetModel.collectionName).toBe('posts');
     });
@@ -104,7 +96,6 @@ describe('associations', () => {
         comments: associations.hasMany(commentTemplate),
       };
 
-      // Verify structure
       expect(userRelationships.posts.type).toBe('hasMany');
       expect(userRelationships.posts.targetModel).toBe(postTemplate);
       expect(userRelationships.posts.foreignKey).toBe('postIds');
@@ -141,28 +132,6 @@ describe('associations', () => {
       expect(relationships.posts.foreignKey).toBe('postIds');
       expect(relationships.favoritePost.type).toBe('belongsTo');
       expect(relationships.favoritePost.foreignKey).toBe('favoritePostId');
-    });
-  });
-
-  describe('type safety', () => {
-    it('should maintain proper types for relationship configurations', () => {
-      // This should compile without type errors
-      const relationships = {
-        posts: associations.hasMany(postTemplate),
-        author: associations.belongsTo(userTemplate, { foreignKey: 'authorId' }),
-      };
-
-      expect(relationships.posts.targetModel.modelName).toBe('post');
-      expect(relationships.author.targetModel.modelName).toBe('user');
-    });
-
-    it('should infer foreign key types correctly', () => {
-      const belongsToRel = associations.belongsTo(userTemplate);
-      const hasManyRel = associations.hasMany(postTemplate);
-
-      // Default foreign keys should be properly typed
-      expect(belongsToRel.foreignKey).toBe('userId');
-      expect(hasManyRel.foreignKey).toBe('postIds');
     });
   });
 });

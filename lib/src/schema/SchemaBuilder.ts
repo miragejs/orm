@@ -1,5 +1,4 @@
 import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
-// import type { Serializer } from '@src/serializer';
 
 import Schema, { type SchemaInstance } from './Schema';
 import type { SchemaCollections, SchemaConfig } from './types';
@@ -12,7 +11,6 @@ import type { SchemaCollections, SchemaConfig } from './types';
  * pattern, allowing method chaining to progressively configure the schema.
  * @template TCollections - The schema collections configuration type
  * @template TIdentityManager - The global identity manager type
- * @template TSerializer - The global serializer type (temporarily disabled)
  * @example
  * ```typescript
  * const appSchema = schema()
@@ -25,13 +23,11 @@ import type { SchemaCollections, SchemaConfig } from './types';
  * ```
  */
 export default class SchemaBuilder<
-  TCollections extends SchemaCollections = {},
+  TCollections extends SchemaCollections = SchemaCollections,
   TIdentityManager extends IdentityManager<any> = StringIdentityManager,
-  // TSerializer extends Serializer<any, any> = never,
 > {
   private _collections?: TCollections;
   private _identityManager?: TIdentityManager;
-  // private _serializer?: TSerializer;
 
   /**
    * Creates a new SchemaBuilder instance.
@@ -60,7 +56,6 @@ export default class SchemaBuilder<
     const builder = new SchemaBuilder<C, TIdentityManager>();
     builder._collections = collections;
     builder._identityManager = this._identityManager;
-    // builder._serializer = this._serializer;
     return builder;
   }
 
@@ -86,7 +81,6 @@ export default class SchemaBuilder<
     const builder = new SchemaBuilder<TCollections, I>();
     builder._collections = this._collections;
     builder._identityManager = identityManager;
-    // builder._serializer = this._serializer;
     return builder;
   }
 

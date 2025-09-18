@@ -1,6 +1,6 @@
 import { IdentityManager, StringIdentityManager } from '@src/id-manager';
 
-import type { DbRecord, DbRecordInput, DbQuery } from './types';
+import type { DbCollectionConfig, DbRecord, DbRecordInput, DbQuery } from './types';
 
 /**
  * A collection of records in a database. Think of it as a table in a relational database.
@@ -15,6 +15,7 @@ import type { DbRecord, DbRecordInput, DbQuery } from './types';
 export default class DbCollection<TRecord extends DbRecord = DbRecord> {
   name: string;
   identityManager: IdentityManager<TRecord['id']>;
+
   private _records: Map<TRecord['id'], TRecord> = new Map();
 
   constructor(name: string, config?: DbCollectionConfig<TRecord>) {
@@ -255,15 +256,4 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
     }
     return record;
   }
-}
-
-// -- Types --
-
-/**
- * Configuration for creating a database collection
- * @template TRecord - The type of the record's attributes
- */
-export interface DbCollectionConfig<TRecord extends DbRecord> {
-  identityManager?: IdentityManager<TRecord['id']>;
-  initialData?: TRecord[];
 }

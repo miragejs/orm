@@ -1,9 +1,9 @@
 import type { DbCollection, DbRecordInput } from '@src/db';
-import { SchemaFactory } from '@src/factory';
-import type { Factory, FactoryTraitNames } from '@src/factory';
+import type { Factory, FactoryTraitNames, ModelTraits } from '@src/factory';
 import type { IdentityManager } from '@src/id-manager';
 import {
   ModelCollection,
+  ModelId,
   PartialModelAttrs,
   defineModelClass,
   type ModelAttrs,
@@ -28,44 +28,46 @@ abstract class BaseSchemaCollection<
   TSchema extends SchemaCollections = SchemaCollections,
   TTemplate extends ModelTemplate = ModelTemplate,
   TRelationships extends ModelRelationships | undefined = undefined,
-  TFactory extends Factory<TTemplate, any> = Factory<TTemplate, any>,
+  TFactory extends
+    | Factory<TTemplate, TSchema, ModelTraits<TSchema, TTemplate>>
+    | undefined = undefined,
 > {
   readonly modelName: string;
   readonly collectionName: string;
-  readonly relationships?: TRelationships;
-  readonly modelClass: ModelClass<TTemplate, TSchema>;
+  protected readonly Model: ModelClass<TTemplate, TSchema>;
 
-  protected readonly _template: TTemplate;
-  protected readonly _schema: SchemaInstance<TSchema>;
   protected readonly _dbCollection: DbCollection<ModelAttrs<TTemplate>>;
-  protected readonly _factory?: SchemaFactory<TSchema, TTemplate, TFactory>;
-  protected readonly _identityManager?: IdentityManager<ModelAttrs<TTemplate>['id']>;
+  protected readonly _factory?: TFactory;
+  protected readonly _identityManager?: IdentityManager<ModelId<TTemplate>>;
+  protected readonly _relationships?: TRelationships;
+  protected readonly _schema: SchemaInstance<TSchema>;
+  protected readonly _template: TTemplate;
 
   constructor(
     schema: SchemaInstance<TSchema>,
     config: {
       model: TTemplate;
-      factory?: TFactory;
-      identityManager?: IdentityManager<ModelAttrs<TTemplate>['id']>;
       relationships?: TRelationships;
+      factory?: TFactory;
+      identityManager?: IdentityManager<ModelId<TTemplate>>;
     },
   ) {
     const { model, factory, identityManager, relationships } = config;
 
     this.modelName = model.modelName;
     this.collectionName = model.collectionName;
-    this.relationships = relationships;
-    this.modelClass = defineModelClass<TTemplate, TSchema>(model);
+    this.Model = defineModelClass<TTemplate, TSchema>(model);
 
-    this._template = model;
     this._schema = schema;
+    this._template = model;
+    this._relationships = relationships;
+    this._factory = factory;
     this._identityManager = identityManager;
     this._dbCollection = this._initializeDbCollection(identityManager);
+  }
 
-    // Create schema-aware factory wrapper if factory exists
-    if (factory) {
-      this._factory = new SchemaFactory(factory, schema);
-    }
+  get relationships(): TRelationships {
+    return this._relationships ?? ({} as TRelationships);
   }
 
   /**
@@ -111,7 +113,7 @@ abstract class BaseSchemaCollection<
    * @param id - The id of the model to find.
    * @returns The model instance or null if not found.
    */
-  find(id: ModelAttrs<TTemplate>['id']): ModelInstance<TTemplate, TSchema> | null {
+  find(id: ModelId<TTemplate>): ModelInstance<TTemplate, TSchema> | null {
     const record = this._dbCollection.find(id);
     return record ? this._createModelFromRecord(record) : null;
   }
@@ -169,7 +171,7 @@ abstract class BaseSchemaCollection<
    * Deletes a model from the collection.
    * @param id - The id of the model to delete.
    */
-  delete(id: ModelAttrs<TTemplate>['id']): void {
+  delete(id: ModelId<TTemplate>): void {
     this._dbCollection.delete(id);
   }
 
@@ -177,7 +179,7 @@ abstract class BaseSchemaCollection<
    * Deletes multiple models from the collection.
    * @param ids - The ids of the models to delete.
    */
-  deleteMany(ids: ModelAttrs<TTemplate>['id'][]): void {
+  deleteMany(ids: ModelId<TTemplate>[]): void {
     this._dbCollection.deleteMany(ids);
   }
 
@@ -189,10 +191,10 @@ abstract class BaseSchemaCollection<
   protected _createModelFromRecord(
     record: ModelAttrs<TTemplate>,
   ): ModelInstance<TTemplate, TSchema> {
-    return new this.modelClass({
+    return new this.Model({
       attrs: record as PartialModelAttrs<TTemplate>,
       dbCollection: this._dbCollection,
-      relationships: this.relationships,
+      relationships: this._relationships,
       schema: this._schema,
     }).save();
   }
@@ -204,7 +206,7 @@ abstract class BaseSchemaCollection<
    * @private
    */
   private _initializeDbCollection(
-    identityManager?: IdentityManager<ModelAttrs<TTemplate>['id']>,
+    identityManager?: IdentityManager<ModelId<TTemplate>>,
   ): DbCollection<ModelAttrs<TTemplate>> {
     if (!this._schema.db.hasCollection(this.collectionName)) {
       this._schema.db.createCollection(this.collectionName, {
@@ -228,7 +230,9 @@ export default class SchemaCollection<
   TSchema extends SchemaCollections = SchemaCollections,
   TTemplate extends ModelTemplate = ModelTemplate,
   TRelationships extends ModelRelationships | undefined = undefined,
-  TFactory extends Factory<TTemplate, any> = Factory<TTemplate, any>,
+  TFactory extends
+    | Factory<TTemplate, TSchema, ModelTraits<TSchema, TTemplate>>
+    | undefined = undefined,
 > extends BaseSchemaCollection<TSchema, TTemplate, TRelationships, TFactory> {
   /**
    * Creates a new model instance (not persisted in the database).
@@ -236,10 +240,10 @@ export default class SchemaCollection<
    * @returns The new model instance.
    */
   new(attrs?: PartialModelAttrs<TTemplate>): NewModelInstance<TTemplate, TSchema> {
-    return new this.modelClass({
+    return new this.Model({
       attrs: attrs,
       dbCollection: this._dbCollection,
-      relationships: this.relationships,
+      relationships: this._relationships,
       schema: this._schema,
     });
   }
@@ -264,7 +268,11 @@ export default class SchemaCollection<
     if (this._factory) {
       const attrs = this._factory.build(nextId, ...traitsAndDefaults);
       const model = this.new(attrs as PartialModelAttrs<TTemplate>).save();
-      return this._factory.processAfterCreateHooks(model, ...traitsAndDefaults);
+      return (this._factory as Factory<TTemplate, TSchema, any>).processAfterCreateHooks(
+        this._schema,
+        model,
+        ...traitsAndDefaults,
+      );
     }
 
     const model = this.new({ ...defaults, id: nextId }).save();

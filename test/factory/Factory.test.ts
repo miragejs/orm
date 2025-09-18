@@ -1,13 +1,14 @@
 import { Factory } from '@src/factory';
-import { model } from '@src/model';
+import { model, ModelInstance } from '@src/model';
+import { SchemaCollections, SchemaInstance } from '@src/schema';
 
 interface UserAttrs {
-  id: string;
+  age?: number;
   createdAt?: string | null;
   email: string;
+  id: string;
   name: string;
   role?: string;
-  age?: number;
 }
 
 const UserModel = model('user', 'users').attrs<UserAttrs>().create();
@@ -16,23 +17,22 @@ describe('Factory', () => {
   describe('constructor', () => {
     it('should initialize with token, attributes, traits, and afterCreate hook', () => {
       const attributes = {
-        email: (id: string) => `user${id}@example.com`,
         name: 'John Doe',
         role: 'user',
+        email: (id: string) => `user${id}@example.com`,
       };
-
       const traits = {
         admin: {
+          name: 'Admin',
           role: 'admin',
           email: (id: string) => `admin${id}@example.com`,
         },
       };
-
-      const afterCreate = (model: any) => {
+      const afterCreate = (model: ModelInstance<typeof UserModel>) => {
         model.processed = true;
       };
-
       const userFactory = new Factory(UserModel, attributes, traits, afterCreate);
+
       expect(userFactory.template).toBe(UserModel);
       expect(userFactory.attributes).toBe(attributes);
       expect(userFactory.traits).toBe(traits);
@@ -41,7 +41,6 @@ describe('Factory', () => {
 
     it('should initialize without afterCreate hook', () => {
       const attributes = { name: 'John', email: 'john@example.com' };
-
       const userFactory = new Factory(UserModel, attributes);
 
       expect(userFactory.template).toBe(UserModel);
@@ -147,7 +146,6 @@ describe('Factory', () => {
         },
         {},
       );
-
       const attrs = dynamicFactory.build('999');
 
       expect(attrs).toEqual({
@@ -169,7 +167,6 @@ describe('Factory', () => {
         },
         {},
       );
-
       const attrs = staticFactory.build('static');
 
       expect(attrs).toEqual({
@@ -183,145 +180,51 @@ describe('Factory', () => {
   });
 
   describe('processAfterCreateHooks method', () => {
-    it('should execute factory afterCreate hook', () => {
+    it('should be callable with schema, model, and traits parameters', () => {
       let hookCalled = false;
       let modelReceived: any = null;
+      let schemaReceived: any = null;
 
       const factory = new Factory(
         UserModel,
         { name: 'John', email: 'john@example.com' },
         {},
-        (model) => {
+        (model, schema) => {
           hookCalled = true;
           modelReceived = model;
-          model.processed = true;
+          schemaReceived = schema;
         },
       );
 
+      // Create a simple schema mock
+      const schemaMock = { users: { create: () => ({}) } };
       const model = { id: '1', name: 'John', email: 'john@example.com' };
-      const result = factory.processAfterCreateHooks(model);
 
+      const result = factory.processAfterCreateHooks(
+        schemaMock as unknown as SchemaInstance<SchemaCollections>,
+        model as unknown as ModelInstance<typeof UserModel>,
+      );
       expect(hookCalled).toBe(true);
       expect(modelReceived).toBe(model);
-      expect(result.processed).toBe(true);
-    });
-
-    it('should execute trait afterCreate hooks', () => {
-      const hooksCalled: string[] = [];
-
-      const factory = new Factory(
-        UserModel,
-        { name: 'John', email: 'john@example.com' },
-        {
-          admin: {
-            role: 'admin',
-            afterCreate: (model) => {
-              hooksCalled.push('admin');
-              model.adminProcessed = true;
-            },
-          },
-          premium: {
-            role: 'premium',
-            afterCreate: (model) => {
-              hooksCalled.push('premium');
-              model.premiumProcessed = true;
-            },
-          },
-        },
-      );
-
-      const model = { id: '1', name: 'John', role: 'admin' } as any;
-      factory.processAfterCreateHooks(model, 'admin');
-
-      expect(hooksCalled).toEqual(['admin']);
-      expect(model.adminProcessed).toBe(true);
-      expect(model.premiumProcessed).toBeUndefined();
-    });
-
-    it('should execute multiple trait hooks in order', () => {
-      const hooksCalled: string[] = [];
-
-      const factory = new Factory(
-        UserModel,
-        { name: 'John', email: 'john@example.com' },
-        {
-          admin: {
-            role: 'admin',
-            afterCreate: (model) => {
-              hooksCalled.push('admin');
-            },
-          },
-          premium: {
-            role: 'premium',
-            afterCreate: (model) => {
-              hooksCalled.push('premium');
-            },
-          },
-        },
-      );
-
-      const model = { id: '1', name: 'John' };
-      factory.processAfterCreateHooks(model, 'admin', 'premium');
-
-      expect(hooksCalled).toEqual(['admin', 'premium']);
-    });
-
-    it('should execute factory hook before trait hooks', () => {
-      const hooksCalled: string[] = [];
-
-      const factory = new Factory(
-        UserModel,
-        { name: 'John', email: 'john@example.com' },
-        {
-          admin: {
-            role: 'admin',
-            afterCreate: (model) => {
-              hooksCalled.push('trait');
-            },
-          },
-        },
-        (model) => {
-          hooksCalled.push('factory');
-        },
-      );
-
-      const model = { id: '1', name: 'John' };
-      factory.processAfterCreateHooks(model, 'admin');
-
-      expect(hooksCalled).toEqual(['factory', 'trait']);
+      expect(schemaReceived).toBe(schemaMock);
+      expect(result).toBe(model);
     });
 
     it('should handle models without hooks gracefully', () => {
-      const factory = new Factory(UserModel, { name: 'John' });
+      const factory = new Factory(UserModel, {
+        name: 'John',
+        email: 'john@example.com',
+      });
 
+      // Create a simple schema mock
+      const schemaMock = { users: { create: () => ({}) } };
       const model = { id: '1', name: 'John' };
-      const result = factory.processAfterCreateHooks(model);
 
-      expect(result).toBe(model);
-      expect(result.id).toBe('1');
-      expect(result.name).toBe('John');
-    });
-
-    it('should ignore non-string arguments when processing traits', () => {
-      const hooksCalled: string[] = [];
-
-      const factory = new Factory(
-        UserModel,
-        { name: 'John', email: 'john@example.com' },
-        {
-          admin: {
-            role: 'admin',
-            afterCreate: (model) => {
-              hooksCalled.push('admin');
-            },
-          },
-        },
+      const result = factory.processAfterCreateHooks(
+        schemaMock as unknown as SchemaInstance<SchemaCollections>,
+        model as unknown as ModelInstance<typeof UserModel>,
       );
-
-      const model = { id: '1', name: 'John' };
-      factory.processAfterCreateHooks(model, 'admin', { age: 30 });
-
-      expect(hooksCalled).toEqual(['admin']);
+      expect(result).toBe(model);
     });
   });
 

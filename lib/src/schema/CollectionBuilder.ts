@@ -1,9 +1,9 @@
-import type { Factory } from '@src/factory';
-import type { IdentityManager } from '@src/id-manager';
+import type { Factory, ModelTraits } from '@src/factory';
+import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
 import type { ModelTemplate, ModelRelationships } from '@src/model';
-// import type { Serializer } from '@src/serializer';
+import { MirageError } from '@src/utils';
 
-import type { SchemaCollectionConfig } from './types';
+import type { SchemaCollectionConfig, SchemaCollections } from './types';
 
 /**
  * A fluent builder for creating schema collection configurations.
@@ -15,30 +15,29 @@ import type { SchemaCollectionConfig } from './types';
  * @template TRelationships - The model relationships configuration
  * @template TFactory - The factory type
  * @template TIdentityManager - The identity manager type
- * @template TSerializer - The serializer type (temporarily disabled)
  * @example
  * ```typescript
- * const userCollection = collection
- *   .model(userTemplate)
- *   .factory(userFactory)
+ * const userCollection = collection(UserModel)
  *   .relationships({
- *     posts: associations.hasMany(postTemplate),
+ *     posts: associations.hasMany(PostModel),
  *   })
+ *   .factory(userFactory)
  *   .identityManager(userIdentityManager)
- *   .build();
+ *   .create();
  * ```
  */
 export default class CollectionBuilder<
-  TTemplate extends ModelTemplate = never,
+  TTemplate extends ModelTemplate = ModelTemplate,
+  TSchema extends SchemaCollections = SchemaCollections,
   TRelationships extends ModelRelationships | undefined = undefined,
-  TFactory extends Factory<TTemplate, any> = Factory<TTemplate, any>,
-  TIdentityManager extends IdentityManager = never,
-  // TSerializer extends Serializer<any, any> = never,
+  TFactory extends
+    | Factory<TTemplate, TSchema, ModelTraits<TSchema, TTemplate>>
+    | undefined = undefined,
+  TIdentityManager extends IdentityManager = StringIdentityManager,
 > {
   private _template?: TTemplate;
   private _factory?: TFactory;
   private _relationships?: TRelationships;
-  // private _serializer?: TSerializer;
   private _identityManager?: TIdentityManager;
 
   /**
@@ -62,12 +61,20 @@ export default class CollectionBuilder<
    */
   model<T extends ModelTemplate>(
     template: T,
-  ): CollectionBuilder<T, TRelationships, Factory<T, any>, TIdentityManager> {
-    const builder = new CollectionBuilder<T, TRelationships, Factory<T, any>, TIdentityManager>();
+  ): CollectionBuilder<T, TSchema, TRelationships, Factory<T, TSchema, any>, TIdentityManager> {
+    const builder = new CollectionBuilder<
+      T,
+      TSchema,
+      TRelationships,
+      Factory<T, TSchema, ModelTraits<TSchema, T>>,
+      TIdentityManager
+    >();
     builder._template = template;
+    // Preserve factory if it exists, casting it to the new template type
+    // This allows for flexibility in the builder pattern while maintaining type safety at build time
     builder._factory = this._factory as any;
     builder._relationships = this._relationships;
-    // builder._serializer = this._serializer as any;
+    // builder._serializer = this._serializer;
     builder._identityManager = this._identityManager;
     return builder;
   }
@@ -82,19 +89,22 @@ export default class CollectionBuilder<
    * @returns A new CollectionBuilder instance with the specified factory
    * @example
    * ```typescript
-   * const builder = collection
-   *   .model(userTemplate)
-   *   .factory(userFactory);
+   * const builder = collection(UserModel).factory(userFactory);
    * ```
    */
-  factory<F extends Factory<TTemplate, any>>(
+  factory<F extends Factory<TTemplate, TSchema, any>>(
     factory: F,
-  ): CollectionBuilder<TTemplate, TRelationships, F, TIdentityManager> {
-    const builder = new CollectionBuilder<TTemplate, TRelationships, F, TIdentityManager>();
+  ): CollectionBuilder<TTemplate, TSchema, TRelationships, F, TIdentityManager> {
+    const builder = new CollectionBuilder<
+      TTemplate,
+      TSchema,
+      TRelationships,
+      F,
+      TIdentityManager
+    >();
     builder._template = this._template;
     builder._factory = factory;
     builder._relationships = this._relationships;
-    // builder._serializer = this._serializer as any;
     builder._identityManager = this._identityManager;
     return builder;
   }
@@ -109,27 +119,20 @@ export default class CollectionBuilder<
    * @returns A new CollectionBuilder instance with the specified relationships
    * @example
    * ```typescript
-   * const builder = collection
-   *   .model(userTemplate)
+   * const builder = collection(UserModel)
    *   .relationships({
-   *     posts: associations.hasMany(postTemplate),
+   *     posts: associations.hasMany(PostModel),
    *     profile: associations.belongsTo(profileTemplate),
    *   });
    * ```
    */
   relationships<R extends ModelRelationships>(
     relationships: R,
-  ): CollectionBuilder<TTemplate, R, Factory<TTemplate, any>, TIdentityManager> {
-    const builder = new CollectionBuilder<
-      TTemplate,
-      R,
-      Factory<TTemplate, any>,
-      TIdentityManager
-    >();
+  ): CollectionBuilder<TTemplate, TSchema, R, TFactory, TIdentityManager> {
+    const builder = new CollectionBuilder<TTemplate, TSchema, R, TFactory, TIdentityManager>();
     builder._template = this._template;
-    builder._factory = this._factory as any;
+    builder._factory = this._factory;
     builder._relationships = relationships;
-    // builder._serializer = this._serializer as any;
     builder._identityManager = this._identityManager;
     return builder;
   }
@@ -145,9 +148,7 @@ export default class CollectionBuilder<
    * @returns A new CollectionBuilder instance with the specified serializer
    * @example
    * ```typescript
-   * const builder = collection
-   *   .model(userTemplate)
-   *   .serializer(userSerializer);
+   * const builder = collection(UserModel).serializer(userSerializer);
    * ```
    */
   /*
@@ -175,77 +176,67 @@ export default class CollectionBuilder<
    * @example
    * ```typescript
    * const builder = collection
-   *   .model(userTemplate)
+   *   .model(UserModel)
    *   .identityManager(new StringIdentityManager());
    * ```
    */
   identityManager<I extends IdentityManager<any>>(
     identityManager: I,
-  ): CollectionBuilder<TTemplate, TRelationships, TFactory, I> {
-    const builder = new CollectionBuilder<TTemplate, TRelationships, TFactory, I>();
+  ): CollectionBuilder<TTemplate, TSchema, TRelationships, TFactory, I> {
+    const builder = new CollectionBuilder<TTemplate, TSchema, TRelationships, TFactory, I>();
     builder._template = this._template;
     builder._factory = this._factory;
     builder._relationships = this._relationships;
-    // builder._serializer = this._serializer as any;
     builder._identityManager = identityManager;
     return builder;
   }
 
   /**
-   * Creates the final SchemaCollectionConfig with all configured options.
-   *
-   * This method produces the immutable collection configuration that can be used
-   * in schema construction. A template must be set before calling build().
-   * @returns The configured SchemaCollectionConfig instance
-   * @throws Error if no template has been configured
-   * @example
-   * ```typescript
-   * const userCollection = collection
-   *   .model(userTemplate)
-   *   .factory(userFactory)
-   *   .build();
-   * ```
+   * Creates the final schema collection configuration.
+   * @returns The schema collection configuration
    */
-  build(): SchemaCollectionConfig<TTemplate, TRelationships, TFactory> {
+  create(): SchemaCollectionConfig<TTemplate, TRelationships, TFactory> {
     if (!this._template) {
-      throw new Error('CollectionBuilder: template is required. Call .model() before .build()');
+      throw new MirageError(
+        'Model template must be set before creating collection. Call .model() first.',
+      );
     }
 
     return {
       model: this._template,
-      factory: this._factory,
       relationships: this._relationships,
-      identityManager: this._identityManager as any,
+      factory: this._factory,
+      identityManager: this._identityManager,
     };
   }
 }
 
 /**
  * Creates a new CollectionBuilder instance for building collection configurations.
- *
- * This is the main entry point for creating collection configurations in the builder-based
- * schema API. The returned CollectionBuilder can be configured with model template, factory,
- * relationships, and identity manager before building the final configuration.
- * @returns A new CollectionBuilder instance ready for configuration
+ * @template TSchema - The schema collections type (optional)
+ * @returns A new CollectionBuilder instance ready for model specification
  * @example
  * ```typescript
- * // Basic collection configuration
- * const userCollection = collection
- *   .model(userTemplate)
- *   .build();
- *
- * // Full collection configuration
- * const userCollection = collection
- *   .model(userTemplate)
+ * // Schema-typed collection
+ * const userCollection = collection<TestSchema>()
+ *   .model(UserModel)
  *   .factory(userFactory)
- *   .relationships({
- *     posts: associations.hasMany(postTemplate),
- *   })
- *   .identityManager(userIdentityManager)
- *   .build();
+ *   .create();
+ *
+ * // Schema-less collection
+ * const userCollection = collection()
+ *   .model(UserModel)
+ *   .create();
  * ```
- * @see {@link CollectionBuilder} for available configuration methods
  */
-export function collection(): CollectionBuilder {
-  return new CollectionBuilder();
+export function collection<
+  TSchema extends SchemaCollections = SchemaCollections,
+>(): CollectionBuilder<ModelTemplate, TSchema, undefined, undefined, StringIdentityManager> {
+  return new CollectionBuilder<
+    ModelTemplate,
+    TSchema,
+    undefined,
+    undefined,
+    StringIdentityManager
+  >();
 }

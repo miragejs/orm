@@ -571,7 +571,7 @@ export default class Model<
 
     if (type === 'hasMany') {
       // Update hasMany relationship - add/remove this model's ID
-      const currentIds = (targetDbRecord[foreignKey] as any[]) || [];
+      const currentIds = ((targetDbRecord as any)[foreignKey] as any[]) || [];
 
       if (action === 'link') {
         // Add this model's ID if not already present

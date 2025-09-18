@@ -1,57 +1,22 @@
+// Database
+export type * from './db';
+
 // Identity Manager
 export { IdentityManager, StringIdentityManager, NumberIdentityManager } from './id-manager';
-export type { IdType, IdGenerator, IdentityManagerConfig } from './id-manager';
+export type * from './id-manager';
 
 // Model
-export { defineModelClass, model } from './model';
-export type {
-  ModelAttrs,
-  ModelBuilder,
-  ModelClass,
-  ModelCollection,
-  ModelCollectionName,
-  ModelForeignKeys,
-  ModelId,
-  ModelInstance,
-  ModelName,
-  ModelRelationships,
-  ModelTemplate,
-  ModelUpdateAttrs,
-  NewModelAttrs,
-  NewModelInstance,
-  PartialModelAttrs,
-} from './model';
-
-// Factory
-export { factory } from './factory';
-export type {
-  Factory,
-  FactoryAttrs,
-  FactoryBuilder,
-  FactoryInstance,
-  ModelTraits,
-  TraitName,
-} from './factory';
-
-// Schema
-export { schema } from './schema';
-export type {
-  SchemaBuilder,
-  SchemaCollection,
-  SchemaCollectionConfig,
-  SchemaCollections,
-  SchemaConfig,
-  SchemaInstance,
-} from './schema';
+export { model } from './model';
+export type * from './model';
 
 // Relationships
 export { belongsTo, hasMany, associations } from './associations';
-export type { BelongsTo, HasMany, Relationships } from './associations';
+export type * from './associations';
 
-// Database
-export { createDatabase } from './db';
-export type { DbInstance } from './db';
+// Factory
+export { factory } from './factory';
+export type * from './factory';
 
-// Serializer
-export { Serializer } from './serializer';
-export type { SerializerConfig } from './serializer';
+// Schema
+export { collection, schema } from './schema';
+export type * from './schema';

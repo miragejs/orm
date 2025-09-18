@@ -1,31 +1,37 @@
 import type {
   ModelAttrs,
   ModelId,
+  ModelInstance,
   ModelTemplate,
   NewModelAttrs,
   PartialModelAttrs,
 } from '@src/model';
+import type { SchemaCollections, SchemaInstance } from '@src/schema';
 import { MirageError } from '@src/utils';
 
 import type { FactoryAttrs, FactoryAfterCreateHook, ModelTraits, TraitName } from './types';
 
 /**
- * Factory that builds model attributes.
+ * Factory that builds model attributes with optional schema support.
+ * @template TSchema - The schema collections type (never = schema-independent)
+ * @template TTemplate - The model template (inferred from constructor)
+ * @template TTraits - The factory traits (inferred from constructor)
  */
 export default class Factory<
   TTemplate extends ModelTemplate = ModelTemplate,
-  TTraits extends ModelTraits<TTemplate> = ModelTraits<TTemplate>,
+  TSchema extends SchemaCollections = SchemaCollections,
+  TTraits extends ModelTraits<TSchema, TTemplate> = {},
 > {
   private readonly _template: TTemplate;
   readonly attributes: FactoryAttrs<TTemplate>;
   readonly traits: TTraits;
-  readonly afterCreate?: FactoryAfterCreateHook;
+  readonly afterCreate?: FactoryAfterCreateHook<TSchema, TTemplate>;
 
   constructor(
     template: TTemplate,
     attributes: FactoryAttrs<TTemplate>,
     traits: TTraits = {} as TTraits,
-    afterCreate?: FactoryAfterCreateHook,
+    afterCreate?: FactoryAfterCreateHook<TSchema, TTemplate>,
   ) {
     this._template = template;
     this.attributes = attributes;
@@ -48,7 +54,7 @@ export default class Factory<
    * @returns The built model.
    */
   build(
-    modelId: NonNullable<ModelAttrs<TTemplate>['id']>,
+    modelId: ModelId<TTemplate>,
     ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TTemplate>)[]
   ): ModelAttrs<TTemplate> {
     const traitNames: string[] = [];
@@ -79,16 +85,19 @@ export default class Factory<
 
   /**
    * Process the afterCreate hook and the trait hooks.
+   * This method is intended to be called internally by schema collections.
+   * @param schema - The schema instance.
    * @param model - The model to process.
    * @param traitsAndDefaults - The traits and defaults that were applied.
    * @returns The processed model.
    */
   processAfterCreateHooks(
-    model: any,
+    schema: SchemaInstance<TSchema>,
+    model: ModelInstance<TTemplate, TSchema>,
     ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TTemplate>)[]
-  ): any {
+  ): ModelInstance<TTemplate, TSchema> {
     const traitNames: string[] = traitsAndDefaults.filter((arg) => typeof arg === 'string');
-    const hooks: FactoryAfterCreateHook[] = [];
+    const hooks: FactoryAfterCreateHook<TSchema, TTemplate>[] = [];
 
     if (this.afterCreate) {
       hooks.push(this.afterCreate);
@@ -102,9 +111,12 @@ export default class Factory<
       }
     });
 
-    // Execute hooks with the model instance
+    // Execute hooks with the properly typed model instance and schema
     hooks.forEach((hook) => {
-      hook(model);
+      (hook as (model: ModelInstance<TTemplate, TSchema>, schema: SchemaInstance<TSchema>) => void)(
+        model,
+        schema,
+      );
     });
 
     return model;
@@ -114,7 +126,7 @@ export default class Factory<
 
   private _processAttributes(
     attrs: FactoryAttrs<TTemplate>,
-    modelId?: NonNullable<ModelId<TTemplate>>,
+    modelId?: ModelId<TTemplate>,
   ): PartialModelAttrs<TTemplate> {
     const keys = this._sortAttrs(attrs, modelId);
 
@@ -143,7 +155,7 @@ export default class Factory<
 
   private _buildWithTraits(
     traitNames: string[],
-    modelId?: NonNullable<ModelId<TTemplate>>,
+    modelId?: ModelId<TTemplate>,
   ): PartialModelAttrs<TTemplate> {
     const result = traitNames.reduce(
       (traitAttributes, name) => {
@@ -180,7 +192,7 @@ export default class Factory<
 
   private _sortAttrs(
     attrs: FactoryAttrs<TTemplate>,
-    modelId?: NonNullable<ModelId<TTemplate>>,
+    modelId?: ModelId<TTemplate>,
   ): (keyof NewModelAttrs<TTemplate>)[] {
     const visited = new Set<string>();
     const processing = new Set<string>();
@@ -223,8 +235,3 @@ export default class Factory<
     return Object.keys(attrs) as (keyof NewModelAttrs<TTemplate>)[];
   }
 }
-
-export type FactoryInstance<
-  TTemplate extends ModelTemplate,
-  TTraits extends ModelTraits<TTemplate> = ModelTraits<TTemplate>,
-> = Factory<TTemplate, TTraits>;

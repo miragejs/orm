@@ -7,6 +7,13 @@ import type { ModelRelationships } from '@src/model';
 import type SchemaCollection from './SchemaCollection';
 
 /**
+ * Global schema configuration
+ */
+export interface SchemaConfig<TIdentityManager extends IdentityManager = StringIdentityManager> {
+  identityManager?: TIdentityManager;
+}
+
+/**
  * Type for schema collection config
  * @template TTemplate - The model template
  * @template TRelationships - The model relationships
@@ -15,19 +22,12 @@ import type SchemaCollection from './SchemaCollection';
 export interface SchemaCollectionConfig<
   TTemplate extends ModelTemplate,
   TRelationships extends ModelRelationships | undefined = undefined,
-  TFactory extends Factory<TTemplate, any> = Factory<TTemplate, any>,
+  TFactory extends Factory<TTemplate, any, any> | undefined = undefined,
 > {
   model: TTemplate;
   factory?: TFactory;
   relationships?: TRelationships;
   identityManager?: IdentityManager<ModelId<TTemplate>>;
-}
-
-/**
- * Global schema configuration
- */
-export interface SchemaConfig<TIdentityManager extends IdentityManager = StringIdentityManager> {
-  identityManager?: TIdentityManager;
 }
 
 /**

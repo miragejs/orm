@@ -1,8 +1,8 @@
 import { associations } from '@src/associations';
 import { factory } from '@src/factory';
 import { NumberIdentityManager, StringIdentityManager } from '@src/id-manager';
-import { schema, SchemaBuilder, collection } from '@src/schema';
 import { model } from '@src/model';
+import { schema, SchemaBuilder, collection } from '@src/schema';
 
 describe('SchemaBuilder', () => {
   // Test tokens
@@ -19,18 +19,20 @@ describe('SchemaBuilder', () => {
     authorId: string;
   }
 
-  const userTemplate = model('user', 'users').attrs<UserAttrs>().create();
-  const postTemplate = model('post', 'posts').attrs<PostAttrs>().create();
+  const UserModel = model('user', 'users').attrs<UserAttrs>().create();
+  const PostModel = model('post', 'posts').attrs<PostAttrs>().create();
 
   // Test factories
-  const userFactory = factory(userTemplate)
+  const userFactory = factory()
+    .model(UserModel)
     .attrs({
       name: () => 'Test User',
       email: () => 'test@example.com',
     })
     .create();
 
-  const postFactory = factory(postTemplate)
+  const postFactory = factory()
+    .model(PostModel)
     .attrs({
       title: () => 'Test Post',
       content: () => 'Test content',
@@ -43,21 +45,21 @@ describe('SchemaBuilder', () => {
 
   // Test collections
   const userCollection = collection()
-    .model(userTemplate)
+    .model(UserModel)
     .factory(userFactory)
     .relationships({
-      posts: associations.hasMany(postTemplate),
+      posts: associations.hasMany(PostModel),
     })
-    .build();
+    .create();
 
   const postCollection = collection()
-    .model(postTemplate)
+    .model(PostModel)
     .factory(postFactory)
     .relationships({
-      author: associations.belongsTo(userTemplate, { foreignKey: 'authorId' }),
+      author: associations.belongsTo(UserModel, { foreignKey: 'authorId' }),
     })
     .identityManager(postIdentityManager)
-    .build();
+    .create();
 
   describe('constructor', () => {
     it('should create a new SchemaBuilder instance', () => {
@@ -191,20 +193,20 @@ describe('SchemaBuilder', () => {
       const appSchema = schema()
         .collections({
           users: collection()
-            .model(userTemplate)
+            .model(UserModel)
             .factory(userFactory)
             .relationships({
-              posts: associations.hasMany(postTemplate),
+              posts: associations.hasMany(PostModel),
             })
-            .build(),
+            .create(),
           posts: collection()
-            .model(postTemplate)
+            .model(PostModel)
             .factory(postFactory)
             .relationships({
-              author: associations.belongsTo(userTemplate, { foreignKey: 'authorId' }),
+              author: associations.belongsTo(UserModel, { foreignKey: 'authorId' }),
             })
             .identityManager(postIdentityManager)
-            .build(),
+            .create(),
         })
         .identityManager(appIdentityManager)
         .build();
@@ -224,17 +226,17 @@ describe('SchemaBuilder', () => {
       const complexSchema = schema()
         .collections({
           users: collection()
-            .model(userTemplate)
+            .model(UserModel)
             .relationships({
-              posts: associations.hasMany(postTemplate),
+              posts: associations.hasMany(PostModel),
             })
-            .build(),
+            .create(),
           posts: collection()
-            .model(postTemplate)
+            .model(PostModel)
             .relationships({
-              author: associations.belongsTo(userTemplate, { foreignKey: 'authorId' }),
+              author: associations.belongsTo(UserModel, { foreignKey: 'authorId' }),
             })
-            .build(),
+            .create(),
         })
         .build();
 

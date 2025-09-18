@@ -28,7 +28,8 @@ const PostModel = model('post', 'posts').attrs<PostAttrs>().create();
 const CommentModel = model('comment', 'comments').attrs<CommentAttrs>().create();
 
 // -- TEST FACTORIES --
-const userFactory = factory(UserModel)
+const userFactory = factory()
+  .model(UserModel)
   .attrs({
     email: () => 'john@example.com',
     name: () => 'John Doe',
@@ -40,14 +41,16 @@ const userFactory = factory(UserModel)
   })
   .create();
 
-const postFactory = factory(PostModel)
+const postFactory = factory()
+  .model(PostModel)
   .attrs({
     content: () => 'This is a test post',
     title: () => 'Hello World',
   })
   .create();
 
-const commentFactory = factory(CommentModel)
+const commentFactory = factory()
+  .model(CommentModel)
   .attrs({
     content: () => 'Great post!',
   })

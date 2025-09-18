@@ -123,7 +123,9 @@ describe('Model', () => {
         attrs: { text: 'Great post!' },
       });
       expect(comment.id).toBeNull();
+
       comment.save();
+
       expect(typeof comment.id).toBe('string');
       expect(comment.text).toBe('Great post!');
     });
@@ -147,7 +149,9 @@ describe('Model', () => {
         dbCollection: postDbCollection,
       });
       expect(post.id).toBeNull();
+
       post.save();
+
       expect(post.id).toBeDefined();
       expect(typeof post.id).toBe('number');
       expect(post.title).toBe('My Post');
