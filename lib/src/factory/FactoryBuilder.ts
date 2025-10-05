@@ -17,7 +17,7 @@ export default class FactoryBuilder<
   TTraits extends ModelTraits<TSchema, TTemplate> = {},
 > {
   protected _template?: TTemplate;
-  protected _attributes: FactoryAttrs<TTemplate> = {};
+  protected _attributes: FactoryAttrs<TTemplate> = {} as FactoryAttrs<TTemplate>;
   protected _traits: TTraits = {} as TTraits;
   protected _afterCreate?: FactoryAfterCreateHook<TSchema, TTemplate>;
 

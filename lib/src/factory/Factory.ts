@@ -3,18 +3,16 @@ import type {
   ModelId,
   ModelInstance,
   ModelTemplate,
-  NewModelAttrs,
   PartialModelAttrs,
 } from '@src/model';
 import type { SchemaCollections, SchemaInstance } from '@src/schema';
-import { MirageError } from '@src/utils';
 
 import type { FactoryAttrs, FactoryAfterCreateHook, ModelTraits, TraitName } from './types';
 
 /**
  * Factory that builds model attributes with optional schema support.
- * @template TSchema - The schema collections type (never = schema-independent)
  * @template TTemplate - The model template (inferred from constructor)
+ * @template TSchema - The schema collections type (never = sch)
  * @template TTraits - The factory traits (inferred from constructor)
  */
 export default class Factory<
@@ -55,10 +53,10 @@ export default class Factory<
    */
   build(
     modelId: ModelId<TTemplate>,
-    ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TTemplate>)[]
+    ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TTemplate, TSchema>)[]
   ): ModelAttrs<TTemplate> {
     const traitNames: string[] = [];
-    const defaults: PartialModelAttrs<TTemplate> = {};
+    const defaults: PartialModelAttrs<TTemplate, TSchema> = {};
 
     // Separate trait names from default values
     traitsAndDefaults.forEach((arg) => {
@@ -80,7 +78,7 @@ export default class Factory<
       ...mergedAttributes,
       ...defaults,
       id: modelId,
-    } as ModelAttrs<TTemplate>;
+    } as ModelAttrs<TTemplate, TSchema>;
   }
 
   /**
@@ -128,7 +126,7 @@ export default class Factory<
     attrs: FactoryAttrs<TTemplate>,
     modelId?: ModelId<TTemplate>,
   ): PartialModelAttrs<TTemplate> {
-    const keys = this._sortAttrs(attrs, modelId);
+    const keys = Object.keys(attrs) as (keyof FactoryAttrs<TTemplate>)[];
 
     const result = keys.reduce(
       (acc, key) => {
@@ -188,50 +186,5 @@ export default class Factory<
       ...baseAttributes,
       ...overrideAttributes,
     };
-  }
-
-  private _sortAttrs(
-    attrs: FactoryAttrs<TTemplate>,
-    modelId?: ModelId<TTemplate>,
-  ): (keyof NewModelAttrs<TTemplate>)[] {
-    const visited = new Set<string>();
-    const processing = new Set<string>();
-
-    const detectCycle = (key: string): boolean => {
-      if (processing.has(key)) {
-        throw new MirageError(`Circular dependency detected: ${key}`);
-      }
-      if (visited.has(key)) {
-        return false;
-      }
-
-      processing.add(key);
-      const value = attrs[key as Exclude<keyof NewModelAttrs<TTemplate>, 'id'>];
-
-      if (typeof value === 'function') {
-        // Create a proxy to track property access
-        const proxy = new Proxy(attrs, {
-          get(target, prop) {
-            if (typeof prop === 'string' && prop in target) {
-              detectCycle(prop);
-            }
-            return target[prop as keyof typeof target];
-          },
-        });
-
-        // Call the function with the proxy as this context
-        (value as Function).call(proxy, modelId);
-      }
-
-      processing.delete(key);
-      visited.add(key);
-      return false;
-    };
-
-    // Check each attribute for cycles
-    Object.keys(attrs).forEach(detectCycle);
-
-    // Return keys in their original order
-    return Object.keys(attrs) as (keyof NewModelAttrs<TTemplate>)[];
   }
 }

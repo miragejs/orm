@@ -12,11 +12,13 @@ import type { ModelTemplate } from './types';
  * @example
  * ```typescript
  * // Create a basic template
- * const userTemplate = model('user', 'users').create();
+ * const userTemplate = model().name('user').collection('users').create();
  *
  * // Create a template with specific model attributes
  * interface User { id: string; name: string; email: string; }
- * const typedUserTemplate = model('user', 'users')
+ * const typedUserTemplate = model()
+ *   .name('user')
+ *   .collection('users')
  *   .attrs<UserAttrs>()
  *   .create();
  * ```
@@ -27,17 +29,44 @@ export default class ModelBuilder<
   TCollectionName extends string,
 > {
   private _attrs?: Partial<TModelAttrs>;
+  private _modelName?: TModelName;
+  private _collectionName?: TCollectionName;
 
   /**
-   * Creates a new ModelBuilder instance.
-   * @param _modelName - The name identifier for the model
-   * @param _collectionName - The name identifier for the collection
-   * @private
+   * Sets the model name identifier.
+   * @template T - The string literal type for the model name
+   * @param modelName - The name identifier for the model (e.g., 'user', 'post')
+   * @returns A new ModelBuilder instance with the model name set
+   * @example
+   * ```typescript
+   * const builder = model().name('user');
+   * ```
    */
-  constructor(
-    private readonly _modelName: TModelName,
-    private readonly _collectionName: TCollectionName,
-  ) {}
+  name<T extends string>(modelName: T): ModelBuilder<TModelAttrs, T, TCollectionName> {
+    const builder = new ModelBuilder<TModelAttrs, T, TCollectionName>();
+    builder._modelName = modelName;
+    builder._collectionName = this._collectionName as TCollectionName;
+    builder._attrs = this._attrs;
+    return builder;
+  }
+
+  /**
+   * Sets the collection name identifier.
+   * @template T - The string literal type for the collection name
+   * @param collectionName - The name identifier for the collection (e.g., 'users', 'posts')
+   * @returns A new ModelBuilder instance with the collection name set
+   * @example
+   * ```typescript
+   * const builder = model().name('user').collection('users');
+   * ```
+   */
+  collection<T extends string>(collectionName: T): ModelBuilder<TModelAttrs, TModelName, T> {
+    const builder = new ModelBuilder<TModelAttrs, TModelName, T>();
+    builder._modelName = this._modelName as TModelName;
+    builder._collectionName = collectionName;
+    builder._attrs = this._attrs;
+    return builder;
+  }
 
   /**
    * Sets the model attributes type and optionally provides default attributes.
@@ -73,10 +102,9 @@ export default class ModelBuilder<
 
   // eslint-disable-next-line jsdoc/require-jsdoc -- Implementation
   attrs<T extends { id: any }>(defaultAttrs?: Partial<T>) {
-    const builder = new ModelBuilder<T, TModelName, TCollectionName>(
-      this._modelName,
-      this._collectionName,
-    );
+    const builder = new ModelBuilder<T, TModelName, TCollectionName>();
+    builder._modelName = this._modelName as TModelName;
+    builder._collectionName = this._collectionName as TCollectionName;
     builder._attrs = defaultAttrs;
     return builder;
   }
@@ -88,14 +116,24 @@ export default class ModelBuilder<
    * your application for type-safe model operations. The template includes the
    * model and collection names, a unique symbol key, and default attributes.
    * @returns The configured ModelTemplate instance
+   * @throws Error if model name or collection name is not set
    * @example
    * ```typescript
-   * const userTemplate = model('user', 'users')
+   * const userTemplate = model()
+   *   .name('user')
+   *   .collection('users')
    *   .attrs<UserAttrs>()
    *   .create();
    * ```
    */
   create(): ModelTemplate<TModelAttrs, TModelName, TCollectionName> {
+    if (!this._modelName) {
+      throw new Error('Model name is required. Call .name() before .create()');
+    }
+    if (!this._collectionName) {
+      throw new Error('Collection name is required. Call .collection() before .create()');
+    }
+
     return {
       attrs: this._attrs || {},
       collectionName: this._collectionName,
@@ -110,29 +148,31 @@ export default class ModelBuilder<
  *
  * This is the primary entry point for creating model templates. It provides a fluent
  * interface for configuring model attributes and metadata.
- * @param modelName - The name identifier for the model (e.g., 'user', 'post')
- * @param collectionName - The name identifier for the collection (e.g., 'users', 'posts')
  * @returns A new ModelBuilder instance ready for configuration
  * @example
  * ```typescript
  * // Basic usage
- * const userTemplate = model('user', 'users').create();
+ * const userTemplate = model()
+ *   .name('user')
+ *   .collection('users')
+ *   .create();
  *
  * // With typed attributes
  * interface UserAttrs { id: string; name: string; email: string; }
- * const typedUserTemplate = model('user', 'users')
+ * const typedUserTemplate = model()
+ *   .name('user')
+ *   .collection('users')
  *   .attrs<UserAttrs>()
  *   .create();
  *
  * // With default attributes
- * const defaultUserTemplate = model('user', 'users')
+ * const defaultUserTemplate = model()
+ *   .name('user')
+ *   .collection('users')
  *   .attrs({ id: '', name: 'Anonymous', email: '' })
  *   .create();
  * ```
  */
-export function model<TModelName extends string, TCollectionName extends string>(
-  modelName: TModelName,
-  collectionName: TCollectionName,
-): ModelBuilder<{ id: string | null }, TModelName, TCollectionName> {
-  return new ModelBuilder(modelName, collectionName);
+export function model(): ModelBuilder<{ id: string | null }, string, string> {
+  return new ModelBuilder();
 }

@@ -17,6 +17,14 @@ export type DbRecord<TId = IdType> = {
 export type DbRecordInput<TRecord extends DbRecord> = Partial<TRecord>;
 
 /**
+ * Type for new record with optional id
+ * @template TRecord - The type of the record's attributes
+ */
+export type NewDbRecord<TRecord extends DbRecord> = Omit<TRecord, 'id'> & {
+  id?: TRecord['id'] | null;
+};
+
+/**
  * Type for query conditions that can be used to find records
  * @template TRecord - The type of the record's attributes
  */

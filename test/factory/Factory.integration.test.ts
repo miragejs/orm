@@ -1,22 +1,22 @@
 import { factory } from '@src/factory';
-import { model, ModelTemplate } from '@src/model';
+import { BaseModelAttrs, model, ModelTemplate } from '@src/model';
 import { collection, schema, SchemaCollectionConfig } from '@src/schema';
 
-type UserAttrs = {
+interface UserAttrs {
   id: string;
   name: string;
   email: string;
   role: string;
   processed?: boolean;
-};
+}
 
-type PostAttrs = {
+interface PostAttrs {
   id: string;
   title: string;
   content: string;
   subscription: string;
   userId: string;
-};
+}
 
 type TestSchema = {
   users: SchemaCollectionConfig<ModelTemplate<UserAttrs, 'user', 'users'>>;

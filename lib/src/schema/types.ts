@@ -1,3 +1,4 @@
+import type { BelongsTo, HasMany } from '@src/associations';
 import type { DbCollection } from '@src/db';
 import type { Factory } from '@src/factory';
 import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
@@ -21,7 +22,7 @@ export interface SchemaConfig<TIdentityManager extends IdentityManager = StringI
  */
 export interface SchemaCollectionConfig<
   TTemplate extends ModelTemplate,
-  TRelationships extends ModelRelationships | undefined = undefined,
+  TRelationships extends ModelRelationships | undefined = {},
   TFactory extends Factory<TTemplate, any, any> | undefined = undefined,
 > {
   model: TTemplate;
@@ -66,3 +67,22 @@ export type SchemaDbCollections<TCollections extends SchemaCollections> = {
       >
     : never;
 };
+
+/**
+ * Type for relationships by template model
+ * @template TSchema - The schema collections
+ * @template TTemplate - The model template
+ */
+export type RelationshipsByTemplate<
+  TTemplate extends ModelTemplate,
+  TSchema extends SchemaCollections,
+> =
+  TSchema[CollectionByTemplate<TSchema, TTemplate>] extends SchemaCollectionConfig<
+    any,
+    infer TRelationships,
+    any
+  >
+    ? TRelationships extends ModelRelationships
+      ? TRelationships
+      : {}
+    : {};

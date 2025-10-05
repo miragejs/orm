@@ -1,4 +1,4 @@
-import type { ModelName, ModelTemplate } from '../model';
+import type { InferModelName, ModelTemplate } from '../model';
 
 /**
  * BelongsTo relationship - this model contains a foreign key to another model
@@ -8,7 +8,7 @@ import type { ModelName, ModelTemplate } from '../model';
  */
 export type BelongsTo<
   TTarget extends ModelTemplate,
-  TForeign extends string = `${ModelName<TTarget>}Id`,
+  TForeign extends string = `${InferModelName<TTarget>}Id`,
 > = {
   foreignKey: TForeign;
   targetModel: TTarget;
@@ -23,7 +23,7 @@ export type BelongsTo<
  */
 export type HasMany<
   TTarget extends ModelTemplate,
-  TForeign extends string = `${ModelName<TTarget>}Ids`,
+  TForeign extends string = `${InferModelName<TTarget>}Ids`,
 > = {
   foreignKey: TForeign;
   targetModel: TTarget;

@@ -1,38 +1,56 @@
-import { DbCollection } from '@src/db';
-import { defineModelClass, ModelCollection, model, type ModelInstance } from '@src/model';
+import { Model, ModelCollection, model, type ModelInstance } from '@src/model';
+import { collection, schema, type SchemaCollectionConfig } from '@src/schema';
 
+// Setup test models
 interface UserAttrs {
   id: string;
   email: string;
   name: string;
 }
-const UserModel = model('user', 'users').attrs<UserAttrs>().create();
-const UserModelClass = defineModelClass(UserModel);
+
+const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
+
+type UserModel = typeof userModel;
+
+// Test schema type
+type TestSchema = {
+  users: SchemaCollectionConfig<UserModel>;
+};
+
+// Test model class
+const UserModelClass = Model.define<UserModel, TestSchema>(userModel);
+
+// Test schema instance
+const testSchema = schema()
+  .collections({
+    users: collection().model(userModel).create(),
+  })
+  .build();
 
 describe('ModelCollection', () => {
-  const dbCollection: DbCollection<UserAttrs> = new DbCollection<UserAttrs>('users');
-
-  let user1: ModelInstance<typeof UserModel>;
-  let user2: ModelInstance<typeof UserModel>;
-  let user3: ModelInstance<typeof UserModel>;
-  let userCollection: ModelCollection<typeof UserModel>;
+  let user1: ModelInstance<UserModel, TestSchema>;
+  let user2: ModelInstance<UserModel, TestSchema>;
+  let user3: ModelInstance<UserModel, TestSchema>;
+  let userCollection: ModelCollection<UserModel, TestSchema>;
 
   beforeEach(() => {
-    dbCollection.clear();
-
     user1 = new UserModelClass({
       attrs: { name: 'John', email: 'john@example.com' },
-      dbCollection,
+      schema: testSchema,
     }).save();
     user2 = new UserModelClass({
       attrs: { name: 'Jane', email: 'jane@example.com' },
-      dbCollection,
+      schema: testSchema,
     }).save();
     user3 = new UserModelClass({
       attrs: { name: 'Alice', email: 'alice@example.com' },
-      dbCollection,
+      schema: testSchema,
     }).save();
-    userCollection = new ModelCollection(UserModel, [user1, user2]);
+    userCollection = new ModelCollection<UserModel, TestSchema>(userModel, [user1, user2]);
+  });
+
+  afterEach(() => {
+    testSchema.db.emptyData();
   });
 
   describe('constructor', () => {
@@ -43,7 +61,7 @@ describe('ModelCollection', () => {
     });
 
     it('should initialize empty collection', () => {
-      const emptyCollection = new ModelCollection(UserModel);
+      const emptyCollection = new ModelCollection<UserModel, TestSchema>(userModel);
       expect(emptyCollection.length).toBe(0);
       expect(emptyCollection.isEmpty).toBe(true);
       expect(Array.from(emptyCollection)).toStrictEqual([]);
@@ -54,14 +72,14 @@ describe('ModelCollection', () => {
     it('should return correct length', () => {
       expect(userCollection.length).toBe(2);
 
-      const emptyCollection = new ModelCollection(UserModel);
+      const emptyCollection = new ModelCollection<UserModel, TestSchema>(userModel);
       expect(emptyCollection.length).toBe(0);
     });
 
     it('should check if collection is empty', () => {
       expect(userCollection.isEmpty).toBe(false);
 
-      const emptyCollection = new ModelCollection(UserModel);
+      const emptyCollection = new ModelCollection<UserModel, TestSchema>(userModel);
       expect(emptyCollection.isEmpty).toBe(true);
     });
 
@@ -75,14 +93,14 @@ describe('ModelCollection', () => {
     it('should get first model', () => {
       expect(userCollection.first()).toBe(user1);
 
-      const emptyCollection = new ModelCollection(UserModel);
+      const emptyCollection = new ModelCollection<UserModel, TestSchema>(userModel);
       expect(emptyCollection.first()).toBeNull();
     });
 
     it('should get last model', () => {
       expect(userCollection.last()).toBe(user2);
 
-      const emptyCollection = new ModelCollection(UserModel);
+      const emptyCollection = new ModelCollection<UserModel, TestSchema>(userModel);
       expect(emptyCollection.last()).toBeNull();
     });
   });
@@ -140,12 +158,13 @@ describe('ModelCollection', () => {
 
   describe('array-like utility methods', () => {
     it('should concatenate collections and arrays', () => {
-      const otherCollection = new ModelCollection(UserModel, [user3]);
+      const otherCollection = new ModelCollection<UserModel, TestSchema>(userModel, [user3]);
       const concatenated = userCollection.concat(otherCollection);
 
       expect(concatenated).toBeInstanceOf(ModelCollection);
       expect(concatenated.length).toBe(3);
       expect(Array.from(concatenated)).toStrictEqual([user1, user2, user3]);
+
       // Original collections should be unchanged
       expect(userCollection.length).toBe(2);
       expect(otherCollection.length).toBe(1);
@@ -176,6 +195,7 @@ describe('ModelCollection', () => {
 
       expect(sorted).toBeInstanceOf(ModelCollection);
       expect(Array.from(sorted)).toStrictEqual([user2, user1]); // Jane comes before John
+
       // Original collection should be unchanged
       expect(Array.from(userCollection)).toStrictEqual([user1, user2]);
     });
@@ -185,6 +205,7 @@ describe('ModelCollection', () => {
 
       expect(reversed).toBeInstanceOf(ModelCollection);
       expect(Array.from(reversed)).toStrictEqual([user2, user1]);
+
       // Original collection should be unchanged
       expect(Array.from(userCollection)).toStrictEqual([user1, user2]);
     });
@@ -194,6 +215,7 @@ describe('ModelCollection', () => {
 
       expect(Array.isArray(array)).toBe(true);
       expect(array).toStrictEqual([user1, user2]);
+
       // Should be a copy, not the same reference
       expect(array).not.toBe(userCollection.models);
     });
@@ -325,7 +347,7 @@ describe('ModelCollection', () => {
 
   describe('edge cases', () => {
     it('should handle empty collection operations', () => {
-      const emptyCollection = new ModelCollection(UserModel);
+      const emptyCollection = new ModelCollection<UserModel, TestSchema>(userModel);
 
       expect(emptyCollection.length).toBe(0);
       expect(emptyCollection.isEmpty).toBe(true);
@@ -366,19 +388,36 @@ describe('ModelCollection', () => {
         userId: string;
       }
 
-      const CommentModel = model('comment', 'comments').attrs<CommentAttrs>().create();
-      const CommentModelClass = defineModelClass(CommentModel);
-      const commentDbCollection = new DbCollection<CommentAttrs>('comments');
+      const CommentModel = model()
+        .name('comment')
+        .collection('comments')
+        .attrs<CommentAttrs>()
+        .create();
+
+      type CommentSchema = {
+        comments: SchemaCollectionConfig<typeof CommentModel>;
+      };
+
+      const CommentModelClass = Model.define<typeof CommentModel, CommentSchema>(CommentModel);
+
+      const commentSchema = schema()
+        .collections({
+          comments: collection().model(CommentModel).create(),
+        })
+        .build();
 
       const comment1 = new CommentModelClass({
         attrs: { text: 'First comment', userId: '1' },
-        dbCollection: commentDbCollection,
+        schema: commentSchema,
       }).save();
       const comment2 = new CommentModelClass({
         attrs: { text: 'Second comment', userId: '2' },
-        dbCollection: commentDbCollection,
+        schema: commentSchema,
       }).save();
-      const commentCollection = new ModelCollection(CommentModel, [comment1, comment2]);
+      const commentCollection = new ModelCollection<typeof CommentModel, CommentSchema>(
+        CommentModel,
+        [comment1, comment2],
+      );
 
       expect(commentCollection.length).toBe(2);
       expect(commentCollection.at(0)?.text).toBe('First comment');

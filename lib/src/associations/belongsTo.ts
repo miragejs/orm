@@ -1,19 +1,7 @@
-import type { ModelName, ModelTemplate } from '../model';
+import type { InferModelName, ModelTemplate } from '../model';
 
 import type { BelongsTo } from './types';
 
-/**
- * Define a belongs-to relationship.
- * @param targetModel - The template of the model that is being related to.
- * @returns The relationship definition object.
- */
-export default function belongsTo<TTarget extends ModelTemplate>(
-  targetModel: TTarget,
-): BelongsTo<TTarget, `${ModelName<TTarget>}Id`>;
-export default function belongsTo<TTarget extends ModelTemplate, TForeign extends string>(
-  targetModel: TTarget,
-  opts: { foreignKey: TForeign },
-): BelongsTo<TTarget, TForeign>;
 /**
  * Define a belongs-to relationship.
  * @param targetModel - The template of the model that is being related to.
@@ -23,10 +11,21 @@ export default function belongsTo<TTarget extends ModelTemplate, TForeign extend
  */
 export default function belongsTo<
   TTarget extends ModelTemplate,
-  TForeign extends string = `${ModelName<TTarget>}Id`,
->(targetModel: TTarget, opts?: { foreignKey: TForeign }): BelongsTo<TTarget, TForeign> {
-  const defaultForeignKey = `${targetModel.modelName}Id`;
-  const foreignKey = (opts?.foreignKey ?? defaultForeignKey) as TForeign;
+  const TOpts extends { foreignKey?: string } | undefined = undefined,
+>(
+  targetModel: TTarget,
+  opts?: TOpts,
+): BelongsTo<
+  TTarget,
+  TOpts extends { foreignKey: infer F extends string } ? F : `${InferModelName<TTarget>}Id`
+> {
+  type ForeignKey = TOpts extends { foreignKey: infer F extends string }
+    ? F
+    : `${InferModelName<TTarget>}Id`;
+
+  const defaultForeignKey = `${targetModel.modelName}Id` as const;
+  const foreignKey = (opts?.foreignKey ?? defaultForeignKey) as ForeignKey;
+
   return {
     foreignKey,
     targetModel,

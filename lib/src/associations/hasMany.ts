@@ -1,19 +1,7 @@
-import type { ModelName, ModelTemplate } from '../model';
+import type { InferModelName, ModelTemplate } from '../model';
 
 import type { HasMany } from './types';
 
-/**
- * Define a has-many relationship.
- * @param targetModel - The template of the model that is being related to.
- * @returns The relationship definition object.
- */
-export default function hasMany<TTarget extends ModelTemplate>(
-  targetModel: TTarget,
-): HasMany<TTarget, `${ModelName<TTarget>}Ids`>;
-export default function hasMany<TTarget extends ModelTemplate, TForeign extends string>(
-  targetModel: TTarget,
-  opts: { foreignKey: TForeign },
-): HasMany<TTarget, TForeign>;
 /**
  * Define a has-many relationship.
  * @param targetModel - The template of the model that is being related to.
@@ -23,10 +11,21 @@ export default function hasMany<TTarget extends ModelTemplate, TForeign extends 
  */
 export default function hasMany<
   TTarget extends ModelTemplate,
-  TForeign extends string = `${ModelName<TTarget>}Id`,
->(targetModel: TTarget, opts?: { foreignKey: TForeign }): HasMany<TTarget, TForeign> {
-  const defaultForeignKey = `${targetModel.modelName}Ids` as TForeign;
-  const foreignKey = (opts?.foreignKey ?? defaultForeignKey) as TForeign;
+  const TOpts extends { foreignKey?: string } | undefined = undefined,
+>(
+  targetModel: TTarget,
+  opts?: TOpts,
+): HasMany<
+  TTarget,
+  TOpts extends { foreignKey: infer F extends string } ? F : `${InferModelName<TTarget>}Ids`
+> {
+  type ForeignKey = TOpts extends { foreignKey: infer F extends string }
+    ? F
+    : `${InferModelName<TTarget>}Ids`;
+
+  const defaultForeignKey = `${targetModel.modelName}Ids` as const;
+  const foreignKey = (opts?.foreignKey ?? defaultForeignKey) as ForeignKey;
+
   return {
     foreignKey,
     targetModel,

@@ -1,4 +1,4 @@
-import type { ModelTemplate, NewModelAttrs, ModelAttrs, ModelInstance } from '@src/model';
+import type { InferModelAttrs, ModelAttrs, ModelInstance, ModelTemplate } from '@src/model';
 import type { SchemaCollections, SchemaInstance } from '@src/schema';
 
 export type FactoryAfterCreateHook<
@@ -20,14 +20,14 @@ export type ModelTraits<
 
 export type TraitName<TTraits extends ModelTraits<any>> = Extract<keyof TTraits, string>;
 
-export type FactoryAttrs<TTemplate extends ModelTemplate> = Partial<{
-  [K in Exclude<keyof NewModelAttrs<TTemplate>, 'id'>]:
-    | NewModelAttrs<TTemplate>[K]
+export type FactoryAttrs<TTemplate extends ModelTemplate> = {
+  [K in Exclude<keyof InferModelAttrs<TTemplate>, 'id'>]:
+    | InferModelAttrs<TTemplate>[K]
     | ((
-        this: Record<keyof NewModelAttrs<TTemplate>, any>,
+        this: Record<keyof InferModelAttrs<TTemplate>, any>,
         modelId: NonNullable<ModelAttrs<TTemplate>['id']>,
-      ) => NewModelAttrs<TTemplate>[K]);
-}>;
+      ) => InferModelAttrs<TTemplate>[K]);
+};
 
 export type FactoryTraitNames<TFactory> = TFactory extends { traits: infer TTraits }
   ? TTraits extends Record<string, any>

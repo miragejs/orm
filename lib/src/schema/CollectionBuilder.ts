@@ -29,7 +29,7 @@ import type { SchemaCollectionConfig, SchemaCollections } from './types';
 export default class CollectionBuilder<
   TTemplate extends ModelTemplate = ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
-  TRelationships extends ModelRelationships | undefined = undefined,
+  TRelationships extends ModelRelationships = {},
   TFactory extends
     | Factory<TTemplate, TSchema, ModelTraits<TSchema, TTemplate>>
     | undefined = undefined,
@@ -61,12 +61,18 @@ export default class CollectionBuilder<
    */
   model<T extends ModelTemplate>(
     template: T,
-  ): CollectionBuilder<T, TSchema, TRelationships, Factory<T, TSchema, any>, TIdentityManager> {
+  ): CollectionBuilder<
+    T,
+    TSchema,
+    TRelationships,
+    TFactory extends undefined ? undefined : Factory<T, TSchema, ModelTraits<TSchema, T>>,
+    TIdentityManager
+  > {
     const builder = new CollectionBuilder<
       T,
       TSchema,
       TRelationships,
-      Factory<T, TSchema, ModelTraits<TSchema, T>>,
+      TFactory extends undefined ? undefined : Factory<T, TSchema, ModelTraits<TSchema, T>>,
       TIdentityManager
     >();
     builder._template = template;
@@ -231,12 +237,6 @@ export default class CollectionBuilder<
  */
 export function collection<
   TSchema extends SchemaCollections = SchemaCollections,
->(): CollectionBuilder<ModelTemplate, TSchema, undefined, undefined, StringIdentityManager> {
-  return new CollectionBuilder<
-    ModelTemplate,
-    TSchema,
-    undefined,
-    undefined,
-    StringIdentityManager
-  >();
+>(): CollectionBuilder<ModelTemplate, TSchema, {}, undefined, StringIdentityManager> {
+  return new CollectionBuilder<ModelTemplate, TSchema, {}, undefined, StringIdentityManager>();
 }
