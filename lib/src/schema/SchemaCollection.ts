@@ -9,14 +9,16 @@ import {
   PartialModelAttrs,
   type ModelAttrs,
   type ModelClass,
+  type ModelConfig,
   type ModelInstance,
   type ModelRelationships,
   type ModelTemplate,
   type NewModelInstance,
+  type RelationshipsByTemplate,
 } from '@src/model';
 
 import type { SchemaInstance } from './Schema';
-import type { SchemaCollectionConfig, SchemaCollections } from './types';
+import type { CollectionCreateInput, SchemaCollectionConfig, SchemaCollections } from './types';
 
 /**
  * Base schema collection with query functionality.
@@ -114,7 +116,7 @@ abstract class BaseSchemaCollection<
    * @param id - The id of the model to find.
    * @returns The model instance or null if not found.
    */
-  find(id: ModelId<TTemplate>): ModelInstance<TTemplate, TSchema> | null {
+  find(id: ModelAttrs<TTemplate, TSchema>['id']): ModelInstance<TTemplate, TSchema> | null {
     const record = this._dbCollection.find(id);
     return record ? this._createModelFromRecord(record) : null;
   }
@@ -124,7 +126,9 @@ abstract class BaseSchemaCollection<
    * @param query - The query to find the model by.
    * @returns The model instance or null if not found.
    */
-  findBy(query: DbRecordInput<ModelAttrs<TTemplate>>): ModelInstance<TTemplate, TSchema> | null {
+  findBy(
+    query: DbRecordInput<ModelAttrs<TTemplate, TSchema>>,
+  ): ModelInstance<TTemplate, TSchema> | null {
     const record = this._dbCollection.find(query);
     return record ? this._createModelFromRecord(record) : null;
   }
@@ -134,7 +138,7 @@ abstract class BaseSchemaCollection<
    * @param query - The query to find the models by.
    * @returns All models matching the query.
    */
-  where(query: DbRecordInput<ModelAttrs<TTemplate>>): ModelCollection<TTemplate, TSchema>;
+  where(query: DbRecordInput<ModelAttrs<TTemplate, TSchema>>): ModelCollection<TTemplate, TSchema>;
   /**
    * Finds all models matching the query.
    * @param query - The function to filter models by.
@@ -150,7 +154,7 @@ abstract class BaseSchemaCollection<
    */
   where(
     query:
-      | DbRecordInput<ModelAttrs<TTemplate>>
+      | DbRecordInput<ModelAttrs<TTemplate, TSchema>>
       | ((model: ModelInstance<TTemplate, TSchema>) => boolean),
   ): ModelCollection<TTemplate, TSchema> {
     const records = this._dbCollection.all();
@@ -172,7 +176,7 @@ abstract class BaseSchemaCollection<
    * Deletes a model from the collection.
    * @param id - The id of the model to delete.
    */
-  delete(id: ModelId<TTemplate>): void {
+  delete(id: ModelAttrs<TTemplate, TSchema>['id']): void {
     this._dbCollection.delete(id);
   }
 
@@ -180,7 +184,7 @@ abstract class BaseSchemaCollection<
    * Deletes multiple models from the collection.
    * @param ids - The ids of the models to delete.
    */
-  deleteMany(ids: ModelId<TTemplate>[]): void {
+  deleteMany(ids: ModelAttrs<TTemplate, TSchema>['id'][]): void {
     this._dbCollection.deleteMany(ids);
   }
 
@@ -193,10 +197,10 @@ abstract class BaseSchemaCollection<
     record: ModelAttrs<TTemplate, TSchema>,
   ): ModelInstance<TTemplate, TSchema> {
     return new this.Model({
-      attrs: record,
-      relationships: this._relationships,
+      attrs: record as ModelCreateAttrs<TTemplate, TSchema>,
+      relationships: this._relationships as unknown as RelationshipsByTemplate<TTemplate, TSchema>,
       schema: this._schema,
-    }) as ModelInstance<TTemplate, TSchema>;
+    } as unknown as ModelConfig<TTemplate, TSchema>) as ModelInstance<TTemplate, TSchema>;
   }
 
   /**
@@ -229,7 +233,7 @@ abstract class BaseSchemaCollection<
 export default class SchemaCollection<
   TSchema extends SchemaCollections = SchemaCollections,
   TTemplate extends ModelTemplate = ModelTemplate,
-  TRelationships extends ModelRelationships = ModelRelationships,
+  TRelationships extends ModelRelationships = {},
   TFactory extends
     | Factory<TTemplate, TSchema, ModelTraits<TSchema, TTemplate>>
     | undefined = undefined,
@@ -239,12 +243,12 @@ export default class SchemaCollection<
    * @param attrs - The attributes to create the model with. All required attributes must be provided.
    * @returns The new model instance.
    */
-  new(attrs: ModelConfigAttrs<TTemplate, TSchema>): NewModelInstance<TTemplate, TSchema> {
+  new(attrs: ModelCreateAttrs<TTemplate, TSchema>): NewModelInstance<TTemplate, TSchema> {
     return new this.Model({
       attrs: attrs,
       relationships: this._relationships,
       schema: this._schema,
-    });
+    } as unknown as ModelConfig<TTemplate, TSchema>);
   }
 
   /**
@@ -253,30 +257,68 @@ export default class SchemaCollection<
    * @returns The new model instance.
    */
   create(
-    ...traitsAndDefaults: (FactoryTraitNames<TFactory> | PartialModelAttrs<TTemplate, TSchema>)[]
+    ...traitsAndDefaults: (
+      | FactoryTraitNames<TFactory>
+      | CollectionCreateInput<TTemplate, TSchema>
+    )[]
   ): ModelInstance<TTemplate, TSchema> {
-    const defaults =
-      traitsAndDefaults.find((arg) => typeof arg !== 'string') ||
-      ({} as PartialModelAttrs<TTemplate, TSchema>);
-    const nextId = defaults.id ?? this._dbCollection.nextId;
+    // Extract traits and defaults
+    const traits: FactoryTraitNames<TFactory>[] = [];
+    let defaults: CollectionCreateInput<TTemplate, TSchema> = {};
+
+    traitsAndDefaults.forEach((arg) => {
+      if (typeof arg === 'string') {
+        traits.push(arg);
+      } else {
+        defaults = { ...defaults, ...arg };
+      }
+    });
+
+    // Separate regular attributes from relationship values
+    const { modelAttrs, relationshipUpdates } = Model._processAttrs<TTemplate, TSchema>(
+      defaults,
+      this._relationships as unknown as RelationshipsByTemplate<TTemplate, TSchema>,
+    );
+
+    const nextId = modelAttrs.id ?? this._dbCollection.nextId;
 
     // Cache the id if provided
-    if (defaults.id) {
-      this._identityManager?.set(defaults.id);
+    if (modelAttrs.id) {
+      this._identityManager?.set(modelAttrs.id);
     }
 
     if (this._factory) {
-      const attrs = this._factory.build(nextId, ...traitsAndDefaults) as ModelCreateAttrs<
-        TTemplate,
-        TSchema
-      >;
-      const model = this.new(attrs).save();
-      const factory = this._factory;
-      return factory.processAfterCreateHooks(this._schema, model, ...traitsAndDefaults);
+      // Build factory attrs with only regular attributes (no relationships)
+      const factoryAttrs = this._factory.build(
+        nextId,
+        ...traits,
+        modelAttrs as PartialModelAttrs<TTemplate, TSchema>,
+      ) as ModelAttrs<TTemplate, TSchema>;
+
+      // Merge factory attrs with relationship values
+      const completeAttrs = {
+        ...factoryAttrs,
+        ...relationshipUpdates,
+      } as ModelCreateAttrs<TTemplate, TSchema>;
+
+      const model = this.new(completeAttrs).save();
+      return this._factory.processAfterCreateHooks(
+        this._schema,
+        model,
+        ...(traitsAndDefaults as (
+          | FactoryTraitNames<TFactory>
+          | PartialModelAttrs<TTemplate, TSchema>
+        )[]),
+      );
     }
 
-    const attrs = { ...defaults, id: nextId } as ModelCreateAttrs<TTemplate, TSchema>;
+    // No factory - merge modelAttrs with relationship values
+    const attrs = { ...modelAttrs, ...relationshipUpdates, id: nextId } as ModelCreateAttrs<
+      TTemplate,
+      TSchema
+    >;
     const model = this.new(attrs).save();
+
     return model;
   }
 
@@ -288,7 +330,10 @@ export default class SchemaCollection<
    */
   createList(
     count: number,
-    ...traitsAndDefaults: (FactoryTraitNames<TFactory> | PartialModelAttrs<TTemplate, TSchema>)[]
+    ...traitsAndDefaults: (
+      | FactoryTraitNames<TFactory>
+      | CollectionCreateInput<TTemplate, TSchema>
+    )[]
   ): ModelCollection<TTemplate, TSchema> {
     const models = Array.from({ length: count }, () => this.create(...traitsAndDefaults));
     return new ModelCollection(this._template, models);
@@ -301,8 +346,11 @@ export default class SchemaCollection<
    * @returns The model instance.
    */
   findOrCreateBy(
-    query: DbRecordInput<ModelAttrs<TTemplate>>,
-    ...traitsAndDefaults: (FactoryTraitNames<TFactory> | PartialModelAttrs<TTemplate, TSchema>)[]
+    query: DbRecordInput<ModelAttrs<TTemplate, TSchema>>,
+    ...traitsAndDefaults: (
+      | FactoryTraitNames<TFactory>
+      | CollectionCreateInput<TTemplate, TSchema>
+    )[]
   ): ModelInstance<TTemplate, TSchema> {
     const existingModel = this.findBy(query);
     if (existingModel) {
@@ -311,7 +359,7 @@ export default class SchemaCollection<
 
     const newModel = this.create(
       ...traitsAndDefaults,
-      query as PartialModelAttrs<TTemplate, TSchema>,
+      query as CollectionCreateInput<TTemplate, TSchema>,
     );
     return newModel;
   }
@@ -323,14 +371,19 @@ export default class SchemaCollection<
  * @param config - The collection configuration
  * @returns A schema collection with inferred types
  */
-export function createSchemaCollection<
+export function createCollection<
   TSchema extends SchemaCollections,
   TConfig extends SchemaCollectionConfig<any, any, any>,
 >(
   schema: SchemaInstance<TSchema>,
   config: TConfig,
 ): TConfig extends SchemaCollectionConfig<infer TTemplate, infer TRelationships, infer TFactory>
-  ? SchemaCollection<TSchema, TTemplate, TRelationships, TFactory>
+  ? SchemaCollection<
+      TSchema,
+      TTemplate,
+      TRelationships extends ModelRelationships ? TRelationships : {},
+      TFactory
+    >
   : never {
   return new SchemaCollection(schema, config) as any;
 }

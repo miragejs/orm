@@ -1,7 +1,7 @@
 import { createDatabase, type DbInstance } from '@src/db';
 import { StringIdentityManager } from '@src/id-manager';
 
-import SchemaCollection, { createSchemaCollection } from './SchemaCollection';
+import SchemaCollection, { createCollection } from './SchemaCollection';
 import type {
   SchemaCollectionAccessors,
   SchemaCollectionConfig,
@@ -61,7 +61,7 @@ export default class Schema<
       const { model, factory, relationships } = collectionConfig;
       const identityManager = collectionConfig.identityManager ?? this.identityManager;
 
-      const collection = createSchemaCollection(this as SchemaInstance<TCollections, TConfig>, {
+      const collection = createCollection(this as SchemaInstance<TCollections, TConfig>, {
         model,
         factory,
         identityManager,

@@ -1,6 +1,6 @@
 import { Factory, FactoryBuilder, factory } from '@src/factory';
 import { model, ModelInstance } from '@src/model';
-import type { SchemaCollectionConfig, SchemaCollections, SchemaInstance } from '@src/schema';
+import type { SchemaCollections, SchemaInstance } from '@src/schema';
 
 interface UserAttrs {
   id: string;
@@ -19,8 +19,10 @@ interface ProcessedUserAttrs extends UserAttrs {
   extendedProcessed?: boolean;
 }
 
-const UserModel = model('user', 'users').attrs<UserAttrs>().create();
-const ProcessedUserModel = model('processedUser', 'processedUsers')
+const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
+const processedUserMOdel = model()
+  .name('processedUser')
+  .collection('processedUsers')
   .attrs<ProcessedUserAttrs>()
   .create();
 
@@ -28,7 +30,7 @@ describe('FactoryBuilder', () => {
   describe('basic factory creation', () => {
     it('should create factory using builder pattern', () => {
       const userFactory = factory()
-        .model(UserModel)
+        .model(userModel)
         .attrs({
           createdAt: null,
           email: (id: string) => `user${id}@example.com`,
@@ -47,7 +49,7 @@ describe('FactoryBuilder', () => {
         .create();
 
       expect(userFactory).toBeInstanceOf(Factory);
-      expect(userFactory.template).toBe(UserModel);
+      expect(userFactory.template).toBe(userModel);
 
       const attrs = userFactory.build('1');
       expect(attrs).toEqual({
@@ -72,7 +74,7 @@ describe('FactoryBuilder', () => {
       const builder = factory();
       expect(builder).toBeInstanceOf(FactoryBuilder);
 
-      const builderWithModel = builder.model(UserModel);
+      const builderWithModel = builder.model(userModel);
       expect(builderWithModel).toBeInstanceOf(FactoryBuilder);
 
       const builderWithAttrs = builderWithModel.attrs({ name: 'Test User' });
@@ -89,7 +91,7 @@ describe('FactoryBuilder', () => {
 
     it('should merge attributes when called multiple times', () => {
       const userFactory = factory()
-        .model(UserModel)
+        .model(userModel)
         .attrs({ name: 'John' })
         .attrs({ email: 'john@example.com' })
         .attrs({ role: 'user' })
@@ -106,7 +108,7 @@ describe('FactoryBuilder', () => {
       let schemaReceived: any = null;
 
       const userFactory = factory<SchemaCollections>()
-        .model(ProcessedUserModel)
+        .model(processedUserMOdel)
         .attrs({ name: 'John' })
         .afterCreate((model, schema) => {
           hookCalled = true;
@@ -124,7 +126,7 @@ describe('FactoryBuilder', () => {
         name: 'John',
         email: 'john@example.com',
         role: 'user',
-      } as unknown as ModelInstance<typeof ProcessedUserModel, SchemaCollections>;
+      } as unknown as ModelInstance<typeof processedUserMOdel, SchemaCollections>;
 
       const result = userFactory.processAfterCreateHooks(schemaMock, user);
 
@@ -138,7 +140,7 @@ describe('FactoryBuilder', () => {
   describe('traits functionality', () => {
     it('should add traits and return new builder with merged traits', () => {
       const builder1 = factory()
-        .model(UserModel)
+        .model(userModel)
         .traits({
           admin: { role: 'admin' },
         });
@@ -163,7 +165,7 @@ describe('FactoryBuilder', () => {
     it('should extend existing factory using static method', () => {
       // Create base factory
       const baseFactory = factory()
-        .model(UserModel)
+        .model(userModel)
         .attrs({
           email: (id: string) => `user${id}@example.com`,
           name: 'John Doe',
@@ -207,7 +209,7 @@ describe('FactoryBuilder', () => {
   describe('builder extend method', () => {
     it('should extend builder with additional configuration', () => {
       const baseBuilder = factory()
-        .model(ProcessedUserModel)
+        .model(processedUserMOdel)
         .attrs({ name: 'John' })
         .traits({ admin: { role: 'admin' } })
         .create();

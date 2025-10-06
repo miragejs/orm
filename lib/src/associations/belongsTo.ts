@@ -10,7 +10,7 @@ import type { BelongsTo } from './types';
  * @returns The relationship definition object.
  */
 export default function belongsTo<
-  TTarget extends ModelTemplate,
+  TTarget extends ModelTemplate<any, any, any>,
   const TOpts extends { foreignKey?: string } | undefined = undefined,
 >(
   targetModel: TTarget,

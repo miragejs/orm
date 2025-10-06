@@ -6,6 +6,7 @@ import type {
   PartialModelAttrs,
 } from '@src/model';
 import type { SchemaCollections, SchemaInstance } from '@src/schema';
+import { MirageError } from '@src/utils';
 
 import type { FactoryAttrs, FactoryAfterCreateHook, ModelTraits, TraitName } from './types';
 
@@ -54,7 +55,7 @@ export default class Factory<
   build(
     modelId: ModelId<TTemplate>,
     ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TTemplate, TSchema>)[]
-  ): ModelAttrs<TTemplate> {
+  ): ModelAttrs<TTemplate, TSchema> {
     const traitNames: string[] = [];
     const defaults: PartialModelAttrs<TTemplate, TSchema> = {};
 
@@ -92,7 +93,7 @@ export default class Factory<
   processAfterCreateHooks(
     schema: SchemaInstance<TSchema>,
     model: ModelInstance<TTemplate, TSchema>,
-    ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TTemplate>)[]
+    ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TTemplate, TSchema>)[]
   ): ModelInstance<TTemplate, TSchema> {
     const traitNames: string[] = traitsAndDefaults.filter((arg) => typeof arg === 'string');
     const hooks: FactoryAfterCreateHook<TSchema, TTemplate>[] = [];
@@ -126,7 +127,7 @@ export default class Factory<
     attrs: FactoryAttrs<TTemplate>,
     modelId?: ModelId<TTemplate>,
   ): PartialModelAttrs<TTemplate> {
-    const keys = Object.keys(attrs) as (keyof FactoryAttrs<TTemplate>)[];
+    const keys = this._sortAttrs(attrs, modelId);
 
     const result = keys.reduce(
       (acc, key) => {
@@ -186,5 +187,50 @@ export default class Factory<
       ...baseAttributes,
       ...overrideAttributes,
     };
+  }
+
+  private _sortAttrs(
+    attrs: FactoryAttrs<TTemplate>,
+    modelId?: NonNullable<ModelId<TTemplate>>,
+  ): (keyof FactoryAttrs<TTemplate>)[] {
+    const visited = new Set<string>();
+    const processing = new Set<string>();
+
+    const detectCycle = (key: string): boolean => {
+      if (processing.has(key)) {
+        throw new MirageError(`Circular dependency detected: ${key}`);
+      }
+      if (visited.has(key)) {
+        return false;
+      }
+
+      processing.add(key);
+      const value = attrs[key as keyof FactoryAttrs<TTemplate>];
+
+      if (typeof value === 'function') {
+        // Create a proxy to track property access
+        const proxy = new Proxy(attrs, {
+          get(target, prop) {
+            if (typeof prop === 'string' && prop in target) {
+              detectCycle(prop);
+            }
+            return target[prop as keyof typeof target];
+          },
+        });
+
+        // Call the function with the proxy as this context
+        (value as Function).call(proxy, modelId);
+      }
+
+      processing.delete(key);
+      visited.add(key);
+      return false;
+    };
+
+    // Check each attribute for cycles
+    Object.keys(attrs).forEach(detectCycle);
+
+    // Return keys in their original order
+    return Object.keys(attrs) as (keyof FactoryAttrs<TTemplate>)[];
   }
 }

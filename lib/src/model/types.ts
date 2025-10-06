@@ -161,8 +161,10 @@ export type CollectionByTemplate<
   TSchema extends SchemaCollections,
   TTemplate extends ModelTemplate,
 > = {
-  [K in keyof TSchema]: InferModelAttrs<TSchema[K]['model']> extends InferModelAttrs<TTemplate>
-    ? K
+  [K in keyof TSchema]: TSchema[K] extends SchemaCollectionConfig<infer TModel, any, any>
+    ? TModel extends TTemplate
+      ? K
+      : never
     : never;
 }[keyof TSchema];
 
@@ -264,13 +266,11 @@ export type ForeignKeyAttrs<TRelationships extends ModelRelationships> = Partial
 export type ModelRelationshipAccessors<
   TSchema extends SchemaCollections,
   TRelationships extends ModelRelationships,
-> = TRelationships extends ModelRelationships
-  ? keyof TRelationships extends never
-    ? {}
-    : {
-        [K in keyof TRelationships]: RelatedModel<TSchema, TRelationships[K]>;
-      }
-  : undefined;
+> = keyof TRelationships extends never
+  ? {}
+  : {
+      [K in keyof TRelationships]: RelatedModel<TSchema, TRelationships[K]>;
+    };
 
 // ============================================================================
 // BASE MODEL TYPES

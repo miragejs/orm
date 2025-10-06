@@ -2,6 +2,7 @@ import { Factory } from '@src/factory';
 import { model, ModelInstance } from '@src/model';
 import { SchemaCollections, SchemaInstance } from '@src/schema';
 
+// Setup test models
 interface UserAttrs {
   age?: number;
   createdAt?: string | null;
@@ -11,7 +12,9 @@ interface UserAttrs {
   role?: string;
 }
 
-const UserModel = model('user', 'users').attrs<UserAttrs>().create();
+const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
+
+type UserModel = typeof userModel;
 
 describe('Factory', () => {
   describe('constructor', () => {
@@ -28,12 +31,12 @@ describe('Factory', () => {
           email: (id: string) => `admin${id}@example.com`,
         },
       };
-      const afterCreate = (model: ModelInstance<typeof UserModel>) => {
+      const afterCreate = (model: ModelInstance<UserModel>) => {
         model.processed = true;
       };
-      const userFactory = new Factory(UserModel, attributes, traits, afterCreate);
+      const userFactory = new Factory(userModel, attributes, traits, afterCreate);
 
-      expect(userFactory.template).toBe(UserModel);
+      expect(userFactory.template).toBe(userModel);
       expect(userFactory.attributes).toBe(attributes);
       expect(userFactory.traits).toBe(traits);
       expect(userFactory.afterCreate).toBe(afterCreate);
@@ -41,9 +44,9 @@ describe('Factory', () => {
 
     it('should initialize without afterCreate hook', () => {
       const attributes = { name: 'John', email: 'john@example.com' };
-      const userFactory = new Factory(UserModel, attributes);
+      const userFactory = new Factory(userModel, attributes);
 
-      expect(userFactory.template).toBe(UserModel);
+      expect(userFactory.template).toBe(userModel);
       expect(userFactory.attributes).toBe(attributes);
       expect(userFactory.traits).toEqual({});
       expect(userFactory.afterCreate).toBeUndefined();
@@ -52,7 +55,7 @@ describe('Factory', () => {
 
   describe('build method', () => {
     const userFactory = new Factory(
-      UserModel,
+      userModel,
       {
         createdAt: null,
         email: (id: string) => `user${id}@example.com`,
@@ -136,7 +139,7 @@ describe('Factory', () => {
 
     it('should handle function attributes correctly', () => {
       const dynamicFactory = new Factory(
-        UserModel,
+        userModel,
         {
           email: (id: string) => `dynamic${id}@test.com`,
           name: function (this: any, id: string) {
@@ -158,7 +161,7 @@ describe('Factory', () => {
 
     it('should handle static values', () => {
       const staticFactory = new Factory(
-        UserModel,
+        userModel,
         {
           email: 'static@example.com',
           name: 'Static User',
@@ -186,7 +189,7 @@ describe('Factory', () => {
       let schemaReceived: any = null;
 
       const factory = new Factory(
-        UserModel,
+        userModel,
         { name: 'John', email: 'john@example.com' },
         {},
         (model, schema) => {
@@ -202,7 +205,7 @@ describe('Factory', () => {
 
       const result = factory.processAfterCreateHooks(
         schemaMock as unknown as SchemaInstance<SchemaCollections>,
-        model as unknown as ModelInstance<typeof UserModel>,
+        model as unknown as ModelInstance<UserModel>,
       );
       expect(hookCalled).toBe(true);
       expect(modelReceived).toBe(model);
@@ -211,7 +214,7 @@ describe('Factory', () => {
     });
 
     it('should handle models without hooks gracefully', () => {
-      const factory = new Factory(UserModel, {
+      const factory = new Factory(userModel, {
         name: 'John',
         email: 'john@example.com',
       });
@@ -222,7 +225,7 @@ describe('Factory', () => {
 
       const result = factory.processAfterCreateHooks(
         schemaMock as unknown as SchemaInstance<SchemaCollections>,
-        model as unknown as ModelInstance<typeof UserModel>,
+        model as unknown as ModelInstance<UserModel>,
       );
       expect(result).toBe(model);
     });
@@ -232,7 +235,7 @@ describe('Factory', () => {
     it('should throw error for circular dependencies in attributes', () => {
       expect(() => {
         const factory = new Factory(
-          UserModel,
+          userModel,
           {
             email: function (this: any) {
               return this.name + '@example.com';
@@ -249,7 +252,7 @@ describe('Factory', () => {
     });
 
     it('should handle non-existent traits gracefully', () => {
-      const factory = new Factory(UserModel, { name: 'John', email: 'john@example.com' });
+      const factory = new Factory(userModel, { name: 'John', email: 'john@example.com' });
 
       // This should not throw an error
       const attrs = factory.build('1', 'nonExistentTrait' as any);

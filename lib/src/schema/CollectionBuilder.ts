@@ -27,7 +27,7 @@ import type { SchemaCollectionConfig, SchemaCollections } from './types';
  * ```
  */
 export default class CollectionBuilder<
-  TTemplate extends ModelTemplate = ModelTemplate,
+  TTemplate extends ModelTemplate<any, any, any> = ModelTemplate<any, any, any>,
   TSchema extends SchemaCollections = SchemaCollections,
   TRelationships extends ModelRelationships = {},
   TFactory extends
@@ -59,7 +59,7 @@ export default class CollectionBuilder<
    * const builder = collection.model(userTemplate);
    * ```
    */
-  model<T extends ModelTemplate>(
+  model<T extends ModelTemplate<any, any, any>>(
     template: T,
   ): CollectionBuilder<
     T,
@@ -98,7 +98,7 @@ export default class CollectionBuilder<
    * const builder = collection(UserModel).factory(userFactory);
    * ```
    */
-  factory<F extends Factory<TTemplate, TSchema, any>>(
+  factory<F extends Factory<any, TSchema, any>>(
     factory: F,
   ): CollectionBuilder<TTemplate, TSchema, TRelationships, F, TIdentityManager> {
     const builder = new CollectionBuilder<

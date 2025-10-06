@@ -1,8 +1,15 @@
-import type { BelongsTo, HasMany } from '@src/associations';
 import type { DbCollection } from '@src/db';
 import type { Factory } from '@src/factory';
 import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
-import type { ModelTemplate, ModelAttrs, ModelId, ModelForeignKeys } from '@src/model';
+import type {
+  InferModelAttrs,
+  ModelAttrs,
+  ModelForeignKeys,
+  ModelId,
+  ModelTemplate,
+  RelatedModelAttrs,
+  RelationshipsByTemplate,
+} from '@src/model';
 import type { ModelRelationships } from '@src/model';
 
 import type SchemaCollection from './SchemaCollection';
@@ -21,8 +28,8 @@ export interface SchemaConfig<TIdentityManager extends IdentityManager = StringI
  * @template TFactory - The factory type
  */
 export interface SchemaCollectionConfig<
-  TTemplate extends ModelTemplate,
-  TRelationships extends ModelRelationships | undefined = {},
+  TTemplate extends ModelTemplate<any, any, any>,
+  TRelationships extends ModelRelationships = {},
   TFactory extends Factory<TTemplate, any, any> | undefined = undefined,
 > {
   model: TTemplate;
@@ -69,20 +76,15 @@ export type SchemaDbCollections<TCollections extends SchemaCollections> = {
 };
 
 /**
- * Type for relationships by template model
- * @template TSchema - The schema collections
+ * Type for collection create/factory inputs - all attributes are optional
+ * Used for passing attributes to create() methods where factory provides defaults
  * @template TTemplate - The model template
+ * @template TSchema - The schema collections type
+ * @template TRelationships - The model relationships
  */
-export type RelationshipsByTemplate<
-  TTemplate extends ModelTemplate,
-  TSchema extends SchemaCollections,
-> =
-  TSchema[CollectionByTemplate<TSchema, TTemplate>] extends SchemaCollectionConfig<
-    any,
-    infer TRelationships,
-    any
-  >
-    ? TRelationships extends ModelRelationships
-      ? TRelationships
-      : {}
-    : {};
+export type CollectionCreateInput<
+  TTemplate extends ModelTemplate<any, any, any>,
+  TSchema extends SchemaCollections = SchemaCollections,
+  TRelationships extends ModelRelationships = RelationshipsByTemplate<TTemplate, TSchema>,
+> = Partial<ModelAttrs<TTemplate, TSchema>> &
+  (keyof TRelationships extends never ? {} : Partial<RelatedModelAttrs<TSchema, TRelationships>>);

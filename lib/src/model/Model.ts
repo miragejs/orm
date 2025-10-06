@@ -120,7 +120,7 @@ export default class Model<
       this.relationships,
     );
 
-    // Set pending relationship updates
+    // Set pending relationship updates (handles both model instances and FK values)
     if (this._relationshipsManager && Object.keys(relationshipUpdates).length > 0) {
       this._relationshipsManager.setPendingRelationshipUpdates(relationshipUpdates);
     }
@@ -288,7 +288,7 @@ export default class Model<
     // Step 2: Process attributes
     for (const [key, value] of Object.entries(attrs)) {
       if (key in relationships) {
-        // Relationship attribute
+        // Relationship attribute (model instance)
         const relationship = relationships[key];
         relationshipValues[key] = value;
 
@@ -298,8 +298,23 @@ export default class Model<
           foreignKeys[relationship.foreignKey] = foreignKeyValue;
         }
       } else {
-        // Regular attribute or explicit FK value
-        regularAttrs[key] = value;
+        // Check if this is a foreign key attribute
+        let isForeignKey = false;
+        for (const relationshipName in relationships) {
+          const relationship = relationships[relationshipName];
+          if (relationship.foreignKey === key) {
+            isForeignKey = true;
+            foreignKeys[key] = value as string | string[] | null;
+            // Add FK value to relationshipValues so it's processed by setPendingRelationshipUpdates
+            relationshipValues[relationshipName] = value;
+            break;
+          }
+        }
+
+        if (!isForeignKey) {
+          // Regular attribute
+          regularAttrs[key] = value;
+        }
       }
     }
 
@@ -321,14 +336,16 @@ export default class Model<
    * //   relationshipUpdates: { author: authorModelInstance }
    * // }
    */
-  private static _processAttrs<
+  static _processAttrs<
     TTemplate extends ModelTemplate,
     TSchema extends SchemaCollections,
     TRelationships extends ModelRelationships = RelationshipsByTemplate<TTemplate, TSchema>,
   >(
     attrs:
       | ModelCreateAttrs<TTemplate, TSchema, TRelationships>
-      | ModelUpdateAttrs<TTemplate, TSchema, TRelationships>,
+      | ModelUpdateAttrs<TTemplate, TSchema, TRelationships>
+      | Partial<ModelCreateAttrs<TTemplate, TSchema, TRelationships>>
+      | Record<string, unknown>,
     relationships?: TRelationships,
   ): {
     modelAttrs:

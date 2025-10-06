@@ -18,10 +18,11 @@ export type ModelTraits<
   TTemplate extends ModelTemplate = ModelTemplate,
 > = Record<string, TraitDefinition<TSchema, TTemplate>>;
 
-export type TraitName<TTraits extends ModelTraits<any>> = Extract<keyof TTraits, string>;
+export type TraitName<TTraits> =
+  TTraits extends Record<string, any> ? Extract<keyof TTraits, string> : never;
 
 export type FactoryAttrs<TTemplate extends ModelTemplate> = {
-  [K in Exclude<keyof InferModelAttrs<TTemplate>, 'id'>]:
+  [K in Exclude<keyof InferModelAttrs<TTemplate>, 'id'>]?:
     | InferModelAttrs<TTemplate>[K]
     | ((
         this: Record<keyof InferModelAttrs<TTemplate>, any>,

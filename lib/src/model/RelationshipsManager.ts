@@ -72,8 +72,9 @@ export default class RelationshipsManager<
 
   /**
    * Set pending relationship updates by analyzing changes
+   * Handles both model instances and raw foreign key values
    * Should be called BEFORE updating model attributes so we can access old FKs
-   * @param relationshipUpdates - Raw relationship values from attrs
+   * @param relationshipUpdates - Raw relationship values from attrs (can be models or FK values)
    */
   setPendingRelationshipUpdates(
     relationshipUpdates: Partial<RelatedModelAttrs<TSchema, TRelationships>>,
@@ -83,13 +84,37 @@ export default class RelationshipsManager<
       if (!relationshipDef) continue;
 
       const relationship = relationshipDef.relationship;
-      const { foreignKey } = relationship;
-      const newValue = relationshipUpdates[relationshipName];
+      const { foreignKey, type, targetModel } = relationship;
+      const rawValue = relationshipUpdates[relationshipName];
+      let processedValue: unknown = rawValue;
+
+      // If rawValue is a raw FK value (string or string[]), fetch the actual model(s)
+      if (
+        typeof rawValue === 'string' ||
+        typeof rawValue === 'number' ||
+        (isArray(rawValue) &&
+          (rawValue as unknown[]).every(
+            (v: unknown) => typeof v === 'string' || typeof v === 'number',
+          ))
+      ) {
+        const targetCollection = this._schema.getCollection(targetModel.collectionName);
+
+        if (type === 'belongsTo') {
+          const id = rawValue as string | number;
+          processedValue = targetCollection.find(id);
+        } else if (type === 'hasMany') {
+          const ids = rawValue as (string | number)[];
+          const models = ids
+            .map((id) => targetCollection.find(id))
+            .filter((m): m is ModelInstance<ModelTemplate, TSchema> => isModelInstance<TSchema>(m));
+          processedValue = new ModelCollection(targetModel, models);
+        }
+      }
 
       // Get CURRENT foreign key value from model (the OLD value before update)
       const currentForeignKey = this._getForeignKeyValue(foreignKey);
       // Extract NEW foreign key from the relationship value
-      const newForeignKey = this._extractForeignKeyFromValue(relationship, newValue);
+      const newForeignKey = this._extractForeignKeyFromValue(relationship, processedValue);
       // Check if the relationship is actually changing
       const hasChanged = this._hasForeignKeyChanged(currentForeignKey, newForeignKey);
 
@@ -111,7 +136,7 @@ export default class RelationshipsManager<
             relationshipName,
             link: true,
             unlink: false,
-            value: newValue,
+            value: processedValue,
           });
         }
       } else if (this._model.isNew() && this._hasForeignKeyValue(newForeignKey)) {
@@ -120,7 +145,7 @@ export default class RelationshipsManager<
           relationshipName,
           link: true,
           unlink: false,
-          value: newValue,
+          value: processedValue,
         });
       }
     }
@@ -320,16 +345,35 @@ export default class RelationshipsManager<
         this._updateInverseRelationship(relationshipName as string, currentTarget, 'unlink');
       }
     } else if (type === 'hasMany') {
-      if (targetModel && isModelInstance<TSchema>(targetModel)) {
-        // Unlink specific item
+      if (targetModel) {
+        // Unlink specific item(s)
         const currentIds = this._extractIdsArray(this._getForeignKeyValue(foreignKey));
-        const newIds = currentIds.filter((id) => id !== targetModel.id);
+        let modelsToUnlink: ModelInstance<ModelTemplate, TSchema>[] = [];
+
+        if (isModelInstance<TSchema>(targetModel)) {
+          // Single model
+          modelsToUnlink = [targetModel];
+        } else if (isModelCollection<TSchema>(targetModel)) {
+          // ModelCollection
+          modelsToUnlink = targetModel.models;
+        } else if (isArray(targetModel)) {
+          // Array of models
+          modelsToUnlink = targetModel.filter(
+            (item): item is ModelInstance<ModelTemplate, TSchema> => isModelInstance<TSchema>(item),
+          );
+        }
+
+        // Filter out the IDs of models to unlink
+        const idsToRemove = new Set<string>(modelsToUnlink.map((m) => m.id));
+        const newIds = currentIds.filter((id) => !idsToRemove.has(id));
         foreignKeyUpdates[foreignKey] = newIds;
 
-        // Update inverse relationship
-        this._updateInverseRelationship(relationshipName as string, targetModel, 'unlink');
+        // Update inverse relationships
+        modelsToUnlink.forEach((model) => {
+          this._updateInverseRelationship(relationshipName as string, model, 'unlink');
+        });
       } else {
-        // Unlink all items
+        // Unlink all items (no targetModel provided)
         const currentTargets = this.related(relationshipName);
         foreignKeyUpdates[foreignKey] = [];
 

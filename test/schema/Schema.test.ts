@@ -3,9 +3,9 @@ import { factory } from '@src/factory';
 import { NumberIdentityManager, StringIdentityManager } from '@src/id-manager';
 import { model } from '@src/model';
 import { ModelCollection } from '@src/model';
-import { schema } from '@src/schema';
+import { collection, schema } from '@src/schema';
 
-// -- TEST MODELS --
+// Setup test models
 interface UserAttrs {
   id: string;
   email: string;
@@ -23,13 +23,13 @@ interface CommentAttrs {
   content: string;
 }
 
-const UserModel = model('user', 'users').attrs<UserAttrs>().create();
-const PostModel = model('post', 'posts').attrs<PostAttrs>().create();
-const CommentModel = model('comment', 'comments').attrs<CommentAttrs>().create();
+const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
+const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
+const commentModel = model().name('comment').collection('comments').attrs<CommentAttrs>().create();
 
-// -- TEST FACTORIES --
+// Setup test factories
 const userFactory = factory()
-  .model(UserModel)
+  .model(userModel)
   .attrs({
     email: () => 'john@example.com',
     name: () => 'John Doe',
@@ -42,7 +42,7 @@ const userFactory = factory()
   .create();
 
 const postFactory = factory()
-  .model(PostModel)
+  .model(postModel)
   .attrs({
     content: () => 'This is a test post',
     title: () => 'Hello World',
@@ -50,25 +50,24 @@ const postFactory = factory()
   .create();
 
 const commentFactory = factory()
-  .model(CommentModel)
+  .model(commentModel)
   .attrs({
     content: () => 'Great post!',
   })
   .create();
 
 describe('Schema', () => {
+  const userCollection = collection().model(userModel).factory(userFactory).create();
+  const postCollection = collection()
+    .model(postModel)
+    .factory(postFactory)
+    .identityManager(new NumberIdentityManager())
+    .create();
+
   const testSchema = schema()
     .collections({
-      users: {
-        model: UserModel,
-        factory: userFactory,
-        identityManager: new StringIdentityManager(),
-      },
-      posts: {
-        model: PostModel,
-        factory: postFactory,
-        identityManager: new NumberIdentityManager(),
-      },
+      users: userCollection,
+      posts: postCollection,
     })
     .identityManager(new StringIdentityManager())
     .build();
@@ -232,12 +231,12 @@ describe('Schema', () => {
       const schemaWithNumberDefault = schema()
         .collections({
           users: {
-            model: UserModel,
+            model: userModel,
             factory: userFactory,
             identityManager: new StringIdentityManager(),
           },
           posts: {
-            model: PostModel,
+            model: postModel,
             factory: postFactory,
           },
         })
@@ -253,33 +252,38 @@ describe('Schema', () => {
   });
 });
 
-describe('Schema with relationships', () => {
-  // Setup test schema with relationships
+describe('Schema with Relationships', () => {
+  // Setup test collections with relationships
+  const userCollection = collection()
+    .model(userModel)
+    .factory(userFactory)
+    .relationships({
+      posts: hasMany(postModel),
+    })
+    .create();
+  const postCollection = collection()
+    .model(postModel)
+    .factory(postFactory)
+    .relationships({
+      author: belongsTo(userModel, { foreignKey: 'authorId' }),
+      comments: hasMany(commentModel),
+    })
+    .create();
+  const commentCollection = collection()
+    .model(commentModel)
+    .factory(commentFactory)
+    .relationships({
+      user: belongsTo(userModel),
+      post: belongsTo(postModel),
+    })
+    .create();
+
+  // Setup test schema with collections
   const testSchema = schema()
     .collections({
-      users: {
-        model: UserModel,
-        factory: userFactory,
-        relationships: {
-          posts: hasMany(PostModel),
-        },
-      },
-      posts: {
-        model: PostModel,
-        factory: postFactory,
-        relationships: {
-          author: belongsTo(UserModel, { foreignKey: 'authorId' }),
-          comments: hasMany(CommentModel),
-        },
-      },
-      comments: {
-        model: CommentModel,
-        factory: commentFactory,
-        relationships: {
-          user: belongsTo(UserModel),
-          post: belongsTo(PostModel),
-        },
-      },
+      users: userCollection,
+      posts: postCollection,
+      comments: commentCollection,
     })
     .build();
 
@@ -378,7 +382,7 @@ describe('Schema with relationships', () => {
       expect(user.postIds).toEqual([post1.id, post2.id]);
 
       // Then unlink just post1
-      user.unlink('posts', post1);
+      user.unlink('posts', [post1]);
       expect(user.postIds).toEqual([post2.id]);
     });
   });
@@ -430,17 +434,6 @@ describe('Schema with relationships', () => {
       post.authorId = 'user-123';
       expect(post.authorId).toBe('user-123');
     });
-
-    it('should detect foreign key attributes correctly', () => {
-      const post = testSchema.posts.create({ title: 'My Post', content: 'Content here' });
-
-      // Access the private method for testing
-      const isForeignKey = (post as any)._isForeignKey('authorId');
-      expect(isForeignKey).toBe(true);
-
-      const isNotForeignKey = (post as any)._isForeignKey('title');
-      expect(isNotForeignKey).toBe(false);
-    });
   });
 
   describe('error handling', () => {
@@ -471,7 +464,12 @@ describe('Schema with relationships', () => {
 
       expect(post.authorId).toBe(user.id);
       expect(post.author?.name).toBe('John');
+
       // Verify bidirectional update
+      user.reload();
+      expect(user.postIds).toEqual([post.id]);
+
+      // Verify database update
       expect(testSchema.db.users.find(user.id)?.postIds).toEqual([post.id]);
     });
 
@@ -484,7 +482,12 @@ describe('Schema with relationships', () => {
 
       expect(post.authorId).toBe(user.id);
       expect(post.author?.name).toBe('John');
+
       // Verify bidirectional update
+      user.reload();
+      expect(user.postIds).toEqual([post.id]);
+
+      // Verify database update
       expect(testSchema.db.users.find(user.id)?.postIds).toEqual([post.id]);
     });
 
@@ -498,7 +501,13 @@ describe('Schema with relationships', () => {
 
       expect(user.postIds).toEqual([post1.id, post2.id]);
       expect(user.posts).toHaveLength(2);
+
       // Verify bidirectional updates
+      user.reload();
+      expect(user.postIds).toEqual([post1.id, post2.id]);
+      expect(user.posts).toHaveLength(2);
+
+      // Verify database updates
       expect(testSchema.db.posts.find(post1.id)?.authorId).toBe(user.id);
       expect(testSchema.db.posts.find(post2.id)?.authorId).toBe(user.id);
     });
@@ -513,7 +522,13 @@ describe('Schema with relationships', () => {
 
       expect(user.postIds).toEqual([post1.id, post2.id]);
       expect(user.posts).toHaveLength(2);
+
       // Verify bidirectional updates
+      user.reload();
+      expect(user.postIds).toEqual([post1.id, post2.id]);
+      expect(user.posts).toHaveLength(2);
+
+      // Verify database updates
       expect(testSchema.db.posts.find(post1.id)?.authorId).toBe(user.id);
       expect(testSchema.db.posts.find(post2.id)?.authorId).toBe(user.id);
     });
@@ -533,7 +548,13 @@ describe('Schema with relationships', () => {
       expect(post.content).toBe('New content');
       expect(post.authorId).toBe(user.id);
       expect(post.author?.name).toBe('John');
+
       // Verify bidirectional update
+      user.reload();
+      expect(user.postIds).toEqual([post.id]);
+      expect(user.posts).toHaveLength(1);
+
+      // Verify database updates
       expect(testSchema.db.users.find(user.id)?.postIds).toEqual([post.id]);
     });
 

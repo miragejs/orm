@@ -12,7 +12,7 @@ import type { FactoryAttrs, FactoryAfterCreateHook, ModelTraits } from './types'
  * @template TTraits - The traits type
  */
 export default class FactoryBuilder<
-  TTemplate extends ModelTemplate = ModelTemplate,
+  TTemplate extends ModelTemplate<any, any, any> = ModelTemplate<any, any, any>,
   TSchema extends SchemaCollections = SchemaCollections,
   TTraits extends ModelTraits<TSchema, TTemplate> = {},
 > {
@@ -29,7 +29,7 @@ export default class FactoryBuilder<
    * @param template - The model template
    * @returns A new builder instance with the specified template
    */
-  model<T extends ModelTemplate>(template: T): FactoryBuilder<T, TSchema, {}> {
+  model<T extends ModelTemplate<any, any, any>>(template: T): FactoryBuilder<T, TSchema, {}> {
     const builder = new FactoryBuilder<T, TSchema, {}>();
     builder._template = template;
     return builder;

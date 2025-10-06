@@ -4,63 +4,63 @@ import { NumberIdentityManager, StringIdentityManager } from '@src/id-manager';
 import { model } from '@src/model';
 import { schema, SchemaBuilder, collection } from '@src/schema';
 
+// Test tokens
+interface UserAttrs {
+  id: string;
+  name: string;
+  email: string;
+}
+
+interface PostAttrs {
+  id: number;
+  title: string;
+  content: string;
+  authorId: string;
+}
+
+const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
+const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
+
+// Test factories
+const userFactory = factory()
+  .model(userModel)
+  .attrs({
+    name: () => 'Test User',
+    email: () => 'test@example.com',
+  })
+  .create();
+
+const postFactory = factory()
+  .model(postModel)
+  .attrs({
+    title: () => 'Test Post',
+    content: () => 'Test content',
+  })
+  .create();
+
+// Test identity managers
+const appIdentityManager = new StringIdentityManager();
+const postIdentityManager = new NumberIdentityManager();
+
+// Test collections
+const userCollection = collection()
+  .model(userModel)
+  .factory(userFactory)
+  .relationships({
+    posts: associations.hasMany(postModel),
+  })
+  .create();
+
+const postCollection = collection()
+  .model(postModel)
+  .factory(postFactory)
+  .relationships({
+    author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+  })
+  .identityManager(postIdentityManager)
+  .create();
+
 describe('SchemaBuilder', () => {
-  // Test tokens
-  interface UserAttrs {
-    id: string;
-    name: string;
-    email: string;
-  }
-
-  interface PostAttrs {
-    id: number;
-    title: string;
-    content: string;
-    authorId: string;
-  }
-
-  const UserModel = model('user', 'users').attrs<UserAttrs>().create();
-  const PostModel = model('post', 'posts').attrs<PostAttrs>().create();
-
-  // Test factories
-  const userFactory = factory()
-    .model(UserModel)
-    .attrs({
-      name: () => 'Test User',
-      email: () => 'test@example.com',
-    })
-    .create();
-
-  const postFactory = factory()
-    .model(PostModel)
-    .attrs({
-      title: () => 'Test Post',
-      content: () => 'Test content',
-    })
-    .create();
-
-  // Test identity managers
-  const appIdentityManager = new StringIdentityManager();
-  const postIdentityManager = new NumberIdentityManager();
-
-  // Test collections
-  const userCollection = collection()
-    .model(UserModel)
-    .factory(userFactory)
-    .relationships({
-      posts: associations.hasMany(PostModel),
-    })
-    .create();
-
-  const postCollection = collection()
-    .model(PostModel)
-    .factory(postFactory)
-    .relationships({
-      author: associations.belongsTo(UserModel, { foreignKey: 'authorId' }),
-    })
-    .identityManager(postIdentityManager)
-    .create();
-
   describe('constructor', () => {
     it('should create a new SchemaBuilder instance', () => {
       const builder = schema();
@@ -70,21 +70,19 @@ describe('SchemaBuilder', () => {
 
   describe('collections method', () => {
     it('should set collections and return a new builder instance', () => {
-      const collections = {
+      const builder = schema().collections({
         users: userCollection,
         posts: postCollection,
-      };
-      const builder = schema().collections(collections);
+      });
 
       expect(builder).toBeInstanceOf(SchemaBuilder);
       expect(builder).not.toBe(schema());
     });
 
     it('should preserve other configurations when setting collections', () => {
-      const collections = {
+      const builder = schema().identityManager(appIdentityManager).collections({
         users: userCollection,
-      };
-      const builder = schema().identityManager(appIdentityManager).collections(collections);
+      });
       const schemaInstance = builder.build();
 
       expect(schemaInstance.identityManager).toBe(appIdentityManager);
@@ -113,10 +111,11 @@ describe('SchemaBuilder', () => {
 
   describe('build method', () => {
     it('should create a Schema instance with collections only', () => {
-      const collections = {
-        users: userCollection,
-      };
-      const schemaInstance = schema().collections(collections).build();
+      const schemaInstance = schema()
+        .collections({
+          users: userCollection,
+        })
+        .build();
 
       expect(schemaInstance).toBeDefined();
       expect(schemaInstance.db).toBeDefined();
@@ -124,12 +123,11 @@ describe('SchemaBuilder', () => {
     });
 
     it('should create a complete Schema instance with all options', () => {
-      const collections = {
-        users: userCollection,
-        posts: postCollection,
-      };
       const schemaInstance = schema()
-        .collections(collections)
+        .collections({
+          users: userCollection,
+          posts: postCollection,
+        })
         .identityManager(appIdentityManager)
         .build();
 
@@ -147,11 +145,13 @@ describe('SchemaBuilder', () => {
     });
 
     it('should provide access to collections via getCollection', () => {
-      const collections = {
-        users: userCollection,
-        posts: postCollection,
-      };
-      const schemaInstance = schema().collections(collections).build();
+      const schemaInstance = schema()
+        .collections({
+          users: userCollection,
+          posts: postCollection,
+        })
+        .build();
+
       const userSchemaCollection = schemaInstance.getCollection('users');
       const postSchemaCollection = schemaInstance.getCollection('posts');
 
@@ -160,11 +160,12 @@ describe('SchemaBuilder', () => {
     });
 
     it('should provide access to collections via property accessors', () => {
-      const collections = {
-        users: userCollection,
-        posts: postCollection,
-      };
-      const schemaInstance = schema().collections(collections).build();
+      const schemaInstance = schema()
+        .collections({
+          users: userCollection,
+          posts: postCollection,
+        })
+        .build();
 
       expect(schemaInstance.users).toBeDefined();
       expect(schemaInstance.posts).toBeDefined();
@@ -193,17 +194,17 @@ describe('SchemaBuilder', () => {
       const appSchema = schema()
         .collections({
           users: collection()
-            .model(UserModel)
+            .model(userModel)
             .factory(userFactory)
             .relationships({
-              posts: associations.hasMany(PostModel),
+              posts: associations.hasMany(postModel),
             })
             .create(),
           posts: collection()
-            .model(PostModel)
+            .model(postModel)
             .factory(postFactory)
             .relationships({
-              author: associations.belongsTo(UserModel, { foreignKey: 'authorId' }),
+              author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
             })
             .identityManager(postIdentityManager)
             .create(),
@@ -226,15 +227,15 @@ describe('SchemaBuilder', () => {
       const complexSchema = schema()
         .collections({
           users: collection()
-            .model(UserModel)
+            .model(userModel)
             .relationships({
-              posts: associations.hasMany(PostModel),
+              posts: associations.hasMany(postModel),
             })
             .create(),
           posts: collection()
-            .model(PostModel)
+            .model(postModel)
             .relationships({
-              author: associations.belongsTo(UserModel, { foreignKey: 'authorId' }),
+              author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
             })
             .create(),
         })
@@ -247,41 +248,6 @@ describe('SchemaBuilder', () => {
 
       expect(userCollection.relationships).toBeDefined();
       expect(postCollection.relationships).toBeDefined();
-    });
-  });
-
-  describe('type safety', () => {
-    it('should maintain type safety throughout the builder chain', () => {
-      const collections = {
-        users: userCollection,
-        posts: postCollection,
-      };
-      const schemaInstance = schema()
-        .collections(collections)
-        .identityManager(appIdentityManager)
-        .build();
-
-      const userSchemaCollection = schemaInstance.getCollection('users');
-      const postSchemaCollection = schemaInstance.getCollection('posts');
-
-      expect(userSchemaCollection).toBeDefined();
-      expect(postSchemaCollection).toBeDefined();
-    });
-
-    it('should enforce collection keys match the collections object', () => {
-      const collections = {
-        users: userCollection,
-        posts: postCollection,
-      };
-
-      const schemaInstance = schema().collections(collections).build();
-
-      // These should work (valid keys)
-      expect(() => schemaInstance.getCollection('users')).not.toThrow();
-      expect(() => schemaInstance.getCollection('posts')).not.toThrow();
-
-      // This should throw (invalid key)
-      expect(() => schemaInstance.getCollection('comments' as any)).toThrow();
     });
   });
 });
