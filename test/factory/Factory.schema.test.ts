@@ -1,6 +1,6 @@
 import { factory } from '@src/factory';
-import { model, ModelTemplate } from '@src/model';
-import { collection, schema, SchemaCollectionConfig } from '@src/schema';
+import { model, type ModelTemplate } from '@src/model';
+import { collection, schema, type SchemaCollectionConfig } from '@src/schema';
 
 // Setup test models
 interface UserAttrs {

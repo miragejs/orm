@@ -1,6 +1,6 @@
 import { Factory } from '@src/factory';
-import { model, ModelInstance } from '@src/model';
-import { SchemaCollections, SchemaInstance } from '@src/schema';
+import { model, type ModelInstance } from '@src/model';
+import { type SchemaCollections, type SchemaInstance } from '@src/schema';
 
 // Setup test models
 interface UserAttrs {
@@ -34,7 +34,7 @@ describe('Factory', () => {
       const afterCreate = (model: ModelInstance<UserModel>) => {
         model.processed = true;
       };
-      const userFactory = new Factory(userModel, attributes, traits, afterCreate);
+      const userFactory = new Factory(userModel, attributes, traits, undefined, afterCreate);
 
       expect(userFactory.template).toBe(userModel);
       expect(userFactory.attributes).toBe(attributes);
@@ -192,6 +192,7 @@ describe('Factory', () => {
         userModel,
         { name: 'John', email: 'john@example.com' },
         {},
+        undefined,
         (model, schema) => {
           hookCalled = true;
           modelReceived = model;

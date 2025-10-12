@@ -1,3 +1,4 @@
+import type { FactoryAssociations } from '@src/associations';
 import type { ModelTemplate } from '@src/model';
 import type { SchemaCollections } from '@src/schema';
 import { MirageError } from '@src/utils';
@@ -19,6 +20,7 @@ export default class FactoryBuilder<
   protected _template?: TTemplate;
   protected _attributes: FactoryAttrs<TTemplate> = {} as FactoryAttrs<TTemplate>;
   protected _traits: TTraits = {} as TTraits;
+  protected _associations?: FactoryAssociations<TTemplate, TSchema>;
   protected _afterCreate?: FactoryAfterCreateHook<TSchema, TTemplate>;
 
   constructor() {}
@@ -58,6 +60,7 @@ export default class FactoryBuilder<
     builder._attributes = this._attributes;
     builder._traits = { ...this._traits, ...traits } as TTraits & T;
     builder._afterCreate = this._afterCreate;
+    builder._associations = this._associations;
     return builder;
   }
 
@@ -68,6 +71,16 @@ export default class FactoryBuilder<
    */
   afterCreate(hook: FactoryAfterCreateHook<TSchema, TTemplate>): this {
     this._afterCreate = hook;
+    return this;
+  }
+
+  /**
+   * Set factory associations for automatic relationship creation
+   * @param associations - The associations configuration
+   * @returns The builder instance for chaining
+   */
+  associations(associations: FactoryAssociations<TTemplate, TSchema>): this {
+    this._associations = associations;
     return this;
   }
 
@@ -87,6 +100,7 @@ export default class FactoryBuilder<
     builder._template = originalFactory.template;
     builder._attributes = { ...originalFactory.attributes };
     builder._traits = { ...originalFactory.traits };
+    builder._associations = { ...originalFactory.associations };
     builder._afterCreate = originalFactory.afterCreate;
     return builder;
   }
@@ -102,7 +116,13 @@ export default class FactoryBuilder<
       );
     }
 
-    return new Factory(this._template, this._attributes, this._traits, this._afterCreate);
+    return new Factory(
+      this._template,
+      this._attributes,
+      this._traits,
+      this._associations,
+      this._afterCreate,
+    );
   }
 }
 

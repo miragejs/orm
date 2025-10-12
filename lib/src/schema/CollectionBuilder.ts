@@ -98,7 +98,7 @@ export default class CollectionBuilder<
    * const builder = collection(UserModel).factory(userFactory);
    * ```
    */
-  factory<F extends Factory<any, TSchema, any>>(
+  factory<F extends Factory<any, any, any>>(
     factory: F,
   ): CollectionBuilder<TTemplate, TSchema, TRelationships, F, TIdentityManager> {
     const builder = new CollectionBuilder<

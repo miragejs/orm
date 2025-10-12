@@ -5,8 +5,6 @@ import type BaseModel from './BaseModel';
 import type Model from './Model';
 import type ModelCollection from './ModelCollection';
 
-// UnionToIntersection is now available globally from lib/types/global.d.ts
-
 // ============================================================================
 // CORE TEMPLATE TYPES
 // ============================================================================

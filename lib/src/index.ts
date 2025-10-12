@@ -9,13 +9,21 @@ export type * from './id-manager';
 export { model } from './model';
 export type * from './model';
 
-// Relationships
-export { belongsTo, hasMany, associations } from './associations';
-export type * from './associations';
-
 // Factory
 export { factory } from './factory';
 export type * from './factory';
+
+// Associations
+export {
+  associations,
+  belongsTo,
+  create,
+  createMany,
+  hasMany,
+  link,
+  linkMany,
+} from './associations';
+export type * from './associations';
 
 // Schema
 export { collection, schema } from './schema';

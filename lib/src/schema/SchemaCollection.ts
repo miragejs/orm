@@ -295,10 +295,24 @@ export default class SchemaCollection<
         modelAttrs as PartialModelAttrs<TTemplate, TSchema>,
       ) as ModelAttrs<TTemplate, TSchema>;
 
-      // Merge factory attrs with relationship values
+      // Skip associations for relationships that the user provided
+      const userProvidedRelationshipKeys = Object.keys(relationshipUpdates);
+
+      // Process associations to get relationship values (including from traits)
+      const associationValues = this._factory.processAssociations(
+        this._schema,
+        userProvidedRelationshipKeys,
+        traitsAndDefaults as (
+          | FactoryTraitNames<TFactory>
+          | PartialModelAttrs<TTemplate, TSchema>
+        )[],
+      );
+
+      // Merge: user defaults override associations, associations override factory attrs
       const completeAttrs = {
         ...factoryAttrs,
-        ...relationshipUpdates,
+        ...associationValues,
+        ...relationshipUpdates, // User-provided relationships have highest priority
       } as ModelCreateAttrs<TTemplate, TSchema>;
 
       const model = this.new(completeAttrs).save();
@@ -362,6 +376,50 @@ export default class SchemaCollection<
       query as CollectionCreateInput<TTemplate, TSchema>,
     );
     return newModel;
+  }
+
+  /**
+   * Finds or creates a specific number of models matching the query.
+   * @param count - The number of models to find or create.
+   * @param query - The query to find the models by (object or predicate function).
+   * @param traitsAndDefaults - The traits or default values to use when creating new models.
+   * @returns A collection of models.
+   */
+  findManyOrCreateBy(
+    count: number,
+    query:
+      | DbRecordInput<ModelAttrs<TTemplate, TSchema>>
+      | ((model: ModelInstance<TTemplate, TSchema>) => boolean),
+    ...traitsAndDefaults: (
+      | FactoryTraitNames<TFactory>
+      | CollectionCreateInput<TTemplate, TSchema>
+    )[]
+  ): ModelCollection<TTemplate, TSchema> {
+    // Find existing models matching the query
+    const existingModels =
+      typeof query === 'function'
+        ? this.where(query)
+        : this.where(query as DbRecordInput<ModelAttrs<TTemplate, TSchema>>);
+
+    // If we have enough models, return the requested count
+    if (existingModels.length >= count) {
+      return new ModelCollection(this._template, existingModels.models.slice(0, count));
+    }
+
+    // Calculate how many more models we need to create
+    const needed = count - existingModels.length;
+
+    // Create the remaining models
+    // If query is an object, include it in the creation attributes
+    const queryAttrs =
+      typeof query === 'function' ? {} : (query as CollectionCreateInput<TTemplate, TSchema>);
+
+    const newModels = Array.from({ length: needed }, () =>
+      this.create(...traitsAndDefaults, queryAttrs),
+    );
+
+    // Combine existing and new models
+    return new ModelCollection(this._template, [...existingModels.models, ...newModels]);
   }
 }
 

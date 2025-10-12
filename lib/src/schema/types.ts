@@ -2,7 +2,6 @@ import type { DbCollection } from '@src/db';
 import type { Factory } from '@src/factory';
 import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
 import type {
-  InferModelAttrs,
   ModelAttrs,
   ModelForeignKeys,
   ModelId,

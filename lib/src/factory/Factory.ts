@@ -1,3 +1,4 @@
+import { type FactoryAssociations } from '@src/associations';
 import type {
   ModelAttrs,
   ModelId,
@@ -5,9 +6,11 @@ import type {
   ModelTemplate,
   PartialModelAttrs,
 } from '@src/model';
+import type { ModelCollection } from '@src/model';
 import type { SchemaCollections, SchemaInstance } from '@src/schema';
 import { MirageError } from '@src/utils';
 
+import AssociationsManager from './AssociationsManager';
 import type { FactoryAttrs, FactoryAfterCreateHook, ModelTraits, TraitName } from './types';
 
 /**
@@ -21,21 +24,29 @@ export default class Factory<
   TSchema extends SchemaCollections = SchemaCollections,
   TTraits extends ModelTraits<TSchema, TTemplate> = {},
 > {
-  private readonly _template: TTemplate;
   readonly attributes: FactoryAttrs<TTemplate>;
   readonly traits: TTraits;
+  readonly associations?: FactoryAssociations<TTemplate, TSchema>;
   readonly afterCreate?: FactoryAfterCreateHook<TSchema, TTemplate>;
+
+  private readonly _template: TTemplate;
+  private readonly _associationsManager: AssociationsManager<TTemplate, TSchema>;
 
   constructor(
     template: TTemplate,
     attributes: FactoryAttrs<TTemplate>,
     traits: TTraits = {} as TTraits,
+    associations?: FactoryAssociations<TTemplate, TSchema>,
     afterCreate?: FactoryAfterCreateHook<TSchema, TTemplate>,
   ) {
     this._template = template;
     this.attributes = attributes;
     this.traits = traits;
+    this.associations = associations;
     this.afterCreate = afterCreate;
+
+    // Create manager for processing associations
+    this._associationsManager = new AssociationsManager<TTemplate, TSchema>();
   }
 
   /**
@@ -80,6 +91,37 @@ export default class Factory<
       ...defaults,
       id: modelId,
     } as ModelAttrs<TTemplate, TSchema>;
+  }
+
+  /**
+   * Process associations and return relationship values
+   * This runs with schema context and creates/links related models
+   * @param schema - The schema instance
+   * @param skipKeys - Optional list of relationship keys to skip (e.g., if user provided them)
+   * @param traitsAndDefaults - Optional trait names to include trait associations
+   * @returns A record of relationship values
+   */
+  processAssociations(
+    schema: SchemaInstance<TSchema>,
+    skipKeys?: string[],
+    traitsAndDefaults?: (TraitName<TTraits> | PartialModelAttrs<TTemplate, TSchema>)[],
+  ): Record<string, ModelInstance<any, TSchema> | ModelCollection<any, TSchema>> {
+    // Get trait associations
+    const traitAssociations = this._getTraitAssociations(traitsAndDefaults);
+
+    // Merge factory associations with trait associations (factory associations take precedence)
+    const mergedAssociations = {
+      ...traitAssociations,
+      ...(this.associations || {}),
+    };
+
+    // If no associations, return empty
+    if (Object.keys(mergedAssociations).length === 0) {
+      return {};
+    }
+
+    // Use the manager instance to process merged associations
+    return this._associationsManager.processAssociations(schema, mergedAssociations, skipKeys);
   }
 
   /**
@@ -164,7 +206,8 @@ export default class Factory<
           const { afterCreate, ...extension } = trait;
 
           Object.entries(extension).forEach(([key, value]) => {
-            if (key !== 'id') {
+            // Skip id and association objects
+            if (key !== 'id' && !this._isAssociation(value)) {
               traitAttributes[key] =
                 typeof value === 'function' ? value.call(this.attributes, modelId) : value;
             }
@@ -177,6 +220,51 @@ export default class Factory<
     );
 
     return result as PartialModelAttrs<TTemplate>;
+  }
+
+  /**
+   * Check if a value is an association object
+   * @param value - The value to check
+   * @returns True if the value is an association
+   */
+  private _isAssociation(value: any): boolean {
+    return (
+      typeof value === 'object' &&
+      value !== null &&
+      'type' in value &&
+      'model' in value &&
+      ['create', 'createMany', 'link', 'linkMany'].includes(value.type)
+    );
+  }
+
+  /**
+   * Extract associations from traits
+   * @param traitsAndDefaults - The trait names to extract associations from
+   * @returns The merged associations from all traits
+   */
+  private _getTraitAssociations(
+    traitsAndDefaults?: (TraitName<TTraits> | PartialModelAttrs<TTemplate, TSchema>)[],
+  ): FactoryAssociations<TTemplate, TSchema> {
+    if (!traitsAndDefaults) {
+      return {};
+    }
+
+    const traitNames = traitsAndDefaults.filter((arg) => typeof arg === 'string') as string[];
+    const associations: Record<string, any> = {};
+
+    traitNames.forEach((name) => {
+      const trait = this.traits[name as TraitName<TTraits>];
+
+      if (trait) {
+        Object.entries(trait).forEach(([key, value]) => {
+          if (this._isAssociation(value)) {
+            associations[key] = value;
+          }
+        });
+      }
+    });
+
+    return associations as FactoryAssociations<TTemplate, TSchema>;
   }
 
   private _mergeAttributes(

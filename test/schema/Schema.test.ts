@@ -10,6 +10,7 @@ interface UserAttrs {
   id: string;
   email: string;
   name: string;
+  role?: string;
 }
 
 interface PostAttrs {
@@ -212,6 +213,68 @@ describe('Schema', () => {
       expect(users.length).toBe(2);
       expect(users.models[0].name).toBe('John');
       expect(users.models[1].name).toBe('Jane');
+    });
+
+    it('finds many or creates models by object query - returns existing when enough exist', () => {
+      // We have 2 users (John and Jane), request 2 users starting with 'J'
+      const users = testSchema.users.findManyOrCreateBy(2, (user: any) =>
+        user.name.startsWith('J'),
+      );
+      expect(users.length).toBe(2);
+      expect(users.models[0].name).toBe('John');
+      expect(users.models[1].name).toBe('Jane');
+    });
+
+    it('finds many or creates models - creates new ones when not enough exist', () => {
+      // We have 2 posts, request 4 posts
+      const posts = testSchema.posts.findManyOrCreateBy(4, {});
+      expect(posts.length).toBe(4);
+      // First 2 should be existing posts
+      expect(posts.models[0].title).toBe('Post 1');
+      expect(posts.models[1].title).toBe('Post 2');
+      // Last 2 should be newly created (with default titles)
+      expect(posts.models[2].title).toBeDefined();
+      expect(posts.models[3].title).toBeDefined();
+    });
+
+    it('finds many or creates models with object query attributes', () => {
+      // Request 3 users with role 'admin', none exist yet
+      const admins = testSchema.users.findManyOrCreateBy(3, { role: 'admin' });
+      expect(admins.length).toBe(3);
+      admins.models.forEach((admin) => {
+        expect(admin.role).toBe('admin');
+      });
+    });
+
+    it('finds many or creates models with function query', () => {
+      // Request 5 users starting with 'J', only 2 exist
+      const users = testSchema.users.findManyOrCreateBy(5, (user: any) =>
+        user.name.startsWith('J'),
+      );
+      expect(users.length).toBe(5);
+      // First 2 should be existing users
+      expect(users.models[0].name).toBe('John');
+      expect(users.models[1].name).toBe('Jane');
+      // Last 3 should be newly created
+      expect(users.models[2]).toBeDefined();
+      expect(users.models[3]).toBeDefined();
+      expect(users.models[4]).toBeDefined();
+    });
+
+    it('finds many or creates models with traits and defaults', () => {
+      // Request 2 posts, but override the title
+      const posts = testSchema.posts.findManyOrCreateBy(2, {}, { title: 'Custom Post' });
+      expect(posts.length).toBe(2);
+      // First 2 posts exist already
+      expect(posts.models[0].title).toBe('Post 1');
+      expect(posts.models[1].title).toBe('Post 2');
+
+      // Request 4 posts total with custom title
+      const morePosts = testSchema.posts.findManyOrCreateBy(4, {}, { title: 'New Post' });
+      expect(morePosts.length).toBe(4);
+      // First 4 posts exist already (2 original + 2 custom)
+      expect(morePosts.models[0].title).toBe('Post 1');
+      expect(morePosts.models[1].title).toBe('Post 2');
     });
   });
 

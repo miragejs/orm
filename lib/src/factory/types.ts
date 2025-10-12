@@ -1,3 +1,4 @@
+import type { FactoryAssociations } from '@src/associations';
 import type { InferModelAttrs, ModelAttrs, ModelInstance, ModelTemplate } from '@src/model';
 import type { SchemaCollections, SchemaInstance } from '@src/schema';
 
@@ -9,9 +10,10 @@ export type FactoryAfterCreateHook<
 export type TraitDefinition<
   TSchema extends SchemaCollections = SchemaCollections,
   TTemplate extends ModelTemplate = ModelTemplate,
-> = Partial<FactoryAttrs<TTemplate>> & {
-  afterCreate?: FactoryAfterCreateHook<TSchema, TTemplate>;
-};
+> = Partial<FactoryAttrs<TTemplate>> &
+  Partial<FactoryAssociations<TTemplate, TSchema>> & {
+    afterCreate?: FactoryAfterCreateHook<TSchema, TTemplate>;
+  };
 
 export type ModelTraits<
   TSchema extends SchemaCollections = SchemaCollections,
