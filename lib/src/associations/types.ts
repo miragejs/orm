@@ -57,7 +57,7 @@ type TraitNamesFor<
  * @template TForeign - The foreign key field name (defaults to "{targetModelName}Id")
  */
 export type BelongsTo<
-  TTarget extends ModelTemplate<any, any, any>,
+  TTarget extends ModelTemplate,
   TForeign extends string = `${InferModelName<TTarget>}Id`,
 > = {
   foreignKey: TForeign;
@@ -72,7 +72,7 @@ export type BelongsTo<
  * @template TForeign - The foreign key array field name (defaults to "{targetModelName}Ids")
  */
 export type HasMany<
-  TTarget extends ModelTemplate<any, any, any>,
+  TTarget extends ModelTemplate,
   TForeign extends string = `${InferModelName<TTarget>}Ids`,
 > = {
   foreignKey: TForeign;
@@ -222,7 +222,7 @@ type RelationshipTargetTemplate<TRelationship> = TRelationship extends {
  * ```
  */
 export type FactoryAssociations<
-  TTemplate extends ModelTemplate<any, any, any>,
+  TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
 > =
   RelationshipsByTemplate<TTemplate, TSchema> extends ModelRelationships
@@ -240,7 +240,7 @@ export type FactoryAssociations<
  * @template TSchema - The schema collections type
  */
 export type TypedFactoryAssociations<
-  TTemplate extends ModelTemplate<any, any, any>,
+  TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
 > = {
   [K in string]?:

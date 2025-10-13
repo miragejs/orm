@@ -34,20 +34,6 @@ describe('ModelBuilder', () => {
       expect(userModel.modelName).toBe('user');
       expect(userModel.collectionName).toBe('users');
       expect(typeof userModel.key).toBe('symbol');
-      expect(userModel.attrs).toEqual({});
-    });
-
-    it('should include default attrs in the template', () => {
-      const defaultAttrs = { name: 'Anonymous', email: 'anonymous@example.com' };
-      const userModel = new ModelBuilder()
-        .name('user')
-        .collection('users')
-        .attrs<UserAttrs>(defaultAttrs)
-        .create();
-
-      expect(userModel.attrs).toEqual(defaultAttrs);
-      expect(userModel.modelName).toBe('user');
-      expect(userModel.collectionName).toBe('users');
     });
 
     it('should throw error if name is not set', () => {
@@ -81,20 +67,6 @@ describe('ModelBuilder', () => {
 
       expect(userModel.modelName).toBe('user');
       expect(userModel.collectionName).toBe('users');
-      expect(userModel.attrs).toEqual({});
-    });
-
-    it('should work with default attributes', () => {
-      const defaultAttrs = { name: 'John', email: 'john@example.com' };
-      const userModel = model()
-        .name('user')
-        .collection('users')
-        .attrs<UserAttrs>(defaultAttrs)
-        .create();
-
-      expect(userModel.modelName).toBe('user');
-      expect(userModel.collectionName).toBe('users');
-      expect(userModel.attrs).toEqual(defaultAttrs);
     });
 
     it('should work without explicit attrs() call', () => {
@@ -102,7 +74,6 @@ describe('ModelBuilder', () => {
 
       expect(userModel.modelName).toBe('user');
       expect(userModel.collectionName).toBe('users');
-      expect(userModel.attrs).toEqual({});
     });
 
     it('should allow flexible method order', () => {
@@ -124,21 +95,24 @@ describe('ModelBuilder', () => {
       expect(userModel.modelName).toBe('user');
       expect(userModel.collectionName).toBe('users');
       expect(typeof userModel.key).toBe('symbol');
-      expect(typeof userModel.attrs).toBe('object');
     });
 
-    it('should preserve default attributes types', () => {
-      const defaultAttrs: Partial<UserAttrs> = {
-        name: 'Test User',
-        email: 'test@example.com',
-      };
+    it('should support json() method for specifying serialization types', () => {
+      interface UserJSON {
+        id: string;
+        name: string;
+      }
+
       const userModel = model()
         .name('user')
         .collection('users')
-        .attrs<UserAttrs>(defaultAttrs)
+        .attrs<UserAttrs>()
+        .json<UserJSON>()
         .create();
 
-      expect(userModel.attrs).toEqual(defaultAttrs);
+      expect(userModel.modelName).toBe('user');
+      expect(userModel.collectionName).toBe('users');
+      expect(typeof userModel.key).toBe('symbol');
     });
   });
 });

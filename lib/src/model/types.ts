@@ -12,20 +12,29 @@ import type ModelCollection from './ModelCollection';
 export type DefaultModelAttrs = { id: string };
 
 /**
- * Model template interface
- * @template TModel - The model attributes type
- * @template TModelName - The key/identifier for the model
- * @template TCollectionName - The collection name
+ * Model template interface with hidden type properties
+ *
+ * This interface uses only 2 generics for clean type signatures,
+ * while storing additional type metadata in hidden properties (__attrs, __json).
+ * These hidden properties exist only in TypeScript's type system with zero runtime cost.
+ *
+ * @template TModelName - The string literal type for the model name
+ * @template TCollectionName - The string literal type for the collection name
  */
 export interface ModelTemplate<
-  TModel extends { id: any } = DefaultModelAttrs,
   TModelName extends string = string,
   TCollectionName extends string = string,
 > {
   readonly key: symbol;
-  readonly attrs: Partial<TModel>;
-  readonly collectionName: TCollectionName;
   readonly modelName: TModelName;
+  readonly collectionName: TCollectionName;
+
+  // Hidden type properties (compile-time only, no runtime cost)
+  readonly __attrs: { id: any }; // Type metadata for model attributes
+  readonly __json: {
+    readonly model: any; // Type metadata for serialized model
+    readonly collection: any; // Type metadata for serialized collection
+  };
 }
 
 // ============================================================================
@@ -36,7 +45,7 @@ export interface ModelTemplate<
  * Infer model attributes from template
  * @template T - The model template
  */
-export type InferModelAttrs<T> = T extends ModelTemplate<infer M, any, any> ? M : never;
+export type InferModelAttrs<T> = T extends ModelTemplate<any, any> ? T['__attrs'] : never;
 
 /**
  * Infer model ID type from template
@@ -48,13 +57,34 @@ export type ModelId<T> = InferModelAttrs<T>['id'];
  * Infer model name from template
  * @template T - The model template
  */
-export type InferModelName<T> = T extends ModelTemplate<any, infer Name, any> ? Name : never;
+export type InferModelName<T> = T extends ModelTemplate<infer Name, any> ? Name : never;
 
 /**
  * Infer collection name from template
  * @template T - The model template
  */
-export type InferCollectionName<T> = T extends ModelTemplate<any, any, infer Name> ? Name : never;
+export type InferCollectionName<T> = T extends ModelTemplate<any, infer Name> ? Name : never;
+
+/**
+ * Infer serialized model type from template
+ * @template T - The model template
+ */
+export type InferSerializedModel<T> =
+  T extends ModelTemplate<any, any> ? T['__json']['model'] : never;
+
+/**
+ * Infer serialized collection type from template
+ * @template T - The model template
+ */
+export type InferSerializedCollection<T> =
+  T extends ModelTemplate<any, any> ? T['__json']['collection'] : never;
+
+/**
+ * Check if template has custom JSON types (not default)
+ * @template T - The model template
+ */
+export type HasCustomJSON<T extends ModelTemplate> =
+  InferSerializedModel<T> extends InferModelAttrs<T> ? false : true;
 
 // ============================================================================
 // RELATIONSHIP TYPES

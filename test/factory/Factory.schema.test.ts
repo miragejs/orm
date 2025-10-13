@@ -19,13 +19,13 @@ interface PostAttrs {
   userId: string;
 }
 
-type TestSchema = {
-  users: SchemaCollectionConfig<ModelTemplate<UserAttrs, 'user', 'users'>>;
-  posts: SchemaCollectionConfig<ModelTemplate<PostAttrs, 'post', 'posts'>>;
-};
-
 const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
 const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
+
+type TestSchema = {
+  users: SchemaCollectionConfig<typeof userModel>;
+  posts: SchemaCollectionConfig<typeof postModel>;
+};
 
 describe('Factory with Schema', () => {
   it('should execute factory afterCreate hook when creating models through schema', () => {

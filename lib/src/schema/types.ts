@@ -28,7 +28,7 @@ export interface SchemaConfig<TIdentityManager extends IdentityManager = StringI
  * @template TSerializer - The serializer type
  */
 export interface SchemaCollectionConfig<
-  TTemplate extends ModelTemplate<any, any, any>,
+  TTemplate extends ModelTemplate,
   TRelationships extends ModelRelationships = {},
   TFactory extends Factory<TTemplate, any, any> | undefined = undefined,
   TSerializer = undefined,
@@ -86,7 +86,7 @@ export type SchemaDbCollections<TCollections extends SchemaCollections> = {
  * @template TRelationships - The model relationships
  */
 export type CollectionCreateInput<
-  TTemplate extends ModelTemplate<any, any, any>,
+  TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
   TRelationships extends ModelRelationships = RelationshipsByTemplate<TTemplate, TSchema>,
 > = Partial<ModelAttrs<TTemplate, TSchema>> &

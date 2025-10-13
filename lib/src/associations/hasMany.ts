@@ -10,7 +10,7 @@ import type { HasMany } from './types';
  * @returns The relationship definition object.
  */
 export default function hasMany<
-  TTarget extends ModelTemplate<any, any, any>,
+  TTarget extends ModelTemplate,
   const TOpts extends { foreignKey?: string } | undefined = undefined,
 >(
   targetModel: TTarget,
