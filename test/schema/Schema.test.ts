@@ -315,7 +315,7 @@ describe('Schema', () => {
   });
 });
 
-describe('Schema with Relationships', () => {
+describe('Schema with relationships', () => {
   // Setup test collections with relationships
   const userCollection = collection()
     .model(userModel)
@@ -514,6 +514,46 @@ describe('Schema with Relationships', () => {
       expect(() => post.link('nonexistentRelationship', null)).not.toThrow();
       // @ts-expect-error - Invalid relationship name
       expect(() => post.unlink('nonexistentRelationship')).not.toThrow();
+    });
+  });
+
+  describe('create with relationships', () => {
+    it('should create belongsTo relationship', () => {
+      const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
+      const post = testSchema.posts.create({
+        title: 'My Post',
+        content: 'Content here',
+        author: user,
+      });
+
+      expect(post.authorId).toBe(user.id);
+      expect(post.author?.name).toBe('John');
+
+      user.reload();
+
+      expect(user.postIds).toEqual([post.id]);
+      expect(user.posts).toHaveLength(1);
+    });
+
+    it('should create hasMany relationship', () => {
+      const post1 = testSchema.posts.create({ title: 'Post 1', content: 'Content 1' });
+      const post2 = testSchema.posts.create({ title: 'Post 2', content: 'Content 2' });
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+        posts: [post1, post2],
+      });
+
+      expect(user.postIds).toEqual([post1.id, post2.id]);
+      expect(user.posts).toHaveLength(2);
+
+      post1.reload();
+      post2.reload();
+
+      expect(post1.authorId).toBe(user.id);
+      expect(post1.author?.name).toBe('John');
+      expect(post2.authorId).toBe(user.id);
+      expect(post2.author?.name).toBe('John');
     });
   });
 

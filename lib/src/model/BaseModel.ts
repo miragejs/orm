@@ -6,13 +6,15 @@ import type { BaseModelInstance, ModelStatus, NewBaseModelInstance, NewModelAttr
  * BaseModel class for managing basic model operations without schema dependencies
  * Handles basic CRUD operations, db updates, attribute management, and status tracking
  * @template TAttrs - The model attributes type (e.g., { id: string, name: string })
+ * @template TSerializer - The serializer type for custom JSON serialization
  */
-export default class BaseModel<TAttrs extends { id: any }> {
+export default class BaseModel<TAttrs extends { id: any }, TSerializer = undefined> {
   public readonly modelName: string;
   public readonly collectionName: string;
 
   protected _attrs: NewModelAttrs<TAttrs>;
   protected _dbCollection: DbCollection<TAttrs>;
+  protected _serializer?: TSerializer;
   protected _status: ModelStatus;
 
   constructor(
@@ -20,18 +22,15 @@ export default class BaseModel<TAttrs extends { id: any }> {
     collectionName: string,
     attrs: NewModelAttrs<TAttrs>,
     dbCollection?: DbCollection<TAttrs>,
+    serializer?: TSerializer,
   ) {
     this.modelName = modelName;
     this.collectionName = collectionName;
-    this._dbCollection = dbCollection ?? new DbCollection<TAttrs>(collectionName);
-    this._attrs = { ...attrs, id: attrs.id ?? null } as NewModelAttrs<TAttrs>;
 
-    // Check if this model already exists in the database
-    if (attrs.id && this._dbCollection.find(attrs.id)) {
-      this._status = 'saved';
-    } else {
-      this._status = 'new';
-    }
+    this._attrs = { ...attrs, id: attrs.id ?? null } as NewModelAttrs<TAttrs>;
+    this._dbCollection = dbCollection ?? new DbCollection<TAttrs>(collectionName);
+    this._serializer = serializer;
+    this._status = this._checkStatus();
   }
 
   // -- GETTERS --
@@ -58,7 +57,7 @@ export default class BaseModel<TAttrs extends { id: any }> {
    * Save the model to the database
    * @returns The model with saved instance type
    */
-  save(): this & BaseModelInstance<TAttrs> {
+  save(): this & BaseModelInstance<TAttrs, TSerializer> {
     if (this.isNew() || !this.id) {
       const record = this._dbCollection.insert(this._attrs);
 
@@ -76,7 +75,7 @@ export default class BaseModel<TAttrs extends { id: any }> {
    * @param attrs - The attributes to update
    * @returns The model instance for chaining
    */
-  update(attrs: Partial<TAttrs>): BaseModelInstance<TAttrs> {
+  update(attrs: Partial<TAttrs>): this & BaseModelInstance<TAttrs, TSerializer> {
     Object.assign(this._attrs, attrs);
     return this.save();
   }
@@ -85,7 +84,7 @@ export default class BaseModel<TAttrs extends { id: any }> {
    * Reload the model from the database
    * @returns The model with saved instance type
    */
-  reload(): BaseModelInstance<TAttrs> {
+  reload(): this & BaseModelInstance<TAttrs, TSerializer> {
     if (this._attrs.id) {
       const record = this._dbCollection.find(this.id);
 
@@ -97,21 +96,21 @@ export default class BaseModel<TAttrs extends { id: any }> {
       return this.save();
     }
 
-    return this as BaseModelInstance<TAttrs>;
+    return this as this & BaseModelInstance<TAttrs>;
   }
 
   /**
    * Destroy the model from the database
    * @returns The model with new instance type
    */
-  destroy(): NewBaseModelInstance<TAttrs> {
+  destroy(): this & NewBaseModelInstance<TAttrs, TSerializer> {
     if (this.isSaved() && this.id) {
       this._dbCollection.delete(this.id);
       this._attrs = { ...this._attrs, id: null };
       this._status = 'new';
     }
 
-    return this as NewBaseModelInstance<TAttrs>;
+    return this as this & NewBaseModelInstance<TAttrs, TSerializer>;
   }
 
   // -- STATUS CHECKS --
@@ -138,8 +137,19 @@ export default class BaseModel<TAttrs extends { id: any }> {
    * Serialize the model to a JSON object
    * @returns The serialized model using the configured serializer or raw attributes
    */
-  toJSON(): TAttrs {
-    return { ...this._attrs } as TAttrs;
+  toJSON(): TSerializer extends { serialize(model: any): infer TSerializedModel }
+    ? TSerializedModel
+    : TAttrs {
+    if (
+      this._serializer &&
+      typeof this._serializer === 'object' &&
+      'serialize' in this._serializer &&
+      typeof this._serializer.serialize === 'function'
+    ) {
+      return this._serializer.serialize(this);
+    }
+    // Type assertion needed due to conditional return type
+    return { ...this._attrs } as any;
   }
 
   /**
@@ -149,5 +159,15 @@ export default class BaseModel<TAttrs extends { id: any }> {
   toString(): string {
     let idLabel = this.id ? `(${this.id})` : '';
     return `model:${this.modelName}${idLabel}`;
+  }
+
+  // -- PRIVATE METHODS --
+
+  private _checkStatus(): ModelStatus {
+    // Check if this model already exists in the database
+    if (this.id && this._dbCollection.find(this.id)) {
+      return 'saved';
+    }
+    return 'new';
   }
 }

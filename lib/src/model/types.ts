@@ -178,6 +178,7 @@ export type RelationshipsByTemplate<
   TSchema[CollectionByTemplate<TSchema, TTemplate>] extends SchemaCollectionConfig<
     any,
     infer TRelationships,
+    any,
     any
   >
     ? TRelationships extends ModelRelationships
@@ -287,8 +288,12 @@ export type NewModelAttrs<TAttrs extends { id: any }> =
 /**
  * Type for new base model instance with nullable ID
  * @template TAttrs - The model attributes type
+ * @template TSerializer - The serializer type
  */
-export type NewBaseModelInstance<TAttrs extends { id: any }> = BaseModel<TAttrs> & {
+export type NewBaseModelInstance<TAttrs extends { id: any }, TSerializer = undefined> = BaseModel<
+  TAttrs,
+  TSerializer
+> & {
   attrs: NewModelAttrs<TAttrs>;
   id: TAttrs['id'] | null;
 };
@@ -296,8 +301,12 @@ export type NewBaseModelInstance<TAttrs extends { id: any }> = BaseModel<TAttrs>
 /**
  * Type for base model instance with required ID
  * @template TAttrs - The model attributes type
+ * @template TSerializer - The serializer type
  */
-export type BaseModelInstance<TAttrs extends { id: any }> = BaseModel<TAttrs> & {
+export type BaseModelInstance<TAttrs extends { id: any }, TSerializer = undefined> = BaseModel<
+  TAttrs,
+  TSerializer
+> & {
   attrs: TAttrs;
   id: TAttrs['id'];
 };
@@ -350,8 +359,9 @@ export type ModelCreateAttrs<
   TRelationships extends ModelRelationships = RelationshipsByTemplate<TTemplate, TSchema>,
 > = Omit<InferModelAttrs<TTemplate>, 'id'> & {
   id?: ModelId<TTemplate> | null;
-} & ForeignKeyAttrs<TRelationships> &
-  Partial<RelatedModelAttrs<TSchema, TRelationships>>;
+} & (Record<string, never> extends TRelationships
+    ? {}
+    : ForeignKeyAttrs<TRelationships> & Partial<RelatedModelAttrs<TSchema, TRelationships>>);
 
 /**
  * Type for update method that includes attributes, foreign keys, and relationship model instances
@@ -364,7 +374,9 @@ export type ModelUpdateAttrs<
   TSchema extends SchemaCollections = SchemaCollections,
   TRelationships extends ModelRelationships = RelationshipsByTemplate<TTemplate, TSchema>,
 > = Partial<ModelAttrs<TTemplate, TSchema, TRelationships>> &
-  Partial<RelatedModelAttrs<TSchema, TRelationships>>;
+  (Record<string, never> extends TRelationships
+    ? {}
+    : Partial<RelatedModelAttrs<TSchema, TRelationships>>);
 
 // ============================================================================
 // SCHEMA-AWARE MODEL TYPES
@@ -374,15 +386,19 @@ export type ModelUpdateAttrs<
  * Configuration for creating a schema-aware model
  * @template TTemplate - The model template
  * @template TSchema - The schema collections type
+ * @template TRelationships - The model relationships
+ * @template TSerializer - The serializer type
  */
 export type ModelConfig<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
   TRelationships extends ModelRelationships = RelationshipsByTemplate<TTemplate, TSchema>,
+  TSerializer = undefined,
 > = {
   attrs: ModelCreateAttrs<TTemplate, TSchema, TRelationships>;
   schema: SchemaInstance<TSchema>;
-} & (keyof TRelationships extends never
+  serializer?: TSerializer;
+} & (Record<string, never> extends TRelationships
   ? { relationships?: undefined }
   : { relationships: TRelationships });
 
@@ -390,23 +406,34 @@ export type ModelConfig<
  * Type for model class with attribute accessors (direct Model constructor)
  * @template TTemplate - The model template (most important for users)
  * @template TSchema - The schema collections type for enhanced type inference
+ * @template TSerializer - The serializer type
  */
 export type ModelClass<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
+  TSerializer = undefined,
 > = {
-  new (config: ModelConfig<TTemplate, TSchema>): NewModelInstance<TTemplate, TSchema>;
+  new (
+    config: ModelConfig<
+      TTemplate,
+      TSchema,
+      RelationshipsByTemplate<TTemplate, TSchema>,
+      TSerializer
+    >,
+  ): NewModelInstance<TTemplate, TSchema, TSerializer>;
 };
 
 /**
  * Type for new model instance with accessors for the attributes (nullable id)
  * @template TTemplate - The model template (most important for users)
  * @template TSchema - The schema collections type for enhanced type inference
+ * @template TSerializer - The serializer type
  */
 export type NewModelInstance<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
-> = Model<TTemplate, TSchema> & {
+  TSerializer = undefined,
+> = Model<TTemplate, TSchema, TSerializer> & {
   attrs: ModelAttrs<TTemplate, TSchema>;
   id: ModelAttrs<TTemplate, TSchema>['id'] | null;
 } & ModelAttrAccessors<TTemplate> &
@@ -417,11 +444,13 @@ export type NewModelInstance<
  * Type for model instance with accessors for the attributes (required ID)
  * @template TTemplate - The model template (most important for users)
  * @template TSchema - The schema collections type for enhanced type inference
+ * @template TSerializer - The serializer type
  */
 export type ModelInstance<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
-> = Model<TTemplate, TSchema> & {
+  TSerializer = undefined,
+> = Model<TTemplate, TSchema, TSerializer> & {
   attrs: ModelAttrs<TTemplate, TSchema>;
   id: ModelAttrs<TTemplate, TSchema>['id'];
 } & ModelAttrAccessors<TTemplate> &

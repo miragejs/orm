@@ -25,15 +25,18 @@ export interface SchemaConfig<TIdentityManager extends IdentityManager = StringI
  * @template TTemplate - The model template
  * @template TRelationships - The model relationships
  * @template TFactory - The factory type
+ * @template TSerializer - The serializer type
  */
 export interface SchemaCollectionConfig<
   TTemplate extends ModelTemplate<any, any, any>,
   TRelationships extends ModelRelationships = {},
   TFactory extends Factory<TTemplate, any, any> | undefined = undefined,
+  TSerializer = undefined,
 > {
   model: TTemplate;
   factory?: TFactory;
   relationships?: TRelationships;
+  serializer?: TSerializer;
   identityManager?: IdentityManager<ModelId<TTemplate>>;
 }
 
@@ -41,7 +44,7 @@ export interface SchemaCollectionConfig<
  * Type for schema collections - provides both string-based property access and symbol-based relationship resolution
  * @template TCollections - The string-keyed schema collections config
  */
-export type SchemaCollections = Record<string, SchemaCollectionConfig<any, any, any>>;
+export type SchemaCollections = Record<string, SchemaCollectionConfig<any, any, any, any>>;
 
 /**
  * Type for schema collections - provides string-based property access
@@ -51,9 +54,10 @@ export type SchemaCollectionAccessors<TCollections extends SchemaCollections> = 
   [K in keyof TCollections]: TCollections[K] extends SchemaCollectionConfig<
     infer TTemplate,
     infer TRelationships,
-    infer TFactory
+    infer TFactory,
+    infer TSerializer
   >
-    ? SchemaCollection<TCollections, TTemplate, TRelationships, TFactory>
+    ? SchemaCollection<TCollections, TTemplate, TRelationships, TFactory, TSerializer>
     : never;
 };
 
@@ -86,4 +90,6 @@ export type CollectionCreateInput<
   TSchema extends SchemaCollections = SchemaCollections,
   TRelationships extends ModelRelationships = RelationshipsByTemplate<TTemplate, TSchema>,
 > = Partial<ModelAttrs<TTemplate, TSchema>> &
-  (keyof TRelationships extends never ? {} : Partial<RelatedModelAttrs<TSchema, TRelationships>>);
+  (Record<string, never> extends TRelationships
+    ? {}
+    : Partial<RelatedModelAttrs<TSchema, TRelationships>>);

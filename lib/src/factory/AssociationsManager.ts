@@ -87,27 +87,27 @@ export default class AssociationsManager<
   }
 
   private _processCreate(
-    collection: SchemaCollection<TSchema, any, any, any>,
+    collection: SchemaCollection<TSchema, any, any, any, any>,
     traitsAndDefaults?: AssociationTraitsAndDefaults,
-  ): ModelInstance<any, TSchema> {
+  ): ModelInstance<any, TSchema, any> {
     return collection.create(...(traitsAndDefaults || ([] as any)));
   }
 
   private _processCreateMany(
-    collection: SchemaCollection<TSchema, any, any, any>,
+    collection: SchemaCollection<TSchema, any, any, any, any>,
     count: number,
     traitsAndDefaults?: AssociationTraitsAndDefaults,
-  ): ModelCollection<any, TSchema> {
+  ): ModelCollection<any, TSchema, any> {
     return collection.createList(count, ...(traitsAndDefaults || ([] as any)));
   }
 
   private _processLink(
-    collection: SchemaCollection<TSchema, any, any, any>,
+    collection: SchemaCollection<TSchema, any, any, any, any>,
     query?: AssociationQuery,
     traitsAndDefaults?: AssociationTraitsAndDefaults,
-  ): ModelInstance<any, TSchema> {
+  ): ModelInstance<any, TSchema, any> {
     // Try to find existing
-    let model: ModelInstance<any, TSchema> | null = null;
+    let model: ModelInstance<any, TSchema, any> | null = null;
 
     if (query) {
       // Use where to get matches, then shuffle and pick first
@@ -134,14 +134,14 @@ export default class AssociationsManager<
   }
 
   private _processLinkMany(
-    collection: SchemaCollection<TSchema, any, any, any>,
+    collection: SchemaCollection<TSchema, any, any, any, any>,
     template: ModelTemplate,
     count: number,
     query?: AssociationQuery,
     traitsAndDefaults?: AssociationTraitsAndDefaults,
-  ): ModelCollection<any, TSchema> {
+  ): ModelCollection<any, TSchema, any> {
     // Try to find existing
-    let models: ModelCollection<any, TSchema>;
+    let models: ModelCollection<any, TSchema, any>;
 
     if (query) {
       models = collection.where(query as any);

@@ -34,11 +34,13 @@ export default class CollectionBuilder<
     | Factory<TTemplate, TSchema, ModelTraits<TSchema, TTemplate>>
     | undefined = undefined,
   TIdentityManager extends IdentityManager = StringIdentityManager,
+  TSerializer = undefined,
 > {
   private _template?: TTemplate;
   private _factory?: TFactory;
   private _relationships?: TRelationships;
   private _identityManager?: TIdentityManager;
+  private _serializer?: TSerializer;
 
   /**
    * Creates a new CollectionBuilder instance.
@@ -66,21 +68,23 @@ export default class CollectionBuilder<
     TSchema,
     TRelationships,
     TFactory extends undefined ? undefined : Factory<T, TSchema, ModelTraits<TSchema, T>>,
-    TIdentityManager
+    TIdentityManager,
+    TSerializer
   > {
     const builder = new CollectionBuilder<
       T,
       TSchema,
       TRelationships,
       TFactory extends undefined ? undefined : Factory<T, TSchema, ModelTraits<TSchema, T>>,
-      TIdentityManager
+      TIdentityManager,
+      TSerializer
     >();
     builder._template = template;
     // Preserve factory if it exists, casting it to the new template type
     // This allows for flexibility in the builder pattern while maintaining type safety at build time
     builder._factory = this._factory as any;
     builder._relationships = this._relationships;
-    // builder._serializer = this._serializer;
+    builder._serializer = this._serializer;
     builder._identityManager = this._identityManager;
     return builder;
   }
@@ -100,18 +104,20 @@ export default class CollectionBuilder<
    */
   factory<F extends Factory<any, any, any>>(
     factory: F,
-  ): CollectionBuilder<TTemplate, TSchema, TRelationships, F, TIdentityManager> {
+  ): CollectionBuilder<TTemplate, TSchema, TRelationships, F, TIdentityManager, TSerializer> {
     const builder = new CollectionBuilder<
       TTemplate,
       TSchema,
       TRelationships,
       F,
-      TIdentityManager
+      TIdentityManager,
+      TSerializer
     >();
     builder._template = this._template;
     builder._factory = factory;
     builder._relationships = this._relationships;
     builder._identityManager = this._identityManager;
+    builder._serializer = this._serializer;
     return builder;
   }
 
@@ -134,18 +140,25 @@ export default class CollectionBuilder<
    */
   relationships<R extends ModelRelationships>(
     relationships: R,
-  ): CollectionBuilder<TTemplate, TSchema, R, TFactory, TIdentityManager> {
-    const builder = new CollectionBuilder<TTemplate, TSchema, R, TFactory, TIdentityManager>();
+  ): CollectionBuilder<TTemplate, TSchema, R, TFactory, TIdentityManager, TSerializer> {
+    const builder = new CollectionBuilder<
+      TTemplate,
+      TSchema,
+      R,
+      TFactory,
+      TIdentityManager,
+      TSerializer
+    >();
     builder._template = this._template;
     builder._factory = this._factory;
     builder._relationships = relationships;
     builder._identityManager = this._identityManager;
+    builder._serializer = this._serializer;
     return builder;
   }
 
   /**
    * Sets the serializer for this collection.
-   * TEMPORARILY DISABLED - Serializer is not ready yet
    *
    * The serializer defines how model instances should be serialized when
    * converting to API responses or other external formats.
@@ -154,22 +167,29 @@ export default class CollectionBuilder<
    * @returns A new CollectionBuilder instance with the specified serializer
    * @example
    * ```typescript
-   * const builder = collection(UserModel).serializer(userSerializer);
+   * const builder = collection()
+   *   .model(UserModel)
+   *   .serializer(userSerializer);
    * ```
    */
-  /*
-  serializer<S extends Serializer<any, any>>(
+  serializer<S>(
     serializer: S,
-  ): CollectionBuilder<TToken, TRelationships, TTraits, TIdentityManager, S> {
-    const builder = new CollectionBuilder<TToken, TRelationships, TTraits, TIdentityManager, S>();
-    builder._token = this._token;
+  ): CollectionBuilder<TTemplate, TSchema, TRelationships, TFactory, TIdentityManager, S> {
+    const builder = new CollectionBuilder<
+      TTemplate,
+      TSchema,
+      TRelationships,
+      TFactory,
+      TIdentityManager,
+      S
+    >();
+    builder._template = this._template;
     builder._factory = this._factory;
     builder._relationships = this._relationships;
-    builder._serializer = serializer;
     builder._identityManager = this._identityManager;
+    builder._serializer = serializer;
     return builder;
   }
-  */
 
   /**
    * Sets the identity manager for this collection.
@@ -188,12 +208,20 @@ export default class CollectionBuilder<
    */
   identityManager<I extends IdentityManager<any>>(
     identityManager: I,
-  ): CollectionBuilder<TTemplate, TSchema, TRelationships, TFactory, I> {
-    const builder = new CollectionBuilder<TTemplate, TSchema, TRelationships, TFactory, I>();
+  ): CollectionBuilder<TTemplate, TSchema, TRelationships, TFactory, I, TSerializer> {
+    const builder = new CollectionBuilder<
+      TTemplate,
+      TSchema,
+      TRelationships,
+      TFactory,
+      I,
+      TSerializer
+    >();
     builder._template = this._template;
     builder._factory = this._factory;
     builder._relationships = this._relationships;
     builder._identityManager = identityManager;
+    builder._serializer = this._serializer;
     return builder;
   }
 
@@ -201,7 +229,7 @@ export default class CollectionBuilder<
    * Creates the final schema collection configuration.
    * @returns The schema collection configuration
    */
-  create(): SchemaCollectionConfig<TTemplate, TRelationships, TFactory> {
+  create(): SchemaCollectionConfig<TTemplate, TRelationships, TFactory, TSerializer> {
     if (!this._template) {
       throw new MirageError(
         'Model template must be set before creating collection. Call .model() first.',
@@ -212,6 +240,7 @@ export default class CollectionBuilder<
       model: this._template,
       relationships: this._relationships,
       factory: this._factory,
+      serializer: this._serializer,
       identityManager: this._identityManager,
     };
   }
@@ -237,6 +266,13 @@ export default class CollectionBuilder<
  */
 export function collection<
   TSchema extends SchemaCollections = SchemaCollections,
->(): CollectionBuilder<ModelTemplate, TSchema, {}, undefined, StringIdentityManager> {
-  return new CollectionBuilder<ModelTemplate, TSchema, {}, undefined, StringIdentityManager>();
+>(): CollectionBuilder<ModelTemplate, TSchema, {}, undefined, StringIdentityManager, undefined> {
+  return new CollectionBuilder<
+    ModelTemplate,
+    TSchema,
+    {},
+    undefined,
+    StringIdentityManager,
+    undefined
+  >();
 }

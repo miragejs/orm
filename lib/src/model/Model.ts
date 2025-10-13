@@ -26,16 +26,26 @@ import type {
  * Model class for managing model instances with relationships
  * @template TTemplate - The model template (most important for users)
  * @template TSchema - The schema collections type for enhanced type inference
+ * @template TSerializer - The serializer type
  */
 export default class Model<
   TTemplate extends ModelTemplate = ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
-> extends BaseModel<ModelAttrs<TTemplate, TSchema>> {
+  TSerializer = undefined,
+> extends BaseModel<ModelAttrs<TTemplate, TSchema>, TSerializer> {
   public readonly relationships?: RelationshipsByTemplate<TTemplate, TSchema>;
-  private _relationshipsManager?: RelationshipsManager<TTemplate, TSchema>;
+  protected _relationshipsManager?: RelationshipsManager<TTemplate, TSchema>;
 
-  constructor(template: TTemplate, config: ModelConfig<TTemplate, TSchema>) {
-    const { attrs, relationships, schema } = config;
+  constructor(
+    template: TTemplate,
+    config: ModelConfig<
+      TTemplate,
+      TSchema,
+      RelationshipsByTemplate<TTemplate, TSchema>,
+      TSerializer
+    >,
+  ) {
+    const { attrs, relationships, schema, serializer } = config;
 
     const dbCollection = schema.db.getCollection(
       template.collectionName,
@@ -47,17 +57,23 @@ export default class Model<
       relationships,
     );
 
-    // Initialize BaseModel with regular attributes and db collection
+    // Initialize BaseModel with regular attributes, db collection, and serializer
     super(
       template.modelName,
       template.collectionName,
       modelAttrs as NewModelAttrs<ModelAttrs<TTemplate, TSchema>>,
       dbCollection,
+      serializer,
     );
 
     this.relationships = relationships;
     if (schema && relationships) {
-      this._relationshipsManager = new RelationshipsManager(this, schema, relationships);
+      // Cast to base Model type since RelationshipsManager doesn't need serializer type info
+      this._relationshipsManager = new RelationshipsManager(
+        this as unknown as Model<TTemplate, TSchema>,
+        schema,
+        relationships,
+      );
 
       // Set pending relationship updates only if the model is new (not already in the database)
       if (this._status === 'new' && Object.keys(relationshipUpdates).length > 0) {
@@ -76,18 +92,27 @@ export default class Model<
    * Define a model class with attribute accessors
    * @template TTemplate - The model template (most important for users)
    * @template TSchema - The schema collections type for enhanced type inference
+   * @template TSerializer - The serializer type
    * @param template - The model template to define
    * @returns A model class that can be instantiated with 'new'
    */
   static define<
     TTemplate extends ModelTemplate,
     TSchema extends SchemaCollections = SchemaCollections,
-  >(template: TTemplate): ModelClass<TTemplate, TSchema> {
-    return class extends Model<TTemplate, TSchema> {
-      constructor(config: ModelConfig<TTemplate, TSchema>) {
+    TSerializer = undefined,
+  >(template: TTemplate): ModelClass<TTemplate, TSchema, TSerializer> {
+    return class extends Model<TTemplate, TSchema, TSerializer> {
+      constructor(
+        config: ModelConfig<
+          TTemplate,
+          TSchema,
+          RelationshipsByTemplate<TTemplate, TSchema>,
+          TSerializer
+        >,
+      ) {
         super(template, config);
       }
-    } as unknown as ModelClass<TTemplate, TSchema>;
+    } as unknown as ModelClass<TTemplate, TSchema, TSerializer>;
   }
 
   // -- CRUD METHODS --
@@ -96,7 +121,7 @@ export default class Model<
    * Save the model to the database and apply pending relationship updates
    * @returns The model with saved instance type
    */
-  save(): this & ModelInstance<TTemplate, TSchema> {
+  save(): this & ModelInstance<TTemplate, TSchema, TSerializer> {
     // Save the model (FK changes are in _attrs from _processAttrs or link/unlink)
     super.save();
 
@@ -105,7 +130,7 @@ export default class Model<
       this._relationshipsManager.applyPendingInverseUpdates();
     }
 
-    return this as this & ModelInstance<TTemplate, TSchema>;
+    return this as this & ModelInstance<TTemplate, TSchema, TSerializer>;
   }
 
   /**
@@ -113,7 +138,9 @@ export default class Model<
    * @param attrs - The attributes to update
    * @returns The model with saved instance type
    */
-  update(attrs: ModelUpdateAttrs<TTemplate, TSchema>): this & ModelInstance<TTemplate, TSchema> {
+  update(
+    attrs: ModelUpdateAttrs<TTemplate, TSchema>,
+  ): this & ModelInstance<TTemplate, TSchema, TSerializer> {
     // Process attributes to separate relationship model instances from regular attributes
     const { modelAttrs, relationshipUpdates } = Model._processAttrs<TTemplate, TSchema>(
       attrs,
@@ -126,23 +153,23 @@ export default class Model<
     }
 
     return super.update(modelAttrs as Partial<ModelAttrs<TTemplate, TSchema>>) as this &
-      ModelInstance<TTemplate, TSchema>;
+      ModelInstance<TTemplate, TSchema, TSerializer>;
   }
 
   /**
    * Reload the model from the database
    * @returns The model with saved instance type
    */
-  reload(): this & ModelInstance<TTemplate, TSchema> {
-    return super.reload() as this & ModelInstance<TTemplate, TSchema>;
+  reload(): this & ModelInstance<TTemplate, TSchema, TSerializer> {
+    return super.reload() as this & ModelInstance<TTemplate, TSchema, TSerializer>;
   }
 
   /**
    * Destroy the model from the database
    * @returns The model with new instance type
    */
-  destroy(): this & NewModelInstance<TTemplate, TSchema> {
-    return super.destroy() as this & NewModelInstance<TTemplate, TSchema>;
+  destroy(): this & NewModelInstance<TTemplate, TSchema, TSerializer> {
+    return super.destroy() as this & NewModelInstance<TTemplate, TSchema, TSerializer>;
   }
 
   // -- RELATIONSHIP METHODS --
@@ -156,7 +183,7 @@ export default class Model<
   link<K extends RelationshipNames<RelationshipsByTemplate<TTemplate, TSchema>>>(
     relationshipName: K,
     targetModel: RelationshipTargetModel<TSchema, RelationshipsByTemplate<TTemplate, TSchema>, K>,
-  ): this & ModelInstance<TTemplate, TSchema> {
+  ): this & ModelInstance<TTemplate, TSchema, TSerializer> {
     if (this._relationshipsManager) {
       // Get FK updates from manager (which also handles inverse relationships)
       const result = this._relationshipsManager.link(relationshipName, targetModel);
@@ -169,7 +196,7 @@ export default class Model<
         this.save();
       }
     }
-    return this as this & ModelInstance<TTemplate, TSchema>;
+    return this as this & ModelInstance<TTemplate, TSchema, TSerializer>;
   }
 
   /**
@@ -181,7 +208,7 @@ export default class Model<
   unlink<K extends RelationshipNames<RelationshipsByTemplate<TTemplate, TSchema>>>(
     relationshipName: K,
     targetModel?: RelationshipTargetModel<TSchema, RelationshipsByTemplate<TTemplate, TSchema>, K>,
-  ): this & ModelInstance<TTemplate, TSchema> {
+  ): this & ModelInstance<TTemplate, TSchema, TSerializer> {
     if (this._relationshipsManager) {
       // Get FK updates from manager (which also handles inverse relationships)
       const result = this._relationshipsManager.unlink(relationshipName, targetModel);
@@ -194,7 +221,7 @@ export default class Model<
         this.save();
       }
     }
-    return this as this & ModelInstance<TTemplate, TSchema>;
+    return this as this & ModelInstance<TTemplate, TSchema, TSerializer>;
   }
 
   /**
@@ -206,16 +233,6 @@ export default class Model<
     relationshipName: K,
   ): RelationshipTargetModel<TSchema, RelationshipsByTemplate<TTemplate, TSchema>, K> | null {
     return this._relationshipsManager?.related(relationshipName) ?? null;
-  }
-
-  // -- SERIALIZATION METHODS --
-
-  /**
-   * Convert the model to a JSON object with proper typing
-   * @returns A plain object representation of the model
-   */
-  toJSON(): ModelAttrs<TTemplate, TSchema> {
-    return super.toJSON();
   }
 
   // -- ATTRIBUTES PROCESSING METHODS --

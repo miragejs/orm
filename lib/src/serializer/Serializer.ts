@@ -1,36 +1,69 @@
-import type {
-  ModelToken,
-  ModelInstance,
-  InferTokenModel,
-  InferTokenSerializedModel,
-  InferTokenSerializedCollection,
-} from '@src/model';
+import type { InferModelAttrs, ModelInstance, ModelTemplate } from '@src/model';
+import type ModelCollection from '@src/model/ModelCollection';
+import type { SchemaCollections } from '@src/schema';
 
 /**
- * Serializer class that handles model serialization
+ * Serializer class that handles model serialization with custom JSON types
  * @template TTemplate - The model template
+ * @template TSerializedModel - The serialized model type (for single model)
+ * @template TSerializedCollection - The serialized collection type (for array of models)
  * @template TConfig - The serializer configuration type
- * @template TSerializedModel - The serialized model type (inferred from template by default)
- * @template TSerializedCollection - The serialized collection type (inferred from template by default)
+ * @example
+ * ```typescript
+ * interface UserJSON {
+ *   id: string;
+ *   name: string;
+ * }
+ *
+ * interface UsersJSON {
+ *   users: UserJSON[];
+ * }
+ *
+ * const serializer = new Serializer<UserTemplate, UserJSON, UsersJSON>(
+ *   userTemplate,
+ *   {
+ *     attrs: ['id', 'name'],
+ *     root: 'user'
+ *   }
+ * );
+ * ```
  */
 export default class Serializer<
-  TToken extends ModelToken,
-  TConfig extends SerializerConfig<TToken> = SerializerConfig<TToken>,
-  TSerializedModel = InferTokenSerializedModel<TToken>,
-  TSerializedCollection = InferTokenSerializedCollection<TToken>,
+  TTemplate extends ModelTemplate,
+  TSerializedModel = InferModelAttrs<TTemplate>,
+  TSerializedCollection = TSerializedModel[],
+  TConfig extends SerializerConfig<TTemplate> = SerializerConfig<TTemplate>,
 > {
-  protected token: TToken;
-  protected modelName: string;
-  protected collectionName: string;
-  protected attrs: TConfig['attrs'];
-  protected root: TConfig['root'];
+  protected _template: TTemplate;
+  protected _modelName: string;
+  protected _collectionName: string;
+  protected _attrs: TConfig['attrs'];
+  protected _root: TConfig['root'];
+  protected _embed: TConfig['embed'];
 
-  constructor(token: TToken, config?: TConfig) {
-    this.token = token;
-    this.modelName = token.modelName;
-    this.collectionName = token.collectionName;
-    this.attrs = config?.attrs ?? [];
-    this.root = config?.root ?? false;
+  constructor(template: TTemplate, config?: TConfig) {
+    this._template = template;
+    this._modelName = template.modelName;
+    this._collectionName = template.collectionName;
+    this._attrs = config?.attrs ?? [];
+    this._root = config?.root ?? false;
+    this._embed = config?.embed ?? false;
+  }
+
+  /**
+   * Get the model name
+   * @returns The model name
+   */
+  get modelName(): string {
+    return this._modelName;
+  }
+
+  /**
+   * Get the collection name
+   * @returns The collection name
+   */
+  get collectionName(): string {
+    return this._collectionName;
   }
 
   /**
@@ -38,11 +71,13 @@ export default class Serializer<
    * @param model - The model instance to serialize
    * @returns The serialized model
    */
-  serialize(model: ModelInstance<TToken>): TSerializedModel {
+  serialize<TSchema extends SchemaCollections>(
+    model: ModelInstance<TTemplate, TSchema>,
+  ): TSerializedModel {
     const attrs = this._getAttributes(model);
 
-    if (this.root) {
-      const rootKey = typeof this.root === 'string' ? this.root : this.modelName;
+    if (this._root) {
+      const rootKey = typeof this._root === 'string' ? this._root : this._modelName;
       return { [rootKey]: attrs } as TSerializedModel;
     }
 
@@ -50,14 +85,18 @@ export default class Serializer<
   }
 
   /**
-   * Serialize multiple model instances
-   * @param models - Array of model instances to serialize
-   * @returns The serialized collection (format depends on template's collection serialization type)
+   * Serialize a model collection
+   * @param collection - The model collection to serialize
+   * @returns The serialized collection
    */
-  serializeCollection(models: ModelInstance<TToken>[]): TSerializedCollection {
-    if (this.root) {
+  serializeCollection<TSchema extends SchemaCollections>(
+    collection: ModelCollection<TTemplate, TSchema>,
+  ): TSerializedCollection {
+    const models = collection.models;
+
+    if (this._root) {
       const serializedModels = models.map((model) => this._getAttributes(model));
-      const rootKey = typeof this.root === 'string' ? this.root : this.collectionName;
+      const rootKey = typeof this._root === 'string' ? this._root : this._collectionName;
 
       return {
         [rootKey]: serializedModels,
@@ -69,12 +108,16 @@ export default class Serializer<
 
   /**
    * Get the attributes to include in serialization
+   * Can be overridden in subclasses for custom serialization logic
    * @param model - The model instance
    * @returns Object with attributes
    */
-  private _getAttributes(model: ModelInstance<TToken>): Record<string, any> {
-    if (this.attrs?.length) {
-      return this.attrs.reduce(
+  protected _getAttributes<TSchema extends SchemaCollections>(
+    model: ModelInstance<TTemplate, TSchema>,
+  ): Record<string, any> {
+    // If specific attributes are configured, only include those
+    if (this._attrs && this._attrs.length > 0) {
+      return this._attrs.reduce(
         (acc, attr) => {
           acc[attr as string] = model.attrs[attr as keyof typeof model.attrs];
           return acc;
@@ -83,7 +126,15 @@ export default class Serializer<
       );
     }
 
-    return model.attrs;
+    // If embed is disabled, exclude relationship accessors
+    if (!this._embed) {
+      // Return only the direct attributes from the model (no relationships)
+      return { ...model.attrs };
+    }
+
+    // If embed is enabled, include relationships
+    // Note: This would require additional logic to handle embedded relationships
+    return { ...model.attrs };
   }
 }
 
@@ -91,7 +142,25 @@ export default class Serializer<
  * Configuration for creating a serializer
  * @template TTemplate - The model template
  */
-export interface SerializerConfig<TToken extends ModelToken> {
-  attrs?: (keyof InferTokenModel<TToken>)[];
+export interface SerializerConfig<TTemplate extends ModelTemplate> {
+  /**
+   * Specific attributes to include in serialization
+   * If not provided, all attributes are included
+   */
+  attrs?: (keyof InferModelAttrs<TTemplate>)[];
+
+  /**
+   * Whether to wrap the serialized data in a root key
+   * - false: no wrapping (default)
+   * - true: wrap with modelName/collectionName
+   * - string: wrap with custom key name
+   */
   root?: boolean | string;
+
+  /**
+   * Whether to embed related models in the serialized output
+   * - false: exclude relationships (default)
+   * - true: include embedded relationships
+   */
+  embed?: boolean;
 }

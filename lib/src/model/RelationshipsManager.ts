@@ -34,7 +34,8 @@ export default class RelationshipsManager<
   TSchema extends SchemaCollections,
   TRelationships extends ModelRelationships = RelationshipsByTemplate<TTemplate, TSchema>,
 > {
-  private _isApplyingPendingUpdates: boolean = false;
+  public isApplyingPendingUpdates: boolean = false;
+
   private _model: Model<TTemplate, TSchema>;
   private _pendingRelationshipOperations: PendingRelationshipOperation[] = [];
   private _relationshipDefs?: RelationshipDefs<TRelationships>;
@@ -159,7 +160,7 @@ export default class RelationshipsManager<
   applyPendingInverseUpdates(): void {
     if (this._pendingRelationshipOperations.length === 0) return;
 
-    this._isApplyingPendingUpdates = true;
+    this.isApplyingPendingUpdates = true;
 
     try {
       // Step 1: Process all unlinks first - update inverse relationships on old targets
@@ -204,7 +205,7 @@ export default class RelationshipsManager<
       // Clear pending operations
       this._pendingRelationshipOperations = [];
     } finally {
-      this._isApplyingPendingUpdates = false;
+      this.isApplyingPendingUpdates = false;
     }
   }
 

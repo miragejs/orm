@@ -23,7 +23,8 @@ export default class Schema<
   public readonly identityManager: TConfig extends SchemaConfig<infer TIdentityManager>
     ? TIdentityManager
     : StringIdentityManager;
-  private _collections: Map<string, SchemaCollection<any, any, any, any>> = new Map();
+
+  private _collections: Map<string, SchemaCollection<any, any, any, any, any>> = new Map();
 
   constructor(collections: TCollections, config?: TConfig) {
     this.db = createDatabase<SchemaDbCollections<TCollections>>();
@@ -41,9 +42,10 @@ export default class Schema<
   ): TCollections[K] extends SchemaCollectionConfig<
     infer TTemplate,
     infer TRelationships,
-    infer TFactory
+    infer TFactory,
+    infer TSerializer
   >
-    ? SchemaCollection<TCollections, TTemplate, TRelationships, TFactory>
+    ? SchemaCollection<TCollections, TTemplate, TRelationships, TFactory, TSerializer>
     : never {
     const collection = this._collections.get(collectionName as string);
     if (!collection) {
@@ -58,7 +60,7 @@ export default class Schema<
    */
   private _registerCollections(collections: TCollections): void {
     for (const [collectionName, collectionConfig] of Object.entries(collections)) {
-      const { model, factory, relationships } = collectionConfig;
+      const { model, factory, relationships, serializer } = collectionConfig;
       const identityManager = collectionConfig.identityManager ?? this.identityManager;
 
       const collection = createCollection(this as SchemaInstance<TCollections, TConfig>, {
@@ -66,6 +68,7 @@ export default class Schema<
         factory,
         identityManager,
         relationships,
+        serializer,
       });
       this._collections.set(collectionName, collection);
 
