@@ -44,7 +44,7 @@ const userModel = model()
   .name('user')
   .collection('users')
   .attrs<UserAttrs>()
-  .json<UserAttrs, UserAttrs[]>() // Optional: Define serialization types
+  .json<UserJSON, UsersJSON[]>() // Optional: Define serialization types
   .create();
 
 const postModel = model()
@@ -59,7 +59,7 @@ const postModel = model()
 - `.collection(name)` - Set the collection name (required)
 - `.attrs<T>()` - Define model attributes type (required)
 - `.json<TModel, TCollection>()` - Define serialization output types (optional)
-- `.create()` - Finalize and create the model template
+- `.create()` - Finalize and create a model template for your future model instances
 
 ### Factory Builder
 
@@ -107,11 +107,11 @@ import { collection, associations, Serializer } from '@miragejs/orm';
 const userCollection = collection()
   .model(userModel)
   .relationships({
-    posts: associations.hasMany(postModel), // foreignKey defaults to 'postIds'
+    posts: associations.hasMany(postModel), // foreignKey defaults to 'postIds' based on model name
   })
   .factory(userFactory)
   .serializer({
-    attrs: ['id', 'name', 'email'], // Only include specific attributes
+    attrs: ['id', 'name', 'email'],  // Only include specific attributes
     root: true,                      // Wrap in { user: {...} }
     include: ['posts'],              // Include relationships
     embed: false,                    // Side-load (default) vs embed
@@ -121,9 +121,9 @@ const userCollection = collection()
 const postCollection = collection()
   .model(postModel)
   .relationships({
-    author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+    author: associations.belongsTo(userModel, { foreignKey: 'authorId' }), // Define foreignKey for a custom association name
   })
-  .serializer(new CustomSerializer(postModel)) // Or use custom serializer
+  .serializer(new CustomSerializer(postModel)) // Use custom serializer
   .create();
 ```
 
@@ -223,7 +223,11 @@ relationships({
 ### Working with Relationships
 
 ```typescript
-const appSchema = schema().collections({ users: userCollection, posts: postCollection }).setup();
+const appSchema = schema()
+  .collections({
+    users: userCollection,
+    posts: postCollection,
+  }).setup();
 
 // Create models
 const user = appSchema.users.create({ name: 'Alice', email: 'alice@example.com' });
@@ -288,6 +292,8 @@ const userFactoryWithPosts = factory()
   .attrs({
     name: () => faker.person.fullName(),
     email: () => faker.internet.email(),
+  })
+  .associations({
     posts: associations.createMany(postModel, 3), // Create 3 posts and link them
   })
   .create();
@@ -297,6 +303,8 @@ const postFactoryWithAuthor = factory()
   .attrs({
     title: () => faker.lorem.sentence(),
     content: () => faker.lorem.paragraph(),
+  })
+  .associations({
     author: associations.create(userModel), // Create and link a user
   })
   .create();
