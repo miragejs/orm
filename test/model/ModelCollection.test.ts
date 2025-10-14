@@ -25,7 +25,7 @@ const testSchema = schema()
   .collections({
     users: collection().model(userModel).create(),
   })
-  .build();
+  .setup();
 
 describe('ModelCollection', () => {
   let user1: ModelInstance<UserModel, TestSchema>;
@@ -404,7 +404,7 @@ describe('ModelCollection', () => {
         .collections({
           comments: collection().model(CommentModel).create(),
         })
-        .build();
+        .setup();
 
       const comment1 = new CommentModelClass({
         attrs: { text: 'First comment', userId: '1' },

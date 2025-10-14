@@ -66,7 +66,7 @@ describe('Factory with Schema', () => {
         users: userCollection,
         posts: postCollection,
       })
-      .build();
+      .setup();
 
     const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
     const post = testSchema.posts.create({ title: 'Test Post', content: 'Test content' });
@@ -108,7 +108,7 @@ describe('Factory with Schema', () => {
       .collections({
         users: userCollection,
       })
-      .build();
+      .setup();
 
     const user = testSchema.users.create('admin');
 
@@ -149,7 +149,7 @@ describe('Factory with Schema', () => {
       .collections({
         users: userCollection,
       })
-      .build();
+      .setup();
 
     const user = testSchema.users.create('admin', 'premium');
 
@@ -184,7 +184,7 @@ describe('Factory with Schema', () => {
       .collections({
         users: userCollection,
       })
-      .build();
+      .setup();
 
     const user = testSchema.users.create('admin');
 
@@ -207,7 +207,7 @@ describe('Factory with Schema', () => {
       .collections({
         users: userCollection,
       })
-      .build();
+      .setup();
 
     const user = testSchema.users.create();
 
@@ -241,7 +241,7 @@ describe('Factory with Schema', () => {
       .collections({
         users: userCollection,
       })
-      .build();
+      .setup();
 
     const user = testSchema.users.create('admin', { age: 30 } as any);
 
@@ -289,7 +289,7 @@ describe('Factory with Schema', () => {
         users: userCollection,
         posts: postCollection,
       })
-      .build();
+      .setup();
 
     const user = testSchema.users.create();
     const post = testSchema.posts.create();

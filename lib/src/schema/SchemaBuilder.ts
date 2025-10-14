@@ -22,7 +22,7 @@ import type { SchemaCollections, SchemaConfig } from './types';
  *   })
  *   .serializer({ root: true })
  *   .identityManager(appIdentityManager)
- *   .build();
+ *   .setup();
  * ```
  */
 export default class SchemaBuilder<
@@ -120,10 +120,10 @@ export default class SchemaBuilder<
   }
 
   /**
-   * Creates the final Schema instance with all configured options.
+   * Sets up the final Schema instance with all configured options.
    *
    * This method produces the complete schema instance that can be used throughout
-   * your application. Collections must be set before calling build().
+   * your application. Collections must be set before calling setup().
    * @returns The configured Schema instance with collection accessors
    * @throws Error if no collections have been configured
    * @example
@@ -135,17 +135,17 @@ export default class SchemaBuilder<
    *   })
    *   .serializer({ root: true })
    *   .identityManager(appIdentityManager)
-   *   .build();
+   *   .setup();
    *
    * // Use the schema
    * const userCollection = appSchema.getCollection('users');
    * const user = appSchema.users.create({ name: 'John' });
    * ```
    */
-  build(): SchemaInstance<TCollections, SchemaConfig<TIdentityManager, TGlobalConfig>> {
+  setup(): SchemaInstance<TCollections, SchemaConfig<TIdentityManager, TGlobalConfig>> {
     if (!this._collections) {
       throw new Error(
-        'SchemaBuilder: collections are required. Call .collections() before .build()',
+        'SchemaBuilder: collections are required. Call .collections() before .setup()',
       );
     }
 
@@ -166,7 +166,7 @@ export default class SchemaBuilder<
  *
  * This is the main entry point for creating schemas in the builder-based API.
  * The returned SchemaBuilder can be configured with collections and identity manager
- * before building the final schema instance.
+ * before setting up the final schema instance.
  * @returns A new SchemaBuilder instance ready for configuration
  * @example
  * ```typescript
@@ -175,7 +175,7 @@ export default class SchemaBuilder<
  *   .collections({
  *     users: userCollection,
  *   })
- *   .build();
+ *   .setup();
  *
  * // Full schema configuration
  * const appSchema = schema()
@@ -184,7 +184,7 @@ export default class SchemaBuilder<
  *     posts: postCollection,
  *   })
  *   .identityManager(new StringIdentityManager())
- *   .build();
+ *   .setup();
  * ```
  * @see {@link SchemaBuilder} for available configuration methods
  */

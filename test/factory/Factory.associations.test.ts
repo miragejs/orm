@@ -181,7 +181,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       const post = testSchema.posts.create();
 
@@ -217,7 +217,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       const post = testSchema.posts.create();
       expect(post.author?.role).toBe('admin');
@@ -250,7 +250,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       const post = testSchema.posts.create();
       expect(post.author?.name).toBe('Jane Doe');
@@ -285,7 +285,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       const post = testSchema.posts.create();
 
@@ -322,7 +322,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       const post = testSchema.posts.create();
 
@@ -359,7 +359,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       const post = testSchema.posts.create();
       const comments = post.comments.models;
@@ -398,7 +398,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       const existingUser = testSchema.users.create({ name: 'Existing User' });
       const post = testSchema.posts.create();
@@ -434,7 +434,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       const post = testSchema.posts.create();
 
@@ -469,7 +469,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       testSchema.users.create({ name: 'Regular User' });
 
@@ -509,7 +509,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       testSchema.users.create({ name: 'Regular User' });
 
@@ -553,7 +553,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       const post = testSchema.posts.create();
 
@@ -590,7 +590,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       testSchema.tags.create({ name: 'Tag 1' });
       testSchema.tags.create({ name: 'Tag 2' });
@@ -629,7 +629,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       testSchema.tags.create({ name: 'Tag 1' });
 
@@ -671,7 +671,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       testSchema.tags.create('featured');
 
@@ -714,7 +714,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       // Create 10 tags
       for (let i = 0; i < 10; i++) {
@@ -764,7 +764,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       const post = testSchema.posts.create('withAuthor');
 
@@ -805,7 +805,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       const post = testSchema.posts.create('withAuthorAndComments');
 
@@ -848,7 +848,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       const post = testSchema.posts.create('withComments');
 
@@ -891,7 +891,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       const post = testSchema.posts.create('withComments');
 
@@ -935,7 +935,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       const post = testSchema.posts.create('withAuthor', 'withComments', 'published');
 
@@ -975,7 +975,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       const specificUser = testSchema.users.create({ name: 'Specific User' });
       const post = testSchema.posts.create('withAuthor', { author: specificUser });
@@ -1023,7 +1023,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       const specificUser = testSchema.users.create({ name: 'Specific User' });
       const post = testSchema.posts.create({ author: specificUser });
@@ -1080,7 +1080,7 @@ describe('Factory associations', () => {
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
-        .build();
+        .setup();
 
       const post = testSchema.posts.create();
       const comments = post.comments.models;

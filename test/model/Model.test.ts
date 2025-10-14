@@ -57,7 +57,7 @@ const testSchema = schema()
       })
       .create(),
   })
-  .build();
+  .setup();
 
 describe('Model', () => {
   beforeEach(() => {

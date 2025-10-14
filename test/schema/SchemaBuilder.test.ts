@@ -83,7 +83,7 @@ describe('SchemaBuilder', () => {
       const builder = schema().identityManager(appIdentityManager).collections({
         users: userCollection,
       });
-      const schemaInstance = builder.build();
+      const schemaInstance = builder.setup();
 
       expect(schemaInstance.identityManager).toBe(appIdentityManager);
     });
@@ -103,7 +103,7 @@ describe('SchemaBuilder', () => {
         users: userCollection,
       };
       const builder = schema().collections(collections).identityManager(appIdentityManager);
-      const schemaInstance = builder.build();
+      const schemaInstance = builder.setup();
 
       expect(schemaInstance.identityManager).toBe(appIdentityManager);
     });
@@ -115,7 +115,7 @@ describe('SchemaBuilder', () => {
         .collections({
           users: userCollection,
         })
-        .build();
+        .setup();
 
       expect(schemaInstance).toBeDefined();
       expect(schemaInstance.db).toBeDefined();
@@ -129,7 +129,7 @@ describe('SchemaBuilder', () => {
           posts: postCollection,
         })
         .identityManager(appIdentityManager)
-        .build();
+        .setup();
 
       expect(schemaInstance).toBeDefined();
       expect(schemaInstance.db).toBeDefined();
@@ -139,8 +139,8 @@ describe('SchemaBuilder', () => {
     it('should throw error when collections are not set', () => {
       const builder = schema();
 
-      expect(() => builder.build()).toThrow(
-        'SchemaBuilder: collections are required. Call .collections() before .build()',
+      expect(() => builder.setup()).toThrow(
+        'SchemaBuilder: collections are required. Call .collections() before .setup()',
       );
     });
 
@@ -150,7 +150,7 @@ describe('SchemaBuilder', () => {
           users: userCollection,
           posts: postCollection,
         })
-        .build();
+        .setup();
 
       const userSchemaCollection = schemaInstance.getCollection('users');
       const postSchemaCollection = schemaInstance.getCollection('posts');
@@ -165,7 +165,7 @@ describe('SchemaBuilder', () => {
           users: userCollection,
           posts: postCollection,
         })
-        .build();
+        .setup();
 
       expect(schemaInstance.users).toBeDefined();
       expect(schemaInstance.posts).toBeDefined();
@@ -180,9 +180,9 @@ describe('SchemaBuilder', () => {
       };
 
       // Order 1: collections -> identityManager
-      const schema1 = schema().collections(collections).identityManager(appIdentityManager).build();
+      const schema1 = schema().collections(collections).identityManager(appIdentityManager).setup();
       // Order 2: identityManager -> collections
-      const schema2 = schema().identityManager(appIdentityManager).collections(collections).build();
+      const schema2 = schema().identityManager(appIdentityManager).collections(collections).setup();
 
       expect(schema1.identityManager).toBe(appIdentityManager);
       expect(schema2.identityManager).toBe(appIdentityManager);
@@ -210,7 +210,7 @@ describe('SchemaBuilder', () => {
             .create(),
         })
         .identityManager(appIdentityManager)
-        .build();
+        .setup();
 
       expect(appSchema).toBeDefined();
       expect(appSchema.identityManager).toBe(appIdentityManager);
@@ -239,7 +239,7 @@ describe('SchemaBuilder', () => {
             })
             .create(),
         })
-        .build();
+        .setup();
 
       expect(complexSchema).toBeDefined();
 

@@ -52,7 +52,7 @@ describe('Serializer', () => {
       const serializer = new Serializer<UserModel>(userModel);
 
       const userCollection = collection().model(userModel).serializer(serializer).create();
-      const testSchema = schema().collections({ users: userCollection }).build();
+      const testSchema = schema().collections({ users: userCollection }).setup();
 
       const user = testSchema.users.create({
         name: 'John Doe',
@@ -77,7 +77,7 @@ describe('Serializer', () => {
       });
 
       const userCollection = collection().model(userModel).serializer(serializer).create();
-      const testSchema = schema().collections({ users: userCollection }).build();
+      const testSchema = schema().collections({ users: userCollection }).setup();
 
       const user = testSchema.users.create({
         name: 'John Doe',
@@ -103,7 +103,7 @@ describe('Serializer', () => {
       });
 
       const userCollection = collection().model(userModel).serializer(serializer).create();
-      const testSchema = schema().collections({ users: userCollection }).build();
+      const testSchema = schema().collections({ users: userCollection }).setup();
 
       const user = testSchema.users.create({
         name: 'John Doe',
@@ -129,7 +129,7 @@ describe('Serializer', () => {
       });
 
       const userCollection = collection().model(userModel).serializer(serializer).create();
-      const testSchema = schema().collections({ users: userCollection }).build();
+      const testSchema = schema().collections({ users: userCollection }).setup();
 
       const user = testSchema.users.create({
         name: 'John Doe',
@@ -156,7 +156,7 @@ describe('Serializer', () => {
       });
 
       const postCollection = collection().model(postModel).serializer(serializer).create();
-      const testSchema = schema().collections({ posts: postCollection }).build();
+      const testSchema = schema().collections({ posts: postCollection }).setup();
 
       testSchema.posts.create({
         title: 'First Post',
@@ -185,7 +185,7 @@ describe('Serializer', () => {
       });
 
       const postCollection = collection().model(postModel).serializer(serializer).create();
-      const testSchema = schema().collections({ posts: postCollection }).build();
+      const testSchema = schema().collections({ posts: postCollection }).setup();
 
       testSchema.posts.create({
         title: 'First Post',
@@ -216,7 +216,7 @@ describe('Serializer', () => {
       });
 
       const postCollection = collection().model(postModel).serializer(serializer).create();
-      const testSchema = schema().collections({ posts: postCollection }).build();
+      const testSchema = schema().collections({ posts: postCollection }).setup();
 
       const posts = testSchema.posts.all();
       const json = posts.toJSON();
@@ -228,7 +228,7 @@ describe('Serializer', () => {
   describe('fallback behavior', () => {
     it('should return raw attributes when no serializer is configured', () => {
       const userCollection = collection().model(userModel).create();
-      const testSchema = schema().collections({ users: userCollection }).build();
+      const testSchema = schema().collections({ users: userCollection }).setup();
 
       const user = testSchema.users.create({
         name: 'John Doe',
@@ -250,7 +250,7 @@ describe('Serializer', () => {
 
     it('should return array of raw attributes for collection when no serializer', () => {
       const postCollection = collection().model(postModel).create();
-      const testSchema = schema().collections({ posts: postCollection }).build();
+      const testSchema = schema().collections({ posts: postCollection }).setup();
 
       testSchema.posts.create({
         title: 'First Post',
@@ -305,7 +305,7 @@ describe('Serializer', () => {
       });
 
       const userCollection = collection().model(userModel).serializer(serializer).create();
-      const testSchema = schema().collections({ users: userCollection }).build();
+      const testSchema = schema().collections({ users: userCollection }).setup();
 
       const user = testSchema.users.create({
         name: 'John Doe',
@@ -342,7 +342,7 @@ describe('Serializer', () => {
           users: userCollection,
           posts: postCollection,
         })
-        .build();
+        .setup();
 
       const user = testSchema.users.create({
         name: 'John Doe',
@@ -390,7 +390,7 @@ describe('Serializer', () => {
               .serializer({ include: ['author'] }) // embed defaults to false
               .create(),
           })
-          .build();
+          .setup();
 
         const user = testSchema.users.create({
           name: 'Alice',
@@ -433,7 +433,7 @@ describe('Serializer', () => {
               .serializer({ include: ['author'], embed: true })
               .create(),
           })
-          .build();
+          .setup();
 
         const user = testSchema.users.create({
           name: 'Bob',
@@ -478,7 +478,7 @@ describe('Serializer', () => {
               .serializer({ include: ['author'], embed: true })
               .create(),
           })
-          .build();
+          .setup();
 
         const post = testSchema.posts.create({
           title: 'Orphan Post',
@@ -516,7 +516,7 @@ describe('Serializer', () => {
               })
               .create(),
           })
-          .build();
+          .setup();
 
         const user = testSchema.users.create({
           name: 'Charlie',
@@ -578,7 +578,7 @@ describe('Serializer', () => {
               })
               .create(),
           })
-          .build();
+          .setup();
 
         const user = testSchema.users.create({
           name: 'Diana',
@@ -640,7 +640,7 @@ describe('Serializer', () => {
               })
               .create(),
           })
-          .build();
+          .setup();
 
         const user = testSchema.users.create({
           name: 'Eve',
@@ -680,7 +680,7 @@ describe('Serializer', () => {
               })
               .create(),
           })
-          .build();
+          .setup();
 
         const user = testSchema.users.create({
           name: 'Frank',
@@ -724,7 +724,7 @@ describe('Serializer', () => {
               .serializer({ root: true, include: ['author'], embed: true })
               .create(),
           })
-          .build();
+          .setup();
 
         const user = testSchema.users.create({
           name: 'Grace',
@@ -774,7 +774,7 @@ describe('Serializer', () => {
               })
               .create(),
           })
-          .build();
+          .setup();
 
         const user = testSchema.users.create({
           name: 'Henry',
@@ -826,7 +826,7 @@ describe('Serializer', () => {
               })
               .create(),
           })
-          .build();
+          .setup();
 
         const user = testSchema.users.create({
           name: 'Ivy',
@@ -879,7 +879,7 @@ describe('Serializer', () => {
               })
               .create(),
           })
-          .build();
+          .setup();
 
         const user1 = testSchema.users.create({
           name: 'Jack',
@@ -954,7 +954,7 @@ describe('Serializer', () => {
               })
               .create(),
           })
-          .build();
+          .setup();
 
         const user = testSchema.users.create({
           name: 'Kate',

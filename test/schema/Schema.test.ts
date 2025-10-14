@@ -71,7 +71,7 @@ describe('Schema', () => {
       posts: postCollection,
     })
     .identityManager(new StringIdentityManager())
-    .build();
+    .setup();
 
   beforeEach(() => {
     testSchema.db.emptyData();
@@ -304,7 +304,7 @@ describe('Schema', () => {
           },
         })
         .identityManager(new NumberIdentityManager())
-        .build();
+        .setup();
 
       const user = schemaWithNumberDefault.users.create();
       const post = schemaWithNumberDefault.posts.create();
@@ -348,7 +348,7 @@ describe('Schema with relationships', () => {
       posts: postCollection,
       comments: commentCollection,
     })
-    .build();
+    .setup();
 
   beforeEach(() => {
     testSchema.db.emptyData();
@@ -694,7 +694,7 @@ describe('Schema with relationships', () => {
             posts: collection().model(postModel).create(),
           })
           .serializer({ root: true })
-          .build();
+          .setup();
 
         const user = testSchema.users.create({ name: 'Alice', email: 'alice@example.com' });
         const post = testSchema.posts.create({ title: 'Hello', content: 'World' });
@@ -713,7 +713,7 @@ describe('Schema with relationships', () => {
             users: collection().model(userModel).create(),
           })
           .serializer({ root: 'data' })
-          .build();
+          .setup();
 
         const user = testSchema.users.create({ name: 'Bob', email: 'bob@example.com' });
 
@@ -727,7 +727,7 @@ describe('Schema with relationships', () => {
           .collections({
             users: collection().model(userModel).create(),
           })
-          .build();
+          .setup();
 
         const user = testSchema.users.create({ name: 'Charlie', email: 'charlie@example.com' });
 
@@ -747,7 +747,7 @@ describe('Schema with relationships', () => {
             users: collection().model(userModel).serializer({ root: false }).create(),
             posts: collection().model(postModel).create(),
           })
-          .build();
+          .setup();
 
         const user = testSchema.users.create({ name: 'Eve', email: 'eve@example.com' });
         const post = testSchema.posts.create({ title: 'Test', content: 'Content' });
@@ -774,7 +774,7 @@ describe('Schema with relationships', () => {
               .serializer({ attrs: ['id', 'name'] })
               .create(),
           })
-          .build();
+          .setup();
 
         const user = testSchema.users.create({ name: 'Frank', email: 'frank@example.com' });
 
@@ -792,7 +792,7 @@ describe('Schema with relationships', () => {
               .serializer({ attrs: ['id', 'name', 'email'] })
               .create(),
           })
-          .build();
+          .setup();
 
         const user = testSchema.users.create({ name: 'Grace', email: 'grace@example.com' });
 
@@ -808,7 +808,7 @@ describe('Schema with relationships', () => {
           .collections({
             users: collection().model(userModel).serializer({ root: 'userData' }).create(),
           })
-          .build();
+          .setup();
 
         const user = testSchema.users.create({ name: 'Henry', email: 'henry@example.com' });
 
@@ -825,7 +825,7 @@ describe('Schema with relationships', () => {
           .collections({
             users: collection().model(userModel).create(),
           })
-          .build();
+          .setup();
 
         const user1 = testSchema.users.create({ name: 'Jack', email: 'jack@example.com' });
         const user2 = testSchema.users.create({ name: 'Jill', email: 'jill@example.com' });
@@ -848,7 +848,7 @@ describe('Schema with relationships', () => {
               .serializer({ attrs: ['id', 'name'] })
               .create(),
           })
-          .build();
+          .setup();
 
         const user1 = testSchema.users.create({ name: 'Kate', email: 'kate@example.com' });
         const user2 = testSchema.users.create({ name: 'Leo', email: 'leo@example.com' });
@@ -870,7 +870,7 @@ describe('Schema with relationships', () => {
               .serializer({ attrs: ['id', 'name'] })
               .create(),
           })
-          .build();
+          .setup();
 
         const user1 = testSchema.users.create({ name: 'Mike', email: 'mike@example.com' });
         const user2 = testSchema.users.create({ name: 'Nina', email: 'nina@example.com' });
@@ -892,7 +892,7 @@ describe('Schema with relationships', () => {
           .collections({
             users: collection().model(userModel).serializer({ attrs: [] }).create(),
           })
-          .build();
+          .setup();
 
         const user = testSchema.users.create({ name: 'Paul', email: 'paul@example.com' });
 
@@ -910,7 +910,7 @@ describe('Schema with relationships', () => {
           .collections({
             users: collection().model(userModel).create(),
           })
-          .build();
+          .setup();
 
         const user = testSchema.users.create({ name: 'Quinn', email: 'quinn@example.com' });
 
@@ -930,7 +930,7 @@ describe('Schema with relationships', () => {
               .serializer({ root: 'userRecord', attrs: ['id', 'name'] })
               .create(),
           })
-          .build();
+          .setup();
 
         const user = testSchema.users.create({ name: 'Rachel', email: 'rachel@example.com' });
 
