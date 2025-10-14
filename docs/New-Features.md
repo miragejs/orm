@@ -11,6 +11,7 @@ This document provides an overview of the major new features in the ORM, includi
   - [Schema Builder](#schema-builder)
 - [Relationships](#relationships)
 - [Factory Associations](#factory-associations)
+  - [Type-Safe Factories with Shared Schema](#type-safe-factories-with-shared-schema)
 - [Serialization](#serialization)
 - [Advanced: Extending and Customization](#advanced-extending-and-customization)
   - [Extending Factories](#extending-factories)
@@ -48,7 +49,7 @@ const userModel = model()
   .name('user')
   .collection('users')
   .attrs<UserAttrs>()
-  .json<UserJSON, UsersJSON[]>() // Optional: Define serialization types
+  .json<UserJSON, UsersJSON[]>() // Optional: Define serialization types for `.toJSON` methods
   .create();
 
 const postModel = model()
@@ -61,8 +62,8 @@ const postModel = model()
 **Available methods:**
 - `.name(name)` - Set the model name (required)
 - `.collection(name)` - Set the collection name (required)
-- `.attrs<T>()` - Define model attributes type (required)
-- `.json<TModel, TCollection>()` - Define serialization output types (optional)
+- `.attrs<TAttrs>()` - Define model attributes type (required)
+- `.json<TSerializedModel, TSerializedCollection>()` - Define serialization output types (optional)
 - `.create()` - Finalize and create a model template for your future model instances
 
 ### Factory Builder
@@ -79,13 +80,11 @@ const userFactory = factory()
     email: () => faker.internet.email(),
     role: 'user', // Static value
   })
+  .associations({
+    posts: associations.createMany(postModel, 3),
+  })
   .traits({
-    admin: {
-      role: 'admin',
-    },
-    withPosts: {
-      posts: associations.createMany(postModel, 3),
-    },
+    admin: { role: 'admin' },
   })
   .afterCreate((user, schema) => {
     // Optional: Hook to run after model creation
@@ -97,6 +96,7 @@ const userFactory = factory()
 **Available methods:**
 - `.model(template)` - Associate with model template (required)
 - `.attrs(attributes)` - Define default attributes (optional)
+- `.associations(relationships)` - Create related models (optional)
 - `.traits(traits)` - Define trait variations (optional)
 - `.afterCreate(hook)` - Add post-creation hook (optional)
 - `.create()` - Finalize and create the factory
@@ -156,19 +156,20 @@ const appSchema = schema()
   .setup();
 
 // Use the schema (it provides type-safe collection accessors)
-const user = appSchema.users.create({ name: 'John', email: 'john@example.com' });
+const admin = appSchema.users.create({ email: 'admin@gmail.com' }, 'admin');
+const user = appSchema.users.create();
 const post = appSchema.posts.create({ title: 'Hello', content: 'World', authorId: user.id });
 
-user.link('posts', [post]);
+user.reload();
 
-console.log(user.posts.length); // 1
 console.log(post.author.name);  // 'John'
+console.log(user.posts.length); // 1
 ```
 
 **Available methods:**
 - `.collections(collections)` - Define all collections (required)
 - `.identityManager(manager)` - Set global ID generator (optional)
-- `.serializer(config)` - Set global serializer options (optional)
+- `.serializer(config|serializer)` - Set global serializer options (optional)
 - `.setup()` - Finalize and set up the schema with database
 
 ---
@@ -235,15 +236,15 @@ const appSchema = schema()
 
 // Create models
 const user = appSchema.users.create({ name: 'Alice', email: 'alice@example.com' });
-const post1 = appSchema.posts.create({ title: 'Post 1', content: 'Content 1', authorId: user.id });
-const post2 = appSchema.posts.create({ title: 'Post 2', content: 'Content 2', authorId: user.id });
+const post1 = appSchema.posts.create({ title: 'Post 1', content: 'Content 1' });
+const post2 = appSchema.posts.create({ title: 'Post 2', content: 'Content 2' });
 
 // Link relationships
 user.link('posts', [post1, post2]);
 
 // Access relationships
 console.log(user.posts.length);        // 2
-console.log(user.posts.models[0].title); // 'Post 1'
+console.log(user.posts.at(0).title); // 'Post 1'
 console.log(post1.author.name);        // 'Alice'
 
 // Unlink relationships
@@ -255,8 +256,8 @@ console.log(user.posts.length);        // 1
 
 - **`associations.belongsTo(model, options?)`** - Define a belongsTo relationship
 - **`associations.hasMany(model, options?)`** - Define a hasMany relationship
-- **`model.link(relationshipName, models)`** - Link models to a relationship
-- **`model.unlink(relationshipName, models)`** - Unlink models from a relationship
+- **`model.link(relationshipName, model|models)`** - Link models to a relationship
+- **`model.unlink(relationshipName, model|models)`** - Unlink models from a relationship
 
 ---
 
@@ -264,7 +265,7 @@ console.log(user.posts.length);        // 1
 
 Factories can automatically create and link related models using association helpers. This is especially useful for generating complex test data.
 
-### Basic Factory with Associations
+### Basic Factory
 
 ```typescript
 import { factory, associations } from '@miragejs/orm';
@@ -308,11 +309,197 @@ const postFactoryWithAuthor = factory()
     title: () => faker.lorem.sentence(),
     content: () => faker.lorem.paragraph(),
   })
-  .associations({
-    author: associations.create(userModel), // Create and link a user
+  .traits({
+    withAuthor: {
+      author: associations.link(userModel), // Link to the existed user
+    },
   })
   .create();
 ```
+
+### Type-Safe Factories with Shared Schema
+
+For better type safety and IntelliSense when using associations, define a shared schema type that your factories can reference. This provides full autocomplete and type checking for association helpers:
+
+```typescript
+import { 
+  factory, 
+  associations, 
+  collection, 
+  schema,
+  type Factory,
+  type SchemaCollectionConfig,
+  type TraitDefinition,
+  type BelongsTo,
+  type HasMany,
+} from '@miragejs/orm';
+
+// Define attribute types
+type UserAttrs = {
+  id: string;
+  name: string;
+  email: string;
+  role?: string;
+};
+
+type PostAttrs = {
+  id: string;
+  title: string;
+  content: string;
+  authorId: string;
+  published?: boolean;
+};
+
+type CommentAttrs = {
+  id: string;
+  content: string;
+  postId: string;
+  userId: string;
+};
+
+// Create models
+const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<UserAttrs>()
+  .create();
+
+const postModel = model()
+  .name('post')
+  .collection('posts')
+  .attrs<PostAttrs>()
+  .create();
+
+const commentModel = model()
+  .name('comment')
+  .collection('comments')
+  .attrs<CommentAttrs>()
+  .create();
+
+// Define model types
+type UserModel = typeof userModel;
+type PostModel = typeof postModel;
+type CommentModel = typeof commentModel;
+
+// Define shared schema type
+type AppSchema = {
+  users: SchemaCollectionConfig<
+    UserModel,
+    {
+      posts: HasMany<PostModel>;
+      comments: HasMany<CommentModel>;
+    },
+    Factory<
+      UserModel,
+      AppSchema,
+      {
+        admin: TraitDefinition<AppSchema, UserModel>;
+      }
+    >
+  >;
+  posts: SchemaCollectionConfig<
+    PostModel,
+    {
+      author: BelongsTo<UserModel, 'authorId'>;
+      comments: HasMany<CommentModel>;
+    },
+    Factory<
+      PostModel,
+      AppSchema,
+      {
+        published: TraitDefinition<AppSchema, PostModel>;
+      }
+    >
+  >;
+  comments: SchemaCollectionConfig<
+    CommentModel,
+    {
+      post: BelongsTo<PostModel, 'postId'>;
+      user: BelongsTo<UserModel, 'userId'>;
+    }
+  >;
+};
+
+// Create factories with schema type for full IntelliSense
+const userFactory = factory<AppSchema>()
+  .model(userModel)
+  .attrs({
+    name: () => faker.person.fullName(),
+    email: () => faker.internet.email(),
+  })
+  .traits({
+    admin: { role: 'admin' },
+  })
+  .create();
+
+const postFactory = factory<AppSchema>()
+  .model(postModel)
+  .attrs({
+    title: () => faker.lorem.sentence(),
+    content: () => faker.lorem.paragraph(),
+  })
+  .associations({
+    // Full type safety: IDE will autocomplete available traits and model attributes
+    author: associations.create<AppSchema, UserModel>(userModel, 'admin'),
+  })
+  .traits({
+    published: { published: true },
+  })
+  .create();
+
+const commentFactory = factory<AppSchema>()
+  .model(commentModel)
+  .attrs({
+    content: () => faker.lorem.sentence(),
+  })
+  .associations({
+    // Type-safe associations with full IntelliSense
+    post: associations.create<AppSchema, PostModel>(postModel),
+    user: associations.create<AppSchema, UserModel>(userModel),
+  })
+  .create();
+
+// Setup schema
+const appSchema = schema()
+  .collections({
+    users: collection()
+      .model(userModel)
+      .factory(userFactory)
+      .relationships({
+        posts: associations.hasMany(postModel),
+        comments: associations.hasMany(commentModel),
+      })
+      .create(),
+    posts: collection()
+      .model(postModel)
+      .factory(postFactory)
+      .relationships({
+        author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+        comments: associations.hasMany(commentModel),
+      })
+      .create(),
+    comments: collection()
+      .model(commentModel)
+      .factory(commentFactory)
+      .relationships({
+        post: associations.belongsTo(postModel),
+        user: associations.belongsTo(userModel),
+      })
+      .create(),
+  })
+  .setup();
+
+// Now get full type safety when creating models
+const post = appSchema.posts.create(); // Creates post with admin user automatically
+const comment = appSchema.comments.create(); // Creates comment with post and user
+```
+
+**Benefits of Shared Schema Type:**
+- Full IntelliSense for association helpers (autocomplete models and traits)
+- Type checking ensures associations reference valid models
+- Compile-time errors if relationships are misconfigured
+- Better refactoring support (renames propagate correctly)
+- Documentation through types (IDE shows available traits and relationships)
 
 ### Traits with Associations
 
@@ -362,7 +549,7 @@ const user = appSchema.users.create('withPosts');
 console.log(user.posts.length); // 5
 
 // Create user with multiple traits
-const admin = appSchema.users.create(['admin', 'withPosts']);
+const admin = appSchema.users.create('admin', 'withPosts');
 console.log(admin.role);         // 'admin'
 console.log(admin.posts.length); // 5
 ```
@@ -371,10 +558,10 @@ console.log(admin.posts.length); // 5
 
 All helpers are available via the `associations` object:
 
-- **`associations.create(model)`** - Create a single related model
-- **`associations.createMany(model, count)`** - Create multiple related models
-- **`associations.link(model)`** - Link to an existing model (random)
-- **`associations.linkMany(model, count)`** - Link to existing models (random selection)
+- **`associations.create(model, ...traitsOrDefaults)`** - Create a single related model
+- **`associations.createMany(model, count, ...traitsOrDefaults)`** - Create multiple related models
+- **`associations.link(model, ...traitsOrDefaults)`** - Link to an existing model (random) or create a new one (random)
+- **`associations.linkMany(model, count, ...traitsOrDefaults)`** - Link to existing models (random selection) or create new ones
 
 ---
 
