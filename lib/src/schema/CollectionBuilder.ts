@@ -163,64 +163,29 @@ export default class CollectionBuilder<
   }
 
   /**
-   * Sets the serializer configuration for this collection.
+   * Sets the serializer configuration or instance for this collection.
    *
    * Accepts either a configuration object (attrs, root, embed, include) or a custom
    * serializer instance. The config will be merged with global schema config if present.
-   * @template TConfig - The serializer configuration type
-   * @param config - The serializer configuration object
-   * @returns A new CollectionBuilder instance with the specified serializer config
-   * @example
-   * ```typescript
-   * const builder = collection()
-   *   .model(UserModel)
-   *   .serializer({ attrs: ['id', 'name'], root: true });
-   * ```
-   */
-  serializer<TConfig extends SerializerConfig<TTemplate>>(
-    config: TConfig,
-  ): CollectionBuilder<
-    TTemplate,
-    TSchema,
-    TRelationships,
-    TFactory,
-    TIdentityManager,
-    Serializer<TTemplate, any, any, TConfig>
-  >;
-
-  /**
-   * Sets a custom serializer instance for this collection.
-   *
-   * When a custom serializer is provided, it bypasses config merging and is used directly.
-   * @template S - The serializer instance type
-   * @param serializer - The serializer instance
-   * @returns A new CollectionBuilder instance with the specified serializer
-   * @example
-   * ```typescript
-   * const builder = collection()
-   *   .model(UserModel)
-   *   .serializer(new CustomUserSerializer(userModel));
-   * ```
-   */
-  serializer<S>(
-    serializer: S,
-  ): CollectionBuilder<TTemplate, TSchema, TRelationships, TFactory, TIdentityManager, S>;
-
-  /**
-   * Implementation of serializer() method with overloads
    * @param configOrSerializer - The serializer configuration object or instance
    * @returns A new CollectionBuilder instance with the specified serializer
    * @example
    * ```typescript
+   * // With config
    * const builder = collection()
    *   .model(UserModel)
-   *   .serializer({ attrs: ['id', 'name'] });
-   * // or
+   *   .serializer({ attrs: ['id', 'name'], root: true });
+   *
+   * // With custom serializer instance
    * const builder = collection()
    *   .model(UserModel)
    *   .serializer(new CustomUserSerializer(userModel));
    * ```
    */
+  serializer(
+    configOrSerializer: SerializerConfig<TTemplate> | any,
+  ): CollectionBuilder<TTemplate, TSchema, TRelationships, TFactory, TIdentityManager, any>;
+
   serializer(configOrSerializer: any): any {
     const builder = new CollectionBuilder<
       TTemplate,

@@ -1,10 +1,10 @@
 import type { InferModelAttrs, ModelTemplate } from '@src/model';
 
 /**
- * Global serializer configuration (schema-level)
- * Only contains structural options that apply to all collections
+ * Structural serializer options (schema-level or collection-level)
+ * Controls how the response is formatted/structured
  */
-export interface GlobalSerializerConfig {
+export interface StructuralSerializerOptions {
   /**
    * Whether to wrap the serialized data in a root key
    * - false: no wrapping (default)
@@ -22,11 +22,11 @@ export interface GlobalSerializerConfig {
 }
 
 /**
- * Collection-specific serializer configuration
- * Extends global config with model-specific options
+ * Data selection serializer options (collection-level only)
+ * Controls what data to include in serialization
  * @template TTemplate - The model template
  */
-export interface SerializerConfig<TTemplate extends ModelTemplate> extends GlobalSerializerConfig {
+export interface DataSerializerOptions<TTemplate extends ModelTemplate> {
   /**
    * Specific attributes to include in serialization
    * If not provided, all attributes are included
@@ -40,3 +40,22 @@ export interface SerializerConfig<TTemplate extends ModelTemplate> extends Globa
    */
   include?: string[];
 }
+
+/**
+ * Complete serializer options (collection-level)
+ * Combines structural and data selection options
+ * @template TTemplate - The model template
+ */
+export interface SerializerOptions<TTemplate extends ModelTemplate>
+  extends StructuralSerializerOptions,
+    DataSerializerOptions<TTemplate> {}
+
+/**
+ * @deprecated Use StructuralSerializerOptions instead
+ */
+export type GlobalSerializerConfig = StructuralSerializerOptions;
+
+/**
+ * @deprecated Use SerializerOptions instead
+ */
+export type SerializerConfig<TTemplate extends ModelTemplate> = SerializerOptions<TTemplate>;
