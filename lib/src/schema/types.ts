@@ -1,69 +1,111 @@
 import type { DbCollection } from '@src/db';
-import type { Factory, TraitMap } from '@src/factory';
+import type { Factory } from '@src/factory';
 import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
-import type { ModelToken, InferTokenModel } from '@src/model';
+import type {
+  ModelAttrs,
+  ModelForeignKeys,
+  ModelId,
+  ModelTemplate,
+  RelatedModelAttrs,
+  RelationshipsByTemplate,
+} from '@src/model';
+import type { ModelRelationships } from '@src/model';
+import type { GlobalSerializerConfig, SerializerConfig } from '@src/serializer';
 
-export interface SchemaCollectionConfig<
-  TToken extends ModelToken,
-  TTraits extends TraitMap<TToken> = TraitMap<TToken>,
-> {
-  model: TToken;
-  factory?: Factory<TToken, TTraits>;
-  identityManager?: IdentityManager<InferTokenModel<TToken>['id']>;
-  /** Skip serializer configuration until implemented */
-  // serializer?: SerializerConfig;
-}
+import type SchemaCollection from './SchemaCollection';
 
 /**
  * Global schema configuration
+ * @template TIdentityManager - The identity manager type
+ * @template TGlobalConfig - The global serializer configuration type
  */
-export interface SchemaConfig<TIdentityManager extends IdentityManager = StringIdentityManager> {
-  /** Default identity manager for collections that don't specify one (defaults to StringIdentityManager) */
+export interface SchemaConfig<
+  TIdentityManager extends IdentityManager = StringIdentityManager,
+  TGlobalConfig extends GlobalSerializerConfig | undefined = undefined,
+> {
   identityManager?: TIdentityManager;
-  /** Skip serializer configuration until implemented */
-  // serializer?: Serializer<any, any>;
+  globalSerializerConfig?: TGlobalConfig;
 }
 
 /**
- * Maps schema collection configs to database collections
+ * Type for schema collection config
+ * @template TTemplate - The model template
+ * @template TRelationships - The model relationships
+ * @template TFactory - The factory type
+ * @template TSerializer - The serializer instance type
  */
-export type InferDbCollections<
-  TCollections extends Record<string, SchemaCollectionConfig<any, any>>,
-> = {
-  [K in keyof TCollections]: TCollections[K] extends SchemaCollectionConfig<infer TToken>
-    ? DbCollection<InferTokenModel<TToken>>
+export interface SchemaCollectionConfig<
+  TTemplate extends ModelTemplate,
+  TRelationships extends ModelRelationships = {},
+  TFactory extends Factory<TTemplate, any, any> | undefined = undefined,
+  TSerializer = undefined,
+> {
+  model: TTemplate;
+  factory?: TFactory;
+  relationships?: TRelationships;
+  identityManager?: IdentityManager<ModelId<TTemplate>>;
+  /**
+   * Serializer configuration object (attrs, root, embed, include)
+   * Used when collection().serializer({...config}) is called
+   */
+  serializerConfig?: SerializerConfig<TTemplate>;
+  /**
+   * Serializer instance (custom serializer class)
+   * Used when collection().serializer(instance) is called
+   */
+  serializerInstance?: TSerializer;
+}
+
+/**
+ * Type for schema collections - provides both string-based property access and symbol-based relationship resolution
+ * @template TCollections - The string-keyed schema collections config
+ */
+export type SchemaCollections = Record<string, SchemaCollectionConfig<any, any, any, any>>;
+
+/**
+ * Type for schema collections - provides string-based property access
+ * @template TCollections - The string-keyed schema collections config
+ */
+export type SchemaCollectionAccessors<TCollections extends SchemaCollections> = {
+  [K in keyof TCollections]: TCollections[K] extends SchemaCollectionConfig<
+    infer TTemplate,
+    infer TRelationships,
+    infer TFactory,
+    infer TSerializer
+  >
+    ? SchemaCollection<TCollections, TTemplate, TRelationships, TFactory, TSerializer>
     : never;
 };
 
-// -- COLLECTION UTILITIES TYPES --
-
 /**
- * Represents a single collection module with a collection name as key
- * @template TName - The collection name
- * @template TConfig - The collection configuration
+ * Maps schema collection configs to database collections with inferred foreign keys
+ * This ensures that database records include foreign key fields based on defined relationships
  */
-export type CollectionModule<
-  TName extends string = string,
-  TConfig extends SchemaCollectionConfig<any, any> = SchemaCollectionConfig<any, any>,
-> = {
-  [K in TName]: TConfig;
+export type SchemaDbCollections<TCollections extends SchemaCollections> = {
+  [K in keyof TCollections]: TCollections[K] extends SchemaCollectionConfig<
+    infer TTemplate,
+    infer TRelationships,
+    any
+  >
+    ? DbCollection<
+        ModelAttrs<TTemplate> &
+          (TRelationships extends ModelRelationships ? ModelForeignKeys<TRelationships> : {})
+      >
+    : never;
 };
 
 /**
- * Helper to merge multiple objects using intersection
+ * Type for collection create/factory inputs - all attributes are optional
+ * Used for passing attributes to create() methods where factory provides defaults
+ * @template TTemplate - The model template
+ * @template TSchema - The schema collections type
+ * @template TRelationships - The model relationships
  */
-type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void
-  ? I
-  : never;
-
-/**
- * Converts an array of collection modules to a union of their types
- */
-type CollectionModulesToUnion<T extends readonly CollectionModule[]> = T[number];
-
-/**
- * Merges an array of collection modules into a single collections object
- */
-export type ComposeCollections<T extends readonly CollectionModule[]> = UnionToIntersection<
-  CollectionModulesToUnion<T>
->;
+export type CollectionCreateInput<
+  TTemplate extends ModelTemplate,
+  TSchema extends SchemaCollections = SchemaCollections,
+  TRelationships extends ModelRelationships = RelationshipsByTemplate<TTemplate, TSchema>,
+> = Partial<ModelAttrs<TTemplate, TSchema>> &
+  (Record<string, never> extends TRelationships
+    ? {}
+    : Partial<RelatedModelAttrs<TSchema, TRelationships>>);

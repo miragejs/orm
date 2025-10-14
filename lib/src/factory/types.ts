@@ -1,66 +1,39 @@
-import type { ModelToken, NewModelAttrs, ModelAttrs, ModelInstance } from '@src/model';
+import type { FactoryAssociations } from '@src/associations';
+import type { InferModelAttrs, ModelAttrs, ModelInstance, ModelTemplate } from '@src/model';
+import type { SchemaCollections, SchemaInstance } from '@src/schema';
 
-export type TraitMap<TToken extends ModelToken> = Record<string, TraitDefinition<TToken>>;
-export type TraitName<TTraits extends TraitMap<any>> = Extract<keyof TTraits, string>;
+export type FactoryAfterCreateHook<
+  TSchema extends SchemaCollections = SchemaCollections,
+  TTemplate extends ModelTemplate = ModelTemplate,
+> = (model: ModelInstance<TTemplate, TSchema>, schema: SchemaInstance<TSchema>) => void;
 
-// Forward declaration to avoid circular dependency
-declare class Factory<
-  TToken extends ModelToken,
-  TTraits extends TraitMap<TToken> = TraitMap<TToken>,
-> {
-  readonly token: TToken;
-  readonly modelName: string;
-  readonly collectionName: string;
-  readonly attributes: FactoryAttrs<TToken>;
-  readonly traits: TTraits;
-  readonly afterCreate?: (model: ModelInstance<TToken>) => void;
-}
+export type TraitDefinition<
+  TSchema extends SchemaCollections = SchemaCollections,
+  TTemplate extends ModelTemplate = ModelTemplate,
+> = Partial<FactoryAttrs<TTemplate>> &
+  Partial<FactoryAssociations<TTemplate, TSchema>> & {
+    afterCreate?: FactoryAfterCreateHook<TSchema, TTemplate>;
+  };
 
-export type FactoryAttrs<TToken extends ModelToken> = Partial<{
-  [K in Exclude<keyof NewModelAttrs<TToken>, 'id'>]:
-    | NewModelAttrs<TToken>[K]
+export type ModelTraits<
+  TSchema extends SchemaCollections = SchemaCollections,
+  TTemplate extends ModelTemplate = ModelTemplate,
+> = Record<string, TraitDefinition<TSchema, TTemplate>>;
+
+export type TraitName<TTraits> =
+  TTraits extends Record<string, any> ? Extract<keyof TTraits, string> : never;
+
+export type FactoryAttrs<TTemplate extends ModelTemplate> = {
+  [K in Exclude<keyof InferModelAttrs<TTemplate>, 'id'>]?:
+    | InferModelAttrs<TTemplate>[K]
     | ((
-        this: Record<keyof NewModelAttrs<TToken>, any>,
-        modelId: NonNullable<ModelAttrs<TToken>['id']>,
-      ) => NewModelAttrs<TToken>[K]);
-}>;
-
-export type TraitDefinition<TToken extends ModelToken> = Partial<FactoryAttrs<TToken>> & {
-  afterCreate?: (model: ModelInstance<TToken>) => void;
+        this: Record<keyof InferModelAttrs<TTemplate>, any>,
+        modelId: NonNullable<ModelAttrs<TTemplate>['id']>,
+      ) => InferModelAttrs<TTemplate>[K]);
 };
 
-/**
- * Configuration for creating a factory
- * @template TToken - The model token
- * @template TTraits - The traits object type
- * @param config.attributes - The attributes for the factory
- * @param config.traits - The traits for the factory
- * @param config.afterCreate - The afterCreate hook for the factory
- */
-export interface FactoryConfig<
-  TToken extends ModelToken,
-  TTraits extends TraitMap<TToken> = TraitMap<TToken>,
-> {
-  attributes: FactoryAttrs<TToken>;
-  traits?: TTraits;
-  afterCreate?: (model: ModelInstance<TToken>) => void;
-}
-
-/**
- * Definition for extending a factory (attributes are partially optional)
- * @template TToken - The model token
- * @template TTraits - The traits object type
- */
-export type FactoryDefinition<
-  TToken extends ModelToken,
-  TTraits extends TraitMap<TToken> = TraitMap<TToken>,
-> = {
-  attributes?: Partial<FactoryAttrs<TToken>>;
-  traits?: TTraits;
-  afterCreate?: (model: ModelInstance<TToken>) => void;
-};
-
-export type FactoryInstance<
-  TToken extends ModelToken,
-  TTraits extends TraitMap<TToken> = TraitMap<TToken>,
-> = Factory<TToken, TTraits>;
+export type FactoryTraitNames<TFactory> = TFactory extends { traits: infer TTraits }
+  ? TTraits extends Record<string, any>
+    ? Extract<keyof TTraits, string>
+    : never
+  : never;

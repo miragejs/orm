@@ -1,88 +1,60 @@
+import { type FactoryAssociations } from '@src/associations';
 import type {
-  InferTokenId,
   ModelAttrs,
+  ModelId,
   ModelInstance,
-  ModelToken,
-  NewModelAttrs,
+  ModelTemplate,
   PartialModelAttrs,
 } from '@src/model';
+import type { ModelCollection } from '@src/model';
+import type { SchemaCollections, SchemaInstance } from '@src/schema';
 import { MirageError } from '@src/utils';
 
-import type { FactoryAttrs, FactoryConfig, FactoryDefinition, TraitMap, TraitName } from './types';
+import AssociationsManager from './AssociationsManager';
+import type { FactoryAttrs, FactoryAfterCreateHook, ModelTraits, TraitName } from './types';
 
 /**
- * Create a factory.
- * @param token - The model token to define the factory for.
- * @param config - The configuration for the factory.
- * @returns The factory.
- */
-export function createFactory<
-  TToken extends ModelToken,
-  TTraits extends TraitMap<TToken> = TraitMap<TToken>,
->(token: TToken, config: FactoryConfig<TToken, TTraits>): Factory<TToken, TTraits> {
-  return new Factory(
-    token,
-    config.attributes,
-    (config.traits ?? {}) as TTraits,
-    config.afterCreate,
-  );
-}
-
-/**
- * Extend a factory.
- * @param factory - The factory to extend.
- * @param definition - The new attributes, traits, and afterCreate hook to add or override.
- * @returns The extended factory.
- */
-export function extendFactory<TToken extends ModelToken, TTraits extends TraitMap<TToken>>(
-  factory: Factory<TToken, TTraits>,
-  definition: FactoryDefinition<TToken, TTraits>,
-): Factory<TToken, TTraits> {
-  const { attributes = {}, traits = {} } = definition;
-
-  // Merge attributes, with new attributes taking precedence
-  const mergedAttributes = {
-    ...factory['_attributes'],
-    ...attributes,
-  };
-
-  // Merge traits, with new traits taking precedence
-  const mergedTraits = {
-    ...factory['_traits'],
-    ...traits,
-  } as TTraits;
-
-  // Create new factory with merged configuration
-  return new Factory<TToken, TTraits>(
-    factory['_token'],
-    mergedAttributes as FactoryAttrs<TToken>,
-    mergedTraits,
-    definition.afterCreate || factory['_afterCreate'],
-  );
-}
-
-/**
- * Factory that builds model attributes.
+ * Factory that builds model attributes with optional schema support.
+ * @template TTemplate - The model template (inferred from constructor)
+ * @template TSchema - The schema collections type (never = sch)
+ * @template TTraits - The factory traits (inferred from constructor)
  */
 export default class Factory<
-  TToken extends ModelToken,
-  TTraits extends TraitMap<TToken> = TraitMap<TToken>,
+  TTemplate extends ModelTemplate = ModelTemplate,
+  TSchema extends SchemaCollections = SchemaCollections,
+  TTraits extends ModelTraits<TSchema, TTemplate> = {},
 > {
-  private readonly _token: TToken;
-  private readonly _attributes: FactoryAttrs<TToken>;
-  private readonly _traits: TTraits;
-  private readonly _afterCreate?: (model: ModelInstance<TToken>) => void;
+  readonly attributes: FactoryAttrs<TTemplate>;
+  readonly traits: TTraits;
+  readonly associations?: FactoryAssociations<TTemplate, TSchema>;
+  readonly afterCreate?: FactoryAfterCreateHook<TSchema, TTemplate>;
+
+  private readonly _template: TTemplate;
+  private readonly _associationsManager: AssociationsManager<TTemplate, TSchema>;
 
   constructor(
-    token: TToken,
-    attributes: FactoryAttrs<TToken>,
-    traits: TTraits,
-    afterCreate?: (model: ModelInstance<TToken>) => void,
+    template: TTemplate,
+    attributes: FactoryAttrs<TTemplate>,
+    traits: TTraits = {} as TTraits,
+    associations?: FactoryAssociations<TTemplate, TSchema>,
+    afterCreate?: FactoryAfterCreateHook<TSchema, TTemplate>,
   ) {
-    this._token = token;
-    this._attributes = attributes;
-    this._traits = traits;
-    this._afterCreate = afterCreate;
+    this._template = template;
+    this.attributes = attributes;
+    this.traits = traits;
+    this.associations = associations;
+    this.afterCreate = afterCreate;
+
+    // Create manager for processing associations
+    this._associationsManager = new AssociationsManager<TTemplate, TSchema>();
+  }
+
+  /**
+   * Get the model template
+   * @returns The model template
+   */
+  get template(): TTemplate {
+    return this._template;
   }
 
   /**
@@ -92,11 +64,11 @@ export default class Factory<
    * @returns The built model.
    */
   build(
-    modelId: NonNullable<ModelAttrs<TToken>['id']>,
-    ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TToken>)[]
-  ): ModelAttrs<TToken> {
+    modelId: ModelId<TTemplate>,
+    ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TTemplate, TSchema>)[]
+  ): ModelAttrs<TTemplate, TSchema> {
     const traitNames: string[] = [];
-    const defaults: PartialModelAttrs<TToken> = {};
+    const defaults: PartialModelAttrs<TTemplate, TSchema> = {};
 
     // Separate trait names from default values
     traitsAndDefaults.forEach((arg) => {
@@ -107,7 +79,7 @@ export default class Factory<
       }
     });
 
-    const processedAttributes = this._processAttributes(this._attributes, modelId);
+    const processedAttributes = this._processAttributes(this.attributes, modelId);
     const traitAttributes = this._buildWithTraits(traitNames, modelId);
 
     // Merge attributes in order: defaults override traits, traits override base attributes
@@ -118,37 +90,74 @@ export default class Factory<
       ...mergedAttributes,
       ...defaults,
       id: modelId,
-    } as ModelAttrs<TToken>;
+    } as ModelAttrs<TTemplate, TSchema>;
+  }
+
+  /**
+   * Process associations and return relationship values
+   * This runs with schema context and creates/links related models
+   * @param schema - The schema instance
+   * @param skipKeys - Optional list of relationship keys to skip (e.g., if user provided them)
+   * @param traitsAndDefaults - Optional trait names to include trait associations
+   * @returns A record of relationship values
+   */
+  processAssociations(
+    schema: SchemaInstance<TSchema>,
+    skipKeys?: string[],
+    traitsAndDefaults?: (TraitName<TTraits> | PartialModelAttrs<TTemplate, TSchema>)[],
+  ): Record<string, ModelInstance<any, TSchema> | ModelCollection<any, TSchema>> {
+    // Get trait associations
+    const traitAssociations = this._getTraitAssociations(traitsAndDefaults);
+
+    // Merge factory associations with trait associations (factory associations take precedence)
+    const mergedAssociations = {
+      ...traitAssociations,
+      ...(this.associations || {}),
+    };
+
+    // If no associations, return empty
+    if (Object.keys(mergedAssociations).length === 0) {
+      return {};
+    }
+
+    // Use the manager instance to process merged associations
+    return this._associationsManager.processAssociations(schema, mergedAssociations, skipKeys);
   }
 
   /**
    * Process the afterCreate hook and the trait hooks.
+   * This method is intended to be called internally by schema collections.
+   * @param schema - The schema instance.
    * @param model - The model to process.
    * @param traitsAndDefaults - The traits and defaults that were applied.
    * @returns The processed model.
    */
   processAfterCreateHooks(
-    model: ModelInstance<TToken>,
-    ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TToken>)[]
-  ): ModelInstance<TToken> {
+    schema: SchemaInstance<TSchema>,
+    model: ModelInstance<TTemplate, TSchema>,
+    ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TTemplate, TSchema>)[]
+  ): ModelInstance<TTemplate, TSchema> {
     const traitNames: string[] = traitsAndDefaults.filter((arg) => typeof arg === 'string');
-    const hooks: ((model: ModelInstance<TToken>) => void)[] = [];
+    const hooks: FactoryAfterCreateHook<TSchema, TTemplate>[] = [];
 
-    if (this._afterCreate) {
-      hooks.push(this._afterCreate);
+    if (this.afterCreate) {
+      hooks.push(this.afterCreate);
     }
 
     traitNames.forEach((name) => {
-      const trait = this._traits[name as TraitName<TTraits>];
+      const trait = this.traits[name as TraitName<TTraits>];
 
       if (trait?.afterCreate) {
         hooks.push(trait.afterCreate);
       }
     });
 
-    // Execute hooks with the model instance
+    // Execute hooks with the properly typed model instance and schema
     hooks.forEach((hook) => {
-      hook(model);
+      (hook as (model: ModelInstance<TTemplate, TSchema>, schema: SchemaInstance<TSchema>) => void)(
+        model,
+        schema,
+      );
     });
 
     return model;
@@ -157,9 +166,9 @@ export default class Factory<
   // -- PRIVATE METHODS --
 
   private _processAttributes(
-    attrs: FactoryAttrs<TToken>,
-    modelId?: NonNullable<InferTokenId<TToken>>,
-  ): PartialModelAttrs<TToken> {
+    attrs: FactoryAttrs<TTemplate>,
+    modelId?: ModelId<TTemplate>,
+  ): PartialModelAttrs<TTemplate> {
     const keys = this._sortAttrs(attrs, modelId);
 
     const result = keys.reduce(
@@ -168,8 +177,8 @@ export default class Factory<
           return acc;
         }
 
-        const currentKey = key as keyof PartialModelAttrs<TToken>;
-        const value = attrs[currentKey];
+        const currentKey = key as keyof PartialModelAttrs<TTemplate>;
+        const value = (attrs as any)[currentKey];
 
         if (typeof value === 'function') {
           acc[key as string] = value.call(attrs, modelId);
@@ -182,24 +191,25 @@ export default class Factory<
       {} as Record<string, any>,
     );
 
-    return result as PartialModelAttrs<TToken>;
+    return result as PartialModelAttrs<TTemplate>;
   }
 
   private _buildWithTraits(
     traitNames: string[],
-    modelId?: NonNullable<InferTokenId<TToken>>,
-  ): PartialModelAttrs<TToken> {
+    modelId?: ModelId<TTemplate>,
+  ): PartialModelAttrs<TTemplate> {
     const result = traitNames.reduce(
       (traitAttributes, name) => {
-        const trait = this._traits[name as TraitName<TTraits>];
+        const trait = this.traits[name as TraitName<TTraits>];
 
         if (trait) {
           const { afterCreate, ...extension } = trait;
 
           Object.entries(extension).forEach(([key, value]) => {
-            if (key !== 'id') {
+            // Skip id and association objects
+            if (key !== 'id' && !this._isAssociation(value)) {
               traitAttributes[key] =
-                typeof value === 'function' ? value.call(this._attributes, modelId) : value;
+                typeof value === 'function' ? value.call(this.attributes, modelId) : value;
             }
           });
         }
@@ -209,13 +219,58 @@ export default class Factory<
       {} as Record<string, any>,
     );
 
-    return result as PartialModelAttrs<TToken>;
+    return result as PartialModelAttrs<TTemplate>;
+  }
+
+  /**
+   * Check if a value is an association object
+   * @param value - The value to check
+   * @returns True if the value is an association
+   */
+  private _isAssociation(value: any): boolean {
+    return (
+      typeof value === 'object' &&
+      value !== null &&
+      'type' in value &&
+      'model' in value &&
+      ['create', 'createMany', 'link', 'linkMany'].includes(value.type)
+    );
+  }
+
+  /**
+   * Extract associations from traits
+   * @param traitsAndDefaults - The trait names to extract associations from
+   * @returns The merged associations from all traits
+   */
+  private _getTraitAssociations(
+    traitsAndDefaults?: (TraitName<TTraits> | PartialModelAttrs<TTemplate, TSchema>)[],
+  ): FactoryAssociations<TTemplate, TSchema> {
+    if (!traitsAndDefaults) {
+      return {};
+    }
+
+    const traitNames = traitsAndDefaults.filter((arg) => typeof arg === 'string') as string[];
+    const associations: Record<string, any> = {};
+
+    traitNames.forEach((name) => {
+      const trait = this.traits[name as TraitName<TTraits>];
+
+      if (trait) {
+        Object.entries(trait).forEach(([key, value]) => {
+          if (this._isAssociation(value)) {
+            associations[key] = value;
+          }
+        });
+      }
+    });
+
+    return associations as FactoryAssociations<TTemplate, TSchema>;
   }
 
   private _mergeAttributes(
-    baseAttributes: PartialModelAttrs<TToken>,
-    overrideAttributes: PartialModelAttrs<TToken>,
-  ): PartialModelAttrs<TToken> {
+    baseAttributes: PartialModelAttrs<TTemplate>,
+    overrideAttributes: PartialModelAttrs<TTemplate>,
+  ): PartialModelAttrs<TTemplate> {
     return {
       ...baseAttributes,
       ...overrideAttributes,
@@ -223,9 +278,9 @@ export default class Factory<
   }
 
   private _sortAttrs(
-    attrs: FactoryAttrs<TToken>,
-    modelId?: NonNullable<InferTokenId<TToken>>,
-  ): (keyof NewModelAttrs<TToken>)[] {
+    attrs: FactoryAttrs<TTemplate>,
+    modelId?: NonNullable<ModelId<TTemplate>>,
+  ): (keyof FactoryAttrs<TTemplate>)[] {
     const visited = new Set<string>();
     const processing = new Set<string>();
 
@@ -238,7 +293,7 @@ export default class Factory<
       }
 
       processing.add(key);
-      const value = attrs[key as Exclude<keyof NewModelAttrs<TToken>, 'id'>];
+      const value = attrs[key as keyof FactoryAttrs<TTemplate>];
 
       if (typeof value === 'function') {
         // Create a proxy to track property access
@@ -264,6 +319,6 @@ export default class Factory<
     Object.keys(attrs).forEach(detectCycle);
 
     // Return keys in their original order
-    return Object.keys(attrs) as (keyof NewModelAttrs<TToken>)[];
+    return Object.keys(attrs) as (keyof FactoryAttrs<TTemplate>)[];
   }
 }

@@ -1,54 +1,39 @@
 import { createDatabase, type DbInstance } from '@src/db';
-import type { TraitMap } from '@src/factory';
-import { StringIdentityManager, type IdentityManager } from '@src/id-manager';
-import type { ModelToken } from '@src/model';
+import { StringIdentityManager } from '@src/id-manager';
+import type { ModelTemplate } from '@src/model';
+import { Serializer, type GlobalSerializerConfig, type SerializerConfig } from '@src/serializer';
 
-import SchemaCollection, { createSchemaCollection } from './SchemaCollection';
-import type { SchemaCollectionConfig, SchemaConfig, InferDbCollections } from './types';
-
-/**
- * Sets up a schema with collections and global configuration
- * @param collections - Collection configurations keyed by collection name
- * @param config - Global schema configuration (optional)
- * @returns A schema instance with collection properties
- */
-export function setupSchema<TCollections extends Record<string, SchemaCollectionConfig<any, any>>>(
-  collections: TCollections,
-  config?: SchemaConfig<any>,
-): SchemaInstance<TCollections> {
-  return new Schema(collections, config ?? {}) as SchemaInstance<TCollections>;
-}
+import SchemaCollection, { createCollection } from './SchemaCollection';
+import type {
+  SchemaCollectionAccessors,
+  SchemaCollectionConfig,
+  SchemaCollections,
+  SchemaConfig,
+  SchemaDbCollections,
+} from './types';
 
 /**
  * Schema class that manages database and collections
  * @template TCollections - The type map of collection names to their configurations
+ * @template TConfig - The schema configuration type with identity manager and global serializer config
  */
-export default class Schema<TCollections extends Record<string, SchemaCollectionConfig<any, any>>> {
-  private _collections: Map<string, SchemaCollection<any, any>> = new Map();
-  private _db: DbInstance<InferDbCollections<TCollections>>;
-  private _identityManager: IdentityManager<any>;
-  // private _serializer?: any; // Skip serializer for now
+export default class Schema<
+  TCollections extends SchemaCollections,
+  TConfig extends SchemaConfig<any, any> = SchemaConfig<StringIdentityManager, undefined>,
+> {
+  public readonly db: DbInstance<SchemaDbCollections<TCollections>>;
+  public readonly identityManager: TConfig extends SchemaConfig<infer TIdentityManager, any>
+    ? TIdentityManager
+    : StringIdentityManager;
 
-  constructor(collections: TCollections, config: SchemaConfig<any> = {}) {
-    this._db = createDatabase<InferDbCollections<TCollections>>({});
-    this._identityManager = config.identityManager ?? new StringIdentityManager();
+  private _collections: Map<string, SchemaCollection<any, any, any, any, any>> = new Map();
+  private _globalSerializerConfig?: GlobalSerializerConfig;
+
+  constructor(collections: TCollections, config?: TConfig) {
+    this.db = createDatabase<SchemaDbCollections<TCollections>>();
+    this.identityManager = config?.identityManager ?? new StringIdentityManager();
+    this._globalSerializerConfig = config?.globalSerializerConfig;
     this._registerCollections(collections);
-  }
-
-  /**
-   * Get the database instance
-   * @returns The database instance with proper collection typing
-   */
-  get db(): DbInstance<InferDbCollections<TCollections>> {
-    return this._db;
-  }
-
-  /**
-   * Get the default identity manager
-   * @returns The default identity manager with proper typing
-   */
-  get identityManager(): IdentityManager<any> {
-    return this._identityManager;
   }
 
   /**
@@ -58,34 +43,56 @@ export default class Schema<TCollections extends Record<string, SchemaCollection
    */
   getCollection<K extends keyof TCollections>(
     collectionName: K,
-  ): TCollections[K] extends SchemaCollectionConfig<infer TToken, infer TTraits>
-    ? SchemaCollection<TToken, TTraits>
+  ): TCollections[K] extends SchemaCollectionConfig<
+    infer TTemplate,
+    infer TRelationships,
+    infer TFactory,
+    infer TSerializer
+  >
+    ? SchemaCollection<TCollections, TTemplate, TRelationships, TFactory, TSerializer>
     : never {
     const collection = this._collections.get(collectionName as string);
     if (!collection) {
       throw new Error(`Collection '${String(collectionName)}' not found`);
     }
-
-    return collection as TCollections[K] extends SchemaCollectionConfig<infer TToken, infer TTraits>
-      ? SchemaCollection<TToken, TTraits>
-      : never;
+    return collection as any;
   }
 
-  // -- PRIVATE METHODS --
-
   /**
-   * Add a collection to the schema (internal method)
-   * @param collectionName - The name of the collection
-   * @param collection - The schema collection instance
+   * Register collections from the configuration
+   * @param collections - Collection configurations to register
    */
-  private _addCollection<TToken extends ModelToken, TTraits extends TraitMap<TToken>>(
-    collectionName: string,
-    collection: SchemaCollection<TToken, TTraits>,
-  ): void {
-    this._collections.set(collectionName, collection);
+  private _registerCollections(collections: TCollections): void {
+    for (const [collectionName, collectionConfig] of Object.entries(collections)) {
+      const { model, factory, relationships, serializerConfig, serializerInstance } =
+        collectionConfig;
+      const identityManager = collectionConfig.identityManager ?? this.identityManager;
 
-    // Add collection as a property on the schema instance
-    if (!Object.prototype.hasOwnProperty.call(this, collectionName)) {
+      // Determine the final serializer to use
+      let finalSerializer: any;
+
+      if (serializerInstance) {
+        // 1. Collection-level instance has highest priority (no merging)
+        finalSerializer = serializerInstance;
+      } else {
+        // 2. Merge global config with collection config
+        const mergedConfig = this._mergeConfigs(model, serializerConfig);
+
+        // Only create serializer if there's a config
+        if (mergedConfig) {
+          finalSerializer = new Serializer(model, mergedConfig);
+        }
+      }
+
+      const collection = createCollection(this as SchemaInstance<TCollections, TConfig>, {
+        model,
+        factory,
+        identityManager,
+        relationships,
+        serializer: finalSerializer,
+      });
+      this._collections.set(collectionName, collection);
+
       Object.defineProperty(this, collectionName, {
         configurable: true,
         enumerable: true,
@@ -95,35 +102,38 @@ export default class Schema<TCollections extends Record<string, SchemaCollection
   }
 
   /**
-   * Register collections from the configuration
-   * @param collections - Collection configurations to register
+   * Merge global serializer config with collection-specific config
+   * Collection config values override global config values
+   * @param _template - The model template (used for type inference only)
+   * @param collectionConfig - Collection-specific serializer config
+   * @returns Merged serializer config or undefined if both are undefined
    */
-  private _registerCollections(collections: TCollections): void {
-    // Create collections and add them to the schema
-    for (const [collectionName, collectionConfig] of Object.entries(collections)) {
-      const identityManager = collectionConfig.identityManager ?? this._identityManager;
-      const collection = createSchemaCollection(this, {
-        ...collectionConfig,
-        identityManager,
-      });
+  private _mergeConfigs<TTemplate extends ModelTemplate>(
+    _template: TTemplate,
+    collectionConfig?: SerializerConfig<TTemplate>,
+  ): SerializerConfig<TTemplate> | undefined {
+    const global = this._globalSerializerConfig;
 
-      this._addCollection(collectionName, collection);
+    if (!global && !collectionConfig) {
+      return undefined;
     }
+
+    return {
+      // Structural options: collection overrides global
+      root: collectionConfig?.root ?? global?.root,
+      embed: collectionConfig?.embed ?? global?.embed,
+      // Model-specific options: only from collection level
+      attrs: collectionConfig?.attrs,
+      include: collectionConfig?.include,
+    };
   }
 }
 
-// -- TYPES --
-
 /**
- * Schema instance type with collection properties
- * @template TCollections - The type map of collection names to their configurations
+ * Type for a complete schema instance with collections
+ * Provides both string-based property access and symbol-based relationship resolution
  */
-export type SchemaInstance<TCollections extends Record<string, SchemaCollectionConfig<any, any>>> =
-  Schema<TCollections> & {
-    [K in keyof TCollections]: TCollections[K] extends SchemaCollectionConfig<
-      infer TToken,
-      infer TTraits
-    >
-      ? SchemaCollection<TToken, TTraits>
-      : never;
-  };
+export type SchemaInstance<
+  TCollections extends SchemaCollections,
+  TConfig extends SchemaConfig<any, any> = SchemaConfig<StringIdentityManager, undefined>,
+> = Schema<TCollections, TConfig> & SchemaCollectionAccessors<TCollections>;

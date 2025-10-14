@@ -1,0 +1,735 @@
+# New Features Guide
+
+This document provides an overview of the major new features in the ORM, including the Builder API, relationships, factories with associations, and built-in serialization.
+
+## Table of Contents
+
+- [Builder API](#builder-api)
+  - [Model Builder](#model-builder)
+  - [Factory Builder](#factory-builder)
+  - [Collection Builder](#collection-builder)
+  - [Schema Builder](#schema-builder)
+- [Relationships](#relationships)
+- [Factory Associations](#factory-associations)
+- [Serialization](#serialization)
+
+---
+
+## Builder API
+
+The ORM now provides a fluent, type-safe Builder API for defining models, factories, collections, and schemas. All builders follow a consistent pattern: configure with chainable methods, then call `.create()` (or `.setup()` for schemas) to finalize.
+
+### Model Builder
+
+Define your models using the `model()` builder:
+
+```typescript
+import { model } from '@miragejs/orm';
+
+// Define attributes type
+interface UserAttrs {
+  name: string;
+  email: string;
+  role?: string;
+}
+
+interface PostAttrs {
+  title: string;
+  content: string;
+  authorId: string;
+}
+
+// Create model templates
+const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<UserAttrs>()
+  .json<UserAttrs, UserAttrs[]>() // Optional: Define serialization types
+  .create();
+
+const postModel = model()
+  .name('post')
+  .collection('posts')
+  .attrs<PostAttrs>()
+  .create();
+```
+
+**Available methods:**
+- `.name(name)` - Set the model name (required)
+- `.collection(name)` - Set the collection name (required)
+- `.attrs<T>()` - Define model attributes type (required)
+- `.json<TModel, TCollection>()` - Define serialization output types (optional)
+- `.create()` - Finalize and create the model template
+
+### Factory Builder
+
+Define test data factories using the `factory()` builder:
+
+```typescript
+import { factory, associations } from '@miragejs/orm';
+
+const userFactory = factory()
+  .model(userModel)
+  .attrs({
+    name: () => faker.person.fullName(),
+    email: () => faker.internet.email(),
+    role: 'user', // Static value
+  })
+  .traits({
+    admin: {
+      role: 'admin',
+    },
+    withPosts: {
+      posts: associations.createMany(postModel, 3),
+    },
+  })
+  .afterCreate((user, schema) => {
+    // Optional: Hook to run after model creation
+    console.log(`Created user: ${user.name}`);
+  })
+  .create();
+```
+
+**Available methods:**
+- `.model(template)` - Associate with model template (required)
+- `.attrs(attributes)` - Define default attributes (optional)
+- `.traits(traits)` - Define trait variations (optional)
+- `.afterCreate(hook)` - Add post-creation hook (optional)
+- `.create()` - Finalize and create the factory
+
+### Collection Builder
+
+Define collection configurations using the `collection()` builder:
+
+```typescript
+import { collection, associations, Serializer } from '@miragejs/orm';
+
+const userCollection = collection()
+  .model(userModel)
+  .relationships({
+    posts: associations.hasMany(postModel), // foreignKey defaults to 'postIds'
+  })
+  .factory(userFactory)
+  .serializer({
+    attrs: ['id', 'name', 'email'], // Only include specific attributes
+    root: true,                      // Wrap in { user: {...} }
+    include: ['posts'],              // Include relationships
+    embed: false,                    // Side-load (default) vs embed
+  })
+  .create();
+
+const postCollection = collection()
+  .model(postModel)
+  .relationships({
+    author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+  })
+  .serializer(new CustomSerializer(postModel)) // Or use custom serializer
+  .create();
+```
+
+**Available methods:**
+- `.model(template)` - Associate with model template (required)
+- `.relationships(rels)` - Define model relationships (optional)
+- `.factory(factory)` - Associate with factory (optional)
+- `.serializer(config | serializer)` - Configure serialization (optional)
+- `.identityManager(manager)` - Custom ID generation (optional)
+- `.create()` - Finalize and create the collection config
+
+### Schema Builder
+
+Set up your schema with all collections using the `schema()` builder:
+
+```typescript
+import { schema, StringIdentityManager } from '@miragejs/orm';
+
+const appSchema = schema()
+  .collections({
+    users: userCollection,
+    posts: postCollection,
+  })
+  .identityManager(new StringIdentityManager()) // Optional: defaults to StringIdentityManager
+  .serializer({ root: true, embed: true })      // Optional: global serializer config
+  .setup();
+
+// Use the schema (it provides type-safe collection accessors)
+const user = appSchema.users.create({ name: 'John', email: 'john@example.com' });
+const post = appSchema.posts.create({ title: 'Hello', content: 'World', authorId: user.id });
+
+user.link('posts', [post]);
+
+console.log(user.posts.length); // 1
+console.log(post.author.name);  // 'John'
+```
+
+**Available methods:**
+- `.collections(collections)` - Define all collections (required)
+- `.identityManager(manager)` - Set global ID generator (optional)
+- `.serializer(config)` - Set global serializer options (optional)
+- `.setup()` - Finalize and set up the schema with database
+
+---
+
+## Relationships
+
+The ORM supports `belongsTo` and `hasMany` relationships with automatic foreign key management and type-safe relationship accessors.
+
+### Defining Relationships
+
+Relationships are defined at the collection level using the `.relationships()` method:
+
+```typescript
+import { collection, associations } from '@miragejs/orm';
+
+// User hasMany Posts
+const userCollection = collection()
+  .model(userModel)
+  .relationships({
+    // Default foreign key: 'postIds' (derived from relationship name)
+    posts: associations.hasMany(postModel),
+    
+    // Custom foreign key
+    articles: associations.hasMany(postModel, { foreignKey: 'articleIds' }),
+  })
+  .create();
+
+// Post belongsTo User
+const postCollection = collection()
+  .model(postModel)
+  .relationships({
+    // Default foreign key: 'authorId' (derived from relationship name)
+    author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+  })
+  .create();
+```
+
+### Foreign Key Options
+
+By default, foreign keys are automatically derived from relationship names:
+- **`belongsTo`**: `relationshipName + 'Id'` (e.g., `author` → `authorId`)
+- **`hasMany`**: `relationshipName + 'Ids'` (e.g., `posts` → `postIds`)
+
+You can customize foreign keys using the `foreignKey` option:
+
+```typescript
+relationships({
+  // Custom name for belongsTo
+  creator: associations.belongsTo(userModel, { foreignKey: 'createdBy' }),
+  
+  // Custom name for hasMany
+  articles: associations.hasMany(postModel, { foreignKey: 'myArticleIds' }),
+})
+```
+
+### Working with Relationships
+
+```typescript
+const appSchema = schema().collections({ users: userCollection, posts: postCollection }).setup();
+
+// Create models
+const user = appSchema.users.create({ name: 'Alice', email: 'alice@example.com' });
+const post1 = appSchema.posts.create({ title: 'Post 1', content: 'Content 1', authorId: user.id });
+const post2 = appSchema.posts.create({ title: 'Post 2', content: 'Content 2', authorId: user.id });
+
+// Link relationships
+user.link('posts', [post1, post2]);
+
+// Access relationships
+console.log(user.posts.length);        // 2
+console.log(user.posts.models[0].title); // 'Post 1'
+console.log(post1.author.name);        // 'Alice'
+
+// Unlink relationships
+user.unlink('posts', [post1]);
+console.log(user.posts.length);        // 1
+```
+
+### Available Relationship Helpers
+
+- **`associations.belongsTo(model, options?)`** - Define a belongsTo relationship
+- **`associations.hasMany(model, options?)`** - Define a hasMany relationship
+- **`model.link(relationshipName, models)`** - Link models to a relationship
+- **`model.unlink(relationshipName, models)`** - Unlink models from a relationship
+
+---
+
+## Factory Associations
+
+Factories can automatically create and link related models using association helpers. This is especially useful for generating complex test data.
+
+### Basic Factory with Associations
+
+```typescript
+import { factory, associations } from '@miragejs/orm';
+
+const postFactory = factory()
+  .model(postModel)
+  .attrs({
+    title: () => faker.lorem.sentence(),
+    content: () => faker.lorem.paragraph(),
+  })
+  .create();
+
+const userFactory = factory()
+  .model(userModel)
+  .attrs({
+    name: () => faker.person.fullName(),
+    email: () => faker.internet.email(),
+  })
+  .create();
+```
+
+### Using Association Helpers
+
+Association helpers allow you to create related models automatically when using factories:
+
+```typescript
+const userFactoryWithPosts = factory()
+  .model(userModel)
+  .attrs({
+    name: () => faker.person.fullName(),
+    email: () => faker.internet.email(),
+    posts: associations.createMany(postModel, 3), // Create 3 posts and link them
+  })
+  .create();
+
+const postFactoryWithAuthor = factory()
+  .model(postModel)
+  .attrs({
+    title: () => faker.lorem.sentence(),
+    content: () => faker.lorem.paragraph(),
+    author: associations.create(userModel), // Create and link a user
+  })
+  .create();
+```
+
+### Traits with Associations
+
+Traits can also include associations, allowing you to create variations with different relationships:
+
+```typescript
+const userFactory = factory()
+  .model(userModel)
+  .attrs({
+    name: () => faker.person.fullName(),
+    email: () => faker.internet.email(),
+  })
+  .traits({
+    // Trait without associations
+    admin: {
+      role: 'admin',
+    },
+    
+    // Trait with associations
+    withPosts: {
+      posts: associations.createMany(postModel, 5),
+    },
+    
+    // Trait with linked associations (use existing models)
+    withLinkedPosts: {
+      posts: associations.linkMany(postModel, 3), // Link 3 existing posts
+    },
+    
+    // Combine both
+    adminWithPosts: {
+      role: 'admin',
+      posts: associations.createMany(postModel, 2),
+    },
+  })
+  .create();
+
+// Usage
+const appSchema = schema()
+  .collections({
+    users: collection().model(userModel).factory(userFactory).create(),
+    posts: collection().model(postModel).factory(postFactory).create(),
+  })
+  .setup();
+
+// Create user with trait
+const user = appSchema.users.create('withPosts');
+console.log(user.posts.length); // 5
+
+// Create user with multiple traits
+const admin = appSchema.users.create(['admin', 'withPosts']);
+console.log(admin.role);         // 'admin'
+console.log(admin.posts.length); // 5
+```
+
+### Available Association Helpers
+
+All helpers are available via the `associations` object:
+
+- **`associations.create(model)`** - Create a single related model
+- **`associations.createMany(model, count)`** - Create multiple related models
+- **`associations.link(model)`** - Link to an existing model (random)
+- **`associations.linkMany(model, count)`** - Link to existing models (random selection)
+
+---
+
+## Serialization
+
+The ORM includes built-in serialization that's deeply integrated with models and collections. Unlike MirageJS, key formatting is completely user-controlled, and serialization is accessible via simple `.toJSON()` calls.
+
+### Key Features
+
+- ✅ **Built-in**: Available on all models and collections via `.toJSON()`
+- ✅ **User-controlled types**: Define your own JSON output types
+- ✅ **Relationship support**: Side-loading and embedding
+- ✅ **Two-level configuration**: Global (schema) and collection-specific
+- ✅ **No key formatting**: You control the exact output structure
+
+### Basic Serialization
+
+```typescript
+import { model, schema, collection } from '@miragejs/orm';
+
+// Define your JSON types
+interface UserJSON {
+  id: string;
+  name: string;
+  email: string;
+}
+
+// Create model with JSON types
+const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<{ id: string; name: string; email: string; password: string }>()
+  .json<UserJSON, UserJSON[]>()
+  .create();
+
+const appSchema = schema()
+  .collections({
+    users: collection()
+      .model(userModel)
+      .serializer({
+        attrs: ['id', 'name', 'email'], // Exclude 'password'
+      })
+      .create(),
+  })
+  .setup();
+
+const user = appSchema.users.create({
+  name: 'John',
+  email: 'john@example.com',
+  password: 'secret123',
+});
+
+// Serialize single model
+const json = user.toJSON();
+// Result: { id: '1', name: 'John', email: 'john@example.com' }
+
+// Serialize collection
+const allUsers = appSchema.users.all();
+const collectionJson = allUsers.toJSON();
+// Result: [{ id: '1', name: 'John', email: 'john@example.com' }, ...]
+```
+
+### Serialization Options
+
+Configure serialization at the collection or schema level:
+
+```typescript
+interface SerializerOptions {
+  // Data selection (collection-level only)
+  attrs?: string[];      // Specific attributes to include
+  include?: string[];    // Relationship names to include
+  
+  // Structural options (schema or collection level)
+  root?: boolean | string;  // Wrap in root key
+  embed?: boolean;          // Embed relationships (true) or side-load (false)
+}
+```
+
+### Root Wrapping
+
+```typescript
+const userCollection = collection()
+  .model(userModel)
+  .serializer({
+    root: true, // Use model/collection name as root key
+  })
+  .create();
+
+const user = appSchema.users.first();
+
+// Single model
+user.toJSON();
+// Result: { user: { id: '1', name: 'John', email: 'john@example.com' } }
+
+// Collection
+appSchema.users.all().toJSON();
+// Result: { users: [{ id: '1', ... }, { id: '2', ... }] }
+
+// Custom root key
+.serializer({ root: 'currentUser' })
+// Result: { currentUser: { id: '1', ... } }
+```
+
+### Relationships in Serialization
+
+#### Side-loading (embed: false)
+
+Keep foreign keys and add full related models alongside:
+
+```typescript
+const postCollection = collection()
+  .model(postModel)
+  .relationships({
+    author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+  })
+  .serializer({
+    include: ['author'],
+    embed: false, // Default: side-load
+  })
+  .create();
+
+const post = appSchema.posts.first();
+post.toJSON();
+// Result:
+// {
+//   id: '1',
+//   title: 'My Post',
+//   content: 'Content here',
+//   authorId: '123',              // Foreign key preserved
+//   author: {                      // Full model added
+//     id: '123',
+//     name: 'John',
+//     email: 'john@example.com'
+//   }
+// }
+```
+
+#### Embedding (embed: true)
+
+Replace foreign keys with embedded models:
+
+```typescript
+.serializer({
+  include: ['author'],
+  embed: true, // Embed relationships
+})
+
+post.toJSON();
+// Result:
+// {
+//   id: '1',
+//   title: 'My Post',
+//   content: 'Content here',
+//   author: {                      // Foreign key removed, model embedded
+//     id: '123',
+//     name: 'John',
+//     email: 'john@example.com'
+//   }
+// }
+```
+
+#### Side-loading with Root
+
+When using `root: true` with side-loading, related models appear at the root level:
+
+```typescript
+.serializer({
+  root: true,
+  include: ['author'],
+  embed: false,
+})
+
+post.toJSON();
+// Result:
+// {
+//   post: {
+//     id: '1',
+//     title: 'My Post',
+//     content: 'Content here',
+//     authorId: '123'
+//   },
+//   author: {                      // Side-loaded at root level
+//     id: '123',
+//     name: 'John',
+//     email: 'john@example.com'
+//   }
+// }
+```
+
+### Global Serializer Configuration
+
+Set default serialization options at the schema level:
+
+```typescript
+const appSchema = schema()
+  .serializer({
+    root: true,   // All collections use root wrapping by default
+    embed: true,  // All relationships embedded by default
+  })
+  .collections({
+    users: collection()
+      .model(userModel)
+      .serializer({ include: ['posts'] }) // Inherits global root and embed
+      .create(),
+    
+    posts: collection()
+      .model(postModel)
+      .serializer({
+        include: ['author'],
+        embed: false, // Override global: side-load instead
+      })
+      .create(),
+  })
+  .setup();
+```
+
+**Priority**: Collection-level options override global options.
+
+### Custom Serializers
+
+For advanced use cases, extend the base `Serializer` class:
+
+```typescript
+import { Serializer } from '@miragejs/orm';
+
+class CustomUserSerializer extends Serializer {
+  protected _getAttributes(model) {
+    const attrs = super._getAttributes(model);
+    return {
+      ...attrs,
+      displayName: `${attrs.name} (${attrs.email})`,
+      // Add computed fields, transform data, etc.
+    };
+  }
+}
+
+const userCollection = collection()
+  .model(userModel)
+  .serializer(new CustomUserSerializer(userModel, { root: true }))
+  .create();
+```
+
+### Complete Example
+
+```typescript
+import { model, schema, collection, factory, associations } from '@miragejs/orm';
+
+// Define models
+const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<{ name: string; email: string }>()
+  .json<UserJSON, UserJSON[]>()
+  .create();
+
+const postModel = model()
+  .name('post')
+  .collection('posts')
+  .attrs<{ title: string; content: string; authorId: string }>()
+  .json<PostJSON, PostsJSON>()
+  .create();
+
+// Setup schema with serialization
+const appSchema = schema()
+  .serializer({ root: true }) // Global: use root wrapping
+  .collections({
+    users: collection()
+      .model(userModel)
+      .relationships({
+        posts: associations.hasMany(postModel),
+      })
+      .serializer({
+        attrs: ['id', 'name', 'email'],
+        include: ['posts'],
+        embed: true, // Embed posts
+      })
+      .create(),
+    
+    posts: collection()
+      .model(postModel)
+      .relationships({
+        author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+      })
+      .serializer({
+        include: ['author'],
+        embed: false, // Side-load author
+      })
+      .create(),
+  })
+  .setup();
+
+// Create data
+const user = appSchema.users.create({ name: 'Alice', email: 'alice@example.com' });
+const post = appSchema.posts.create({ title: 'Hello', content: 'World', authorId: user.id });
+user.link('posts', [post]);
+
+// Serialize
+const userJson = user.toJSON();
+// Result:
+// {
+//   user: {
+//     id: '1',
+//     name: 'Alice',
+//     email: 'alice@example.com',
+//     posts: [{
+//       id: '2',
+//       title: 'Hello',
+//       content: 'World',
+//       authorId: '1'
+//     }]
+//   }
+// }
+
+const postJson = post.toJSON();
+// Result:
+// {
+//   post: {
+//     id: '2',
+//     title: 'Hello',
+//     content: 'World',
+//     authorId: '1'
+//   },
+//   author: {
+//     id: '1',
+//     name: 'Alice',
+//     email: 'alice@example.com'
+//   }
+// }
+```
+
+### Differences from MirageJS
+
+| Feature | MirageJS | This ORM |
+|---------|----------|----------|
+| **API** | Separate `serializer` function | Built-in `.toJSON()` |
+| **Key Formatting** | Automatic (camelCase/dash-case) | User-controlled |
+| **Type Safety** | Limited | Full TypeScript support |
+| **Configuration** | Serializer classes | Simple config objects |
+| **Relationships** | Manual inclusion | Automatic with `include` |
+| **Global Config** | No | Yes (schema-level) |
+
+---
+
+## Migration from Current MirageJS
+
+If you're migrating from MirageJS, here are the key changes:
+
+1. **Builder API**: Use `model()`, `factory()`, `collection()`, and `schema()` builders
+2. **Relationships**: Define at collection level with `.relationships()`
+3. **Serialization**: Use `.toJSON()` instead of separate serializers
+4. **No Key Formatting**: Define your exact output structure via types
+5. **Type Safety**: Fully typed throughout, define your own types
+
+Example migration:
+
+```typescript
+// MirageJS (old)
+Model.extend({
+  user: belongsTo()
+});
+
+// This ORM (new)
+collection()
+  .model(postModel)
+  .relationships({
+    author: associations.belongsTo(userModel, { foreignKey: 'authorId' })
+  })
+  .create();
+```
+

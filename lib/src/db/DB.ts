@@ -1,29 +1,16 @@
 import { IdentityManager, type IdType } from '@src/id-manager';
 import { MirageError } from '@src/utils';
 
-import DbCollection, { type DbCollectionConfig } from './DbCollection';
-import type { DbRecord } from './types';
-
-/**
- * Factory function for creating a DB instance with collection accessors
- * @template TCollections - The type of collections in the database
- * @param config - The configuration for the database
- * @param config.initialData - The initial data to populate collections
- * @returns A DB instance with typed collection accessors
- * @example
- * const db = createDatabase({
- *   users: [{ id: "1", name: 'John' }],
- *   posts: [{ id: "1", title: 'Hello world' }]
- * });
- *
- * db.users.records; // [{ id: "1", name: 'John' }]
- * db.posts.records; // [{ id: "1", title: 'Hello world' }]
- */
-export function createDatabase<TCollections extends Record<string, DbCollection<any>>>(
-  config?: DbConfig<TCollections>,
-): DbInstance<TCollections> {
-  return new DB<TCollections>(config) as DbInstance<TCollections>;
-}
+import DbCollection from './DbCollection';
+import type {
+  DbCollectionConfig,
+  DbCollectionData,
+  DbCollections,
+  DbCollectionsFromStaticData,
+  DbConfig,
+  DbData,
+  DbRecord,
+} from './types';
 
 /**
  * A database for storing and managing collections of records.
@@ -35,7 +22,7 @@ export function createDatabase<TCollections extends Record<string, DbCollection<
  * });
  * db.users.records;
  */
-export default class DB<TCollections extends Record<string, DbCollection<any>>> {
+export default class DB<TCollections extends DbCollections> {
   private _collections: Map<keyof TCollections, DbCollection<any>> = new Map();
 
   constructor(config: DbConfig<TCollections> = {}) {
@@ -127,7 +114,7 @@ export default class DB<TCollections extends Record<string, DbCollection<any>>> 
    */
   loadData<TData extends Record<string, DbRecord[]>>(
     data: TData,
-  ): DbInstance<TCollections & InferCollectionsFromData<TData>> {
+  ): DbInstance<TCollections & DbCollectionsFromStaticData<TData>> {
     (Object.entries(data) as [keyof TCollections, TData[keyof TData]][]).forEach(
       ([name, records]) => {
         if (this.hasCollection(name)) {
@@ -138,7 +125,7 @@ export default class DB<TCollections extends Record<string, DbCollection<any>>> 
       },
     );
 
-    return this as unknown as DbInstance<TCollections & InferCollectionsFromData<TData>>;
+    return this as unknown as DbInstance<TCollections & DbCollectionsFromStaticData<TData>>;
   }
 
   /**
@@ -177,48 +164,26 @@ export default class DB<TCollections extends Record<string, DbCollection<any>>> 
   }
 }
 
-// -- Types --
-
 /**
- * Infers the collection type from data records
- * @template TData - The type of data records
- */
-type InferCollectionFromData<TData> =
-  TData extends Array<infer TRecord>
-    ? TRecord extends DbRecord
-      ? DbCollection<TRecord>
-      : DbCollection<DbRecord>
-    : DbCollection<DbRecord>;
-
-/**
- * Infers collections map from data object
- * @template TData - The type of data object
- */
-type InferCollectionsFromData<TData> = {
-  [K in keyof TData]: InferCollectionFromData<TData[K]>;
-};
-
-/**
- * Gets the data of a collection
- * @template T - The type of the collection
- */
-type DbCollectionData<T> = T extends DbCollection<infer TAttrs> ? TAttrs[] : never;
-
-/**
- * Type for a database's data
+ * Factory function for creating a DB instance with collection accessors
  * @template TCollections - The type of collections in the database
+ * @param config - The configuration for the database
+ * @param config.initialData - The initial data to populate collections
+ * @returns A DB instance with typed collection accessors
+ * @example
+ * const db = createDatabase({
+ *   users: [{ id: "1", name: 'John' }],
+ *   posts: [{ id: "1", title: 'Hello world' }]
+ * });
+ *
+ * db.users.records; // [{ id: "1", name: 'John' }]
+ * db.posts.records; // [{ id: "1", title: 'Hello world' }]
  */
-export type DbData<TCollections extends Record<string, DbCollection<any>>> = {
-  [K in keyof TCollections]: DbCollectionData<TCollections[K]>;
-};
-
-/**
- * Configuration for creating a DB instance
- * @template TCollections - The type of collections in the database
- */
-export type DbConfig<TCollections extends Record<string, DbCollection<any>>> = {
-  initialData?: DbData<TCollections>;
-};
+export function createDatabase<TCollections extends Record<string, DbCollection<any>>>(
+  config?: DbConfig<TCollections>,
+): DbInstance<TCollections> {
+  return new DB<TCollections>(config) as DbInstance<TCollections>;
+}
 
 /**
  * Type for a DB instance with collection accessors

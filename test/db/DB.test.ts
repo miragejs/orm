@@ -2,6 +2,7 @@ import { createDatabase, DbCollection } from '@src/db';
 import { IdentityManager } from '@src/id-manager';
 import { MirageError } from '@src/utils';
 
+// Setup test models
 interface User {
   id: string;
   name: string;

@@ -1,6 +1,6 @@
 import { IdentityManager, StringIdentityManager } from '@src/id-manager';
 
-import type { DbRecord, DbRecordInput, DbQuery } from './types';
+import type { DbCollectionConfig, DbRecord, DbRecordInput, DbQuery, NewDbRecord } from './types';
 
 /**
  * A collection of records in a database. Think of it as a table in a relational database.
@@ -15,6 +15,7 @@ import type { DbRecord, DbRecordInput, DbQuery } from './types';
 export default class DbCollection<TRecord extends DbRecord = DbRecord> {
   name: string;
   identityManager: IdentityManager<TRecord['id']>;
+
   private _records: Map<TRecord['id'], TRecord> = new Map();
 
   constructor(name: string, config?: DbCollectionConfig<TRecord>) {
@@ -27,7 +28,7 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
     }
   }
 
-  // -- RECORDS ACCESSOR --
+  // -- UTILITY METHODS --
 
   /**
    * The next ID for the collection.
@@ -35,25 +36,6 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
    */
   get nextId(): TRecord['id'] {
     return this.identityManager.fetch();
-  }
-
-  /**
-   * Returns all records in the collection
-   * @returns An array of all records in the collection.
-   */
-  all(): TRecord[] {
-    return Array.from(this._records.values());
-  }
-
-  // -- UTILITY METHODS --
-
-  /**
-   * Gets a record by its index position in the collection.
-   * @param index - The index of the record to get.
-   * @returns The record at the specified index, or `undefined` if out of bounds.
-   */
-  get(index: number): TRecord | undefined {
-    return this.all()[index];
   }
 
   /**
@@ -72,13 +54,23 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
     return this._records.size === 0;
   }
 
+  // -- RECORDS ACCESSOR --
+
   /**
-   * Checks if a record exists in the collection.
-   * @param id - The ID of the record to check.
-   * @returns `true` if the record exists, `false` otherwise.
+   * Returns all records in the collection
+   * @returns An array of all records in the collection.
    */
-  has(id: TRecord['id']): boolean {
-    return this._records.has(id);
+  all(): TRecord[] {
+    return Array.from(this._records.values());
+  }
+
+  /**
+   * Gets a record by its index position in the collection.
+   * @param index - The index of the record to get.
+   * @returns The record at the specified index, or `undefined` if out of bounds.
+   */
+  at(index: number): TRecord | undefined {
+    return this.all()[index];
   }
 
   /**
@@ -96,6 +88,15 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
   last(): TRecord | undefined {
     const records = this.all();
     return records[records.length - 1];
+  }
+
+  /**
+   * Checks if a record exists in the collection.
+   * @param id - The ID of the record to check.
+   * @returns `true` if the record exists, `false` otherwise.
+   */
+  has(id: TRecord['id']): boolean {
+    return this._records.has(id);
   }
 
   // -- QUERY METHODS --
@@ -149,7 +150,7 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
    * @param data - The record data to insert.
    * @returns The inserted record.
    */
-  insert(data: DbRecordInput<TRecord>): TRecord {
+  insert(data: NewDbRecord<TRecord>): TRecord {
     const record = this._prepareRecord(data);
     this._records.set(record.id, record);
     return record;
@@ -160,7 +161,7 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
    * @param data - An array of record data to insert.
    * @returns An array of the inserted records.
    */
-  insertMany(data: DbRecordInput<TRecord>[]): TRecord[] {
+  insertMany(data: NewDbRecord<TRecord>[]): TRecord[] {
     return data.map((record) => this.insert(record));
   }
 
@@ -170,7 +171,7 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
    * @param patch - The data to update the record with.
    * @returns The updated record, or `null` if the record was not found.
    */
-  update(id: TRecord['id'], patch: DbRecordInput<TRecord>): TRecord | null {
+  update(id: TRecord['id'], patch: TRecord | DbRecordInput<TRecord>): TRecord | null {
     const existingRecord = this._records.get(id);
     if (!existingRecord) {
       return null;
@@ -188,7 +189,7 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
    */
   updateMany(
     idsOrQuery: TRecord['id'][] | DbQuery<TRecord>,
-    patch: DbRecordInput<TRecord>,
+    patch: TRecord | DbRecordInput<TRecord>,
   ): TRecord[] {
     const recordsToUpdate = this.findMany(idsOrQuery);
     const updatedRecords = recordsToUpdate.map((record) => {
@@ -246,7 +247,7 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
    * @param data - The record to prepare.
    * @returns The prepared record.
    */
-  private _prepareRecord(data: DbRecordInput<TRecord>): TRecord {
+  private _prepareRecord(data: NewDbRecord<TRecord>): TRecord {
     const record = { ...data } as TRecord;
     if (!record.id) {
       record.id = this.identityManager.fetch();
@@ -255,15 +256,4 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
     }
     return record;
   }
-}
-
-// -- Types --
-
-/**
- * Configuration for creating a database collection
- * @template TRecord - The type of the record's attributes
- */
-export interface DbCollectionConfig<TRecord extends DbRecord> {
-  identityManager?: IdentityManager<TRecord['id']>;
-  initialData?: TRecord[];
 }

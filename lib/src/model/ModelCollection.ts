@@ -1,19 +1,36 @@
-import type { ModelInstance, ModelToken, PartialModelAttrs, NewModelInstance } from './types';
+import type { SchemaCollections } from '@src/schema';
+
+import type { ModelAttrs, ModelInstance, ModelTemplate, ModelUpdateAttrs } from './types';
 
 /**
- * Base model collection with core functionality
- * @template TToken - The model token
+ * A collection of models with array-like interface
+ * @template TTemplate - The model template (most important for users)
+ * @template TSchema - The schema collections type for enhanced type inference
+ * @template TSerializer - The serializer type
  */
-abstract class BaseModelCollection<TToken extends ModelToken> {
-  public readonly token: TToken;
+export default class ModelCollection<
+  TTemplate extends ModelTemplate = ModelTemplate,
+  TSchema extends SchemaCollections = SchemaCollections,
+  TSerializer = undefined,
+> {
+  private readonly _template: TTemplate;
   public readonly collectionName: string;
-  public models: Array<ModelInstance<TToken>>;
+  public models: Array<ModelInstance<TTemplate, TSchema, TSerializer>>;
+  protected _serializer?: TSerializer;
 
-  constructor(token: TToken, models: Array<ModelInstance<TToken>> = []) {
-    this.token = token;
-    this.collectionName = token.collectionName;
-    this.models = [...models];
+  constructor(
+    template: TTemplate,
+    models?: Array<ModelInstance<TTemplate, TSchema, TSerializer>>,
+    serializer?: TSerializer,
+  ) {
+    this._template = template;
+    this._serializer = serializer;
+
+    this.collectionName = template.collectionName;
+    this.models = [...(models ?? [])];
   }
+
+  // -- GETTERS --
 
   /**
    * Get the length of the collection
@@ -24,236 +41,303 @@ abstract class BaseModelCollection<TToken extends ModelToken> {
   }
 
   /**
-   * Set the length of the collection
-   * @param newLength - The new length
+   * Check if the collection is empty
+   * @returns True if the collection is empty, false otherwise
    */
-  set length(newLength: number) {
-    this.models.length = newLength;
+  get isEmpty(): boolean {
+    return this.models.length === 0;
   }
 
   /**
    * Get a model by index
-   * @param index - The index
-   * @returns The model at the index or undefined if not found
+   * @param index - The index of the model to get
+   * @returns The model at the given index or undefined
    */
-  get(index: number): ModelInstance<TToken> | undefined {
+  at(index: number): ModelInstance<TTemplate, TSchema, TSerializer> | undefined {
     return this.models[index];
   }
 
   /**
-   * Convert the collection to a plain array
-   * @returns Array of models
+   * Get the first model in the collection
+   * @returns The first model or null if the collection is empty
    */
-  toArray(): ModelInstance<TToken>[] {
+  first(): ModelInstance<TTemplate, TSchema, TSerializer> | null {
+    return this.models[0] || null;
+  }
+
+  /**
+   * Get the last model in the collection
+   * @returns The last model or null if the collection is empty
+   */
+  last(): ModelInstance<TTemplate, TSchema, TSerializer> | null {
+    return this.models[this.models.length - 1] || null;
+  }
+
+  // -- ARRAY-LIKE ITERATION METHODS --
+
+  /**
+   * Execute a function for each model in the collection
+   * @param cb - The function to execute for each model
+   */
+  forEach(
+    cb: (
+      model: ModelInstance<TTemplate, TSchema, TSerializer>,
+      index: number,
+      collection: this,
+    ) => void,
+  ): void {
+    this.models.forEach((model, index) => cb(model, index, this));
+  }
+
+  /**
+   * Create a new array with the results of calling a function for each model
+   * @param cb - The function to call for each model
+   * @returns A new array with the results
+   */
+  map(
+    cb: (
+      model: ModelInstance<TTemplate, TSchema, TSerializer>,
+      index: number,
+      collection: this,
+    ) => ModelInstance<TTemplate, TSchema, TSerializer>,
+  ): ModelCollection<TTemplate, TSchema, TSerializer> {
+    const mappedModels = this.models.map((model, index) => cb(model, index, this));
+    return new ModelCollection(this._template, mappedModels, this._serializer);
+  }
+
+  /**
+   * Create a new collection with models that pass a test
+   * @param cb - The test function
+   * @returns A new ModelCollection with the filtered models
+   */
+  filter(
+    cb: (
+      model: ModelInstance<TTemplate, TSchema, TSerializer>,
+      index: number,
+      collection: this,
+    ) => boolean,
+  ): ModelCollection<TTemplate, TSchema, TSerializer> {
+    const filteredModels = this.models.filter((model, index) => cb(model, index, this));
+    return new ModelCollection(this._template, filteredModels, this._serializer);
+  }
+
+  /**
+   * Find the first model that satisfies a test
+   * @param cb - The test function
+   * @returns The first model that passes the test, or undefined
+   */
+  find(
+    cb: (
+      model: ModelInstance<TTemplate, TSchema, TSerializer>,
+      index: number,
+      collection: this,
+    ) => boolean,
+  ): ModelInstance<TTemplate, TSchema, TSerializer> | undefined {
+    return this.models.find((model, index) => cb(model, index, this));
+  }
+
+  /**
+   * Check if at least one model satisfies a test
+   * @param cb - The test function
+   * @returns True if at least one model passes the test
+   */
+  some(
+    cb: (
+      model: ModelInstance<TTemplate, TSchema, TSerializer>,
+      index: number,
+      collection: this,
+    ) => boolean,
+  ): boolean {
+    return this.models.some((model, index) => cb(model, index, this));
+  }
+
+  /**
+   * Check if all models satisfy a test
+   * @param cb - The test function
+   * @returns True if all models pass the test
+   */
+  every(
+    cb: (
+      model: ModelInstance<TTemplate, TSchema, TSerializer>,
+      index: number,
+      collection: this,
+    ) => boolean,
+  ): boolean {
+    return this.models.every((model, index) => cb(model, index, this));
+  }
+
+  // -- ARRAY-LIKE UTILITY METHODS --
+
+  /**
+   * Concatenate this collection with other collections or arrays
+   * @param others - Other collections or arrays to concatenate
+   * @returns A new ModelCollection with all models
+   */
+  concat(
+    ...others: (
+      | ModelCollection<TTemplate, TSchema, TSerializer>
+      | ModelInstance<TTemplate, TSchema, TSerializer>[]
+    )[]
+  ): ModelCollection<TTemplate, TSchema, TSerializer> {
+    const allModels = [
+      ...this.models,
+      ...others.flatMap((other) => (Array.isArray(other) ? other : other.models)),
+    ];
+    return new ModelCollection(this._template, allModels, this._serializer);
+  }
+
+  /**
+   * Check if the collection includes a specific model
+   * @param model - The model to check for
+   * @returns True if the model is in the collection
+   */
+  includes(model: ModelInstance<TTemplate, TSchema, TSerializer>): boolean {
+    return this.models.includes(model);
+  }
+
+  /**
+   * Find the index of a model in the collection
+   * @param model - The model to find
+   * @returns The index of the model, or -1 if not found
+   */
+  indexOf(model: ModelInstance<TTemplate, TSchema, TSerializer>): number {
+    return this.models.indexOf(model);
+  }
+
+  /**
+   * Sort the models in the collection
+   * @param compareFn - The comparison function
+   * @returns A new sorted ModelCollection
+   */
+  sort(
+    compareFn?: (
+      a: ModelInstance<TTemplate, TSchema, TSerializer>,
+      b: ModelInstance<TTemplate, TSchema, TSerializer>,
+    ) => number,
+  ): ModelCollection<TTemplate, TSchema, TSerializer> {
+    const sortedModels = [...this.models].sort(compareFn);
+    return new ModelCollection(this._template, sortedModels, this._serializer);
+  }
+
+  /**
+   * Reverse the order of models in the collection
+   * @returns A new reversed ModelCollection
+   */
+  reverse(): ModelCollection<TTemplate, TSchema, TSerializer> {
+    const reversedModels = [...this.models].reverse();
+    return new ModelCollection(this._template, reversedModels, this._serializer);
+  }
+
+  /**
+   * Convert the collection to a plain array
+   * @returns An array of the models
+   */
+  toArray(): ModelInstance<TTemplate, TSchema, TSerializer>[] {
     return [...this.models];
   }
 
   /**
    * Get a string representation of the collection
-   * @returns The string representation
+   * @returns A string representation showing the collection name and count
    */
   toString(): string {
-    return `collection:${this.collectionName}(${this.models.map((m) => m.toString()).join(',')})`;
-  }
-
-  /**
-   * Serialize all models in the collection to JSON
-   * @template T - The expected serialized type (defaults to any)
-   * @returns Array of serialized models
-   */
-  toJSON<T = any>(): T[] {
-    return this.models.map((model) => model.toJSON()) as T[];
+    return `collection:${this.collectionName}(${this.models.map((model) => model.toString()).join(', ')})`;
   }
 
   /**
    * Make the collection iterable
    * @returns An iterator for the models
    */
-  [Symbol.iterator](): Iterator<ModelInstance<TToken>> {
+  [Symbol.iterator](): Iterator<ModelInstance<TTemplate, TSchema, TSerializer>> {
     return this.models[Symbol.iterator]();
   }
-}
 
-/**
- * Model collection with array-like methods
- * @template TToken - The model token
- */
-class ArrayModelCollection<TToken extends ModelToken> extends BaseModelCollection<TToken> {
-  /**
-   * Filter the collection
-   * @param predicate - The predicate to filter the collection
-   * @returns A new filtered collection
-   */
-  filter(
-    predicate: (
-      value: ModelInstance<TToken>,
-      index: number,
-      array: ModelInstance<TToken>[],
-    ) => boolean,
-  ): this {
-    const filtered = this.models.filter(predicate);
-    return new (this.constructor as any)(this.token, filtered);
-  }
+  // -- CRUD OPERATIONS --
 
   /**
-   * Find a model in the collection
-   * @param predicate - The predicate function
-   * @returns The found model or undefined
-   */
-  find(
-    predicate: (
-      value: ModelInstance<TToken>,
-      index: number,
-      array: ModelInstance<TToken>[],
-    ) => boolean,
-  ): ModelInstance<TToken> | undefined {
-    return this.models.find(predicate);
-  }
-
-  /**
-   * Sort the collection
-   * @param compareFn - The compare function
-   * @returns A new sorted collection
-   */
-  sort(compareFn?: (a: ModelInstance<TToken>, b: ModelInstance<TToken>) => number): this {
-    const sorted = [...this.models].sort(compareFn);
-    return new (this.constructor as any)(this.token, sorted);
-  }
-
-  /**
-   * Check if the collection includes a model (using toString comparison)
-   * @param model - The model to check for
-   * @returns True if the collection includes the model
-   */
-  includes(model: ModelInstance<TToken>): boolean {
-    return this.models.some((m) => m.toString() === model.toString());
-  }
-
-  /**
-   * Slice the collection
-   * @param start - The start index
-   * @param end - The end index
-   * @returns A new sliced collection
-   */
-  slice(start?: number, end?: number): this {
-    const sliced = this.models.slice(start, end);
-    return new (this.constructor as any)(this.token, sliced);
-  }
-
-  /**
-   * Concatenate the collection with other models or collections
-   * @param items - The items to concatenate
-   * @returns A new concatenated collection
-   */
-  concat(
-    ...items: (ModelInstance<TToken> | BaseModelCollection<TToken> | ModelInstance<TToken>[])[]
-  ): this {
-    const flattened: ModelInstance<TToken>[] = [];
-
-    for (const item of items) {
-      if (item instanceof BaseModelCollection) {
-        flattened.push(...item.models);
-      } else if (Array.isArray(item)) {
-        flattened.push(...item);
-      } else {
-        flattened.push(item);
-      }
-    }
-
-    const concatenated = this.models.concat(flattened);
-    return new (this.constructor as any)(this.token, concatenated);
-  }
-
-  /**
-   * Execute a function for each model in the collection
-   * @param callbackFn - The callback function
-   * @returns The collection
-   */
-  forEach(
-    callbackFn: (
-      value: ModelInstance<TToken>,
-      index: number,
-      array: ModelInstance<TToken>[],
-    ) => ModelInstance<TToken>,
-  ): this {
-    this.models.map((model, index, array) => callbackFn(model, index, array));
-    return this;
-  }
-}
-
-/**
- * Model collection with mutation methods
- * @template TToken - The model token
- */
-class MutableModelCollection<TToken extends ModelToken> extends ArrayModelCollection<TToken> {
-  /**
-   * Add a model to the collection and save it in the db
+   * Add a model to the end of the collection (alias for push)
    * @param model - The model to add
-   * @returns The collection
    */
-  add(model: NewModelInstance<TToken> | ModelInstance<TToken>): this {
-    this.models.push(model.save());
-    return this;
-  }
-
-  /**
-   * Destroy all models in the collection
-   * @returns The collection
-   */
-  destroy(): this {
-    this.models.forEach((model) => model.destroy());
-    this.length = 0;
-    return this;
-  }
-
-  /**
-   * Reload all models in the collection
-   * @returns The collection
-   */
-  reload(): this {
-    this.models = this.models.map((model) => model.reload());
-    return this;
+  add(model: ModelInstance<TTemplate, TSchema, TSerializer>): void {
+    this.models.push(model);
   }
 
   /**
    * Remove a model from the collection
    * @param model - The model to remove
-   * @returns The collection
+   * @returns True if the model was removed, false if not found
    */
-  remove(model: ModelInstance<TToken>): this {
-    const index = this.models.findIndex((m) => m.toString() === model.toString());
+  remove(model: ModelInstance<TTemplate, TSchema, TSerializer>): boolean {
+    const index = this.indexOf(model);
     if (index !== -1) {
       this.models.splice(index, 1);
+      return true;
     }
-    return this;
+    return false;
   }
 
   /**
    * Save all models in the collection
-   * @returns The collection
+   * @returns The collection instance for chaining
    */
   save(): this {
-    this.models = this.models.map((model) => model.save());
+    this.models = this.models.map(
+      (model) => model.save() as ModelInstance<TTemplate, TSchema, TSerializer>,
+    );
+    return this;
+  }
+
+  /**
+   * Destroy all models in the collection
+   * @returns The collection instance for chaining
+   */
+  destroy(): this {
+    this.models.forEach((model) => model.destroy());
+    this.models = [];
+    return this;
+  }
+
+  /**
+   * Reload all models in the collection from the database
+   * @returns The collection instance for chaining
+   */
+  reload(): this {
+    this.models = this.models.map(
+      (model) => model.reload() as ModelInstance<TTemplate, TSchema, TSerializer>,
+    );
     return this;
   }
 
   /**
    * Update all models in the collection with the given attributes
    * @param attrs - The attributes to update
-   * @returns The collection
+   * @returns The collection instance for chaining
    */
-  update(attrs: PartialModelAttrs<TToken>): this {
-    this.models = this.models.map((model) => model.update(attrs));
+  update(attrs: ModelUpdateAttrs<TTemplate, TSchema>): this {
+    this.models = this.models.map(
+      (model) => model.update(attrs) as ModelInstance<TTemplate, TSchema, TSerializer>,
+    );
     return this;
   }
-}
 
-/**
- * A collection of models that provides array-like functionality and mutation methods
- * @template TToken - The model token
- * @param token - The model token defining the collection
- * @param models - The initial models in the collection
- */
-export default class ModelCollection<
-  TToken extends ModelToken,
-> extends MutableModelCollection<TToken> {}
+  /**
+   * Convert the collection to JSON
+   * Uses serializer if configured, otherwise returns array of raw attributes
+   * @returns A serialized representation of the collection
+   */
+  toJSON(): TSerializer extends {
+    serializeCollection(collection: any): infer TSerializedCollection;
+  }
+    ? TSerializedCollection
+    : ModelAttrs<TTemplate, TSchema>[] {
+    if (
+      this._serializer &&
+      typeof this._serializer === 'object' &&
+      'serializeCollection' in this._serializer &&
+      typeof this._serializer.serializeCollection === 'function'
+    ) {
+      return (this._serializer as any).serializeCollection(this) as any;
+    }
+    return this.models.map((model) => model.attrs) as any;
+  }
+}

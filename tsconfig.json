@@ -3,6 +3,7 @@
     "baseUrl": "./",
     "declaration": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["ESNext"],
     "module": "ESNext",
@@ -10,20 +11,26 @@
     "noEmit": true,
     "outDir": "./lib/dist",
     "paths": {
-      "@src/*": ["lib/src/*"]
+      "@src/*": ["./lib/src/*"]
     },
     "resolveJsonModule": true,
     "rootDir": "./",
     "skipLibCheck": true,
     "strict": true,
     "target": "ESNext",
-    "typeRoots": ["./lib/types", "./node_modules", "./node_modules/@types"],
+    "typeRoots": ["./node_modules", "./node_modules/@types", "./lib/types"],
     "types": ["node", "vitest/globals"]
   },
   "include": [
     "lib/src/**/*",
+    "lib/types/**/*",
     "test/**/*",
     "tsup.config.ts",
     "vitest.config.mts"
+  ],
+  "exclude": [
+    "node_modules",
+    "lib/dist",
+    "lib/node_modules"
   ]
 }
