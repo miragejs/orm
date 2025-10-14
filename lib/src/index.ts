@@ -74,20 +74,24 @@ export type { IdentityManager } from './id-manager';
 // ----------------------------------------------------------------------------
 export { model } from './model';
 export type {
-  ModelTemplate,
-  ModelInstance,
-  ModelAttrs,
-  ModelUpdateAttrs,
+  InferCollectionName,
   InferModelAttrs,
-  InferSerializedModel,
+  InferModelName,
   InferSerializedCollection,
+  InferSerializedModel,
+  ModelAttrs,
+  ModelInstance,
+  ModelTemplate,
+  ModelUpdateAttrs,
+  NewModelInstance,
+  PartialModelAttrs,
 } from './model';
 
 // ----------------------------------------------------------------------------
 // Factory Builder
 // ----------------------------------------------------------------------------
 export { factory } from './factory';
-export type { ModelTraits } from './factory';
+export type { Factory, FactoryAttrs, ModelTraits, TraitDefinition } from './factory';
 
 // ----------------------------------------------------------------------------
 // Associations
@@ -101,17 +105,28 @@ export {
   link,
   linkMany,
 } from './associations';
-export type {};
+export type {
+  // Relationship associations
+  BelongsTo,
+  HasMany,
+  // Factory associations
+  Association,
+  CreateAssociation,
+  CreateManyAssociation,
+  LinkAssociation,
+  LinkManyAssociation,
+} from './associations';
 
 // ----------------------------------------------------------------------------
 // Schema Builder
 // ----------------------------------------------------------------------------
 export { collection, schema } from './schema';
 export type {
-  SchemaCollections,
-  SchemaCollection,
-  SchemaInstance,
   CollectionCreateInput,
+  SchemaCollection,
+  SchemaCollectionConfig,
+  SchemaCollections,
+  SchemaInstance,
 } from './schema';
 
 // ----------------------------------------------------------------------------
@@ -119,7 +134,7 @@ export type {
 // ----------------------------------------------------------------------------
 export { Serializer } from './serializer';
 export type {
-  StructuralSerializerOptions,
   DataSerializerOptions,
   SerializerOptions,
+  StructuralSerializerOptions,
 } from './serializer';
