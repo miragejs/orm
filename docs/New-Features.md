@@ -11,7 +11,7 @@ This document provides an overview of the major new features in the ORM, includi
   - [Schema Builder](#schema-builder)
 - [Relationships](#relationships)
 - [Factory Associations](#factory-associations)
-  - [Type-Safe Factories with Shared Schema](#type-safe-factories-with-shared-schema)
+  - [Type-Safe Factories with Shared Schema Type](#type-safe-factories-with-shared-schema-type)
 - [Serialization](#serialization)
 - [Advanced: Extending and Customization](#advanced-extending-and-customization)
   - [Extending Factories](#extending-factories)
@@ -151,8 +151,8 @@ const appSchema = schema()
     users: userCollection,
     posts: postCollection,
   })
-  .identityManager(new StringIdentityManager()) // Optional: defaults to StringIdentityManager
-  .serializer({ root: true, embed: true })      // Optional: global serializer config
+  .identityManager(new NumberIdentityManager()) // Optional: defaults to StringIdentityManager
+  .serializer({ root: true, embed: true })      // Optional: global serializer options
   .setup();
 
 // Use the schema (it provides type-safe collection accessors)
@@ -189,10 +189,10 @@ import { collection, associations } from '@miragejs/orm';
 const userCollection = collection()
   .model(userModel)
   .relationships({
-    // Default foreign key: 'postIds' (derived from relationship name)
+    // Default foreign key: 'postIds' (derived from model name (e.g. model().name(modelName))
     posts: associations.hasMany(postModel),
     
-    // Custom foreign key
+    // Custom relationship with custom foreign key for consistency
     articles: associations.hasMany(postModel, { foreignKey: 'articleIds' }),
   })
   .create();
@@ -201,8 +201,8 @@ const userCollection = collection()
 const postCollection = collection()
   .model(postModel)
   .relationships({
-    // Default foreign key: 'authorId' (derived from relationship name)
-    author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+    // Default foreign key: 'userId' (derived from model name)
+    user: associations.belongsTo(userModel),
   })
   .create();
 ```
@@ -210,8 +210,8 @@ const postCollection = collection()
 ### Foreign Key Options
 
 By default, foreign keys are automatically derived from relationship names:
-- **`belongsTo`**: `relationshipName + 'Id'` (e.g., `author` → `authorId`)
-- **`hasMany`**: `relationshipName + 'Ids'` (e.g., `posts` → `postIds`)
+- **`belongsTo`**: `modelName + 'Id'` (e.g., `author` → `authorId`)
+- **`hasMany`**: `modelName + 'Ids'` (e.g., `posts` → `postIds`)
 
 You can customize foreign keys using the `foreignKey` option:
 
@@ -221,41 +221,190 @@ relationships({
   creator: associations.belongsTo(userModel, { foreignKey: 'createdBy' }),
   
   // Custom name for hasMany
-  articles: associations.hasMany(postModel, { foreignKey: 'myArticleIds' }),
+  articles: associations.hasMany(postModel, { foreignKey: 'ownArticleIds' }),
 })
 ```
 
 ### Working with Relationships
+
+The ORM provides multiple ways to work with relationships: creating models with relationships, updating relationships via setters, and using helper methods.
+
+#### Creating Models with Relationships
+
+You can create models with relationships in several ways:
 
 ```typescript
 const appSchema = schema()
   .collections({
     users: userCollection,
     posts: postCollection,
-  }).setup();
+  })
+  .setup();
 
-// Create models
+// 1. Create with foreign key
 const user = appSchema.users.create({ name: 'Alice', email: 'alice@example.com' });
-const post1 = appSchema.posts.create({ title: 'Post 1', content: 'Content 1' });
-const post2 = appSchema.posts.create({ title: 'Post 2', content: 'Content 2' });
+const post1 = appSchema.posts.create({
+  title: 'Post 1',
+  content: 'Content 1',
+  authorId: user.id, // Set foreign key directly
+});
 
-// Link relationships
-user.link('posts', [post1, post2]);
+console.log(post1.author.name); // 'Alice'
 
-// Access relationships
-console.log(user.posts.length);        // 2
+// 2. Create with related model
+const post2 = appSchema.posts.create({
+  title: 'Post 2',
+  content: 'Content 2',
+  author: user, // Pass the model instance
+});
+
+console.log(post2.authorId); // Same as user.id
+
+// 3. Create with array of IDs (hasMany)
+const user2 = appSchema.users.create({
+  name: 'Bob',
+  email: 'bob@example.com',
+  postIds: [post1.id, post2.id], // Set foreign keys array
+});
+
+console.log(user2.posts.length); // 2
+
+// 4. Create with array of models (hasMany)
+const post3 = appSchema.posts.create({ title: 'Post 3', content: 'Content 3' });
+const user3 = appSchema.users.create({
+  name: 'Charlie',
+  email: 'charlie@example.com',
+  posts: [post3], // Pass array of models
+});
+
+console.log(user3.postIds); // [post3.id]
+```
+
+#### Updating Relationships with Setters
+
+Relationships can be updated by setting the foreign key or the related model directly:
+
+```typescript
+// Update belongsTo via foreign key
+post1.authorId = user2.id;
+console.log(post1.author.name); // 'Bob'
+
+// Update belongsTo via related model
+post1.author = user3;
+console.log(post1.authorId); // user3.id
+console.log(post1.author.name); // 'Charlie'
+
+// Update hasMany via foreign keys array
+user.postIds = [post1.id, post2.id, post3.id];
+console.log(user.posts.length); // 3
+
+// Update hasMany via models array
+user.posts = [post1, post2];
+console.log(user.postIds); // [post1.id, post2.id]
+console.log(user.posts.length); // 2
+
+// Clear relationships
+post1.author = null; // Clear belongsTo
+console.log(post1.authorId); // null
+
+user.posts = []; // Clear hasMany
+console.log(user.postIds); // []
+```
+
+#### Updating Relationships with .update()
+
+Use the `update()` method for batch updates including relationships:
+
+```typescript
+// Update with foreign key
+post1.update({
+  title: 'Updated Post 1',
+  authorId: user.id,
+});
+
+// Update with related model
+post2.update({
+  content: 'Updated content',
+  author: user2,
+});
+
+console.log(post2.authorId); // user2.id
+
+// Update hasMany relationships
+user.update({
+  name: 'Alice Updated',
+  postIds: [post1.id, post2.id, post3.id],
+});
+
+console.log(user.posts.length); // 3
+
+// Update with array of models
+user.update({
+  posts: [post1, post2],
+});
+
+console.log(user.postIds); // [post1.id, post2.id]
+```
+
+#### Linking and Unlinking Relationships
+
+Use `link()` and `unlink()` methods for adding/removing relationships without replacing all:
+
+```typescript
+// Link single model
+user.link('posts', post3);
+console.log(user.posts.length); // 3 (added to existing)
+
+// Link multiple models
+const post4 = appSchema.posts.create({ title: 'Post 4', content: 'Content 4' });
+const post5 = appSchema.posts.create({ title: 'Post 5', content: 'Content 5' });
+user.link('posts', [post4, post5]);
+console.log(user.posts.length); // 5
+
+// Unlink single model
+user.unlink('posts', post3);
+console.log(user.posts.length); // 4
+
+// Unlink multiple models
+user.unlink('posts', [post4, post5]);
+console.log(user.posts.length); // 2
+
+// Access relationships via property
 console.log(user.posts.at(0).title); // 'Post 1'
-console.log(post1.author.name);        // 'Alice'
+console.log(user.posts.models); // Array of model instances
 
-// Unlink relationships
-user.unlink('posts', [post1]);
-console.log(user.posts.length);        // 1
+// Or use .related() method
+const posts = user.related('posts'); // Returns ModelCollection
+console.log(posts?.length); // 2
+
+const author = post1.related('author'); // Returns single model or null
+console.log(author?.name); // 'Alice'
+```
+
+#### Reloading Relationships
+
+If relationships change externally, use `reload()` to refresh:
+
+```typescript
+const user = appSchema.users.first();
+const post = appSchema.posts.first();
+
+// Link post to user externally
+post.authorId = user.id;
+
+// Reload user to see the new relationship
+user.reload();
+console.log(user.posts.length); // Includes the newly linked post
 ```
 
 ### Available Relationship Helpers
 
+**Association Definitions:**
 - **`associations.belongsTo(model, options?)`** - Define a belongsTo relationship
 - **`associations.hasMany(model, options?)`** - Define a hasMany relationship
+
+**Instance Methods:**
+- **`model.related(relationshipName)`** - Get related model(s) for a relationship
 - **`model.link(relationshipName, model|models)`** - Link models to a relationship
 - **`model.unlink(relationshipName, model|models)`** - Unlink models from a relationship
 
@@ -265,10 +414,42 @@ console.log(user.posts.length);        // 1
 
 Factories can automatically create and link related models using association helpers. This is especially useful for generating complex test data.
 
-### Basic Factory
+### Basic Factory without Associations
+
+Without association helpers, you need to manually create and link related models using the `afterCreate` hook:
 
 ```typescript
-import { factory, associations } from '@miragejs/orm';
+import { factory } from '@miragejs/orm';
+
+// Manual approach: creating relationships in afterCreate
+const userFactory = factory()
+  .model(userModel)
+  .attrs({
+    name: () => faker.person.fullName(),
+    email: () => faker.internet.email(),
+  })
+  .afterCreate((user, schema) => {
+    // Manually create related posts
+    const post1 = schema.posts.create({
+      title: faker.lorem.sentence(),
+      content: faker.lorem.paragraph(),
+      authorId: user.id,
+    });
+    const post2 = schema.posts.create({
+      title: faker.lorem.sentence(),
+      content: faker.lorem.paragraph(),
+      authorId: user.id,
+    });
+    const post3 = schema.posts.create({
+      title: faker.lorem.sentence(),
+      content: faker.lorem.paragraph(),
+      authorId: user.id,
+    });
+    
+    // Manually link posts to user
+    user.link('posts', [post1, post2, post3]);
+  })
+  .create();
 
 const postFactory = factory()
   .model(postModel)
@@ -276,34 +457,82 @@ const postFactory = factory()
     title: () => faker.lorem.sentence(),
     content: () => faker.lorem.paragraph(),
   })
+  .afterCreate((post, schema) => {
+    // Manually find and link an existing author
+    const users = schema.users.all();
+    
+    if (users.length > 0) {
+      // Get random existing user
+      const randomIndex = Math.floor(Math.random() * users.length);
+      const author = users.at(randomIndex);
+      
+      // Link post to author
+      post.update({ authorId: author.id });
+    }
+  })
   .create();
 
+// Usage
+const user = appSchema.users.create(); // Creates user with 3 posts
+const post = appSchema.posts.create(); // Creates post linked to random existing user (if any)
+```
+
+**Drawbacks of Manual Approach:**
+- Verbose and repetitive code
+- Error-prone (easy to forget linking steps, null checks, random selection logic)
+- Hard to maintain (changes require updating multiple places)
+- No traits support for relationship variations
+- Requires direct schema access in hooks
+- Manual random selection implementation needed
+
+### Using Association Helpers
+
+Association helpers simplify relationship creation with a declarative, type-safe API:
+
+```typescript
+import { factory, associations } from '@miragejs/orm';
+
+// Improved approach: using association helpers
 const userFactory = factory()
   .model(userModel)
   .attrs({
     name: () => faker.person.fullName(),
     email: () => faker.internet.email(),
   })
+  .associations({
+    posts: associations.createMany(postModel, 3), // Automatically create 3 posts and link them
+  })
   .create();
-```
 
-### Using Association Helpers
-
-Association helpers allow you to create related models automatically when using factories:
-
-```typescript
-const userFactoryWithPosts = factory()
-  .model(userModel)
+const postFactory = factory()
+  .model(postModel)
   .attrs({
-    name: () => faker.person.fullName(),
-    email: () => faker.internet.email(),
+    title: () => faker.lorem.sentence(),
+    content: () => faker.lorem.paragraph(),
   })
   .associations({
-    posts: associations.createMany(postModel, 3), // Create 3 posts and link them
+    author: associations.link(userModel), // Automatically find and link to random existing user
   })
   .create();
 
-const postFactoryWithAuthor = factory()
+// Usage - same as before, but much cleaner factory definitions
+const user = appSchema.users.create(); // Creates user with 3 posts
+const post = appSchema.posts.create(); // Creates post linked to random existing user
+```
+
+**Benefits of Association Helpers:**
+- ✅ Concise and declarative syntax
+- ✅ Automatic creation and linking (or finding for `link()`)
+- ✅ Automatic random selection for linking
+- ✅ Type-safe with full IntelliSense support
+- ✅ Works seamlessly with traits
+- ✅ Reusable across different factory instances
+- ✅ No need for manual schema access or null checks
+
+**With Traits for Variations:**
+
+```typescript
+const postFactory = factory()
   .model(postModel)
   .attrs({
     title: () => faker.lorem.sentence(),
@@ -311,13 +540,21 @@ const postFactoryWithAuthor = factory()
   })
   .traits({
     withAuthor: {
-      author: associations.link(userModel), // Link to the existed user
+      author: associations.create(userModel), // Create relationship only when trait is used
+    },
+    withAdmin: {
+      author: associations.create(userModel, 'admin'), // Create with specific trait
     },
   })
   .create();
+
+// Usage
+const post1 = appSchema.posts.create(); // No author
+const post2 = appSchema.posts.create('withAuthor'); // With regular user
+const post3 = appSchema.posts.create('withAdmin'); // With admin user
 ```
 
-### Type-Safe Factories with Shared Schema
+### Type-Safe Factories with Shared Schema Type
 
 For better type safety and IntelliSense when using associations, define a shared schema type that your factories can reference. This provides full autocomplete and type checking for association helpers:
 
