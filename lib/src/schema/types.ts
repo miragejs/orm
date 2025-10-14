@@ -10,14 +10,21 @@ import type {
   RelationshipsByTemplate,
 } from '@src/model';
 import type { ModelRelationships } from '@src/model';
+import type { GlobalSerializerConfig, SerializerConfig } from '@src/serializer';
 
 import type SchemaCollection from './SchemaCollection';
 
 /**
  * Global schema configuration
+ * @template TIdentityManager - The identity manager type
+ * @template TGlobalConfig - The global serializer configuration type
  */
-export interface SchemaConfig<TIdentityManager extends IdentityManager = StringIdentityManager> {
+export interface SchemaConfig<
+  TIdentityManager extends IdentityManager = StringIdentityManager,
+  TGlobalConfig extends GlobalSerializerConfig | undefined = undefined,
+> {
   identityManager?: TIdentityManager;
+  globalSerializerConfig?: TGlobalConfig;
 }
 
 /**
@@ -25,7 +32,7 @@ export interface SchemaConfig<TIdentityManager extends IdentityManager = StringI
  * @template TTemplate - The model template
  * @template TRelationships - The model relationships
  * @template TFactory - The factory type
- * @template TSerializer - The serializer type
+ * @template TSerializer - The serializer instance type
  */
 export interface SchemaCollectionConfig<
   TTemplate extends ModelTemplate,
@@ -36,8 +43,17 @@ export interface SchemaCollectionConfig<
   model: TTemplate;
   factory?: TFactory;
   relationships?: TRelationships;
-  serializer?: TSerializer;
   identityManager?: IdentityManager<ModelId<TTemplate>>;
+  /**
+   * Serializer configuration object (attrs, root, embed, include)
+   * Used when collection().serializer({...config}) is called
+   */
+  serializerConfig?: SerializerConfig<TTemplate>;
+  /**
+   * Serializer instance (custom serializer class)
+   * Used when collection().serializer(instance) is called
+   */
+  serializerInstance?: TSerializer;
 }
 
 /**

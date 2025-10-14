@@ -1,4 +1,5 @@
 import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
+import type { GlobalSerializerConfig } from '@src/serializer';
 
 import Schema, { type SchemaInstance } from './Schema';
 import type { SchemaCollections, SchemaConfig } from './types';
@@ -7,10 +8,11 @@ import type { SchemaCollections, SchemaConfig } from './types';
  * A fluent builder for creating schema instances.
  *
  * The SchemaBuilder provides a type-safe way to construct Schema instances with
- * configurable collections, identity manager, and serializer. It follows the builder
+ * configurable collections, identity manager, and global serializer. It follows the builder
  * pattern, allowing method chaining to progressively configure the schema.
  * @template TCollections - The schema collections configuration type
  * @template TIdentityManager - The global identity manager type
+ * @template TGlobalConfig - The global serializer configuration type
  * @example
  * ```typescript
  * const appSchema = schema()
@@ -18,6 +20,7 @@ import type { SchemaCollections, SchemaConfig } from './types';
  *     users: userCollection,
  *     posts: postCollection,
  *   })
+ *   .serializer({ root: true })
  *   .identityManager(appIdentityManager)
  *   .build();
  * ```
@@ -25,9 +28,11 @@ import type { SchemaCollections, SchemaConfig } from './types';
 export default class SchemaBuilder<
   TCollections extends SchemaCollections = SchemaCollections,
   TIdentityManager extends IdentityManager<any> = StringIdentityManager,
+  TGlobalConfig extends GlobalSerializerConfig | undefined = undefined,
 > {
   private _collections?: TCollections;
   private _identityManager?: TIdentityManager;
+  private _globalSerializerConfig?: GlobalSerializerConfig;
 
   /**
    * Creates a new SchemaBuilder instance.
@@ -52,10 +57,13 @@ export default class SchemaBuilder<
    * });
    * ```
    */
-  collections<C extends SchemaCollections>(collections: C): SchemaBuilder<C, TIdentityManager> {
-    const builder = new SchemaBuilder<C, TIdentityManager>();
+  collections<C extends SchemaCollections>(
+    collections: C,
+  ): SchemaBuilder<C, TIdentityManager, TGlobalConfig> {
+    const builder = new SchemaBuilder<C, TIdentityManager, TGlobalConfig>();
     builder._collections = collections;
     builder._identityManager = this._identityManager;
+    builder._globalSerializerConfig = this._globalSerializerConfig;
     return builder;
   }
 
@@ -77,41 +85,39 @@ export default class SchemaBuilder<
    */
   identityManager<I extends IdentityManager<any>>(
     identityManager: I,
-  ): SchemaBuilder<TCollections, I> {
-    const builder = new SchemaBuilder<TCollections, I>();
+  ): SchemaBuilder<TCollections, I, TGlobalConfig> {
+    const builder = new SchemaBuilder<TCollections, I, TGlobalConfig>();
     builder._collections = this._collections;
     builder._identityManager = identityManager;
+    builder._globalSerializerConfig = this._globalSerializerConfig;
     return builder;
   }
 
   /**
-   * Sets the global serializer for this schema.
-   * TEMPORARILY DISABLED - Serializer is not ready yet
+   * Sets the global serializer configuration for this schema.
    *
-   * The serializer defines how model instances should be serialized when
-   * converting to API responses or other external formats. Individual collections
-   * can override this with their own serializers.
-   * @template S - The serializer type
-   * @param serializer - The serializer instance
-   * @returns A new SchemaBuilder instance with the specified serializer
+   * The global serializer config defines structural serialization options (root, embed)
+   * that apply to all collections by default. Individual collections can override
+   * these settings or provide model-specific configuration (attrs, include).
+   * @template TConfig - The global serializer configuration type
+   * @param config - The global serializer configuration (only root and embed)
+   * @returns A new SchemaBuilder instance with the specified global serializer config
    * @example
    * ```typescript
    * const builder = schema()
-   *   .collections({ users: userCollection })
-   *   .serializer(appSerializer);
+   *   .serializer({ root: true, embed: false })
+   *   .collections({ users: userCollection });
    * ```
    */
-  /*
-  serializer<S extends Serializer<any, any>>(
-    serializer: S,
-  ): SchemaBuilder<TCollections, TIdentityManager, S> {
-    const builder = new SchemaBuilder<TCollections, TIdentityManager, S>();
+  serializer<TConfig extends GlobalSerializerConfig>(
+    config: TConfig,
+  ): SchemaBuilder<TCollections, TIdentityManager, TConfig> {
+    const builder = new SchemaBuilder<TCollections, TIdentityManager, TConfig>();
     builder._collections = this._collections;
     builder._identityManager = this._identityManager;
-    builder._serializer = serializer;
+    builder._globalSerializerConfig = config;
     return builder;
   }
-  */
 
   /**
    * Creates the final Schema instance with all configured options.
@@ -127,6 +133,7 @@ export default class SchemaBuilder<
    *     users: userCollection,
    *     posts: postCollection,
    *   })
+   *   .serializer({ root: true })
    *   .identityManager(appIdentityManager)
    *   .build();
    *
@@ -135,20 +142,21 @@ export default class SchemaBuilder<
    * const user = appSchema.users.create({ name: 'John' });
    * ```
    */
-  build(): SchemaInstance<TCollections, SchemaConfig<TIdentityManager>> {
+  build(): SchemaInstance<TCollections, SchemaConfig<TIdentityManager, TGlobalConfig>> {
     if (!this._collections) {
       throw new Error(
         'SchemaBuilder: collections are required. Call .collections() before .build()',
       );
     }
 
-    const config: SchemaConfig<TIdentityManager> = {
+    const config = {
       identityManager: this._identityManager,
-    };
+      globalSerializerConfig: this._globalSerializerConfig,
+    } as SchemaConfig<TIdentityManager, TGlobalConfig>;
 
     return new Schema(this._collections, config) as SchemaInstance<
       TCollections,
-      SchemaConfig<TIdentityManager>
+      SchemaConfig<TIdentityManager, TGlobalConfig>
     >;
   }
 }

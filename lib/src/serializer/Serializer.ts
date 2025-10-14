@@ -2,6 +2,8 @@ import type { InferModelAttrs, ModelInstance, ModelTemplate } from '@src/model';
 import type ModelCollection from '@src/model/ModelCollection';
 import type { SchemaCollections } from '@src/schema';
 
+import type { SerializerConfig } from './types';
+
 /**
  * Serializer class that handles model serialization with custom JSON types
  * @template TTemplate - The model template
@@ -45,9 +47,9 @@ export default class Serializer<
     this._template = template;
     this._modelName = template.modelName;
     this._collectionName = template.collectionName;
-    this._attrs = config?.attrs ?? [];
-    this._root = config?.root ?? false;
-    this._embed = config?.embed ?? false;
+    this._attrs = config?.attrs;
+    this._root = config?.root;
+    this._embed = config?.embed;
   }
 
   /**
@@ -126,41 +128,8 @@ export default class Serializer<
       );
     }
 
-    // If embed is disabled, exclude relationship accessors
-    if (!this._embed) {
-      // Return only the direct attributes from the model (no relationships)
-      return { ...model.attrs };
-    }
-
-    // If embed is enabled, include relationships
-    // Note: This would require additional logic to handle embedded relationships
+    // Default: return raw attributes (no embedding, no filtering)
+    // Embed logic would go here if this._embed is true
     return { ...model.attrs };
   }
-}
-
-/**
- * Configuration for creating a serializer
- * @template TTemplate - The model template
- */
-export interface SerializerConfig<TTemplate extends ModelTemplate> {
-  /**
-   * Specific attributes to include in serialization
-   * If not provided, all attributes are included
-   */
-  attrs?: (keyof InferModelAttrs<TTemplate>)[];
-
-  /**
-   * Whether to wrap the serialized data in a root key
-   * - false: no wrapping (default)
-   * - true: wrap with modelName/collectionName
-   * - string: wrap with custom key name
-   */
-  root?: boolean | string;
-
-  /**
-   * Whether to embed related models in the serialized output
-   * - false: exclude relationships (default)
-   * - true: include embedded relationships
-   */
-  embed?: boolean;
 }

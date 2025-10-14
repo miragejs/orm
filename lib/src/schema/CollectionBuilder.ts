@@ -1,6 +1,7 @@
 import type { Factory, ModelTraits } from '@src/factory';
 import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
 import type { ModelTemplate, ModelRelationships } from '@src/model';
+import { Serializer, type SerializerConfig } from '@src/serializer';
 import { MirageError } from '@src/utils';
 
 import type { SchemaCollectionConfig, SchemaCollections } from './types';
@@ -40,7 +41,8 @@ export default class CollectionBuilder<
   private _factory?: TFactory;
   private _relationships?: TRelationships;
   private _identityManager?: TIdentityManager;
-  private _serializer?: TSerializer;
+  private _serializerConfig?: SerializerConfig<TTemplate>;
+  private _serializerInstance?: TSerializer;
 
   /**
    * Creates a new CollectionBuilder instance.
@@ -84,7 +86,8 @@ export default class CollectionBuilder<
     // This allows for flexibility in the builder pattern while maintaining type safety at build time
     builder._factory = this._factory as any;
     builder._relationships = this._relationships;
-    builder._serializer = this._serializer;
+    builder._serializerConfig = this._serializerConfig as any;
+    builder._serializerInstance = this._serializerInstance;
     builder._identityManager = this._identityManager;
     return builder;
   }
@@ -117,7 +120,8 @@ export default class CollectionBuilder<
     builder._factory = factory;
     builder._relationships = this._relationships;
     builder._identityManager = this._identityManager;
-    builder._serializer = this._serializer;
+    builder._serializerConfig = this._serializerConfig;
+    builder._serializerInstance = this._serializerInstance;
     return builder;
   }
 
@@ -153,41 +157,91 @@ export default class CollectionBuilder<
     builder._factory = this._factory;
     builder._relationships = relationships;
     builder._identityManager = this._identityManager;
-    builder._serializer = this._serializer;
+    builder._serializerConfig = this._serializerConfig;
+    builder._serializerInstance = this._serializerInstance;
     return builder;
   }
 
   /**
-   * Sets the serializer for this collection.
+   * Sets the serializer configuration for this collection.
    *
-   * The serializer defines how model instances should be serialized when
-   * converting to API responses or other external formats.
-   * @template S - The serializer type
+   * Accepts either a configuration object (attrs, root, embed, include) or a custom
+   * serializer instance. The config will be merged with global schema config if present.
+   * @template TConfig - The serializer configuration type
+   * @param config - The serializer configuration object
+   * @returns A new CollectionBuilder instance with the specified serializer config
+   * @example
+   * ```typescript
+   * const builder = collection()
+   *   .model(UserModel)
+   *   .serializer({ attrs: ['id', 'name'], root: true });
+   * ```
+   */
+  serializer<TConfig extends SerializerConfig<TTemplate>>(
+    config: TConfig,
+  ): CollectionBuilder<
+    TTemplate,
+    TSchema,
+    TRelationships,
+    TFactory,
+    TIdentityManager,
+    Serializer<TTemplate, any, any, TConfig>
+  >;
+
+  /**
+   * Sets a custom serializer instance for this collection.
+   *
+   * When a custom serializer is provided, it bypasses config merging and is used directly.
+   * @template S - The serializer instance type
    * @param serializer - The serializer instance
    * @returns A new CollectionBuilder instance with the specified serializer
    * @example
    * ```typescript
    * const builder = collection()
    *   .model(UserModel)
-   *   .serializer(userSerializer);
+   *   .serializer(new CustomUserSerializer(userModel));
    * ```
    */
   serializer<S>(
     serializer: S,
-  ): CollectionBuilder<TTemplate, TSchema, TRelationships, TFactory, TIdentityManager, S> {
+  ): CollectionBuilder<TTemplate, TSchema, TRelationships, TFactory, TIdentityManager, S>;
+
+  /**
+   * Implementation of serializer() method with overloads
+   * @param configOrSerializer - The serializer configuration object or instance
+   * @returns A new CollectionBuilder instance with the specified serializer
+   * @example
+   * ```typescript
+   * const builder = collection()
+   *   .model(UserModel)
+   *   .serializer({ attrs: ['id', 'name'] });
+   * // or
+   * const builder = collection()
+   *   .model(UserModel)
+   *   .serializer(new CustomUserSerializer(userModel));
+   * ```
+   */
+  serializer(configOrSerializer: any): any {
     const builder = new CollectionBuilder<
       TTemplate,
       TSchema,
       TRelationships,
       TFactory,
       TIdentityManager,
-      S
+      any
     >();
     builder._template = this._template;
     builder._factory = this._factory;
     builder._relationships = this._relationships;
     builder._identityManager = this._identityManager;
-    builder._serializer = serializer;
+
+    // Determine if it's a config object or a serializer instance
+    if (configOrSerializer instanceof Serializer) {
+      builder._serializerInstance = configOrSerializer;
+    } else {
+      builder._serializerConfig = configOrSerializer;
+    }
+
     return builder;
   }
 
@@ -221,7 +275,8 @@ export default class CollectionBuilder<
     builder._factory = this._factory;
     builder._relationships = this._relationships;
     builder._identityManager = identityManager;
-    builder._serializer = this._serializer;
+    builder._serializerConfig = this._serializerConfig;
+    builder._serializerInstance = this._serializerInstance;
     return builder;
   }
 
@@ -240,8 +295,9 @@ export default class CollectionBuilder<
       model: this._template,
       relationships: this._relationships,
       factory: this._factory,
-      serializer: this._serializer,
       identityManager: this._identityManager,
+      serializerConfig: this._serializerConfig,
+      serializerInstance: this._serializerInstance,
     };
   }
 }
