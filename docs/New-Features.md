@@ -12,6 +12,10 @@ This document provides an overview of the major new features in the ORM, includi
 - [Relationships](#relationships)
 - [Factory Associations](#factory-associations)
 - [Serialization](#serialization)
+- [Advanced: Extending and Customization](#advanced-extending-and-customization)
+  - [Extending Factories](#extending-factories)
+  - [Extending Serializers](#extending-serializers)
+  - [Extending Identity Managers](#extending-identity-managers)
 
 ---
 
@@ -700,6 +704,213 @@ const postJson = post.toJSON();
 //   }
 // }
 ```
+
+---
+
+## Advanced: Extending and Customization
+
+The ORM provides powerful extension mechanisms for factories, serializers, and identity managers, allowing you to customize behavior to fit your specific needs.
+
+### Extending Factories
+
+You can extend existing factories to create variations without duplicating configuration. Use the `factory().extend()` method:
+
+```typescript
+import { factory, associations } from '@miragejs/orm';
+
+// Base user factory
+const userFactory = factory()
+  .model(userModel)
+  .attrs({
+    name: () => faker.person.fullName(),
+    email: () => faker.internet.email(),
+    role: 'user',
+  })
+  .create();
+
+// Extend the base factory for admin users
+const adminFactory = factory()
+  .extend(userFactory)
+  .attrs({
+    role: 'admin',  // Override the role
+    permissions: ['read', 'write', 'delete'],  // Add new attributes
+  })
+  .afterCreate((admin, schema) => {
+    // Custom post-creation logic for admins
+    console.log(`Admin created: ${admin.name}`);
+  })
+  .create();
+
+// Extend further for super admins
+const superAdminFactory = factory()
+  .extend(adminFactory)
+  .attrs({
+    role: 'super_admin',
+    permissions: ['*'],  // Override permissions
+  })
+  .create();
+```
+
+**Key Benefits:**
+- Inherits all attributes, traits, and associations from the base factory
+- Override specific attributes without redefining everything
+- Add new attributes, traits, and hooks
+- Create hierarchies of factories for different variations
+
+### Extending Serializers
+
+For custom serialization logic, extend the `Serializer` class using standard TypeScript class inheritance:
+
+```typescript
+import { Serializer } from '@miragejs/orm';
+import type { ModelInstance, SchemaCollections } from '@miragejs/orm';
+
+// Custom serializer with additional formatting
+class CustomUserSerializer extends Serializer<typeof userModel> {
+  // Override the serializeData method to add custom logic
+  serializeData<TSchema extends SchemaCollections>(
+    model: ModelInstance<typeof userModel, TSchema>,
+  ): Record<string, any> {
+    const data = super.serializeData(model);
+    
+    // Add custom transformations
+    return {
+      ...data,
+      fullName: data.name?.toUpperCase(), // Transform name
+      createdAt: new Date().toISOString(), // Add timestamp
+    };
+  }
+}
+
+// Use the custom serializer
+const userCollection = collection()
+  .model(userModel)
+  .serializer(new CustomUserSerializer(userModel, {
+    attrs: ['id', 'name', 'email'],
+    root: true,
+  }))
+  .create();
+```
+
+**Available Methods to Override:**
+- `serializeData(model)` - Serialize model data without root wrapping (for embedding)
+- `serialize(model)` - Serialize model with root wrapping
+- `serializeCollectionData(collection)` - Serialize collection data without root wrapping
+- `serializeCollection(collection)` - Serialize collection with root wrapping
+
+**Protected Properties Available:**
+- `_template` - The model template
+- `_modelName` - The model name
+- `_collectionName` - The collection name
+- `_attrs` - Attributes filter configuration
+- `_root` - Root wrapping configuration
+- `_embed` - Embedding configuration
+- `_include` - Relationships to include
+
+### Extending Identity Managers
+
+The ORM includes two built-in identity managers for common use cases:
+
+#### Built-in Identity Managers
+
+1. **`StringIdentityManager`** - Generates string IDs (default)
+   ```typescript
+   import { StringIdentityManager } from '@miragejs/orm';
+   
+   const idManager = new StringIdentityManager();
+   idManager.fetch(); // => "1"
+   idManager.fetch(); // => "2"
+   idManager.fetch(); // => "3"
+   ```
+
+2. **`NumberIdentityManager`** - Generates numeric IDs
+   ```typescript
+   import { NumberIdentityManager } from '@miragejs/orm';
+   
+   const idManager = new NumberIdentityManager();
+   idManager.fetch(); // => 1
+   idManager.fetch(); // => 2
+   idManager.fetch(); // => 3
+   ```
+
+#### Using Identity Managers in Schema
+
+```typescript
+import { schema, StringIdentityManager, NumberIdentityManager } from '@miragejs/orm';
+
+// Use string IDs globally (default)
+const appSchema = schema()
+  .identityManager(new StringIdentityManager())
+  .collections({ ... })
+  .setup();
+
+// Or use number IDs globally
+const appSchema = schema()
+  .identityManager(new NumberIdentityManager())
+  .collections({ ... })
+  .setup();
+
+// Or set per collection
+const userCollection = collection()
+  .model(userModel)
+  .identityManager(new NumberIdentityManager())
+  .create();
+```
+
+#### Custom Identity Managers
+
+Extend the base `IdentityManager` class for custom ID generation logic:
+
+```typescript
+import { IdentityManager } from '@miragejs/orm';
+
+// UUID-based identity manager
+class UUIDIdentityManager extends IdentityManager<string> {
+  constructor() {
+    super({
+      initialCounter: crypto.randomUUID(),
+      idGenerator: () => crypto.randomUUID(),
+    });
+  }
+}
+
+// Custom prefixed ID manager
+class PrefixedIdentityManager extends IdentityManager<string> {
+  constructor(prefix: string) {
+    super({
+      initialCounter: `${prefix}-1`,
+      idGenerator: (current: string) => {
+        const num = parseInt(current.split('-')[1]);
+        return `${prefix}-${num + 1}`;
+      },
+    });
+  }
+}
+
+// Usage
+const userCollection = collection()
+  .model(userModel)
+  .identityManager(new UUIDIdentityManager())
+  .create();
+
+const postCollection = collection()
+  .model(postModel)
+  .identityManager(new PrefixedIdentityManager('post'))
+  .create();
+// Creates IDs like: "post-1", "post-2", "post-3"
+```
+
+**Identity Manager Constructor Options:**
+- `initialCounter` - The starting ID value
+- `initialUsedIds` - Array of pre-existing IDs to avoid
+- `idGenerator` - Custom function to generate the next ID from current
+
+**Available Methods:**
+- `fetch()` - Get next ID and mark as used
+- `get()` - Peek at next ID without marking as used
+- `set(id)` - Mark an ID as used
+- `inc()` - Increment the counter
+- `reset()` - Reset to initial state
 
 ### Differences from MirageJS
 
