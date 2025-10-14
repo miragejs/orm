@@ -1142,7 +1142,7 @@ You can extend existing factories to create variations without duplicating confi
 ```typescript
 import { factory, associations } from '@miragejs/orm';
 
-// Base user factory
+// Base user factory (without permissions)
 const userFactory = factory()
   .model(userModel)
   .attrs({
@@ -1152,8 +1152,9 @@ const userFactory = factory()
   })
   .create();
 
-// Extend the base factory for admin users
+// Extend the base factory for admin users (with permissions)
 const adminFactory = factory()
+  .model(adminModel)
   .extend(userFactory)
   .attrs({
     role: 'admin',  // Override the role
@@ -1165,12 +1166,13 @@ const adminFactory = factory()
   })
   .create();
 
-// Extend further for super admins
-const superAdminFactory = factory()
+// Extend further (privileges may be granted)
+const currentUserFactory = factory()
+  .model(currentUserModel)
   .extend(adminFactory)
   .attrs({
-    role: 'super_admin',
-    permissions: ['*'],  // Override permissions
+    role: 'activeUser',
+    permissions: ['read', 'delete'],  // Override permissions
   })
   .create();
 ```
@@ -1190,10 +1192,10 @@ import { Serializer } from '@miragejs/orm';
 import type { ModelInstance, SchemaCollections } from '@miragejs/orm';
 
 // Custom serializer with additional formatting
-class CustomUserSerializer extends Serializer<typeof userModel> {
+class CustomUserSerializer extends Serializer<UserModel> {
   // Override the serializeData method to add custom logic
   serializeData<TSchema extends SchemaCollections>(
-    model: ModelInstance<typeof userModel, TSchema>,
+    model: ModelInstance<UserModel, TSchema>,
   ): Record<string, any> {
     const data = super.serializeData(model);
     
