@@ -1,7 +1,11 @@
 import { createDatabase, type DbInstance } from '@src/db';
 import { StringIdentityManager } from '@src/id-manager';
 import type { ModelTemplate } from '@src/model';
-import { Serializer, type GlobalSerializerConfig, type SerializerConfig } from '@src/serializer';
+import {
+  Serializer,
+  type SerializerOptions,
+  type StructuralSerializerOptions,
+} from '@src/serializer';
 
 import SchemaCollection, { createCollection } from './SchemaCollection';
 import type {
@@ -27,7 +31,7 @@ export default class Schema<
     : StringIdentityManager;
 
   private _collections: Map<string, SchemaCollection<any, any, any, any, any>> = new Map();
-  private _globalSerializerConfig?: GlobalSerializerConfig;
+  private _globalSerializerConfig?: StructuralSerializerOptions;
 
   constructor(collections: TCollections, config?: TConfig) {
     this.db = createDatabase<SchemaDbCollections<TCollections>>();
@@ -110,8 +114,8 @@ export default class Schema<
    */
   private _mergeConfigs<TTemplate extends ModelTemplate>(
     _template: TTemplate,
-    collectionConfig?: SerializerConfig<TTemplate>,
-  ): SerializerConfig<TTemplate> | undefined {
+    collectionConfig?: SerializerOptions<TTemplate>,
+  ): SerializerOptions<TTemplate> | undefined {
     const global = this._globalSerializerConfig;
 
     if (!global && !collectionConfig) {

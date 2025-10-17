@@ -1,7 +1,7 @@
 import type { Factory, ModelTraits } from '@src/factory';
 import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
 import type { ModelTemplate, ModelRelationships } from '@src/model';
-import { Serializer, type SerializerConfig } from '@src/serializer';
+import { Serializer, type SerializerOptions } from '@src/serializer';
 import { MirageError } from '@src/utils';
 
 import type { SchemaCollectionConfig, SchemaCollections } from './types';
@@ -41,7 +41,7 @@ export default class CollectionBuilder<
   private _factory?: TFactory;
   private _relationships?: TRelationships;
   private _identityManager?: TIdentityManager;
-  private _serializerConfig?: SerializerConfig<TTemplate>;
+  private _serializerConfig?: SerializerOptions<TTemplate>;
   private _serializerInstance?: TSerializer;
 
   /**
@@ -183,7 +183,7 @@ export default class CollectionBuilder<
    * ```
    */
   serializer(
-    configOrSerializer: SerializerConfig<TTemplate> | any,
+    configOrSerializer: SerializerOptions<TTemplate> | any,
   ): CollectionBuilder<TTemplate, TSchema, TRelationships, TFactory, TIdentityManager, any>;
 
   serializer(configOrSerializer: any): any {

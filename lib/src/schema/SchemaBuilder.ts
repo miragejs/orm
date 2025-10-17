@@ -1,5 +1,5 @@
 import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
-import type { GlobalSerializerConfig } from '@src/serializer';
+import type { StructuralSerializerOptions } from '@src/serializer';
 
 import Schema, { type SchemaInstance } from './Schema';
 import type { SchemaCollections, SchemaConfig } from './types';
@@ -28,11 +28,11 @@ import type { SchemaCollections, SchemaConfig } from './types';
 export default class SchemaBuilder<
   TCollections extends SchemaCollections = SchemaCollections,
   TIdentityManager extends IdentityManager<any> = StringIdentityManager,
-  TGlobalConfig extends GlobalSerializerConfig | undefined = undefined,
+  TGlobalConfig extends StructuralSerializerOptions | undefined = undefined,
 > {
   private _collections?: TCollections;
   private _identityManager?: TIdentityManager;
-  private _globalSerializerConfig?: GlobalSerializerConfig;
+  private _globalSerializerConfig?: StructuralSerializerOptions;
 
   /**
    * Creates a new SchemaBuilder instance.
@@ -109,7 +109,7 @@ export default class SchemaBuilder<
    *   .collections({ users: userCollection });
    * ```
    */
-  serializer<TConfig extends GlobalSerializerConfig>(
+  serializer<TConfig extends StructuralSerializerOptions>(
     config: TConfig,
   ): SchemaBuilder<TCollections, TIdentityManager, TConfig> {
     const builder = new SchemaBuilder<TCollections, TIdentityManager, TConfig>();

@@ -10,7 +10,7 @@ import type {
   RelationshipsByTemplate,
 } from '@src/model';
 import type { ModelRelationships } from '@src/model';
-import type { GlobalSerializerConfig, SerializerConfig } from '@src/serializer';
+import type { SerializerOptions, StructuralSerializerOptions } from '@src/serializer';
 
 import type SchemaCollection from './SchemaCollection';
 
@@ -21,7 +21,7 @@ import type SchemaCollection from './SchemaCollection';
  */
 export interface SchemaConfig<
   TIdentityManager extends IdentityManager = StringIdentityManager,
-  TGlobalConfig extends GlobalSerializerConfig | undefined = undefined,
+  TGlobalConfig extends StructuralSerializerOptions | undefined = undefined,
 > {
   identityManager?: TIdentityManager;
   globalSerializerConfig?: TGlobalConfig;
@@ -48,7 +48,7 @@ export interface SchemaCollectionConfig<
    * Serializer configuration object (attrs, root, embed, include)
    * Used when collection().serializer({...config}) is called
    */
-  serializerConfig?: SerializerConfig<TTemplate>;
+  serializerConfig?: SerializerOptions<TTemplate>;
   /**
    * Serializer instance (custom serializer class)
    * Used when collection().serializer(instance) is called
