@@ -18,6 +18,8 @@ export type DefaultModelAttrs = { id: string };
  * while storing additional type metadata in hidden properties (__attrs, __json).
  * These hidden properties exist only in TypeScript's type system with zero runtime cost.
  *
+ * Note: __attrs and __json are NOT defined in the base interface to avoid type pollution
+ * when creating intersections. They are added via intersection types in ModelBuilder.create()
  * @template TModelName - The string literal type for the model name
  * @template TCollectionName - The string literal type for the collection name
  */
@@ -28,13 +30,6 @@ export interface ModelTemplate<
   readonly key: symbol;
   readonly modelName: TModelName;
   readonly collectionName: TCollectionName;
-
-  // Hidden type properties (compile-time only, no runtime cost)
-  readonly __attrs: { id: any }; // Type metadata for model attributes
-  readonly __json: {
-    readonly model: any; // Type metadata for serialized model
-    readonly collection: any; // Type metadata for serialized collection
-  };
 }
 
 // ============================================================================
@@ -43,9 +38,12 @@ export interface ModelTemplate<
 
 /**
  * Infer model attributes from template
+ * Uses conditional type to properly extract __attrs from intersection types
  * @template T - The model template
  */
-export type InferModelAttrs<T> = T extends ModelTemplate<any, any> ? T['__attrs'] : never;
+export type InferModelAttrs<T> = T extends { __attrs: infer TAttrs extends { id: any } }
+  ? TAttrs
+  : never;
 
 /**
  * Infer model ID type from template
@@ -67,17 +65,21 @@ export type InferCollectionName<T> = T extends ModelTemplate<any, infer Name> ? 
 
 /**
  * Infer serialized model type from template
+ * Uses conditional type to properly extract from intersection types
  * @template T - The model template
  */
-export type InferSerializedModel<T> =
-  T extends ModelTemplate<any, any> ? T['__json']['model'] : never;
+export type InferSerializedModel<T> = T extends { __json: { model: infer M } }
+  ? M
+  : InferModelAttrs<T>;
 
 /**
  * Infer serialized collection type from template
+ * Uses conditional type to properly extract from intersection types
  * @template T - The model template
  */
-export type InferSerializedCollection<T> =
-  T extends ModelTemplate<any, any> ? T['__json']['collection'] : never;
+export type InferSerializedCollection<T> = T extends { __json: { collection: infer C } }
+  ? C
+  : InferModelAttrs<T>[];
 
 /**
  * Check if template has custom JSON types (not default)
@@ -189,7 +191,7 @@ export type CollectionByTemplate<
   TSchema extends SchemaCollections,
   TTemplate extends ModelTemplate,
 > = {
-  [K in keyof TSchema]: TSchema[K] extends CollectionConfig<infer TModel, any, any>
+  [K in keyof TSchema]: TSchema[K] extends CollectionConfig<infer TModel, any, any, any>
     ? TModel extends TTemplate
       ? K
       : never
@@ -427,7 +429,9 @@ export type ModelConfig<
 > = {
   attrs: ModelCreateAttrs<TTemplate, TSchema, TRelationships>;
   schema: SchemaInstance<TSchema>;
-  serializer?: TSerializer;
+  // Accept any serializer type at construction time, not just TSerializer
+  // This allows passing serializers even when TSerializer defaults to undefined
+  serializer?: TSerializer extends undefined ? any : TSerializer;
 } & (Record<string, never> extends TRelationships
   ? { relationships?: undefined }
   : { relationships: TRelationships });
