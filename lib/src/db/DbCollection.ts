@@ -1,6 +1,14 @@
 import { IdentityManager, StringIdentityManager } from '@src/id-manager';
 
-import type { DbCollectionConfig, DbRecord, DbRecordInput, DbQuery, NewDbRecord } from './types';
+import QueryManager from './QueryManager';
+import type {
+  DbCollectionConfig,
+  DbRecord,
+  DbRecordInput,
+  NewDbRecord,
+  QueryOptions,
+  Where,
+} from './types';
 
 /**
  * A collection of records in a database. Think of it as a table in a relational database.
@@ -17,6 +25,7 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
   identityManager: IdentityManager<TRecord['id']>;
 
   private _records: Map<TRecord['id'], TRecord> = new Map();
+  private _queryManager: QueryManager<TRecord> = new QueryManager<TRecord>();
 
   constructor(name: string, config?: DbCollectionConfig<TRecord>) {
     this.name = name;
@@ -102,45 +111,131 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
   // -- QUERY METHODS --
 
   /**
-   * Finds the first record that matches the given ID or query.
-   * @param idOrQuery - The ID or query to match against.
+   * Finds the first record that matches the given ID, predicate object, or query options.
+   * @param input - ID, predicate object, or query options
    * @returns The first record that matches, or `null` if not found.
+   * @example
+   * ```typescript
+   * // By ID
+   * collection.find('user-1');
+   *
+   * // By predicate object (simple equality)
+   * collection.find({ email: 'user@example.com' });
+   *
+   * // By query options (advanced filtering, sorting)
+   * collection.find({
+   *   where: { email: { ilike: '%@example.com' } },
+   *   orderBy: { createdAt: 'desc' },
+   * });
+   * ```
    */
-  find(idOrQuery: TRecord['id'] | DbQuery<TRecord>): TRecord | null {
-    // Handle ID-based lookup
-    if (typeof idOrQuery === 'string' || typeof idOrQuery === 'number') {
-      return this._records.get(idOrQuery as TRecord['id']) ?? null;
+  find(input: TRecord['id'] | DbRecordInput<TRecord> | QueryOptions<TRecord>): TRecord | null {
+    // 1. Handle ID-based lookup
+    if (typeof input === 'string' || typeof input === 'number') {
+      return this._records.get(input as TRecord['id']) ?? null;
     }
 
-    // Handle query-based lookup
-    const query = idOrQuery as DbQuery<TRecord>;
-    if (typeof query === 'function') {
-      return this.all().find(query) ?? null;
+    // 2. Check if it's QueryOptions (has where, orderBy, cursor, offset, or limit)
+    const hasQueryKeys =
+      typeof input === 'object' &&
+      ('where' in input ||
+        'orderBy' in input ||
+        'cursor' in input ||
+        'offset' in input ||
+        'limit' in input);
+
+    if (hasQueryKeys) {
+      const results = this._queryManager.query(this.all(), { ...input, limit: 1 });
+      return results[0] ?? null;
     }
 
-    // Handle object-based query
-    return this.all().find((record) => this._matchesQuery(record, query)) ?? null;
+    // 3. Handle predicate object (simple equality matching)
+    const predicate = input as DbRecordInput<TRecord>;
+    return (
+      this.all().find((record) => this._queryManager.matchesPredicateObject(record, predicate)) ??
+      null
+    );
   }
 
   /**
-   * Finds multiple records by their IDs or query.
-   * @param idsOrQuery - Array of IDs or a query to match against.
-   * @returns An array of records that match the IDs or query.
+   * Finds multiple records by IDs, predicate object, or query options.
+   * @param input - Array of IDs, predicate object, or query options
+   * @returns An array of records that match
+   * @example
+   * ```typescript
+   * // By IDs
+   * collection.findMany(['user-1', 'user-2']);
+   *
+   * // By predicate object (simple equality)
+   * collection.findMany({ active: true });
+   *
+   * // By query options (advanced filtering, sorting, pagination)
+   * collection.findMany({
+   *   where: { age: { gte: 18 }, status: { in: ['active', 'pending'] } },
+   *   orderBy: { createdAt: 'desc' },
+   *   limit: 10,
+   * });
+   * ```
    */
-  findMany(idsOrQuery: TRecord['id'][] | DbQuery<TRecord>): TRecord[] {
-    // Handle multiple ID lookup
-    if (Array.isArray(idsOrQuery)) {
-      return idsOrQuery.map((id) => this._records.get(id)).filter(Boolean) as TRecord[];
+  findMany(input: TRecord['id'][] | DbRecordInput<TRecord> | QueryOptions<TRecord>): TRecord[] {
+    // 1. Handle array of IDs
+    if (Array.isArray(input)) {
+      return input.map((id) => this._records.get(id)).filter(Boolean) as TRecord[];
     }
 
-    // Handle query-based lookup
-    const query = idsOrQuery as DbQuery<TRecord>;
-    if (typeof query === 'function') {
-      return this.all().filter(query);
+    // 2. Check if it's QueryOptions (has where, orderBy, cursor, offset, or limit)
+    const hasQueryKeys =
+      typeof input === 'object' &&
+      ('where' in input ||
+        'orderBy' in input ||
+        'cursor' in input ||
+        'offset' in input ||
+        'limit' in input);
+
+    if (hasQueryKeys) {
+      const query = input as QueryOptions<TRecord>;
+      return this._queryManager.query(this.all(), query);
     }
 
-    // Handle object-based query
-    return this.all().filter((record) => this._matchesQuery(record, query));
+    // 3. Handle predicate object (simple equality matching)
+    const predicate = input as DbRecordInput<TRecord>;
+    return this.all().filter((record) =>
+      this._queryManager.matchesPredicateObject(record, predicate),
+    );
+  }
+
+  /**
+   * Count records matching a where clause.
+   * @param where - Optional where clause to filter records
+   * @returns Number of matching records
+   * @example
+   * ```typescript
+   * collection.count({ status: 'active' });
+   * collection.count({ age: { gte: 18, lte: 65 } });
+   * ```
+   */
+  count(where?: Where<TRecord>): number {
+    if (!where) {
+      return this.size;
+    }
+    return this._queryManager.query(this.all(), { where }).length;
+  }
+
+  /**
+   * Check if any records match a where clause.
+   * @param where - Optional where clause to filter records
+   * @returns True if at least one record matches
+   * @example
+   * ```typescript
+   * collection.exists({ email: 'user@example.com' });
+   * collection.exists({ status: { in: ['active', 'pending'] } });
+   * ```
+   */
+  exists(where?: Where<TRecord>): boolean {
+    if (!where) {
+      return !this.isEmpty;
+    }
+    return this._queryManager.query(this.all(), { where, limit: 1 }).length > 0;
   }
 
   // -- MUTATION METHODS --
@@ -182,16 +277,16 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
   }
 
   /**
-   * Updates multiple records by IDs or query.
-   * @param idsOrQuery - Array of IDs or query to find records to update.
+   * Updates multiple records by IDs, predicate object, or query options.
+   * @param input - Array of IDs, predicate object, or query options to find records.
    * @param patch - The data to update the records with.
    * @returns Array of updated records.
    */
   updateMany(
-    idsOrQuery: TRecord['id'][] | DbQuery<TRecord>,
+    input: TRecord['id'][] | DbRecordInput<TRecord> | QueryOptions<TRecord>,
     patch: TRecord | DbRecordInput<TRecord>,
   ): TRecord[] {
-    const recordsToUpdate = this.findMany(idsOrQuery);
+    const recordsToUpdate = this.findMany(input);
     const updatedRecords = recordsToUpdate.map((record) => {
       const updated = { ...record, ...patch } as TRecord;
       this._records.set(record.id, updated);
@@ -210,12 +305,12 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
   }
 
   /**
-   * Deletes multiple records by IDs or query.
-   * @param idsOrQuery - Array of IDs or query to find records to delete.
+   * Deletes multiple records by IDs, predicate object, or query options.
+   * @param input - Array of IDs, predicate object, or query options to find records.
    * @returns The number of records that were deleted.
    */
-  deleteMany(idsOrQuery: TRecord['id'][] | DbQuery<TRecord>): number {
-    const recordsToDelete = this.findMany(idsOrQuery);
+  deleteMany(input: TRecord['id'][] | DbRecordInput<TRecord> | QueryOptions<TRecord>): number {
+    const recordsToDelete = this.findMany(input);
     recordsToDelete.forEach((record) => this.delete(record.id));
     return recordsToDelete.length;
   }
@@ -229,18 +324,6 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
   }
 
   // -- PRIVATE METHODS --
-
-  /**
-   * Checks if a record matches the given query.
-   * @param record - The record to check.
-   * @param query - The query to match against.
-   * @returns `true` if the record matches the query, `false` otherwise.
-   */
-  private _matchesQuery(record: TRecord, query: DbRecordInput<TRecord>): boolean {
-    return Object.entries(query).every(
-      ([key, value]) => String(record[key as keyof TRecord]) === String(value),
-    );
-  }
 
   /**
    * Prepares a record for insertion by generating an ID if it doesn't exist.

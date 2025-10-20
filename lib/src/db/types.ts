@@ -92,3 +92,206 @@ export type DbData<TCollections extends Record<string, DbCollection<any>>> = {
 export type DbConfig<TCollections extends Record<string, DbCollection<any>>> = {
   initialData?: DbData<TCollections>;
 };
+
+// -- QUERY API TYPES --
+
+/**
+ * Primitive types that support comparison operations
+ */
+export type Primitive = string | number | boolean | Date;
+
+/**
+ * Order direction for sorting
+ */
+export type OrderDirection = 'asc' | 'desc';
+
+/**
+ * Defines ordering for query results
+ * Can be an object mapping fields to directions, or an array of [field, direction] tuples
+ * @template TRecord - The record type
+ */
+export type OrderBy<TRecord> =
+  | Partial<Record<keyof TRecord, OrderDirection>>
+  | Array<readonly [keyof TRecord, OrderDirection]>;
+
+/**
+ * Equality and membership operations
+ * @template T - The field type
+ */
+export type EqualityOps<T> = {
+  /** Equals */
+  eq?: T;
+  /** Not equals */
+  ne?: T;
+  /** In array */
+  in?: T[];
+  /** Not in array */
+  nin?: T[];
+  /** Is null or undefined */
+  isNull?: boolean;
+};
+
+/**
+ * Range comparison operations for primitive types
+ * @template T - The primitive field type
+ */
+export type RangeOps<T extends Primitive> = {
+  /** Less than */
+  lt?: T;
+  /** Less than or equal */
+  lte?: T;
+  /** Greater than */
+  gt?: T;
+  /** Greater than or equal */
+  gte?: T;
+  /** Between two values (inclusive) */
+  between?: readonly [T, T];
+};
+
+/**
+ * String-specific operations
+ */
+export type StringOps = {
+  /** SQL-like pattern matching with % wildcards */
+  like?: string;
+  /** Case-insensitive like */
+  ilike?: string;
+  /** Starts with prefix */
+  startsWith?: string;
+  /** Ends with suffix */
+  endsWith?: string;
+  /** Contains substring */
+  contains?: string;
+};
+
+/**
+ * Array-specific operations
+ * @template E - The array element type
+ */
+export type ArrayOps<E> = {
+  /** Array contains element(s) */
+  contains?: E | E[];
+  /** Array length operations */
+  length?: RangeOps<number>;
+};
+
+/**
+ * All available field operations based on field type
+ * @template T - The field type
+ */
+export type FieldOps<T> = EqualityOps<T> &
+  (T extends string ? StringOps : {}) &
+  (T extends Primitive ? RangeOps<T> : {}) &
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (T extends readonly (infer E)[] ? ArrayOps<E> : {});
+
+/**
+ * Leaf-level where clause for field matching
+ * Fields can be matched by direct value or by field operations
+ * @template TRecord - The record type
+ */
+export type WhereLeaf<TRecord> = {
+  [K in keyof TRecord]?: TRecord[K] | FieldOps<TRecord[K]>;
+};
+
+/**
+ * Complete where clause with logical operators
+ * @template TRecord - The record type
+ */
+export type Where<TRecord> = WhereLeaf<TRecord> & {
+  /** Logical AND - all conditions must match */
+  AND?: Where<TRecord>[];
+  /** Logical OR - at least one condition must match */
+  OR?: Where<TRecord>[];
+  /** Logical NOT - condition must not match */
+  NOT?: Where<TRecord>;
+};
+
+/**
+ * Simple predicate object for equality matching
+ * @template TRecord - The record type
+ */
+export type PredicateObject<TRecord> = Partial<TRecord>;
+
+/**
+ * Helper functions for use in where callback predicates
+ * These are comparison utilities - users access record values and pass them to helpers
+ * @template TRecord - The record type
+ */
+export type WhereHelperFns<TRecord> = {
+  // Logical operators
+  /** Logical AND - all conditions must be true */
+  and: (...conditions: boolean[]) => boolean;
+  /** Logical OR - at least one condition must be true */
+  or: (...conditions: boolean[]) => boolean;
+  /** Logical NOT - inverts the condition */
+  not: (condition: boolean) => boolean;
+
+  // Comparison operators
+  /** Check equality */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  eq: (value: any, compareWith: any) => boolean;
+  /** Check inequality */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ne: (value: any, compareWith: any) => boolean;
+  /** Greater than */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  gt: (value: any, compareWith: any) => boolean;
+  /** Greater than or equal */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  gte: (value: any, compareWith: any) => boolean;
+  /** Less than */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  lt: (value: any, compareWith: any) => boolean;
+  /** Less than or equal */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  lte: (value: any, compareWith: any) => boolean;
+  /** Between two values (inclusive) */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  between: (value: any, min: any, max: any) => boolean;
+
+  // String operators
+  /** SQL-like pattern matching */
+  like: (value: string, pattern: string) => boolean;
+  /** Case-insensitive like */
+  ilike: (value: string, pattern: string) => boolean;
+  /** Starts with string */
+  startsWith: (value: string, prefix: string) => boolean;
+  /** Ends with string */
+  endsWith: (value: string, suffix: string) => boolean;
+  /** Contains substring */
+  containsText: (value: string, substring: string) => boolean;
+
+  // Array operators
+  /** In array */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  inArray: (value: any, values: any[]) => boolean;
+  /** Not in array */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  notInArray: (value: any, values: any[]) => boolean;
+
+  // Null checks
+  /** Is null or undefined */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  isNull: (value: any) => boolean;
+  /** Is not null and not undefined */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  isNotNull: (value: any) => boolean;
+};
+
+/**
+ * Query options for finding records
+ * @template TRecord - The record type
+ */
+export interface QueryOptions<TRecord> {
+  /** Filter criteria - object DSL or callback function */
+  where?: Where<TRecord> | ((record: TRecord, helpers: WhereHelperFns<TRecord>) => boolean);
+  /** Sorting specification */
+  orderBy?: OrderBy<TRecord>;
+  /** Number of records to skip (offset pagination) */
+  offset?: number;
+  /** Maximum number of records to return */
+  limit?: number;
+  /** Cursor for keyset pagination (must align with orderBy fields) */
+  cursor?: Partial<TRecord>;
+}
