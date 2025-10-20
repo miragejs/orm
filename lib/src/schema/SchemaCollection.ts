@@ -1,4 +1,4 @@
-import type { DbCollection, DbRecordInput } from '@src/db';
+import type { DbCollection, DbRecordInput, QueryOptions, Where, WhereHelperFns } from '@src/db';
 import type { Factory, FactoryTraitNames, ModelTraits } from '@src/factory';
 import type { IdentityManager } from '@src/id-manager';
 import {
@@ -129,68 +129,80 @@ abstract class BaseSchemaCollection<
   }
 
   /**
-   * Finds a model by id.
-   * @param id - The id of the model to find.
+   * Finds a model by ID, predicate object, or query options.
+   * @param input - The ID, predicate object, or query options to find by.
    * @returns The model instance or null if not found.
+   * @example
+   * ```typescript
+   * // Find by ID
+   * collection.find('1');
+   *
+   * // Find by predicate object
+   * collection.find({ email: 'user@example.com' });
+   *
+   * // Find with query options
+   * collection.find({ where: { age: { gte: 18 } }, orderBy: { name: 'asc' } });
+   * ```
    */
   find(
-    id: ModelAttrs<TTemplate, TSchema>['id'],
-  ): ModelInstance<TTemplate, TSchema, TSerializer> | null {
-    const record = this._dbCollection.find(id);
-    return record ? this._createModelFromRecord(record) : null;
-  }
-
-  /**
-   * Finds the first model matching the query.
-   * @param query - The query to find the model by.
-   * @returns The model instance or null if not found.
-   */
-  findBy(
-    query: DbRecordInput<ModelAttrs<TTemplate, TSchema>>,
-  ): ModelInstance<TTemplate, TSchema, TSerializer> | null {
-    const record = this._dbCollection.find(query);
-    return record ? this._createModelFromRecord(record) : null;
-  }
-
-  /**
-   * Finds all models matching the query.
-   * @param query - The query to find the models by.
-   * @returns All models matching the query.
-   */
-  where(
-    query: DbRecordInput<ModelAttrs<TTemplate, TSchema>>,
-  ): ModelCollection<TTemplate, TSchema, TSerializer>;
-  /**
-   * Finds all models matching the query.
-   * @param query - The function to filter models by.
-   * @returns All models matching the query.
-   */
-  where(
-    query: (model: ModelInstance<TTemplate, TSchema, TSerializer>) => boolean,
-  ): ModelCollection<TTemplate, TSchema, TSerializer>;
-  /**
-   * Finds all models matching the query.
-   * @param query - The query to find the models by.
-   * @returns All models matching the query.
-   */
-  where(
-    query:
+    input:
+      | ModelAttrs<TTemplate, TSchema>['id']
       | DbRecordInput<ModelAttrs<TTemplate, TSchema>>
-      | ((model: ModelInstance<TTemplate, TSchema, TSerializer>) => boolean),
-  ): ModelCollection<TTemplate, TSchema, TSerializer> {
-    const records = this._dbCollection.all();
+      | QueryOptions<ModelAttrs<TTemplate, TSchema>>,
+  ): ModelInstance<TTemplate, TSchema, TSerializer> | null {
+    // Handle QueryOptions with callback where clause
+    if (typeof input === 'object' && 'where' in input && typeof input.where === 'function') {
+      const queryOptions = this._convertQueryOptionsCallback(input);
+      const record = this._dbCollection.find(queryOptions);
+      return record ? this._createModelFromRecord(record) : null;
+    }
 
-    if (typeof query === 'function') {
-      const matchingRecords = records.filter((record) =>
-        query(this._createModelFromRecord(record)),
-      );
-      const models = matchingRecords.map((record) => this._createModelFromRecord(record));
-      return new ModelCollection(this._template, models, this._serializer);
-    } else {
-      const matchingRecords = this._dbCollection.findMany(query);
-      const models = matchingRecords.map((record) => this._createModelFromRecord(record));
+    const record = this._dbCollection.find(input);
+    return record ? this._createModelFromRecord(record) : null;
+  }
+
+  /**
+   * Finds multiple models by IDs, predicate object, or query options.
+   * @param input - The array of IDs, predicate object, or query options to find by.
+   * @returns A collection of matching model instances.
+   * @example
+   * ```typescript
+   * // Find by IDs
+   * collection.findMany(['1', '2', '3']);
+   *
+   * // Find by predicate object
+   * collection.findMany({ status: 'active' });
+   *
+   * // Find with query options
+   * collection.findMany({
+   *   where: { age: { gte: 18 } },
+   *   orderBy: { name: 'asc' },
+   *   limit: 10
+   * });
+   *
+   * // Find with callback where clause
+   * collection.findMany({
+   *   where: (model) => model.age >= 18 && model.status === 'active'
+   * });
+   * ```
+   */
+  findMany(
+    input:
+      | ModelAttrs<TTemplate, TSchema>['id'][]
+      | DbRecordInput<ModelAttrs<TTemplate, TSchema>>
+      | QueryOptions<ModelAttrs<TTemplate, TSchema>>,
+  ): ModelCollection<TTemplate, TSchema, TSerializer> {
+    // Handle QueryOptions with callback where clause
+    if (typeof input === 'object' && 'where' in input && typeof input.where === 'function') {
+      const queryOptions = this._convertQueryOptionsCallback(input);
+      const records = this._dbCollection.findMany(queryOptions);
+      const models = records.map((record) => this._createModelFromRecord(record));
       return new ModelCollection(this._template, models, this._serializer);
     }
+
+    const records = this._dbCollection.findMany(input);
+    const models = records.map((record) => this._createModelFromRecord(record));
+    return new ModelCollection(this._template, models, this._serializer);
   }
 
   /**
@@ -202,14 +214,72 @@ abstract class BaseSchemaCollection<
   }
 
   /**
-   * Deletes multiple models from the collection.
-   * @param ids - The ids of the models to delete.
+   * Deletes multiple models by IDs, predicate object, or query options.
+   * @param input - The array of IDs, predicate object, or query options to delete by.
+   * @returns The number of records that were deleted.
+   * @example
+   * ```typescript
+   * // Delete by IDs
+   * collection.deleteMany(['1', '2', '3']);
+   *
+   * // Delete by predicate object
+   * collection.deleteMany({ status: 'inactive' });
+   *
+   * // Delete with query options
+   * collection.deleteMany({
+   *   where: { age: { lt: 18 } },
+   *   limit: 10
+   * });
+   * ```
    */
-  deleteMany(ids: ModelAttrs<TTemplate, TSchema>['id'][]): void {
-    this._dbCollection.deleteMany(ids);
+  deleteMany(
+    input:
+      | ModelAttrs<TTemplate, TSchema>['id'][]
+      | DbRecordInput<ModelAttrs<TTemplate, TSchema>>
+      | QueryOptions<ModelAttrs<TTemplate, TSchema>>,
+  ): number {
+    // Handle QueryOptions with callback where clause
+    if (typeof input === 'object' && 'where' in input && typeof input.where === 'function') {
+      const queryOptions = this._convertQueryOptionsCallback(input);
+      return this._dbCollection.deleteMany(queryOptions);
+    }
+
+    return this._dbCollection.deleteMany(input);
   }
 
   // -- PRIVATE METHODS --
+
+  /**
+   * Converts QueryOptions with a callback where clause to work with models instead of raw records.
+   * @param options - The query options with a callback where clause
+   * @returns Query options with converted where clause
+   */
+  private _convertQueryOptionsCallback(
+    options: QueryOptions<ModelAttrs<TTemplate, TSchema>>,
+  ): QueryOptions<ModelAttrs<TTemplate, TSchema>> {
+    if (!options.where || typeof options.where !== 'function') {
+      return options;
+    }
+
+    const modelWhereCallback = options.where as (
+      model: ModelInstance<TTemplate, TSchema, TSerializer>,
+      helpers: WhereHelperFns<ModelAttrs<TTemplate, TSchema>>,
+    ) => boolean;
+
+    // Convert to a callback that works with records
+    const recordWhereCallback = (
+      record: ModelAttrs<TTemplate, TSchema>,
+      helpers: WhereHelperFns<ModelAttrs<TTemplate, TSchema>>,
+    ): boolean => {
+      const model = this._createModelFromRecord(record);
+      return modelWhereCallback(model, helpers);
+    };
+
+    return {
+      ...options,
+      where: recordWhereCallback,
+    };
+  }
 
   /**
    * Helper to create a model instance from a database record.
@@ -405,7 +475,7 @@ export default class SchemaCollection<
       | CollectionCreateInput<TTemplate, TSchema>
     )[]
   ): ModelInstance<TTemplate, TSchema, TSerializer> {
-    const existingModel = this.findBy(query);
+    const existingModel = this.find(query);
     if (existingModel) {
       return existingModel;
     }
@@ -437,8 +507,8 @@ export default class SchemaCollection<
     // Find existing models matching the query
     const existingModels =
       typeof query === 'function'
-        ? this.where(query)
-        : this.where(query as DbRecordInput<ModelAttrs<TTemplate, TSchema>>);
+        ? this.findMany({ where: query } as unknown as QueryOptions<ModelAttrs<TTemplate, TSchema>>)
+        : this.findMany(query as DbRecordInput<ModelAttrs<TTemplate, TSchema>>);
 
     // If we have enough models, return the requested count
     if (existingModels.length >= count) {

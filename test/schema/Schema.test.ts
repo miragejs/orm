@@ -188,11 +188,11 @@ describe('Schema', () => {
     });
 
     it('finds models by query', () => {
-      const user = testSchema.users.findBy({ name: 'John' })!;
+      const user = testSchema.users.find({ name: 'John' })!;
       expect(user).toBeDefined();
       expect(user.email).toBe('john@example.com');
 
-      const post = testSchema.posts.findBy({ title: 'Post 1' })!;
+      const post = testSchema.posts.find({ title: 'Post 1' })!;
       expect(post).toBeDefined();
     });
 
@@ -203,13 +203,15 @@ describe('Schema', () => {
     });
 
     it('finds all models matching query', () => {
-      const posts = testSchema.posts.where({ title: 'Post 1' });
+      const posts = testSchema.posts.findMany({ title: 'Post 1' });
       expect(posts.length).toBe(1);
       expect(posts.models[0].title).toBe('Post 1');
     });
 
     it('finds models using function query', () => {
-      const users = testSchema.users.where((user: any) => user.name.startsWith('J'));
+      const users = testSchema.users.findMany({
+        where: (user: any) => user.name.startsWith('J'),
+      });
       expect(users.length).toBe(2);
       expect(users.models[0].name).toBe('John');
       expect(users.models[1].name).toBe('Jane');

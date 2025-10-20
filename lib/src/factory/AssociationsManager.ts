@@ -110,8 +110,11 @@ export default class AssociationsManager<
     let model: ModelInstance<any, TSchema, any> | null = null;
 
     if (query) {
-      // Use where to get matches, then shuffle and pick first
-      const matches = collection.where(query as any);
+      // Use findMany to get matches, then shuffle and pick first
+      const matches =
+        typeof query === 'function'
+          ? collection.findMany({ where: query } as any)
+          : collection.findMany(query as any);
       if (matches.length > 0) {
         const shuffled = this._shuffle(matches.models);
         model = shuffled[0];
@@ -144,7 +147,10 @@ export default class AssociationsManager<
     let models: ModelCollection<any, TSchema, any>;
 
     if (query) {
-      models = collection.where(query as any);
+      models =
+        typeof query === 'function'
+          ? collection.findMany({ where: query } as any)
+          : collection.findMany(query as any);
     } else {
       models = collection.all();
     }
