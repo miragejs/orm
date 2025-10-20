@@ -1,6 +1,6 @@
 import { factory } from '@src/factory';
 import { model, type ModelTemplate } from '@src/model';
-import { collection, schema, type SchemaCollectionConfig } from '@src/schema';
+import { collection, schema, type CollectionConfig } from '@src/schema';
 
 // Setup test models
 interface UserAttrs {
@@ -23,8 +23,8 @@ const userModel = model().name('user').collection('users').attrs<UserAttrs>().cr
 const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
 
 type TestSchema = {
-  users: SchemaCollectionConfig<typeof userModel>;
-  posts: SchemaCollectionConfig<typeof postModel>;
+  users: CollectionConfig<typeof userModel>;
+  posts: CollectionConfig<typeof postModel>;
 };
 
 describe('Factory with Schema', () => {

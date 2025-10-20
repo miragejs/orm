@@ -1,5 +1,5 @@
 import { Model, ModelCollection, model, type ModelInstance } from '@src/model';
-import { collection, schema, type SchemaCollectionConfig } from '@src/schema';
+import { collection, schema, type CollectionConfig } from '@src/schema';
 
 // Setup test models
 interface UserAttrs {
@@ -14,7 +14,7 @@ type UserModel = typeof userModel;
 
 // Test schema type
 type TestSchema = {
-  users: SchemaCollectionConfig<UserModel>;
+  users: CollectionConfig<UserModel>;
 };
 
 // Test model class
@@ -395,7 +395,7 @@ describe('ModelCollection', () => {
         .create();
 
       type CommentSchema = {
-        comments: SchemaCollectionConfig<typeof CommentModel>;
+        comments: CollectionConfig<typeof CommentModel>;
       };
 
       const CommentModelClass = Model.define<typeof CommentModel, CommentSchema>(CommentModel);

@@ -1,5 +1,5 @@
 import type { BelongsTo, HasMany, Relationships } from '@src/associations';
-import type { SchemaCollectionConfig, SchemaCollections, SchemaInstance } from '@src/schema';
+import type { CollectionConfig, SchemaCollections, SchemaInstance } from '@src/schema';
 
 import type BaseModel from './BaseModel';
 import type Model from './Model';
@@ -189,7 +189,7 @@ export type CollectionByTemplate<
   TSchema extends SchemaCollections,
   TTemplate extends ModelTemplate,
 > = {
-  [K in keyof TSchema]: TSchema[K] extends SchemaCollectionConfig<infer TModel, any, any>
+  [K in keyof TSchema]: TSchema[K] extends CollectionConfig<infer TModel, any, any>
     ? TModel extends TTemplate
       ? K
       : never
@@ -205,7 +205,7 @@ export type RelationshipsByTemplate<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections,
 > =
-  TSchema[CollectionByTemplate<TSchema, TTemplate>] extends SchemaCollectionConfig<
+  TSchema[CollectionByTemplate<TSchema, TTemplate>] extends CollectionConfig<
     any,
     infer TRelationships,
     any,

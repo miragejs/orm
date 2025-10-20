@@ -5,7 +5,7 @@ import type {
   FactoryAssociations,
 } from '@src/associations';
 import { ModelCollection, type ModelInstance, type ModelTemplate } from '@src/model';
-import { type SchemaInstance, type SchemaCollection, type SchemaCollections } from '@src/schema';
+import { type SchemaInstance, type Collection, type SchemaCollections } from '@src/schema';
 import { MirageError } from '@src/utils';
 
 /**
@@ -87,14 +87,14 @@ export default class AssociationsManager<
   }
 
   private _processCreate(
-    collection: SchemaCollection<TSchema, any, any, any, any>,
+    collection: Collection<TSchema, any, any, any, any>,
     traitsAndDefaults?: AssociationTraitsAndDefaults,
   ): ModelInstance<any, TSchema, any> {
     return collection.create(...(traitsAndDefaults || ([] as any)));
   }
 
   private _processCreateMany(
-    collection: SchemaCollection<TSchema, any, any, any, any>,
+    collection: Collection<TSchema, any, any, any, any>,
     count: number,
     traitsAndDefaults?: AssociationTraitsAndDefaults,
   ): ModelCollection<any, TSchema, any> {
@@ -102,7 +102,7 @@ export default class AssociationsManager<
   }
 
   private _processLink(
-    collection: SchemaCollection<TSchema, any, any, any, any>,
+    collection: Collection<TSchema, any, any, any, any>,
     query?: AssociationQuery,
     traitsAndDefaults?: AssociationTraitsAndDefaults,
   ): ModelInstance<any, TSchema, any> {
@@ -137,7 +137,7 @@ export default class AssociationsManager<
   }
 
   private _processLinkMany(
-    collection: SchemaCollection<TSchema, any, any, any, any>,
+    collection: Collection<TSchema, any, any, any, any>,
     template: ModelTemplate,
     count: number,
     query?: AssociationQuery,

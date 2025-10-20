@@ -12,7 +12,7 @@ import type {
 import type { ModelRelationships } from '@src/model';
 import type { SerializerOptions, StructuralSerializerOptions } from '@src/serializer';
 
-import type SchemaCollection from './SchemaCollection';
+import type Collection from './Collection';
 
 /**
  * Global schema configuration
@@ -28,13 +28,13 @@ export interface SchemaConfig<
 }
 
 /**
- * Type for schema collection config
+ * Type for collection config
  * @template TTemplate - The model template
  * @template TRelationships - The model relationships
  * @template TFactory - The factory type
  * @template TSerializer - The serializer instance type
  */
-export interface SchemaCollectionConfig<
+export interface CollectionConfig<
   TTemplate extends ModelTemplate,
   TRelationships extends ModelRelationships = {},
   TFactory extends Factory<TTemplate, any, any> | undefined = undefined,
@@ -60,20 +60,20 @@ export interface SchemaCollectionConfig<
  * Type for schema collections - provides both string-based property access and symbol-based relationship resolution
  * @template TCollections - The string-keyed schema collections config
  */
-export type SchemaCollections = Record<string, SchemaCollectionConfig<any, any, any, any>>;
+export type SchemaCollections = Record<string, CollectionConfig<any, any, any, any>>;
 
 /**
  * Type for schema collections - provides string-based property access
  * @template TCollections - The string-keyed schema collections config
  */
 export type SchemaCollectionAccessors<TCollections extends SchemaCollections> = {
-  [K in keyof TCollections]: TCollections[K] extends SchemaCollectionConfig<
+  [K in keyof TCollections]: TCollections[K] extends CollectionConfig<
     infer TTemplate,
     infer TRelationships,
     infer TFactory,
     infer TSerializer
   >
-    ? SchemaCollection<TCollections, TTemplate, TRelationships, TFactory, TSerializer>
+    ? Collection<TCollections, TTemplate, TRelationships, TFactory, TSerializer>
     : never;
 };
 
@@ -82,7 +82,7 @@ export type SchemaCollectionAccessors<TCollections extends SchemaCollections> = 
  * This ensures that database records include foreign key fields based on defined relationships
  */
 export type SchemaDbCollections<TCollections extends SchemaCollections> = {
-  [K in keyof TCollections]: TCollections[K] extends SchemaCollectionConfig<
+  [K in keyof TCollections]: TCollections[K] extends CollectionConfig<
     infer TTemplate,
     infer TRelationships,
     any

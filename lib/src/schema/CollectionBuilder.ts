@@ -4,12 +4,12 @@ import type { ModelTemplate, ModelRelationships } from '@src/model';
 import { Serializer, type SerializerOptions } from '@src/serializer';
 import { MirageError } from '@src/utils';
 
-import type { SchemaCollectionConfig, SchemaCollections } from './types';
+import type { CollectionConfig, SchemaCollections } from './types';
 
 /**
  * A fluent builder for creating schema collection configurations.
  *
- * The CollectionBuilder provides a type-safe way to construct SchemaCollectionConfig instances
+ * The CollectionBuilder provides a type-safe way to construct CollectionConfig instances
  * with configurable model template, factory, relationships, serializer, and identity manager. It follows
  * the builder pattern, allowing method chaining to progressively configure the collection.
  * @template TTemplate - The model template type
@@ -186,7 +186,14 @@ export default class CollectionBuilder<
     configOrSerializer: SerializerOptions<TTemplate> | any,
   ): CollectionBuilder<TTemplate, TSchema, TRelationships, TFactory, TIdentityManager, any>;
 
-  serializer(configOrSerializer: any): any {
+  /**
+   * Sets the serializer configuration or instance for this collection.
+   * @param configOrSerializer - The serializer configuration object or instance
+   * @returns A new CollectionBuilder instance with the specified serializer
+   */
+  serializer(
+    configOrSerializer: any,
+  ): CollectionBuilder<TTemplate, TSchema, TRelationships, TFactory, TIdentityManager, any> {
     const builder = new CollectionBuilder<
       TTemplate,
       TSchema,
@@ -249,7 +256,7 @@ export default class CollectionBuilder<
    * Creates the final schema collection configuration.
    * @returns The schema collection configuration
    */
-  create(): SchemaCollectionConfig<TTemplate, TRelationships, TFactory, TSerializer> {
+  create(): CollectionConfig<TTemplate, TRelationships, TFactory, TSerializer> {
     if (!this._template) {
       throw new MirageError(
         'Model template must be set before creating collection. Call .model() first.',

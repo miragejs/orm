@@ -7,10 +7,10 @@ import {
   type StructuralSerializerOptions,
 } from '@src/serializer';
 
-import SchemaCollection, { createCollection } from './SchemaCollection';
+import Collection, { createCollection } from './Collection';
 import type {
   SchemaCollectionAccessors,
-  SchemaCollectionConfig,
+  CollectionConfig,
   SchemaCollections,
   SchemaConfig,
   SchemaDbCollections,
@@ -30,7 +30,7 @@ export default class Schema<
     ? TIdentityManager
     : StringIdentityManager;
 
-  private _collections: Map<string, SchemaCollection<any, any, any, any, any>> = new Map();
+  private _collections: Map<string, Collection<any, any, any, any, any>> = new Map();
   private _globalSerializerConfig?: StructuralSerializerOptions;
 
   constructor(collections: TCollections, config?: TConfig) {
@@ -47,13 +47,13 @@ export default class Schema<
    */
   getCollection<K extends keyof TCollections>(
     collectionName: K,
-  ): TCollections[K] extends SchemaCollectionConfig<
+  ): TCollections[K] extends CollectionConfig<
     infer TTemplate,
     infer TRelationships,
     infer TFactory,
     infer TSerializer
   >
-    ? SchemaCollection<TCollections, TTemplate, TRelationships, TFactory, TSerializer>
+    ? Collection<TCollections, TTemplate, TRelationships, TFactory, TSerializer>
     : never {
     const collection = this._collections.get(collectionName as string);
     if (!collection) {

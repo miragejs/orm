@@ -1,7 +1,7 @@
 import { associations, belongsTo, hasMany, type BelongsTo, type HasMany } from '@src/associations';
 import { factory, type Factory, type TraitDefinition } from '@src/factory';
 import { model } from '@src/model';
-import { collection, schema, type SchemaCollectionConfig } from '@src/schema';
+import { collection, schema, type CollectionConfig } from '@src/schema';
 
 // Define attribute types
 type UserAttrs = {
@@ -49,7 +49,7 @@ type TagModel = typeof tagModel;
 
 // Define test schema type
 type TestSchema = {
-  users: SchemaCollectionConfig<
+  users: CollectionConfig<
     UserModel,
     {},
     Factory<
@@ -61,7 +61,7 @@ type TestSchema = {
       }
     >
   >;
-  posts: SchemaCollectionConfig<
+  posts: CollectionConfig<
     PostModel,
     {
       author: BelongsTo<UserModel, 'authorId'>;
@@ -76,7 +76,7 @@ type TestSchema = {
       }
     >
   >;
-  comments: SchemaCollectionConfig<
+  comments: CollectionConfig<
     CommentModel,
     {
       post: BelongsTo<PostModel, 'postId'>;
@@ -90,7 +90,7 @@ type TestSchema = {
       }
     >
   >;
-  tags: SchemaCollectionConfig<
+  tags: CollectionConfig<
     TagModel,
     {},
     Factory<

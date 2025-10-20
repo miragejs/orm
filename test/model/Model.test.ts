@@ -1,6 +1,6 @@
 import { associations, BelongsTo, HasMany } from '@src/associations';
 import { model, Model } from '@src/model';
-import { collection, schema, SchemaCollectionConfig } from '@src/schema';
+import { collection, schema, type CollectionConfig } from '@src/schema';
 
 // Setup test models
 interface UserAttrs {
@@ -23,13 +23,13 @@ type PostModel = typeof postModel;
 
 // Test shareable schema type
 type TestSchema = {
-  users: SchemaCollectionConfig<
+  users: CollectionConfig<
     UserModel,
     {
       posts: HasMany<PostModel>;
     }
   >;
-  posts: SchemaCollectionConfig<
+  posts: CollectionConfig<
     PostModel,
     {
       author: BelongsTo<UserModel, 'authorId'>;
