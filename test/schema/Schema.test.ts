@@ -5,7 +5,7 @@ import { model } from '@src/model';
 import { ModelCollection } from '@src/model';
 import { collection, schema } from '@src/schema';
 
-// Setup test models
+// Define test model attributes
 interface UserAttrs {
   id: string;
   email: string;
@@ -24,11 +24,12 @@ interface CommentAttrs {
   content: string;
 }
 
+// Create test models
 const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
 const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
 const commentModel = model().name('comment').collection('comments').attrs<CommentAttrs>().create();
 
-// Setup test factories
+// Create test factories
 const userFactory = factory()
   .model(userModel)
   .attrs({
@@ -57,27 +58,30 @@ const commentFactory = factory()
   })
   .create();
 
+// Create test collections
+const userCollection = collection().model(userModel).factory(userFactory).create();
+
+const postCollection = collection()
+  .model(postModel)
+  .factory(postFactory)
+  .identityManager(new NumberIdentityManager())
+  .create();
+
+// Create test schema
+const testSchema = schema()
+  .collections({
+    users: userCollection,
+    posts: postCollection,
+  })
+  .identityManager(new StringIdentityManager())
+  .setup();
+
 describe('Schema', () => {
-  const userCollection = collection().model(userModel).factory(userFactory).create();
-  const postCollection = collection()
-    .model(postModel)
-    .factory(postFactory)
-    .identityManager(new NumberIdentityManager())
-    .create();
-
-  const testSchema = schema()
-    .collections({
-      users: userCollection,
-      posts: postCollection,
-    })
-    .identityManager(new StringIdentityManager())
-    .setup();
-
   beforeEach(() => {
     testSchema.db.emptyData();
   });
 
-  describe('model registration', () => {
+  describe('Constructor', () => {
     it('registers models and creates collections', () => {
       const users = testSchema.getCollection('users');
       const posts = testSchema.getCollection('posts');
@@ -90,7 +94,7 @@ describe('Schema', () => {
     });
   });
 
-  describe('collection registration', () => {
+  describe('Collections registration', () => {
     it('registers collections during schema construction', () => {
       expect(testSchema.users).toBeDefined();
       expect(testSchema.posts).toBeDefined();
@@ -109,7 +113,7 @@ describe('Schema', () => {
     });
   });
 
-  describe('collection access', () => {
+  describe('Collection access', () => {
     it('provides access to collections via property accessors', () => {
       expect(testSchema.users).toBeDefined();
       expect(testSchema.posts).toBeDefined();
@@ -144,7 +148,7 @@ describe('Schema', () => {
     });
   });
 
-  describe('database integration', () => {
+  describe('Database integration', () => {
     it('persists models to database', () => {
       const user = testSchema.users.create();
       expect(user.isSaved()).toBe(true);
@@ -179,7 +183,7 @@ describe('Schema', () => {
     });
   });
 
-  describe('querying', () => {
+  describe('Querying', () => {
     beforeEach(() => {
       testSchema.users.create({ name: 'John', email: 'john@example.com' });
       testSchema.users.create({ name: 'Jane', email: 'jane@example.com' });
@@ -280,7 +284,7 @@ describe('Schema', () => {
     });
   });
 
-  describe('identity manager configuration', () => {
+  describe('Identity manager configuration', () => {
     it('uses collection-specific identity managers', () => {
       const user = testSchema.users.create();
       const post = testSchema.posts.create();
@@ -317,8 +321,8 @@ describe('Schema', () => {
   });
 });
 
-describe('Schema with relationships', () => {
-  // Setup test collections with relationships
+describe('Schema with Relationships', () => {
+  // Create test collections with relationships
   const userCollection = collection()
     .model(userModel)
     .factory(userFactory)
@@ -326,6 +330,7 @@ describe('Schema with relationships', () => {
       posts: hasMany(postModel),
     })
     .create();
+
   const postCollection = collection()
     .model(postModel)
     .factory(postFactory)
@@ -334,6 +339,7 @@ describe('Schema with relationships', () => {
       comments: hasMany(commentModel),
     })
     .create();
+
   const commentCollection = collection()
     .model(commentModel)
     .factory(commentFactory)
@@ -343,7 +349,7 @@ describe('Schema with relationships', () => {
     })
     .create();
 
-  // Setup test schema with collections
+  // Create test schema with collections
   const testSchema = schema()
     .collections({
       users: userCollection,
@@ -356,7 +362,7 @@ describe('Schema with relationships', () => {
     testSchema.db.emptyData();
   });
 
-  describe('relationship initialization', () => {
+  describe('Relationships initialization', () => {
     it('should initialize with relationships', () => {
       const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
       const post = testSchema.posts.create({
@@ -395,7 +401,7 @@ describe('Schema with relationships', () => {
     });
   });
 
-  describe('link', () => {
+  describe('link()', () => {
     it('should link belongsTo relationship', () => {
       const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
       const post = testSchema.posts.create({ title: 'My Post', content: 'Content here' });
@@ -422,7 +428,7 @@ describe('Schema with relationships', () => {
     });
   });
 
-  describe('unlink method', () => {
+  describe('unlink()', () => {
     it('should unlink belongsTo relationship', () => {
       const post = testSchema.posts.create({ title: 'My Post', content: 'Content here' });
 
@@ -452,7 +458,7 @@ describe('Schema with relationships', () => {
     });
   });
 
-  describe('relationship accessors', () => {
+  describe('Relationship accessors', () => {
     it('should get belongsTo relationship through accessor', () => {
       const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
       const post = testSchema.posts.create({
@@ -491,7 +497,7 @@ describe('Schema with relationships', () => {
     });
   });
 
-  describe('foreign key handling', () => {
+  describe('Foreign key handling', () => {
     it('should handle foreign key changes automatically', () => {
       const post = testSchema.posts.create({ title: 'My Post', content: 'Content here' });
 
@@ -501,7 +507,7 @@ describe('Schema with relationships', () => {
     });
   });
 
-  describe('error handling', () => {
+  describe('Error handling', () => {
     it('should handle missing relationships gracefully', () => {
       const post = testSchema.posts.create({ title: 'My Post', content: 'Content here' });
 
@@ -519,7 +525,7 @@ describe('Schema with relationships', () => {
     });
   });
 
-  describe('create with relationships', () => {
+  describe('Create with relationships', () => {
     it('should create belongsTo relationship', () => {
       const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
       const post = testSchema.posts.create({
@@ -559,7 +565,7 @@ describe('Schema with relationships', () => {
     });
   });
 
-  describe('update with relationships', () => {
+  describe('Update with relationships', () => {
     it('should update belongsTo relationship via foreign key', () => {
       const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
       const post = testSchema.posts.create({ title: 'My Post', content: 'Content here' });
@@ -687,8 +693,8 @@ describe('Schema with relationships', () => {
     });
   });
 
-  describe('global serializer configuration', () => {
-    describe('schema-level global config', () => {
+  describe('Global serializer configuration', () => {
+    describe('Schema-level global config', () => {
       it('should apply global root config to all collections', () => {
         const testSchema = schema()
           .collections({
@@ -741,7 +747,7 @@ describe('Schema with relationships', () => {
       });
     });
 
-    describe('collection-level config override', () => {
+    describe('Collection-level config override', () => {
       it('should override global root config at collection level', () => {
         const testSchema = schema()
           .serializer({ root: true })

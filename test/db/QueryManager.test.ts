@@ -1,6 +1,7 @@
 import { QueryManager } from '@src/db';
 
-interface TestRecord {
+// Define a test record interface
+interface UserRecord {
   id: string;
   name: string;
   email: string;
@@ -12,9 +13,11 @@ interface TestRecord {
 }
 
 describe('QueryManager', () => {
-  const queryManager = new QueryManager<TestRecord>();
+  // Create a new query manager instance
+  const queryManager = new QueryManager<UserRecord>();
 
-  const records: TestRecord[] = [
+  // Create test records
+  const records: UserRecord[] = [
     {
       id: '1',
       name: 'Alice',
@@ -101,11 +104,11 @@ describe('QueryManager', () => {
       });
 
       it('should filter with isNull true', () => {
-        const recordsWithNull: Partial<TestRecord>[] = [
+        const recordsWithNull: Partial<UserRecord>[] = [
           ...records,
           { id: '6', name: 'Frank', age: undefined, status: 'active' },
         ];
-        const results = queryManager.query(recordsWithNull as TestRecord[], {
+        const results = queryManager.query(recordsWithNull as UserRecord[], {
           where: { age: { isNull: true } },
         });
         expect(results).toHaveLength(1);
@@ -340,11 +343,11 @@ describe('QueryManager', () => {
     });
 
     it('should use null check helpers in callback', () => {
-      const recordsWithNull: Partial<TestRecord>[] = [
+      const recordsWithNull: Partial<UserRecord>[] = [
         ...records,
         { id: '6', name: 'Frank', status: 'active' },
       ];
-      const results = queryManager.query(recordsWithNull as TestRecord[], {
+      const results = queryManager.query(recordsWithNull as UserRecord[], {
         where: (record, { isNull }) => isNull(record.age),
       });
       expect(results).toHaveLength(1);
@@ -398,24 +401,24 @@ describe('QueryManager', () => {
     });
 
     it('should sort by multiple fields using object', () => {
-      const recordsWithDuplicates: Partial<TestRecord>[] = [
+      const recordsWithDuplicates: Partial<UserRecord>[] = [
         { id: '1', name: 'Alice', age: 30, status: 'active' },
         { id: '2', name: 'Bob', age: 30, status: 'inactive' },
         { id: '3', name: 'Charlie', age: 25, status: 'active' },
       ];
-      const results = queryManager.query(recordsWithDuplicates as TestRecord[], {
+      const results = queryManager.query(recordsWithDuplicates as UserRecord[], {
         orderBy: { age: 'desc', name: 'asc' },
       });
       expect(results.map((r) => r.name)).toEqual(['Alice', 'Bob', 'Charlie']);
     });
 
     it('should sort by multiple fields using array (tuple)', () => {
-      const recordsWithDuplicates: Partial<TestRecord>[] = [
+      const recordsWithDuplicates: Partial<UserRecord>[] = [
         { id: '1', name: 'Alice', age: 30, status: 'active' },
         { id: '2', name: 'Bob', age: 30, status: 'inactive' },
         { id: '3', name: 'Charlie', age: 25, status: 'active' },
       ];
-      const results = queryManager.query(recordsWithDuplicates as TestRecord[], {
+      const results = queryManager.query(recordsWithDuplicates as UserRecord[], {
         orderBy: [
           ['age', 'desc'],
           ['name', 'asc'],
@@ -432,12 +435,12 @@ describe('QueryManager', () => {
     });
 
     it('should handle null values in sorting (nulls last)', () => {
-      const recordsWithNull: Partial<TestRecord>[] = [
+      const recordsWithNull: Partial<UserRecord>[] = [
         { id: '1', name: 'Alice', age: 30 },
         { id: '2', name: 'Bob', age: undefined },
         { id: '3', name: 'Charlie', age: 25 },
       ];
-      const results = queryManager.query(recordsWithNull as TestRecord[], {
+      const results = queryManager.query(recordsWithNull as UserRecord[], {
         orderBy: { age: 'asc' },
       });
       expect(results.map((r) => r.id)).toEqual(['3', '1', '2']);
@@ -506,13 +509,13 @@ describe('QueryManager', () => {
       });
 
       it('should apply cursor with multiple fields', () => {
-        const recordsWithDuplicates: Partial<TestRecord>[] = [
+        const recordsWithDuplicates: Partial<UserRecord>[] = [
           { id: '1', name: 'Alice', age: 30, createdAt: new Date('2025-01-01') },
           { id: '2', name: 'Bob', age: 30, createdAt: new Date('2025-01-02') },
           { id: '3', name: 'Charlie', age: 30, createdAt: new Date('2025-01-03') },
           { id: '4', name: 'David', age: 25, createdAt: new Date('2025-01-04') },
         ];
-        const results = queryManager.query(recordsWithDuplicates as TestRecord[], {
+        const results = queryManager.query(recordsWithDuplicates as UserRecord[], {
           orderBy: [
             ['age', 'desc'],
             ['createdAt', 'asc'],

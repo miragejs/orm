@@ -4,7 +4,7 @@ import { NumberIdentityManager, StringIdentityManager } from '@src/id-manager';
 import { model } from '@src/model';
 import { schema, SchemaBuilder, collection } from '@src/schema';
 
-// Test tokens
+// Define test model attributes
 interface UserAttrs {
   id: string;
   name: string;
@@ -18,10 +18,11 @@ interface PostAttrs {
   authorId: string;
 }
 
+// Create test models
 const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
 const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
 
-// Test factories
+// Create test factories
 const userFactory = factory()
   .model(userModel)
   .attrs({
@@ -38,11 +39,11 @@ const postFactory = factory()
   })
   .create();
 
-// Test identity managers
+// Create test identity managers
 const appIdentityManager = new StringIdentityManager();
 const postIdentityManager = new NumberIdentityManager();
 
-// Test collections
+// Create test collections
 const userCollection = collection()
   .model(userModel)
   .factory(userFactory)
@@ -61,14 +62,14 @@ const postCollection = collection()
   .create();
 
 describe('SchemaBuilder', () => {
-  describe('constructor', () => {
+  describe('Constructor', () => {
     it('should create a new SchemaBuilder instance', () => {
       const builder = schema();
       expect(builder).toBeInstanceOf(SchemaBuilder);
     });
   });
 
-  describe('collections method', () => {
+  describe('collections()', () => {
     it('should set collections and return a new builder instance', () => {
       const builder = schema().collections({
         users: userCollection,
@@ -89,7 +90,7 @@ describe('SchemaBuilder', () => {
     });
   });
 
-  describe('identityManager method', () => {
+  describe('identityManager()', () => {
     it('should set the identity manager and return a new builder instance', () => {
       const builder = schema()
         .collections({ users: userCollection })
@@ -109,7 +110,7 @@ describe('SchemaBuilder', () => {
     });
   });
 
-  describe('build method', () => {
+  describe('create()', () => {
     it('should create a Schema instance with collections only', () => {
       const schemaInstance = schema()
         .collections({
@@ -172,7 +173,7 @@ describe('SchemaBuilder', () => {
     });
   });
 
-  describe('fluent interface', () => {
+  describe('Fluent builder interface', () => {
     it('should support method chaining in different orders', () => {
       const collections = {
         users: userCollection,
@@ -189,7 +190,7 @@ describe('SchemaBuilder', () => {
     });
   });
 
-  describe('integration with collection builder', () => {
+  describe('Integration with collection builder', () => {
     it('should work seamlessly with collection builder API', () => {
       const appSchema = schema()
         .collections({

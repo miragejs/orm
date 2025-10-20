@@ -2,19 +2,19 @@ import { createDatabase, DbCollection } from '@src/db';
 import { IdentityManager } from '@src/id-manager';
 import { MirageError } from '@src/utils';
 
-// Setup test models
-interface User {
+// Define test record interfaces
+interface UserRecord {
   id: string;
   name: string;
 }
 
-interface Post {
+interface PostRecord {
   id: string;
   title: string;
 }
 
 describe('DB', () => {
-  describe('constructor', () => {
+  describe('Constructor', () => {
     it('should initialize without errors', () => {
       const db = createDatabase();
       expect(db).toBeDefined();
@@ -26,8 +26,8 @@ describe('DB', () => {
         posts: [{ id: '1', title: 'Post 1' }],
       };
       const db = createDatabase<{
-        users: DbCollection<User>;
-        posts: DbCollection<Post>;
+        users: DbCollection<UserRecord>;
+        posts: DbCollection<PostRecord>;
       }>({ initialData });
 
       expect(db.users.find('1')).toEqual({ id: '1', name: 'John' });
@@ -35,11 +35,11 @@ describe('DB', () => {
     });
   });
 
-  describe('collection accessors', () => {
+  describe('Collection accessors', () => {
     it('should provide access to collections via property accessors', () => {
       const db = createDatabase<{
-        users: DbCollection<User>;
-        posts: DbCollection<Post>;
+        users: DbCollection<UserRecord>;
+        posts: DbCollection<PostRecord>;
       }>({
         initialData: {
           users: [{ id: '1', name: 'John' }],
@@ -89,7 +89,7 @@ describe('DB', () => {
 
     it('should create collection with initial data', () => {
       const initialData = [{ id: '1', name: 'John' }];
-      const db = createDatabase().createCollection<User>('users', { initialData });
+      const db = createDatabase().createCollection<UserRecord>('users', { initialData });
       expect(db.users.find('1')).toEqual({ id: '1', name: 'John' });
     });
 

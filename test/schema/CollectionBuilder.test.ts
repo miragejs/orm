@@ -5,7 +5,7 @@ import { model } from '@src/model';
 import { collection, CollectionBuilder } from '@src/schema';
 import { Serializer } from '@src/serializer';
 
-// Setup test models
+// Define test model attributes
 interface UserAttrs {
   id: string;
   name: string;
@@ -20,10 +20,11 @@ interface PostAttrs {
   authorId: string;
 }
 
+// Create test models
 const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
 const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
 
-// Test factory
+// Create test factory
 const userFactory = factory()
   .model(userModel)
   .attrs({
@@ -37,18 +38,115 @@ const userFactory = factory()
   })
   .create();
 
-// Test identity manager
+// Create test identity manager
 const userIdentityManager = new StringIdentityManager();
 
 describe('CollectionBuilder', () => {
-  describe('constructor', () => {
-    it('should create a new CollectionBuilder instance', () => {
-      const builder = collection();
+  describe('CollectionBuilder class', () => {
+    it('should create a CollectionBuilder instance', () => {
+      const builder = new CollectionBuilder();
       expect(builder).toBeInstanceOf(CollectionBuilder);
+    });
+
+    it('should allow method chaining with model()', () => {
+      const builder = new CollectionBuilder().model(userModel);
+      expect(builder).toBeInstanceOf(CollectionBuilder);
+    });
+
+    it('should allow method chaining with model() and factory()', () => {
+      const builder = new CollectionBuilder().model(userModel).factory(userFactory);
+      expect(builder).toBeInstanceOf(CollectionBuilder);
+    });
+
+    it('should allow method chaining with all configuration methods', () => {
+      const relationships = {
+        posts: associations.hasMany(postModel),
+      };
+      const builder = new CollectionBuilder()
+        .model(userModel)
+        .factory(userFactory)
+        .relationships(relationships)
+        .identityManager(userIdentityManager);
+      expect(builder).toBeInstanceOf(CollectionBuilder);
+    });
+
+    it('should create a CollectionConfig with create()', () => {
+      const testCollection = new CollectionBuilder().model(userModel).create();
+
+      expect(testCollection.model).toBe(userModel);
+      expect(testCollection.factory).toBeUndefined();
+      expect(testCollection.relationships).toBeUndefined();
+      expect(testCollection.identityManager).toBeUndefined();
+    });
+
+    it('should create a complete CollectionConfig with all options', () => {
+      const relationships = {
+        posts: associations.hasMany(postModel),
+      };
+      const testCollection = new CollectionBuilder()
+        .model(userModel)
+        .factory(userFactory)
+        .relationships(relationships)
+        .identityManager(userIdentityManager)
+        .serializer({ root: true })
+        .create();
+
+      expect(testCollection.model).toBe(userModel);
+      expect(testCollection.factory).toBe(userFactory);
+      expect(testCollection.relationships).toBe(relationships);
+      expect(testCollection.identityManager).toBe(userIdentityManager);
+      expect(testCollection.serializerConfig).toEqual({ root: true });
+    });
+
+    it('should throw error if model is not set', () => {
+      expect(() => {
+        new CollectionBuilder().create();
+      }).toThrow(
+        '[Mirage]: Model template must be set before creating collection. Call .model() first.',
+      );
+    });
+
+    it('should throw error if model is not set even with other configs', () => {
+      expect(() => {
+        new CollectionBuilder().factory(userFactory).identityManager(userIdentityManager).create();
+      }).toThrow(
+        '[Mirage]: Model template must be set before creating collection. Call .model() first.',
+      );
     });
   });
 
-  describe('model method', () => {
+  describe('collection()', () => {
+    it('should create a CollectionBuilder instance', () => {
+      const builder = collection();
+      expect(builder).toBeInstanceOf(CollectionBuilder);
+    });
+
+    it('should support fluent API', () => {
+      const testCollection = collection().model(userModel).factory(userFactory).create();
+
+      expect(testCollection.model).toBe(userModel);
+      expect(testCollection.factory).toBe(userFactory);
+    });
+
+    it('should create collection with only model template', () => {
+      const testCollection = collection().model(userModel).create();
+
+      expect(testCollection.model).toBe(userModel);
+      expect(testCollection.factory).toBeUndefined();
+    });
+
+    it('should allow flexible method order', () => {
+      const collection1 = collection().model(userModel).factory(userFactory).create();
+      const collection2 = collection().factory(userFactory).model(userModel).create();
+
+      expect(collection1.model).toBe(userModel);
+      expect(collection1.factory).toBe(userFactory);
+      expect(collection2.model).toBe(userModel);
+      expect(collection2.factory).toBe(userFactory);
+    });
+  });
+
+  describe('model()', () => {
     it('should set the model template and return a new builder instance', () => {
       const builder = collection().model(userModel);
       expect(builder).toBeInstanceOf(CollectionBuilder);
@@ -63,7 +161,7 @@ describe('CollectionBuilder', () => {
     });
   });
 
-  describe('factory method', () => {
+  describe('factory()', () => {
     it('should set the factory and return a new builder instance', () => {
       const builder = collection().model(userModel).factory(userFactory);
       expect(builder).toBeInstanceOf(CollectionBuilder);
@@ -77,7 +175,7 @@ describe('CollectionBuilder', () => {
     });
   });
 
-  describe('relationships method', () => {
+  describe('relationships()', () => {
     it('should set relationships and return a new builder instance', () => {
       const builder = collection()
         .model(userModel)
@@ -113,7 +211,7 @@ describe('CollectionBuilder', () => {
     });
   });
 
-  describe('identityManager method', () => {
+  describe('identityManager()', () => {
     it('should set the identity manager and return a new builder instance', () => {
       const builder = collection().model(userModel).identityManager(userIdentityManager);
       expect(builder).toBeInstanceOf(CollectionBuilder);
@@ -132,7 +230,7 @@ describe('CollectionBuilder', () => {
     });
   });
 
-  describe('serializer method', () => {
+  describe('serializer()', () => {
     it('should set serializer config and return a new builder instance', () => {
       const builder = collection().model(userModel).serializer({ root: true });
       expect(builder).toBeInstanceOf(CollectionBuilder);
@@ -259,16 +357,8 @@ describe('CollectionBuilder', () => {
     });
   });
 
-  describe('build method', () => {
-    it('should create a SchemaCollectionConfig with model template only', () => {
-      const testCollection = collection().model(userModel).create();
-      expect(testCollection.model).toBe(userModel);
-      expect(testCollection.factory).toBeUndefined();
-      expect(testCollection.relationships).toBeUndefined();
-      expect(testCollection.identityManager).toBeUndefined();
-    });
-
-    it('should create a complete SchemaCollectionConfig with all options', () => {
+  describe('Type safety', () => {
+    it('should maintain type information through the builder chain', () => {
       const relationships = {
         posts: associations.hasMany(postModel),
       };
@@ -279,21 +369,33 @@ describe('CollectionBuilder', () => {
         .identityManager(userIdentityManager)
         .create();
 
+      // These should be type-safe (no TypeScript errors)
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.factory).toBe(userFactory);
       expect(testCollection.relationships).toBe(relationships);
       expect(testCollection.identityManager).toBe(userIdentityManager);
     });
 
-    it('should throw error when template is not set', () => {
-      const builder = collection();
-      expect(() => builder.create()).toThrow(
-        '[Mirage]: Model template must be set before creating collection. Call .model() first.',
-      );
+    it('should support serializer() method for specifying serialization config', () => {
+      const testCollection = collection()
+        .model(userModel)
+        .serializer({ root: true, attrs: ['id', 'name'] })
+        .create();
+
+      expect(testCollection.model).toBe(userModel);
+      expect(testCollection.serializerConfig).toEqual({ root: true, attrs: ['id', 'name'] });
+    });
+
+    it('should support serializer() method for specifying serializer instance', () => {
+      const customSerializer = new Serializer(userModel, { root: 'user' });
+      const testCollection = collection().model(userModel).serializer(customSerializer).create();
+
+      expect(testCollection.model).toBe(userModel);
+      expect(testCollection.serializerInstance).toBe(customSerializer);
     });
   });
 
-  describe('fluent builder interface', () => {
+  describe('Fluent builder interface', () => {
     it('should support method chaining in different orders', () => {
       const relationships = {
         posts: associations.hasMany(postModel),

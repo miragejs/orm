@@ -1,5 +1,6 @@
 import ModelBuilder, { model } from '@src/model/ModelBuilder';
 
+// Define test model attributes
 interface UserAttrs {
   id: string;
   name: string;
@@ -49,7 +50,7 @@ describe('ModelBuilder', () => {
     });
   });
 
-  describe('model() function', () => {
+  describe('model()', () => {
     it('should create a ModelBuilder instance', () => {
       const builder = model();
       expect(builder).toBeInstanceOf(ModelBuilder);
