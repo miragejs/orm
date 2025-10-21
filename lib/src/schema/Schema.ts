@@ -51,7 +51,8 @@ export default class Schema<
     infer TTemplate,
     infer TRelationships,
     infer TFactory,
-    infer TSerializer
+    infer TSerializer,
+    any
   >
     ? Collection<TCollections, TTemplate, TRelationships, TFactory, TSerializer>
     : never {
@@ -63,12 +64,31 @@ export default class Schema<
   }
 
   /**
+   * Load all seeds for all collections in the schema.
+   * This will run all seed scenarios for each collection.
+   * To load specific scenarios, use collection.loadSeeds(scenarioId) on individual collections.
+   * @example
+   * ```typescript
+   * // Load all seeds for all collections
+   * await schema.loadSeeds();
+   *
+   * // Or load specific scenario for a single collection
+   * await schema.users.loadSeeds('development');
+   * ```
+   */
+  async loadSeeds(): Promise<void> {
+    for (const collection of this._collections.values()) {
+      await collection.loadSeeds();
+    }
+  }
+
+  /**
    * Register collections from the configuration
    * @param collections - Collection configurations to register
    */
   private _registerCollections(collections: TCollections): void {
     for (const [collectionName, collectionConfig] of Object.entries(collections)) {
-      const { model, factory, relationships, serializerConfig, serializerInstance } =
+      const { model, factory, relationships, serializerConfig, serializerInstance, seeds } =
         collectionConfig;
       const identityManager = collectionConfig.identityManager ?? this.identityManager;
 
@@ -94,6 +114,7 @@ export default class Schema<
         identityManager,
         relationships,
         serializer: finalSerializer,
+        seeds,
       });
       this._collections.set(collectionName, collection);
 

@@ -31,7 +31,7 @@ type CollectionConfigFor<
  * @internal
  */
 type FactoryFor<TSchema extends SchemaCollections, TModel extends ModelTemplate> =
-  CollectionConfigFor<TSchema, TModel> extends CollectionConfig<any, any, infer TFactory>
+  CollectionConfigFor<TSchema, TModel> extends CollectionConfig<any, any, infer TFactory, any, any>
     ? TFactory
     : undefined;
 

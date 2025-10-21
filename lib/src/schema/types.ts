@@ -13,6 +13,32 @@ import type { ModelRelationships } from '@src/model';
 import type { SerializerOptions, StructuralSerializerOptions } from '@src/serializer';
 
 import type Collection from './Collection';
+import type { SchemaInstance } from './Schema';
+
+/**
+ * Seed function that accepts a schema instance
+ * @template TSchema - The schema collections type
+ */
+export type SeedFunction<TSchema extends SchemaCollections = SchemaCollections> = (
+  schema: SchemaInstance<TSchema>,
+) => void | Promise<void>;
+
+/**
+ * Named seed scenarios - object with named seed methods
+ * @template TSchema - The schema collections type
+ */
+export type SeedScenarios<TSchema extends SchemaCollections = SchemaCollections> = Record<
+  string,
+  SeedFunction<TSchema>
+>;
+
+/**
+ * Seeds configuration - can be a function or object with named scenarios
+ * @template TSchema - The schema collections type
+ */
+export type Seeds<TSchema extends SchemaCollections = SchemaCollections> =
+  | SeedFunction<TSchema>
+  | SeedScenarios<TSchema>;
 
 /**
  * Global schema configuration
@@ -33,12 +59,14 @@ export interface SchemaConfig<
  * @template TRelationships - The model relationships
  * @template TFactory - The factory type
  * @template TSerializer - The serializer instance type
+ * @template TSchema - The schema collections type for seeds typing
  */
 export interface CollectionConfig<
   TTemplate extends ModelTemplate,
   TRelationships extends ModelRelationships = {},
   TFactory extends Factory<TTemplate, any, any> | undefined = undefined,
   TSerializer = undefined,
+  TSchema extends SchemaCollections = SchemaCollections,
 > {
   model: TTemplate;
   factory?: TFactory;
@@ -54,13 +82,18 @@ export interface CollectionConfig<
    * Used when collection().serializer(instance) is called
    */
   serializerInstance?: TSerializer;
+  /**
+   * Seeds configuration - can be a function or object with named scenarios
+   * Used when collection().seeds(...) is called
+   */
+  seeds?: Seeds<TSchema>;
 }
 
 /**
  * Type for schema collections - provides both string-based property access and symbol-based relationship resolution
  * @template TCollections - The string-keyed schema collections config
  */
-export type SchemaCollections = Record<string, CollectionConfig<any, any, any, any>>;
+export type SchemaCollections = Record<string, CollectionConfig<any, any, any, any, any>>;
 
 /**
  * Type for schema collections - provides string-based property access
@@ -71,7 +104,8 @@ export type SchemaCollectionAccessors<TCollections extends SchemaCollections> = 
     infer TTemplate,
     infer TRelationships,
     infer TFactory,
-    infer TSerializer
+    infer TSerializer,
+    any
   >
     ? Collection<TCollections, TTemplate, TRelationships, TFactory, TSerializer>
     : never;
@@ -85,6 +119,8 @@ export type SchemaDbCollections<TCollections extends SchemaCollections> = {
   [K in keyof TCollections]: TCollections[K] extends CollectionConfig<
     infer TTemplate,
     infer TRelationships,
+    any,
+    any,
     any
   >
     ? DbCollection<

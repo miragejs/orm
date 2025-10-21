@@ -4,7 +4,7 @@ import type { ModelTemplate, ModelRelationships } from '@src/model';
 import { Serializer, type SerializerOptions } from '@src/serializer';
 import { MirageError } from '@src/utils';
 
-import type { CollectionConfig, SchemaCollections } from './types';
+import type { CollectionConfig, SchemaCollections, Seeds } from './types';
 
 /**
  * A fluent builder for creating schema collection configurations.
@@ -43,6 +43,7 @@ export default class CollectionBuilder<
   private _identityManager?: TIdentityManager;
   private _serializerConfig?: SerializerOptions<TTemplate>;
   private _serializerInstance?: TSerializer;
+  private _seeds?: Seeds<TSchema>;
 
   /**
    * Creates a new CollectionBuilder instance.
@@ -89,6 +90,7 @@ export default class CollectionBuilder<
     builder._serializerConfig = this._serializerConfig as any;
     builder._serializerInstance = this._serializerInstance;
     builder._identityManager = this._identityManager;
+    builder._seeds = this._seeds;
     return builder;
   }
 
@@ -122,6 +124,7 @@ export default class CollectionBuilder<
     builder._identityManager = this._identityManager;
     builder._serializerConfig = this._serializerConfig;
     builder._serializerInstance = this._serializerInstance;
+    builder._seeds = this._seeds;
     return builder;
   }
 
@@ -159,6 +162,7 @@ export default class CollectionBuilder<
     builder._identityManager = this._identityManager;
     builder._serializerConfig = this._serializerConfig;
     builder._serializerInstance = this._serializerInstance;
+    builder._seeds = this._seeds;
     return builder;
   }
 
@@ -206,6 +210,7 @@ export default class CollectionBuilder<
     builder._factory = this._factory;
     builder._relationships = this._relationships;
     builder._identityManager = this._identityManager;
+    builder._seeds = this._seeds;
 
     // Determine if it's a config object or a serializer instance
     if (configOrSerializer instanceof Serializer) {
@@ -249,6 +254,72 @@ export default class CollectionBuilder<
     builder._identityManager = identityManager;
     builder._serializerConfig = this._serializerConfig;
     builder._serializerInstance = this._serializerInstance;
+    builder._seeds = this._seeds;
+    return builder;
+  }
+
+  /**
+   * Sets the seeds configuration for this collection.
+   *
+   * Seeds can be either a function or an object with named seed scenarios.
+   * The function/methods receive the schema instance as a parameter.
+   * @param seeds - A seed function or object with named seed scenarios
+   * @returns A new CollectionBuilder instance with the specified seeds
+   * @example
+   * ```typescript
+   * // With function
+   * const builder = collection()
+   *   .model(UserModel)
+   *   .seeds((schema) => {
+   *     schema.users.create({ name: 'John' });
+   *   });
+   *
+   * // With named scenarios
+   * const builder = collection()
+   *   .model(UserModel)
+   *   .seeds({
+   *     userForm: (schema) => {
+   *       schema.users.create({ name: 'John' });
+   *     },
+   *     userPosts: (schema) => {
+   *       const user = schema.users.create({ name: 'John' });
+   *       schema.posts.create({ title: 'Post 1', authorId: user.id });
+   *     },
+   *   });
+   * ```
+   */
+  seeds(
+    seeds: Seeds<TSchema>,
+  ): CollectionBuilder<
+    TTemplate,
+    TSchema,
+    TRelationships,
+    TFactory,
+    TIdentityManager,
+    TSerializer
+  > {
+    // Validate that 'default' is not used as a scenario name
+    if (typeof seeds === 'object' && !Array.isArray(seeds) && 'default' in seeds) {
+      throw new MirageError(
+        "The 'default' scenario name is reserved. Please use a different name for your seed scenario.",
+      );
+    }
+
+    const builder = new CollectionBuilder<
+      TTemplate,
+      TSchema,
+      TRelationships,
+      TFactory,
+      TIdentityManager,
+      TSerializer
+    >();
+    builder._template = this._template;
+    builder._factory = this._factory;
+    builder._relationships = this._relationships;
+    builder._identityManager = this._identityManager;
+    builder._serializerConfig = this._serializerConfig;
+    builder._serializerInstance = this._serializerInstance;
+    builder._seeds = seeds;
     return builder;
   }
 
@@ -256,7 +327,7 @@ export default class CollectionBuilder<
    * Creates the final schema collection configuration.
    * @returns The schema collection configuration
    */
-  create(): CollectionConfig<TTemplate, TRelationships, TFactory, TSerializer> {
+  create(): CollectionConfig<TTemplate, TRelationships, TFactory, TSerializer, TSchema> {
     if (!this._template) {
       throw new MirageError(
         'Model template must be set before creating collection. Call .model() first.',
@@ -270,6 +341,7 @@ export default class CollectionBuilder<
       identityManager: this._identityManager,
       serializerConfig: this._serializerConfig,
       serializerInstance: this._serializerInstance,
+      seeds: this._seeds,
     };
   }
 }

@@ -13,6 +13,7 @@ import {
   type NewModelInstance,
   type RelationshipsByTemplate,
 } from '@src/model';
+import { MirageError } from '@src/utils';
 
 import { BaseCollection } from './BaseCollection';
 import type { SchemaInstance } from './Schema';
@@ -234,6 +235,50 @@ export default class Collection<
       this._serializer,
     );
   }
+
+  /**
+   * Load seeds for this collection.
+   * If scenarioId is not provided, all seeds will be loaded (or 'default' if seeds is a function).
+   * If scenarioId is provided, only that specific seed scenario will be loaded.
+   * @param scenarioId - Optional scenario ID to load a specific seed
+   * @throws {MirageError} If the specified scenarioId does not exist
+   * @example
+   * ```typescript
+   * // Load all seeds
+   * collection.loadSeeds();
+   *
+   * // Load specific scenario
+   * collection.loadSeeds('userForm');
+   * ```
+   */
+  async loadSeeds(scenarioId?: string): Promise<void> {
+    if (!this._seeds) {
+      return;
+    }
+
+    // Normalize seeds to always be an object
+    const seedScenarios: Record<string, (schema: SchemaInstance<TSchema>) => void | Promise<void>> =
+      typeof this._seeds === 'function' ? { default: this._seeds } : this._seeds;
+
+    // If no scenarioId provided, run all scenarios
+    if (!scenarioId) {
+      for (const seedFn of Object.values(seedScenarios)) {
+        await seedFn(this._schema);
+      }
+      return;
+    }
+
+    // If scenarioId provided, run only that scenario
+    if (!(scenarioId in seedScenarios)) {
+      const availableScenarios = Object.keys(seedScenarios).join(', ');
+      throw new MirageError(
+        `Seed scenario '${scenarioId}' does not exist in collection '${this.collectionName}'. ` +
+          `Available scenarios: ${availableScenarios}`,
+      );
+    }
+
+    await seedScenarios[scenarioId](this._schema);
+  }
 }
 
 /**
@@ -244,7 +289,7 @@ export default class Collection<
  */
 export function createCollection<
   TSchema extends SchemaCollections,
-  TConfig extends CollectionConfig<any, any, any, any>,
+  TConfig extends CollectionConfig<any, any, any, any, any>,
 >(
   schema: SchemaInstance<TSchema>,
   config: TConfig,
@@ -252,7 +297,8 @@ export function createCollection<
   infer TTemplate,
   infer TRelationships,
   infer TFactory,
-  infer TSerializer
+  infer TSerializer,
+  any
 >
   ? Collection<
       TSchema,

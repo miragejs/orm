@@ -357,6 +357,57 @@ describe('CollectionBuilder', () => {
     });
   });
 
+  describe('seeds()', () => {
+    it('should set a seed function and return a new builder instance', () => {
+      const seedFn = () => {};
+      const builder = collection().model(userModel).seeds(seedFn);
+      expect(builder).toBeInstanceOf(CollectionBuilder);
+    });
+
+    it('should set seed function in the config', () => {
+      const seedFn = () => {};
+      const testCollection = collection().model(userModel).seeds(seedFn).create();
+      expect(testCollection.seeds).toBe(seedFn);
+    });
+
+    it('should set named scenario seeds in the config', () => {
+      const seedScenarios = {
+        basic: () => {},
+        admin: () => {},
+      };
+      const testCollection = collection().model(userModel).seeds(seedScenarios).create();
+      expect(testCollection.seeds).toBe(seedScenarios);
+    });
+
+    it('should throw error if "default" is used as a scenario name', () => {
+      expect(() => {
+        collection()
+          .model(userModel)
+          .seeds({
+            default: () => {},
+          })
+          .create();
+      }).toThrow(
+        "The 'default' scenario name is reserved. Please use a different name for your seed scenario.",
+      );
+    });
+
+    it('should preserve other configurations when setting seeds', () => {
+      const seedFn = () => {};
+      const testCollection = collection()
+        .model(userModel)
+        .factory(userFactory)
+        .identityManager(userIdentityManager)
+        .seeds(seedFn)
+        .create();
+
+      expect(testCollection.model).toBe(userModel);
+      expect(testCollection.factory).toBe(userFactory);
+      expect(testCollection.identityManager).toBe(userIdentityManager);
+      expect(testCollection.seeds).toBe(seedFn);
+    });
+  });
+
   describe('Type safety', () => {
     it('should maintain type information through the builder chain', () => {
       const relationships = {

@@ -182,7 +182,6 @@ export type ArrayOps<E> = {
 export type FieldOps<T> = EqualityOps<T> &
   (T extends string ? StringOps : {}) &
   (T extends Primitive ? RangeOps<T> : {}) &
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (T extends readonly (infer E)[] ? ArrayOps<E> : {});
 
 /**
@@ -229,25 +228,18 @@ export type WhereHelperFns<TRecord> = {
 
   // Comparison operators
   /** Check equality */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   eq: (value: any, compareWith: any) => boolean;
   /** Check inequality */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ne: (value: any, compareWith: any) => boolean;
   /** Greater than */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   gt: (value: any, compareWith: any) => boolean;
   /** Greater than or equal */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   gte: (value: any, compareWith: any) => boolean;
   /** Less than */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   lt: (value: any, compareWith: any) => boolean;
   /** Less than or equal */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   lte: (value: any, compareWith: any) => boolean;
   /** Between two values (inclusive) */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   between: (value: any, min: any, max: any) => boolean;
 
   // String operators
@@ -264,18 +256,14 @@ export type WhereHelperFns<TRecord> = {
 
   // Array operators
   /** In array */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   inArray: (value: any, values: any[]) => boolean;
   /** Not in array */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   notInArray: (value: any, values: any[]) => boolean;
 
   // Null checks
   /** Is null or undefined */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   isNull: (value: any) => boolean;
   /** Is not null and not undefined */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   isNotNull: (value: any) => boolean;
 };
 

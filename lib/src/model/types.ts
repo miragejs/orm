@@ -191,7 +191,7 @@ export type CollectionByTemplate<
   TSchema extends SchemaCollections,
   TTemplate extends ModelTemplate,
 > = {
-  [K in keyof TSchema]: TSchema[K] extends CollectionConfig<infer TModel, any, any, any>
+  [K in keyof TSchema]: TSchema[K] extends CollectionConfig<infer TModel, any, any, any, any>
     ? TModel extends TTemplate
       ? K
       : never
@@ -210,6 +210,7 @@ export type RelationshipsByTemplate<
   TSchema[CollectionByTemplate<TSchema, TTemplate>] extends CollectionConfig<
     any,
     infer TRelationships,
+    any,
     any,
     any
   >

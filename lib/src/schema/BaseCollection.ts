@@ -16,7 +16,7 @@ import {
 } from '@src/model';
 
 import type { SchemaInstance } from './Schema';
-import type { SchemaCollections } from './types';
+import type { SchemaCollections, Seeds } from './types';
 
 /**
  * Base collection class with query functionality.
@@ -47,6 +47,7 @@ export abstract class BaseCollection<
   protected readonly _factory?: TFactory;
   protected readonly _relationships?: TRelationships;
   protected readonly _serializer?: TSerializer;
+  protected readonly _seeds?: Seeds<TSchema>;
 
   constructor(
     schema: SchemaInstance<TSchema>,
@@ -56,6 +57,7 @@ export abstract class BaseCollection<
       model: TTemplate;
       relationships?: TRelationships;
       serializer?: TSerializer;
+      seeds?: Seeds<TSchema>;
     },
   ) {
     const {
@@ -64,6 +66,7 @@ export abstract class BaseCollection<
       model,
       relationships = {} as TRelationships,
       serializer,
+      seeds,
     } = config;
 
     this.modelName = model.modelName;
@@ -78,6 +81,7 @@ export abstract class BaseCollection<
     this._relationships = relationships;
     this._factory = factory;
     this._serializer = serializer;
+    this._seeds = seeds;
   }
 
   /**
