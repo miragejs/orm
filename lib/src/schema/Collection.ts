@@ -295,6 +295,19 @@ export default class Collection<
       return;
     }
 
+    // Check for ID conflicts with existing records
+    const fixtureIds = this._fixtures.records.map((r) => r.id);
+    const existingIds = this._dbCollection.all().map((r) => r.id);
+    const conflicts = fixtureIds.filter((id) => existingIds.includes(id));
+
+    if (conflicts.length > 0) {
+      throw new MirageError(
+        `Cannot load fixtures for '${this.collectionName}': ID conflicts detected. ` +
+          `The following fixture IDs already exist in the database: ${conflicts.join(', ')}. ` +
+          `Clear the database with db.emptyData() before loading fixtures, or use different IDs.`,
+      );
+    }
+
     // Insert all fixture records into the database at once
     // Fixtures are typed as FixtureRecord which includes all model attributes
     // The type assertion bridges FixtureRecord (all attrs including id) with

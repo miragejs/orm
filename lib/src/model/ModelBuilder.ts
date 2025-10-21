@@ -1,3 +1,5 @@
+import { MirageError } from '@src/utils';
+
 import type { ModelTemplate } from './types';
 
 /**
@@ -56,6 +58,11 @@ export default class ModelBuilder<
   name<T extends string>(
     modelName: T,
   ): ModelBuilder<TModelAttrs, T, TCollectionName, TSerializedModel, TSerializedCollection> {
+    // Validate model name
+    if (!modelName || typeof modelName !== 'string' || modelName.trim() === '') {
+      throw new MirageError('Model name must be a non-empty string.');
+    }
+
     const builder = new ModelBuilder<
       TModelAttrs,
       T,
@@ -81,6 +88,11 @@ export default class ModelBuilder<
   collection<T extends string>(
     collectionName: T,
   ): ModelBuilder<TModelAttrs, TModelName, T, TSerializedModel, TSerializedCollection> {
+    // Validate collection name
+    if (!collectionName || typeof collectionName !== 'string' || collectionName.trim() === '') {
+      throw new MirageError('Collection name must be a non-empty string.');
+    }
+
     const builder = new ModelBuilder<
       TModelAttrs,
       TModelName,
@@ -187,19 +199,20 @@ export default class ModelBuilder<
     };
   } {
     if (!this._modelName) {
-      throw new Error('Model name is required. Call .name() before .create()');
+      throw new MirageError('Model name is required. Call .name() before .create()');
     }
     if (!this._collectionName) {
-      throw new Error('Collection name is required. Call .collection() before .create()');
+      throw new MirageError('Collection name is required. Call .collection() before .create()');
     }
 
     return {
       key: Symbol(`Model:${this._modelName}`),
       modelName: this._modelName,
       collectionName: this._collectionName,
-      __attrs: undefined as any as TModelAttrs, // Type-only property
+      // Type-only property
+      __attrs: undefined as any as TModelAttrs,
+      // Type-only property
       __json: undefined as any as {
-        // Type-only property
         model: TSerializedModel;
         collection: TSerializedCollection;
       },

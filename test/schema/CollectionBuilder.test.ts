@@ -1,9 +1,10 @@
-import { associations } from '@src/associations';
+import { associations, hasMany, belongsTo } from '@src/associations';
 import { factory } from '@src/factory';
 import { NumberIdentityManager, StringIdentityManager } from '@src/id-manager';
 import { model } from '@src/model';
 import { collection, CollectionBuilder } from '@src/schema';
 import { Serializer } from '@src/serializer';
+import { MirageError } from '@src/utils';
 
 // Define test model attributes
 interface UserAttrs {
@@ -519,6 +520,268 @@ describe('CollectionBuilder', () => {
 
       expect(userCollection.identityManager).toBe(stringIdManager);
       expect(postCollection.identityManager).toBe(numberIdManager);
+    });
+  });
+
+  describe('Validation', () => {
+    describe('model()', () => {
+      it('should throw error for null template', () => {
+        expect(() => {
+          collection().model(null as any);
+        }).toThrow(MirageError);
+
+        expect(() => {
+          collection().model(null as any);
+        }).toThrow('Invalid model template');
+      });
+
+      it('should throw error for non-object template', () => {
+        expect(() => {
+          collection().model('invalid' as any);
+        }).toThrow('Invalid model template');
+      });
+
+      it('should throw error for template missing modelName', () => {
+        expect(() => {
+          collection().model({ collectionName: 'users' } as any);
+        }).toThrow(MirageError);
+
+        expect(() => {
+          collection().model({ collectionName: 'users' } as any);
+        }).toThrow('Model template is missing modelName property');
+      });
+
+      it('should throw error for template missing collectionName', () => {
+        expect(() => {
+          collection().model({ modelName: 'user' } as any);
+        }).toThrow(MirageError);
+
+        expect(() => {
+          collection().model({ modelName: 'user' } as any);
+        }).toThrow('Model template is missing collectionName property');
+      });
+
+      it('should accept valid model template', () => {
+        const validModel = model().name('user').collection('users').create();
+
+        expect(() => {
+          collection().model(validModel);
+        }).not.toThrow();
+      });
+    });
+
+    describe('relationships()', () => {
+      const testUserModel = model().name('user').collection('users').create();
+      const testPostModel = model().name('post').collection('posts').create();
+
+      it('should throw error for null relationships', () => {
+        expect(() => {
+          collection()
+            .model(testUserModel)
+            .relationships(null as any);
+        }).toThrow(MirageError);
+
+        expect(() => {
+          collection()
+            .model(testUserModel)
+            .relationships(null as any);
+        }).toThrow('Invalid relationships configuration');
+      });
+
+      it('should throw error for non-object relationships', () => {
+        expect(() => {
+          collection()
+            .model(testUserModel)
+            .relationships('invalid' as any);
+        }).toThrow('Invalid relationships configuration');
+      });
+
+      it('should throw error for invalid relationship object', () => {
+        expect(() => {
+          collection()
+            .model(testUserModel)
+            .relationships({
+              posts: 'invalid' as any,
+            });
+        }).toThrow(MirageError);
+
+        expect(() => {
+          collection()
+            .model(testUserModel)
+            .relationships({
+              posts: 'invalid' as any,
+            });
+        }).toThrow(`Invalid relationship 'posts'`);
+      });
+
+      it('should throw error for relationship missing type', () => {
+        expect(() => {
+          collection()
+            .model(testUserModel)
+            .relationships({
+              posts: { targetModel: testPostModel } as any,
+            });
+        }).toThrow(MirageError);
+
+        expect(() => {
+          collection()
+            .model(testUserModel)
+            .relationships({
+              posts: { targetModel: testPostModel } as any,
+            });
+        }).toThrow(`Relationship 'posts' is missing type property`);
+      });
+
+      it('should throw error for unsupported relationship type', () => {
+        expect(() => {
+          collection()
+            .model(testUserModel)
+            .relationships({
+              posts: { type: 'hasOne', targetModel: testPostModel } as any,
+            });
+        }).toThrow(MirageError);
+
+        expect(() => {
+          collection()
+            .model(testUserModel)
+            .relationships({
+              posts: { type: 'hasOne', targetModel: testPostModel } as any,
+            });
+        }).toThrow(`Relationship 'posts' has unsupported type 'hasOne'`);
+
+        expect(() => {
+          collection()
+            .model(testUserModel)
+            .relationships({
+              posts: { type: 'hasOne', targetModel: testPostModel } as any,
+            });
+        }).toThrow('hasMany: One-to-many relationship');
+
+        expect(() => {
+          collection()
+            .model(testUserModel)
+            .relationships({
+              posts: { type: 'hasOne', targetModel: testPostModel } as any,
+            });
+        }).toThrow('belongsTo: Many-to-one relationship');
+      });
+
+      it('should throw error for relationship missing targetModel', () => {
+        expect(() => {
+          collection()
+            .model(testUserModel)
+            .relationships({
+              posts: { type: 'hasMany' } as any,
+            });
+        }).toThrow(MirageError);
+
+        expect(() => {
+          collection()
+            .model(testUserModel)
+            .relationships({
+              posts: { type: 'hasMany' } as any,
+            });
+        }).toThrow(`Relationship 'posts' is missing model reference`);
+      });
+
+      it('should accept valid relationships', () => {
+        expect(() => {
+          collection()
+            .model(testUserModel)
+            .relationships({
+              posts: hasMany(testPostModel),
+            });
+        }).not.toThrow();
+
+        expect(() => {
+          collection()
+            .model(testPostModel)
+            .relationships({
+              author: belongsTo(testUserModel),
+            });
+        }).not.toThrow();
+      });
+    });
+
+    describe('fixtures()', () => {
+      interface TestUserAttrs {
+        id: string;
+        name: string;
+        email: string;
+      }
+
+      const fixtureUserModel = model()
+        .name('user')
+        .collection('users')
+        .attrs<TestUserAttrs>()
+        .create();
+
+      it('should throw error for non-array fixtures', () => {
+        expect(() => {
+          collection()
+            .model(fixtureUserModel)
+            .fixtures('invalid' as any);
+        }).toThrow(MirageError);
+
+        expect(() => {
+          collection()
+            .model(fixtureUserModel)
+            .fixtures('invalid' as any);
+        }).toThrow('Fixtures must be an array of records');
+      });
+
+      it('should throw error for invalid fixture record', () => {
+        expect(() => {
+          collection()
+            .model(fixtureUserModel)
+            .fixtures([null as any]);
+        }).toThrow(MirageError);
+
+        expect(() => {
+          collection()
+            .model(fixtureUserModel)
+            .fixtures([null as any]);
+        }).toThrow('Fixture at index 0 is invalid');
+      });
+
+      it('should throw error for fixture missing id', () => {
+        expect(() => {
+          collection()
+            .model(fixtureUserModel)
+            .fixtures([{ name: 'John', email: 'john@example.com' } as any]);
+        }).toThrow(MirageError);
+
+        expect(() => {
+          collection()
+            .model(fixtureUserModel)
+            .fixtures([{ name: 'John', email: 'john@example.com' } as any]);
+        }).toThrow("Fixture at index 0 is missing required 'id' property");
+      });
+
+      it('should throw error for fixture with null id', () => {
+        expect(() => {
+          collection()
+            .model(fixtureUserModel)
+            .fixtures([{ id: null, name: 'John', email: 'john@example.com' } as any]);
+        }).toThrow("Fixture at index 0 is missing required 'id' property");
+      });
+
+      it('should accept valid fixtures', () => {
+        expect(() => {
+          collection()
+            .model(fixtureUserModel)
+            .fixtures([
+              { id: '1', name: 'John', email: 'john@example.com' },
+              { id: '2', name: 'Jane', email: 'jane@example.com' },
+            ]);
+        }).not.toThrow();
+      });
+
+      it('should accept empty fixtures array', () => {
+        expect(() => {
+          collection().model(fixtureUserModel).fixtures([]);
+        }).not.toThrow();
+      });
     });
   });
 });

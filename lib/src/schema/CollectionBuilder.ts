@@ -82,6 +82,23 @@ export default class CollectionBuilder<
     TIdentityManager,
     TSerializer
   > {
+    // Validate model template structure
+    if (!template || typeof template !== 'object') {
+      throw new MirageError(
+        'Invalid model template. Expected a ModelTemplate object created with model().name(...).collection(...).create().',
+      );
+    }
+    if (!template.modelName) {
+      throw new MirageError(
+        'Model template is missing modelName property. Ensure you called .name() when building the model.',
+      );
+    }
+    if (!template.collectionName) {
+      throw new MirageError(
+        'Model template is missing collectionName property. Ensure you called .collection() when building the model.',
+      );
+    }
+
     const builder = new CollectionBuilder<
       T,
       TSchema,
@@ -158,6 +175,46 @@ export default class CollectionBuilder<
   relationships<R extends ModelRelationships>(
     relationships: R,
   ): CollectionBuilder<TTemplate, TSchema, R, TFactory, TIdentityManager, TSerializer> {
+    // Validate relationships configuration
+    if (!relationships || typeof relationships !== 'object') {
+      throw new MirageError(
+        'Invalid relationships configuration. Expected an object with relationship definitions.',
+      );
+    }
+
+    const SUPPORTED_RELATIONSHIP_TYPES = ['hasMany', 'belongsTo'];
+
+    for (const [key, relationship] of Object.entries(relationships)) {
+      if (!relationship || typeof relationship !== 'object') {
+        throw new MirageError(
+          `Invalid relationship '${key}'. Expected a relationship object created with hasMany() or belongsTo().`,
+        );
+      }
+
+      if (!relationship.type) {
+        throw new MirageError(
+          `Relationship '${key}' is missing type property. Use hasMany() or belongsTo() to create relationships.`,
+        );
+      }
+
+      if (!SUPPORTED_RELATIONSHIP_TYPES.includes(relationship.type)) {
+        throw new MirageError(
+          `Relationship '${key}' has unsupported type '${relationship.type}'.\n\n` +
+            `Supported relationship types:\n` +
+            `  - hasMany: One-to-many relationship (e.g., user.posts)\n` +
+            `  - belongsTo: Many-to-one relationship (e.g., post.author)\n\n` +
+            `Use hasMany() or belongsTo() helpers to create relationships.`,
+        );
+      }
+
+      // Validate model reference exists
+      if (!relationship.targetModel) {
+        throw new MirageError(
+          `Relationship '${key}' is missing model reference. Ensure the relationship was created with hasMany(model) or belongsTo(model).`,
+        );
+      }
+    }
+
     const builder = new CollectionBuilder<
       TTemplate,
       TSchema,
@@ -378,6 +435,27 @@ export default class CollectionBuilder<
     TIdentityManager,
     TSerializer
   > {
+    // Validate fixtures
+    if (!Array.isArray(records)) {
+      throw new MirageError(
+        'Fixtures must be an array of records. Pass an array of fixture objects with model attributes.',
+      );
+    }
+
+    // Validate each fixture record has an id
+    records.forEach((record, index) => {
+      if (!record || typeof record !== 'object') {
+        throw new MirageError(
+          `Fixture at index ${index} is invalid. Expected an object with model attributes.`,
+        );
+      }
+      if (record.id === undefined || record.id === null) {
+        throw new MirageError(
+          `Fixture at index ${index} is missing required 'id' property. All fixtures must have explicit IDs.`,
+        );
+      }
+    });
+
     const builder = new CollectionBuilder<
       TTemplate,
       TSchema,

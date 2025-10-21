@@ -1,4 +1,5 @@
 import { collection, schema, type CollectionConfig } from '@src/schema';
+import { MirageError } from '@src/utils';
 
 import { userModel, postModel, type UserModel, type PostModel } from './test-helpers';
 
@@ -366,6 +367,73 @@ describe('Schema Fixtures', () => {
         .create();
 
       expect(usersCollection.fixtures?.records).toEqual(validFixtures);
+    });
+  });
+
+  describe('Validation', () => {
+    it('should throw error when loading fixtures with conflicting IDs', async () => {
+      const testSchema = schema()
+        .collections({
+          users: collection<TestSchema>()
+            .model(userModel)
+            .fixtures(
+              [
+                { id: '1', name: 'John', email: 'john@example.com' },
+                { id: '2', name: 'Jane', email: 'jane@example.com' },
+              ],
+              { strategy: 'manual' },
+            )
+            .create(),
+        })
+        .setup();
+
+      // Insert a record with ID '1'
+      testSchema.users.create({ id: '1', name: 'Existing', email: 'existing@example.com' });
+
+      // Try to load fixtures (which includes ID '1')
+      await expect(testSchema.users.loadFixtures()).rejects.toThrow(MirageError);
+
+      await expect(testSchema.users.loadFixtures()).rejects.toThrow(
+        `Cannot load fixtures for 'users': ID conflicts detected`,
+      );
+
+      await expect(testSchema.users.loadFixtures()).rejects.toThrow(
+        'The following fixture IDs already exist in the database: 1',
+      );
+
+      await expect(testSchema.users.loadFixtures()).rejects.toThrow(
+        'Clear the database with db.emptyData()',
+      );
+    });
+
+    it('should load fixtures successfully when no conflicts exist', async () => {
+      const testSchema = schema()
+        .collections({
+          users: collection<TestSchema>()
+            .model(userModel)
+            .fixtures([
+              { id: '1', name: 'John', email: 'john@example.com' },
+              { id: '2', name: 'Jane', email: 'jane@example.com' },
+            ])
+            .create(),
+        })
+        .setup();
+
+      await testSchema.users.loadFixtures();
+
+      expect(testSchema.users.all()).toHaveLength(2);
+      expect(testSchema.users.find('1')?.name).toBe('John');
+      expect(testSchema.users.find('2')?.name).toBe('Jane');
+    });
+
+    it('should not throw error for collections without fixtures', async () => {
+      const testSchema = schema()
+        .collections({
+          posts: collection<TestSchema>().model(postModel).create(),
+        })
+        .setup();
+
+      await expect(testSchema.posts.loadFixtures()).resolves.not.toThrow();
     });
   });
 });

@@ -6,6 +6,7 @@ import {
   type SerializerOptions,
   type StructuralSerializerOptions,
 } from '@src/serializer';
+import { MirageError } from '@src/utils';
 
 import Collection, { createCollection } from './Collection';
 import type {
@@ -58,7 +59,7 @@ export default class Schema<
     : never {
     const collection = this._collections.get(collectionName as string);
     if (!collection) {
-      throw new Error(`Collection '${String(collectionName)}' not found`);
+      throw new MirageError(`Collection '${String(collectionName)}' not found`);
     }
     return collection as any;
   }

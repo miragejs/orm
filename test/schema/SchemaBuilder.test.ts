@@ -3,6 +3,7 @@ import { factory } from '@src/factory';
 import { NumberIdentityManager, StringIdentityManager } from '@src/id-manager';
 import { model } from '@src/model';
 import { schema, SchemaBuilder, collection } from '@src/schema';
+import { MirageError } from '@src/utils';
 
 // Define test model attributes
 interface UserAttrs {
@@ -249,6 +250,149 @@ describe('SchemaBuilder', () => {
 
       expect(userCollection.relationships).toBeDefined();
       expect(postCollection.relationships).toBeDefined();
+    });
+  });
+
+  describe('Validation', () => {
+    it('should throw error for empty collections', () => {
+      expect(() => {
+        schema().collections({}).setup();
+      }).toThrow(MirageError);
+
+      expect(() => {
+        schema().collections({}).setup();
+      }).toThrow('Schema must have at least one collection');
+    });
+
+    it('should throw error for reserved collection name: db', () => {
+      const testModel = model().name('user').collection('users').create();
+      const testCollection = collection().model(testModel).create();
+
+      expect(() => {
+        schema()
+          .collections({
+            db: testCollection as any,
+          })
+          .setup();
+      }).toThrow(MirageError);
+
+      expect(() => {
+        schema()
+          .collections({
+            db: testCollection as any,
+          })
+          .setup();
+      }).toThrow(`Collection name 'db' conflicts with existing Schema property or method`);
+    });
+
+    it('should throw error for reserved collection name: identityManager', () => {
+      const testModel = model().name('user').collection('users').create();
+      const testCollection = collection().model(testModel).create();
+
+      expect(() => {
+        schema()
+          .collections({
+            identityManager: testCollection as any,
+          })
+          .setup();
+      }).toThrow('identityManager');
+      expect(() => {
+        schema()
+          .collections({
+            identityManager: testCollection as any,
+          })
+          .setup();
+      }).toThrow('schema.identityManager: ID generation manager');
+    });
+
+    it('should throw error for reserved collection name: getCollection', () => {
+      const testModel = model().name('user').collection('users').create();
+      const testCollection = collection().model(testModel).create();
+
+      expect(() => {
+        schema()
+          .collections({
+            getCollection: testCollection as any,
+          })
+          .setup();
+      }).toThrow('getCollection');
+    });
+
+    it('should throw error for reserved collection name: loadSeeds', () => {
+      const testModel = model().name('user').collection('users').create();
+      const testCollection = collection().model(testModel).create();
+
+      expect(() => {
+        schema()
+          .collections({
+            loadSeeds: testCollection as any,
+          })
+          .setup();
+      }).toThrow('loadSeeds');
+    });
+
+    it('should throw error for reserved collection name: loadFixtures', () => {
+      const testModel = model().name('user').collection('users').create();
+      const testCollection = collection().model(testModel).create();
+
+      expect(() => {
+        schema()
+          .collections({
+            loadFixtures: testCollection as any,
+          })
+          .setup();
+      }).toThrow('loadFixtures');
+    });
+
+    it('should throw error for invalid JavaScript identifier', () => {
+      const testModel = model().name('user').collection('users').create();
+      const testCollection = collection().model(testModel).create();
+
+      expect(() => {
+        schema()
+          .collections({
+            '123invalid': testCollection as any,
+          })
+          .setup();
+      }).toThrow(MirageError);
+
+      expect(() => {
+        schema()
+          .collections({
+            '123invalid': testCollection as any,
+          })
+          .setup();
+      }).toThrow('is not a valid JavaScript identifier');
+    });
+
+    it('should throw error for collection name with spaces', () => {
+      const testModel = model().name('user').collection('users').create();
+      const testCollection = collection().model(testModel).create();
+
+      expect(() => {
+        schema()
+          .collections({
+            'user collection': testCollection as any,
+          })
+          .setup();
+      }).toThrow('is not a valid JavaScript identifier');
+    });
+
+    it('should allow valid collection names', () => {
+      const testModel = model().name('user').collection('users').create();
+      const testCollection = collection().model(testModel).create();
+
+      expect(() => {
+        schema()
+          .collections({
+            users: testCollection,
+            posts: testCollection,
+            blogPosts: testCollection,
+            user_profiles: testCollection,
+            $special: testCollection,
+          })
+          .setup();
+      }).not.toThrow();
     });
   });
 });

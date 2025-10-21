@@ -1,5 +1,6 @@
 import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
 import type { StructuralSerializerOptions } from '@src/serializer';
+import { MirageError } from '@src/utils';
 
 import Schema, { type SchemaInstance } from './Schema';
 import type { SchemaCollections, SchemaConfig } from './types';
@@ -60,6 +61,43 @@ export default class SchemaBuilder<
   collections<C extends SchemaCollections>(
     collections: C,
   ): SchemaBuilder<C, TIdentityManager, TGlobalConfig> {
+    // Validate collections is not empty
+    if (Object.keys(collections).length === 0) {
+      throw new MirageError(
+        'Schema must have at least one collection. Provide collection configurations in the collections() method.',
+      );
+    }
+
+    // Validate collection names don't conflict with reserved Schema properties
+    const RESERVED_SCHEMA_PROPS = [
+      'db',
+      'identityManager',
+      'getCollection',
+      'loadSeeds',
+      'loadFixtures',
+    ];
+
+    for (const name of Object.keys(collections)) {
+      if (RESERVED_SCHEMA_PROPS.includes(name)) {
+        throw new MirageError(
+          `Collection name '${name}' conflicts with existing Schema property or method.\n\n` +
+            `The Schema instance has the following built-in properties and methods:\n` +
+            `  - schema.db: Database instance\n` +
+            `  - schema.identityManager: ID generation manager\n` +
+            `  - schema.getCollection(): Method to access collections\n` +
+            `  - schema.loadSeeds(): Method to load seed data\n` +
+            `  - schema.loadFixtures(): Method to load fixture data\n\n` +
+            `Please use a different collection name. Reserved names: ${RESERVED_SCHEMA_PROPS.join(', ')}`,
+        );
+      }
+
+      if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name)) {
+        throw new MirageError(
+          `Collection name '${name}' is not a valid JavaScript identifier. Use only letters, numbers, underscores, and dollar signs.`,
+        );
+      }
+    }
+
     const builder = new SchemaBuilder<C, TIdentityManager, TGlobalConfig>();
     builder._collections = collections;
     builder._identityManager = this._identityManager;
@@ -144,7 +182,7 @@ export default class SchemaBuilder<
    */
   setup(): SchemaInstance<TCollections, SchemaConfig<TIdentityManager, TGlobalConfig>> {
     if (!this._collections) {
-      throw new Error(
+      throw new MirageError(
         'SchemaBuilder: collections are required. Call .collections() before .setup()',
       );
     }
