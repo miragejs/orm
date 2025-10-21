@@ -41,6 +41,43 @@ export type Seeds<TSchema extends SchemaCollections = SchemaCollections> =
   | SeedScenarios<TSchema>;
 
 /**
+ * Strategy for loading fixtures
+ * - 'auto': Load fixtures automatically during schema setup
+ * - 'manual': Load fixtures manually by calling loadFixtures()
+ */
+export type FixtureLoadStrategy = 'auto' | 'manual';
+
+/**
+ * A single fixture record - matches the model attributes with optional foreign keys
+ * @template TTemplate - The model template
+ * @template TRelationships - The model relationships
+ */
+export type FixtureRecord<
+  TTemplate extends ModelTemplate,
+  TRelationships extends ModelRelationships = {},
+> = ModelAttrs<TTemplate> &
+  (Record<string, never> extends TRelationships ? {} : Partial<ModelForeignKeys<TRelationships>>);
+
+/**
+ * Fixture configuration for a collection
+ * @template TTemplate - The model template
+ * @template TRelationships - The model relationships
+ */
+export interface FixtureConfig<
+  TTemplate extends ModelTemplate,
+  TRelationships extends ModelRelationships = {},
+> {
+  /**
+   * Array of fixture records to load
+   */
+  records: FixtureRecord<TTemplate, TRelationships>[];
+  /**
+   * When to load the fixtures (default: 'manual')
+   */
+  strategy?: FixtureLoadStrategy;
+}
+
+/**
  * Global schema configuration
  * @template TIdentityManager - The identity manager type
  * @template TGlobalConfig - The global serializer configuration type
@@ -87,6 +124,11 @@ export interface CollectionConfig<
    * Used when collection().seeds(...) is called
    */
   seeds?: Seeds<TSchema>;
+  /**
+   * Fixtures configuration - static data to load into the collection
+   * Used when collection().fixtures(...) is called
+   */
+  fixtures?: FixtureConfig<TTemplate, TRelationships>;
 }
 
 /**

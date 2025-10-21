@@ -4,7 +4,14 @@ import type { ModelTemplate, ModelRelationships } from '@src/model';
 import { Serializer, type SerializerOptions } from '@src/serializer';
 import { MirageError } from '@src/utils';
 
-import type { CollectionConfig, SchemaCollections, Seeds } from './types';
+import type {
+  CollectionConfig,
+  FixtureConfig,
+  FixtureLoadStrategy,
+  FixtureRecord,
+  SchemaCollections,
+  Seeds,
+} from './types';
 
 /**
  * A fluent builder for creating schema collection configurations.
@@ -44,6 +51,7 @@ export default class CollectionBuilder<
   private _serializerConfig?: SerializerOptions<TTemplate>;
   private _serializerInstance?: TSerializer;
   private _seeds?: Seeds<TSchema>;
+  private _fixtures?: FixtureConfig<TTemplate, TRelationships>;
 
   /**
    * Creates a new CollectionBuilder instance.
@@ -91,6 +99,7 @@ export default class CollectionBuilder<
     builder._serializerInstance = this._serializerInstance;
     builder._identityManager = this._identityManager;
     builder._seeds = this._seeds;
+    builder._fixtures = this._fixtures as any;
     return builder;
   }
 
@@ -125,6 +134,7 @@ export default class CollectionBuilder<
     builder._serializerConfig = this._serializerConfig;
     builder._serializerInstance = this._serializerInstance;
     builder._seeds = this._seeds;
+    builder._fixtures = this._fixtures;
     return builder;
   }
 
@@ -163,6 +173,7 @@ export default class CollectionBuilder<
     builder._serializerConfig = this._serializerConfig;
     builder._serializerInstance = this._serializerInstance;
     builder._seeds = this._seeds;
+    builder._fixtures = this._fixtures as any;
     return builder;
   }
 
@@ -211,6 +222,7 @@ export default class CollectionBuilder<
     builder._relationships = this._relationships;
     builder._identityManager = this._identityManager;
     builder._seeds = this._seeds;
+    builder._fixtures = this._fixtures;
 
     // Determine if it's a config object or a serializer instance
     if (configOrSerializer instanceof Serializer) {
@@ -255,6 +267,7 @@ export default class CollectionBuilder<
     builder._serializerConfig = this._serializerConfig;
     builder._serializerInstance = this._serializerInstance;
     builder._seeds = this._seeds;
+    builder._fixtures = this._fixtures;
     return builder;
   }
 
@@ -320,6 +333,72 @@ export default class CollectionBuilder<
     builder._serializerConfig = this._serializerConfig;
     builder._serializerInstance = this._serializerInstance;
     builder._seeds = seeds;
+    builder._fixtures = this._fixtures;
+    return builder;
+  }
+
+  /**
+   * Sets the fixtures configuration for this collection.
+   *
+   * Fixtures are static data records that can be loaded into the collection.
+   * @param records - Array of fixture records to load
+   * @param options - Configuration options for loading fixtures
+   * @param options.strategy - The strategy to use for loading fixtures (default: 'manual')
+   * @returns A new CollectionBuilder instance with the specified fixtures
+   * @example
+   * ```typescript
+   * // Manual loading (default)
+   * const builder = collection()
+   *   .model(UserModel)
+   *   .fixtures([
+   *     { id: '1', name: 'John', email: 'john@example.com' },
+   *     { id: '2', name: 'Jane', email: 'jane@example.com' },
+   *   ]);
+   *
+   * // Auto-load fixtures during schema setup
+   * const builder = collection()
+   *   .model(UserModel)
+   *   .fixtures(
+   *     [
+   *       { id: '1', name: 'John', email: 'john@example.com' },
+   *       { id: '2', name: 'Jane', email: 'jane@example.com' },
+   *     ],
+   *     { strategy: 'auto' }
+   *   );
+   * ```
+   */
+  fixtures(
+    records: FixtureRecord<TTemplate, TRelationships>[],
+    options?: { strategy?: FixtureLoadStrategy },
+  ): CollectionBuilder<
+    TTemplate,
+    TSchema,
+    TRelationships,
+    TFactory,
+    TIdentityManager,
+    TSerializer
+  > {
+    const builder = new CollectionBuilder<
+      TTemplate,
+      TSchema,
+      TRelationships,
+      TFactory,
+      TIdentityManager,
+      TSerializer
+    >();
+
+    builder._template = this._template;
+    builder._factory = this._factory;
+    builder._relationships = this._relationships;
+    builder._identityManager = this._identityManager;
+    builder._serializerConfig = this._serializerConfig;
+    builder._serializerInstance = this._serializerInstance;
+    builder._seeds = this._seeds;
+    builder._fixtures = {
+      records,
+      strategy: options?.strategy ?? 'manual',
+    };
+
     return builder;
   }
 
@@ -342,6 +421,7 @@ export default class CollectionBuilder<
       serializerConfig: this._serializerConfig,
       serializerInstance: this._serializerInstance,
       seeds: this._seeds,
+      fixtures: this._fixtures,
     };
   }
 }

@@ -1,11 +1,11 @@
 import { collection, schema, type CollectionConfig } from '@src/schema';
 
-import { postModel, userModel } from './test-helpers';
+import { postModel, userModel, type UserModel, type PostModel } from './test-helpers';
 
 // Define shared schema type
 type TestSchema = {
-  users: CollectionConfig<typeof userModel>;
-  posts: CollectionConfig<typeof postModel>;
+  users: CollectionConfig<UserModel>;
+  posts: CollectionConfig<PostModel>;
 };
 
 describe('Schema Seeds', () => {

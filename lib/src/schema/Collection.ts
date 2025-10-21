@@ -1,4 +1,4 @@
-import type { DbRecordInput, QueryOptions } from '@src/db';
+import type { DbRecordInput, NewDbRecord, QueryOptions } from '@src/db';
 import type { Factory, FactoryTraitNames, ModelTraits } from '@src/factory';
 import {
   Model,
@@ -278,6 +278,30 @@ export default class Collection<
     }
 
     await seedScenarios[scenarioId](this._schema);
+  }
+
+  /**
+   * Load fixtures for this collection.
+   * Fixtures are static data records that will be inserted into the collection.
+   * This method will insert all fixture records into the database.
+   * @example
+   * ```typescript
+   * // Load all fixtures
+   * await collection.loadFixtures();
+   * ```
+   */
+  async loadFixtures(): Promise<void> {
+    if (!this._fixtures || !this._fixtures.records.length) {
+      return;
+    }
+
+    // Insert all fixture records into the database at once
+    // Fixtures are typed as FixtureRecord which includes all model attributes
+    // The type assertion bridges FixtureRecord (all attrs including id) with
+    // NewDbRecord (Omit<Record, 'id'> & { id?: id }), which are structurally compatible
+    this._dbCollection.insertMany(
+      this._fixtures.records as NewDbRecord<ModelAttrs<TTemplate, TSchema>>[],
+    );
   }
 }
 

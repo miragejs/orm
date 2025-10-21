@@ -83,13 +83,38 @@ export default class Schema<
   }
 
   /**
+   * Load all fixtures for all collections in the schema.
+   * This will insert all fixture records into each collection's database.
+   * @example
+   * ```typescript
+   * // Load all fixtures for all collections
+   * await schema.loadFixtures();
+   * ```
+   */
+  async loadFixtures(): Promise<void> {
+    for (const collection of this._collections.values()) {
+      await collection.loadFixtures();
+    }
+  }
+
+  /**
    * Register collections from the configuration
    * @param collections - Collection configurations to register
    */
   private _registerCollections(collections: TCollections): void {
+    // Track collections with auto-loading fixtures
+    const autoLoadCollections: any[] = [];
+
     for (const [collectionName, collectionConfig] of Object.entries(collections)) {
-      const { model, factory, relationships, serializerConfig, serializerInstance, seeds } =
-        collectionConfig;
+      const {
+        model,
+        factory,
+        relationships,
+        serializerConfig,
+        serializerInstance,
+        seeds,
+        fixtures,
+      } = collectionConfig;
       const identityManager = collectionConfig.identityManager ?? this.identityManager;
 
       // Determine the final serializer to use
@@ -115,6 +140,7 @@ export default class Schema<
         relationships,
         serializer: finalSerializer,
         seeds,
+        fixtures,
       });
       this._collections.set(collectionName, collection);
 
@@ -123,6 +149,20 @@ export default class Schema<
         enumerable: true,
         get: () => this._collections.get(collectionName),
       });
+
+      // Track if fixtures should be auto-loaded
+      if (fixtures?.strategy === 'auto') {
+        autoLoadCollections.push(collection);
+      }
+    }
+
+    // Auto-load fixtures for collections with 'auto' strategy
+    // This is done synchronously after all collections are registered
+    // to ensure relationships are set up properly
+    for (const collection of autoLoadCollections) {
+      // Load fixtures synchronously using a non-async approach
+      // Since we're in a constructor context, we need to handle this carefully
+      void collection.loadFixtures();
     }
   }
 

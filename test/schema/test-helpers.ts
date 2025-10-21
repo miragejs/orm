@@ -30,6 +30,11 @@ export const commentModel = model()
   .attrs<CommentAttrs>()
   .create();
 
+// Define test model types
+export type UserModel = typeof userModel;
+export type PostModel = typeof postModel;
+export type CommentModel = typeof commentModel;
+
 // Create test factories
 export const userFactory = factory()
   .model(userModel)
