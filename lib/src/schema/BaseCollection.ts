@@ -14,6 +14,7 @@ import {
   type ModelTemplate,
   type RelationshipsByTemplate,
 } from '@src/model';
+import type { Logger } from '@src/utils';
 
 import type { SchemaInstance } from './Schema';
 import type { FixtureConfig, SchemaCollections, Seeds } from './types';
@@ -43,6 +44,7 @@ export abstract class BaseCollection<
   protected readonly _schema: SchemaInstance<TSchema>;
   protected readonly _dbCollection: DbCollection<ModelAttrs<TTemplate, TSchema>>;
   protected readonly _identityManager: IdentityManager<ModelAttrs<TTemplate, TSchema>['id']>;
+  protected readonly _logger?: Logger;
 
   protected readonly _factory?: TFactory;
   protected readonly _relationships?: TRelationships;
@@ -78,6 +80,7 @@ export abstract class BaseCollection<
 
     this._template = model;
     this._schema = schema;
+    this._logger = schema.logger;
     this._dbCollection = this._initializeDbCollection(identityManager);
     this._identityManager = this._dbCollection.identityManager;
 
@@ -86,6 +89,14 @@ export abstract class BaseCollection<
     this._serializer = serializer;
     this._seeds = seeds;
     this._fixtures = fixtures;
+
+    this._logger?.debug(`Collection '${this.collectionName}' initialized`, {
+      modelName: this.modelName,
+      hasFactory: !!factory,
+      hasRelationships: !!relationships && Object.keys(relationships).length > 0,
+      hasSeeds: !!seeds,
+      hasFixtures: !!fixtures,
+    });
   }
 
   /**
@@ -119,7 +130,13 @@ export abstract class BaseCollection<
    * @returns All model instances in the collection.
    */
   all(): ModelCollection<TTemplate, TSchema, TSerializer> {
+    this._logger?.debug(`Query '${this.collectionName}': all()`, {
+      operation: 'all',
+    });
+
     const records = this._dbCollection.all();
+    this._logger?.debug(`Query '${this.collectionName}' returned ${records.length} records`);
+
     const models = records.map((record) => this._createModelFromRecord(record));
     return new ModelCollection(this._template, models, this._serializer);
   }
@@ -129,7 +146,12 @@ export abstract class BaseCollection<
    * @returns The first model in the collection or null if the collection is empty.
    */
   first(): ModelInstance<TTemplate, TSchema, TSerializer> | null {
+    this._logger?.debug(`Query '${this.collectionName}': first()`);
+
     const record = this._dbCollection.first();
+    if (record) {
+      this._logger?.debug(`Query '${this.collectionName}' found record`, { id: record.id });
+    }
     return record ? this._createModelFromRecord(record) : null;
   }
 
@@ -138,7 +160,12 @@ export abstract class BaseCollection<
    * @returns The last model in the collection or null if the collection is empty.
    */
   last(): ModelInstance<TTemplate, TSchema, TSerializer> | null {
+    this._logger?.debug(`Query '${this.collectionName}': last()`);
+
     const record = this._dbCollection.last();
+    if (record) {
+      this._logger?.debug(`Query '${this.collectionName}' found record`, { id: record.id });
+    }
     return record ? this._createModelFromRecord(record) : null;
   }
 
@@ -164,14 +191,24 @@ export abstract class BaseCollection<
       | DbRecordInput<ModelAttrs<TTemplate, TSchema>>
       | QueryOptions<ModelAttrs<TTemplate, TSchema>>,
   ): ModelInstance<TTemplate, TSchema, TSerializer> | null {
+    this._logger?.debug(`Find in '${this.collectionName}'`, {
+      query: typeof input === 'object' && 'where' in input ? 'QueryOptions' : input,
+    });
+
     // Handle QueryOptions with callback where clause
     if (typeof input === 'object' && 'where' in input && typeof input.where === 'function') {
       const queryOptions = this._convertQueryOptionsCallback(input);
       const record = this._dbCollection.find(queryOptions);
+      if (record) {
+        this._logger?.debug(`Find in '${this.collectionName}' found record`, { id: record.id });
+      }
       return record ? this._createModelFromRecord(record) : null;
     }
 
     const record = this._dbCollection.find(input);
+    if (record) {
+      this._logger?.debug(`Find in '${this.collectionName}' found record`, { id: record.id });
+    }
     return record ? this._createModelFromRecord(record) : null;
   }
 
@@ -206,15 +243,28 @@ export abstract class BaseCollection<
       | DbRecordInput<ModelAttrs<TTemplate, TSchema>>
       | QueryOptions<ModelAttrs<TTemplate, TSchema>>,
   ): ModelCollection<TTemplate, TSchema, TSerializer> {
+    this._logger?.debug(`Query '${this.collectionName}': findMany`, {
+      query: Array.isArray(input)
+        ? `${input.length} IDs`
+        : typeof input === 'object' && 'where' in input
+          ? 'QueryOptions'
+          : input,
+    });
+
     // Handle QueryOptions with callback where clause
     if (typeof input === 'object' && 'where' in input && typeof input.where === 'function') {
       const queryOptions = this._convertQueryOptionsCallback(input);
       const records = this._dbCollection.findMany(queryOptions);
+
+      this._logger?.debug(`Query '${this.collectionName}' returned ${records.length} records`);
+
       const models = records.map((record) => this._createModelFromRecord(record));
       return new ModelCollection(this._template, models, this._serializer);
     }
 
     const records = this._dbCollection.findMany(input);
+    this._logger?.debug(`Query '${this.collectionName}' returned ${records.length} records`);
+
     const models = records.map((record) => this._createModelFromRecord(record));
     return new ModelCollection(this._template, models, this._serializer);
   }
@@ -224,6 +274,7 @@ export abstract class BaseCollection<
    * @param id - The id of the model to delete.
    */
   delete(id: ModelAttrs<TTemplate, TSchema>['id']): void {
+    this._logger?.debug(`Delete from '${this.collectionName}'`, { id });
     this._dbCollection.delete(id);
   }
 
@@ -252,13 +303,23 @@ export abstract class BaseCollection<
       | DbRecordInput<ModelAttrs<TTemplate, TSchema>>
       | QueryOptions<ModelAttrs<TTemplate, TSchema>>,
   ): number {
+    this._logger?.debug(`Delete many from '${this.collectionName}'`, {
+      query: Array.isArray(input) ? `${input.length} IDs` : input,
+    });
+
     // Handle QueryOptions with callback where clause
     if (typeof input === 'object' && 'where' in input && typeof input.where === 'function') {
       const queryOptions = this._convertQueryOptionsCallback(input);
-      return this._dbCollection.deleteMany(queryOptions);
+      const count = this._dbCollection.deleteMany(queryOptions);
+
+      this._logger?.debug(`Deleted ${count} records from '${this.collectionName}'`);
+
+      return count;
     }
 
-    return this._dbCollection.deleteMany(input);
+    const count = this._dbCollection.deleteMany(input);
+    this._logger?.debug(`Deleted ${count} records from '${this.collectionName}'`);
+    return count;
   }
 
   // -- PRIVATE METHODS --

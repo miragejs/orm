@@ -68,6 +68,11 @@ export default class Collection<
       | CollectionCreateInput<TTemplate, TSchema>
     )[]
   ): ModelInstance<TTemplate, TSchema, TSerializer> {
+    this._logger?.debug(`Creating ${this.modelName}`, {
+      collection: this.collectionName,
+      traitsAndDefaults,
+    });
+
     // Extract traits and defaults
     const traits: FactoryTraitNames<TFactory>[] = [];
     let defaults: CollectionCreateInput<TTemplate, TSchema> = {};
@@ -122,6 +127,10 @@ export default class Collection<
       } as ModelCreateAttrs<TTemplate, TSchema>;
 
       const model = this.new(completeAttrs).save();
+      this._logger?.debug(`Created ${this.modelName} with factory`, {
+        id: model.id,
+        collection: this.collectionName,
+      });
       return this._factory.processAfterCreateHooks(
         this._schema,
         model as any,
@@ -138,6 +147,10 @@ export default class Collection<
       TSchema
     >;
     const model = this.new(attrs).save();
+    this._logger?.debug(`Created ${this.modelName}`, {
+      id: model.id,
+      collection: this.collectionName,
+    });
 
     return model;
   }
@@ -253,6 +266,7 @@ export default class Collection<
    */
   async loadSeeds(scenarioId?: string): Promise<void> {
     if (!this._seeds) {
+      this._logger?.debug(`No seeds configured for collection '${this.collectionName}'`);
       return;
     }
 
@@ -262,22 +276,34 @@ export default class Collection<
 
     // If no scenarioId provided, run all scenarios
     if (!scenarioId) {
-      for (const seedFn of Object.values(seedScenarios)) {
+      this._logger?.info(`Loading all seeds for collection '${this.collectionName}'`, {
+        scenarios: Object.keys(seedScenarios),
+      });
+      for (const [name, seedFn] of Object.entries(seedScenarios)) {
+        this._logger?.debug(`Running seed scenario '${name}' for '${this.collectionName}'`);
         await seedFn(this._schema);
       }
+      this._logger?.info(`Seeds loaded successfully for '${this.collectionName}'`);
       return;
     }
 
     // If scenarioId provided, run only that scenario
     if (!(scenarioId in seedScenarios)) {
       const availableScenarios = Object.keys(seedScenarios).join(', ');
+      this._logger?.error(`Seed scenario '${scenarioId}' not found`, {
+        collection: this.collectionName,
+        requested: scenarioId,
+        available: Object.keys(seedScenarios),
+      });
       throw new MirageError(
         `Seed scenario '${scenarioId}' does not exist in collection '${this.collectionName}'. ` +
           `Available scenarios: ${availableScenarios}`,
       );
     }
 
+    this._logger?.info(`Loading seed scenario '${scenarioId}' for '${this.collectionName}'`);
     await seedScenarios[scenarioId](this._schema);
+    this._logger?.info(`Seed scenario '${scenarioId}' loaded successfully`);
   }
 
   /**
@@ -292,8 +318,13 @@ export default class Collection<
    */
   async loadFixtures(): Promise<void> {
     if (!this._fixtures || !this._fixtures.records.length) {
+      this._logger?.debug(`No fixtures configured for collection '${this.collectionName}'`);
       return;
     }
+
+    this._logger?.info(`Loading fixtures for collection '${this.collectionName}'`, {
+      count: this._fixtures.records.length,
+    });
 
     // Check for ID conflicts with existing records
     const fixtureIds = this._fixtures.records.map((r) => r.id);
@@ -301,6 +332,10 @@ export default class Collection<
     const conflicts = fixtureIds.filter((id) => existingIds.includes(id));
 
     if (conflicts.length > 0) {
+      this._logger?.error('Fixture loading failed: ID conflicts detected', {
+        collection: this.collectionName,
+        conflicts,
+      });
       throw new MirageError(
         `Cannot load fixtures for '${this.collectionName}': ID conflicts detected. ` +
           `The following fixture IDs already exist in the database: ${conflicts.join(', ')}. ` +
@@ -315,6 +350,10 @@ export default class Collection<
     this._dbCollection.insertMany(
       this._fixtures.records as NewDbRecord<ModelAttrs<TTemplate, TSchema>>[],
     );
+
+    this._logger?.info(`Fixtures loaded successfully for '${this.collectionName}'`, {
+      count: this._fixtures.records.length,
+    });
   }
 }
 

@@ -6,7 +6,7 @@ import {
   type SerializerOptions,
   type StructuralSerializerOptions,
 } from '@src/serializer';
-import { MirageError } from '@src/utils';
+import { Logger, MirageError } from '@src/utils';
 
 import Collection, { createCollection } from './Collection';
 import type {
@@ -30,6 +30,7 @@ export default class Schema<
   public readonly identityManager: TConfig extends SchemaConfig<infer TIdentityManager, any>
     ? TIdentityManager
     : StringIdentityManager;
+  public readonly logger?: Logger;
 
   private _collections: Map<string, Collection<any, any, any, any, any>> = new Map();
   private _globalSerializerConfig?: StructuralSerializerOptions;
@@ -38,6 +39,15 @@ export default class Schema<
     this.db = createDatabase<SchemaDbCollections<TCollections>>();
     this.identityManager = config?.identityManager ?? new StringIdentityManager();
     this._globalSerializerConfig = config?.globalSerializerConfig;
+
+    // Create logger if logging is enabled
+    if (config?.logging?.enabled) {
+      this.logger = new Logger(config.logging);
+      this.logger.debug('Schema initialized', {
+        collections: Object.keys(collections),
+      });
+    }
+
     this._registerCollections(collections);
   }
 
@@ -78,9 +88,15 @@ export default class Schema<
    * ```
    */
   async loadSeeds(): Promise<void> {
+    this.logger?.info('Loading seeds for all collections', {
+      collections: Array.from(this._collections.keys()),
+    });
+
     for (const collection of this._collections.values()) {
       await collection.loadSeeds();
     }
+
+    this.logger?.info('All seeds loaded successfully');
   }
 
   /**
@@ -93,9 +109,15 @@ export default class Schema<
    * ```
    */
   async loadFixtures(): Promise<void> {
+    this.logger?.info('Loading fixtures for all collections', {
+      collections: Array.from(this._collections.keys()),
+    });
+
     for (const collection of this._collections.values()) {
       await collection.loadFixtures();
     }
+
+    this.logger?.info('All fixtures loaded successfully');
   }
 
   /**
@@ -103,6 +125,11 @@ export default class Schema<
    * @param collections - Collection configurations to register
    */
   private _registerCollections(collections: TCollections): void {
+    this.logger?.debug('Registering collections', {
+      count: Object.keys(collections).length,
+      names: Object.keys(collections),
+    });
+
     // Track collections with auto-loading fixtures
     const autoLoadCollections: any[] = [];
 
@@ -157,13 +184,22 @@ export default class Schema<
       }
     }
 
+    this.logger?.debug('Collections registered successfully', {
+      count: this._collections.size,
+    });
+
     // Auto-load fixtures for collections with 'auto' strategy
     // This is done synchronously after all collections are registered
     // to ensure relationships are set up properly
-    for (const collection of autoLoadCollections) {
-      // Load fixtures synchronously using a non-async approach
-      // Since we're in a constructor context, we need to handle this carefully
-      void collection.loadFixtures();
+    if (autoLoadCollections.length > 0) {
+      this.logger?.info('Auto-loading fixtures', {
+        collections: autoLoadCollections.map((c) => c.collectionName),
+      });
+      for (const collection of autoLoadCollections) {
+        // Load fixtures synchronously using a non-async approach
+        // Since we're in a constructor context, we need to handle this carefully
+        void collection.loadFixtures();
+      }
     }
   }
 

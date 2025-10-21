@@ -11,6 +11,7 @@ import type {
 } from '@src/model';
 import type { ModelRelationships } from '@src/model';
 import type { SerializerOptions, StructuralSerializerOptions } from '@src/serializer';
+import type { LoggerConfig } from '@src/utils';
 
 import type Collection from './Collection';
 import type { SchemaInstance } from './Schema';
@@ -88,6 +89,7 @@ export interface SchemaConfig<
 > {
   identityManager?: TIdentityManager;
   globalSerializerConfig?: TGlobalConfig;
+  logging?: LoggerConfig;
 }
 
 /**

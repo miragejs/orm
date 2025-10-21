@@ -6,7 +6,7 @@
  * const error = new MirageError('Something went wrong');
  * console.log(error.message); // => '[Mirage]: Something went wrong'
  */
-export class MirageError extends Error {
+export default class MirageError extends Error {
   constructor(message: string) {
     super(`[Mirage]: ${message}`);
   }

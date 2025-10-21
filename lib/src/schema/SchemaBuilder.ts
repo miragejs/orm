@@ -1,6 +1,6 @@
 import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
 import type { StructuralSerializerOptions } from '@src/serializer';
-import { MirageError } from '@src/utils';
+import { MirageError, type LoggerConfig } from '@src/utils';
 
 import Schema, { type SchemaInstance } from './Schema';
 import type { SchemaCollections, SchemaConfig } from './types';
@@ -34,6 +34,7 @@ export default class SchemaBuilder<
   private _collections?: TCollections;
   private _identityManager?: TIdentityManager;
   private _globalSerializerConfig?: StructuralSerializerOptions;
+  private _loggingConfig?: LoggerConfig;
 
   /**
    * Creates a new SchemaBuilder instance.
@@ -102,6 +103,7 @@ export default class SchemaBuilder<
     builder._collections = collections;
     builder._identityManager = this._identityManager;
     builder._globalSerializerConfig = this._globalSerializerConfig;
+    builder._loggingConfig = this._loggingConfig;
     return builder;
   }
 
@@ -128,6 +130,7 @@ export default class SchemaBuilder<
     builder._collections = this._collections;
     builder._identityManager = identityManager;
     builder._globalSerializerConfig = this._globalSerializerConfig;
+    builder._loggingConfig = this._loggingConfig;
     return builder;
   }
 
@@ -154,6 +157,31 @@ export default class SchemaBuilder<
     builder._collections = this._collections;
     builder._identityManager = this._identityManager;
     builder._globalSerializerConfig = config;
+    builder._loggingConfig = this._loggingConfig;
+    return builder;
+  }
+
+  /**
+   * Sets the logging configuration for this schema.
+   *
+   * The logging config enables debug output for database operations, validations,
+   * and other schema behavior. This is useful for debugging test setup and understanding
+   * how the ORM is behaving.
+   * @param config - The logging configuration (enabled, level, prefix)
+   * @returns A new SchemaBuilder instance with the specified logging config
+   * @example
+   * ```typescript
+   * const builder = schema()
+   *   .logging({ enabled: true, level: 'debug' })
+   *   .collections({ users: userCollection });
+   * ```
+   */
+  logging(config: LoggerConfig): SchemaBuilder<TCollections, TIdentityManager, TGlobalConfig> {
+    const builder = new SchemaBuilder<TCollections, TIdentityManager, TGlobalConfig>();
+    builder._collections = this._collections;
+    builder._identityManager = this._identityManager;
+    builder._globalSerializerConfig = this._globalSerializerConfig;
+    builder._loggingConfig = config;
     return builder;
   }
 
@@ -190,6 +218,7 @@ export default class SchemaBuilder<
     const config = {
       identityManager: this._identityManager,
       globalSerializerConfig: this._globalSerializerConfig,
+      logging: this._loggingConfig,
     } as SchemaConfig<TIdentityManager, TGlobalConfig>;
 
     return new Schema(this._collections, config) as SchemaInstance<
