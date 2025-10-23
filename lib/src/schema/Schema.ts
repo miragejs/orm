@@ -1,12 +1,17 @@
 import { createDatabase, type DbInstance } from '@src/db';
 import { StringIdentityManager } from '@src/id-manager';
 import type { ModelTemplate } from '@src/model';
-import { Serializer, type GlobalSerializerConfig, type SerializerConfig } from '@src/serializer';
+import {
+  Serializer,
+  type SerializerOptions,
+  type StructuralSerializerOptions,
+} from '@src/serializer';
+import { Logger, MirageError } from '@src/utils';
 
-import SchemaCollection, { createCollection } from './SchemaCollection';
+import Collection, { createCollection } from './Collection';
 import type {
   SchemaCollectionAccessors,
-  SchemaCollectionConfig,
+  CollectionConfig,
   SchemaCollections,
   SchemaConfig,
   SchemaDbCollections,
@@ -25,14 +30,24 @@ export default class Schema<
   public readonly identityManager: TConfig extends SchemaConfig<infer TIdentityManager, any>
     ? TIdentityManager
     : StringIdentityManager;
+  public readonly logger?: Logger;
 
-  private _collections: Map<string, SchemaCollection<any, any, any, any, any>> = new Map();
-  private _globalSerializerConfig?: GlobalSerializerConfig;
+  private _collections: Map<string, Collection<any, any, any, any, any>> = new Map();
+  private _globalSerializerConfig?: StructuralSerializerOptions;
 
   constructor(collections: TCollections, config?: TConfig) {
     this.db = createDatabase<SchemaDbCollections<TCollections>>();
     this.identityManager = config?.identityManager ?? new StringIdentityManager();
     this._globalSerializerConfig = config?.globalSerializerConfig;
+
+    // Create logger if logging is enabled
+    if (config?.logging?.enabled) {
+      this.logger = new Logger(config.logging);
+      this.logger.debug('Schema initialized', {
+        collections: Object.keys(collections),
+      });
+    }
+
     this._registerCollections(collections);
   }
 
@@ -43,19 +58,66 @@ export default class Schema<
    */
   getCollection<K extends keyof TCollections>(
     collectionName: K,
-  ): TCollections[K] extends SchemaCollectionConfig<
+  ): TCollections[K] extends CollectionConfig<
     infer TTemplate,
     infer TRelationships,
     infer TFactory,
-    infer TSerializer
+    infer TSerializer,
+    any
   >
-    ? SchemaCollection<TCollections, TTemplate, TRelationships, TFactory, TSerializer>
+    ? Collection<TCollections, TTemplate, TRelationships, TFactory, TSerializer>
     : never {
     const collection = this._collections.get(collectionName as string);
     if (!collection) {
-      throw new Error(`Collection '${String(collectionName)}' not found`);
+      throw new MirageError(`Collection '${String(collectionName)}' not found`);
     }
     return collection as any;
+  }
+
+  /**
+   * Load all seeds for all collections in the schema.
+   * This will run all seed scenarios for each collection.
+   * To load specific scenarios, use collection.loadSeeds(scenarioId) on individual collections.
+   * @example
+   * ```typescript
+   * // Load all seeds for all collections
+   * await schema.loadSeeds();
+   *
+   * // Or load specific scenario for a single collection
+   * await schema.users.loadSeeds('development');
+   * ```
+   */
+  async loadSeeds(): Promise<void> {
+    this.logger?.info('Loading seeds for all collections', {
+      collections: Array.from(this._collections.keys()),
+    });
+
+    for (const collection of this._collections.values()) {
+      await collection.loadSeeds();
+    }
+
+    this.logger?.info('All seeds loaded successfully');
+  }
+
+  /**
+   * Load all fixtures for all collections in the schema.
+   * This will insert all fixture records into each collection's database.
+   * @example
+   * ```typescript
+   * // Load all fixtures for all collections
+   * await schema.loadFixtures();
+   * ```
+   */
+  async loadFixtures(): Promise<void> {
+    this.logger?.info('Loading fixtures for all collections', {
+      collections: Array.from(this._collections.keys()),
+    });
+
+    for (const collection of this._collections.values()) {
+      await collection.loadFixtures();
+    }
+
+    this.logger?.info('All fixtures loaded successfully');
   }
 
   /**
@@ -63,9 +125,24 @@ export default class Schema<
    * @param collections - Collection configurations to register
    */
   private _registerCollections(collections: TCollections): void {
+    this.logger?.debug('Registering collections', {
+      count: Object.keys(collections).length,
+      names: Object.keys(collections),
+    });
+
+    // Track collections with auto-loading fixtures
+    const autoLoadCollections: any[] = [];
+
     for (const [collectionName, collectionConfig] of Object.entries(collections)) {
-      const { model, factory, relationships, serializerConfig, serializerInstance } =
-        collectionConfig;
+      const {
+        model,
+        factory,
+        relationships,
+        serializerConfig,
+        serializerInstance,
+        seeds,
+        fixtures,
+      } = collectionConfig;
       const identityManager = collectionConfig.identityManager ?? this.identityManager;
 
       // Determine the final serializer to use
@@ -90,6 +167,8 @@ export default class Schema<
         identityManager,
         relationships,
         serializer: finalSerializer,
+        seeds,
+        fixtures,
       });
       this._collections.set(collectionName, collection);
 
@@ -98,6 +177,29 @@ export default class Schema<
         enumerable: true,
         get: () => this._collections.get(collectionName),
       });
+
+      // Track if fixtures should be auto-loaded
+      if (fixtures?.strategy === 'auto') {
+        autoLoadCollections.push(collection);
+      }
+    }
+
+    this.logger?.debug('Collections registered successfully', {
+      count: this._collections.size,
+    });
+
+    // Auto-load fixtures for collections with 'auto' strategy
+    // This is done synchronously after all collections are registered
+    // to ensure relationships are set up properly
+    if (autoLoadCollections.length > 0) {
+      this.logger?.info('Auto-loading fixtures', {
+        collections: autoLoadCollections.map((c) => c.collectionName),
+      });
+      for (const collection of autoLoadCollections) {
+        // Load fixtures synchronously using a non-async approach
+        // Since we're in a constructor context, we need to handle this carefully
+        void collection.loadFixtures();
+      }
     }
   }
 
@@ -110,8 +212,8 @@ export default class Schema<
    */
   private _mergeConfigs<TTemplate extends ModelTemplate>(
     _template: TTemplate,
-    collectionConfig?: SerializerConfig<TTemplate>,
-  ): SerializerConfig<TTemplate> | undefined {
+    collectionConfig?: SerializerOptions<TTemplate>,
+  ): SerializerOptions<TTemplate> | undefined {
     const global = this._globalSerializerConfig;
 
     if (!global && !collectionConfig) {

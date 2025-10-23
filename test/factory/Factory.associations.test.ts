@@ -1,9 +1,9 @@
 import { associations, belongsTo, hasMany, type BelongsTo, type HasMany } from '@src/associations';
 import { factory, type Factory, type TraitDefinition } from '@src/factory';
 import { model } from '@src/model';
-import { collection, schema, type SchemaCollectionConfig } from '@src/schema';
+import { collection, schema, type CollectionConfig } from '@src/schema';
 
-// Define attribute types
+// Define test model attributes
 type UserAttrs = {
   id: string;
   name: string;
@@ -35,13 +35,13 @@ type TagAttrs = {
   active?: boolean;
 };
 
-// Create models
+// Create test models
 const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
 const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
 const commentModel = model().name('comment').collection('comments').attrs<CommentAttrs>().create();
 const tagModel = model().name('tag').collection('tags').attrs<TagAttrs>().create();
 
-// Define model template types
+// Create test model types
 type UserModel = typeof userModel;
 type PostModel = typeof postModel;
 type CommentModel = typeof commentModel;
@@ -49,7 +49,7 @@ type TagModel = typeof tagModel;
 
 // Define test schema type
 type TestSchema = {
-  users: SchemaCollectionConfig<
+  users: CollectionConfig<
     UserModel,
     {},
     Factory<
@@ -61,7 +61,7 @@ type TestSchema = {
       }
     >
   >;
-  posts: SchemaCollectionConfig<
+  posts: CollectionConfig<
     PostModel,
     {
       author: BelongsTo<UserModel, 'authorId'>;
@@ -76,7 +76,7 @@ type TestSchema = {
       }
     >
   >;
-  comments: SchemaCollectionConfig<
+  comments: CollectionConfig<
     CommentModel,
     {
       post: BelongsTo<PostModel, 'postId'>;
@@ -90,7 +90,7 @@ type TestSchema = {
       }
     >
   >;
-  tags: SchemaCollectionConfig<
+  tags: CollectionConfig<
     TagModel,
     {},
     Factory<
@@ -104,7 +104,7 @@ type TestSchema = {
   >;
 };
 
-// Define relationships
+// Setup test relationships
 const postRelationships = {
   author: belongsTo(userModel, { foreignKey: 'authorId' }),
   comments: hasMany(commentModel),

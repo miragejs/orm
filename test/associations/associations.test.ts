@@ -1,7 +1,7 @@
 import { associations } from '@src/associations';
 import { model } from '@src/model';
 
-// Setup test models
+// Define test model attributes
 interface UserAttrs {
   id: string;
   name: string;
@@ -21,6 +21,7 @@ interface CommentAttrs {
   postId: number;
 }
 
+// Define test models
 const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
 const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
 const commentModel = model().name('comment').collection('comments').attrs<CommentAttrs>().create();
@@ -84,7 +85,7 @@ describe('associations', () => {
     });
   });
 
-  describe('integration with relationship definitions', () => {
+  describe('Integration with relationship definitions', () => {
     it('should create valid relationship configurations', () => {
       const userRelationships = {
         posts: associations.hasMany(postModel),

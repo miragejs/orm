@@ -1,8 +1,9 @@
 import { associations, BelongsTo, HasMany } from '@src/associations';
 import { model, Model } from '@src/model';
-import { collection, schema, SchemaCollectionConfig } from '@src/schema';
+import { collection, schema, type CollectionConfig } from '@src/schema';
+import { Serializer } from '@src/serializer';
 
-// Setup test models
+// Define test model attributes
 interface UserAttrs {
   id: string;
   name: string;
@@ -15,21 +16,47 @@ interface PostAttrs {
   content: string;
 }
 
-const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
-const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
+// Define model JSON types
+interface UserJSON {
+  id: string;
+  name: string;
+}
 
+interface PostJSON {
+  post: {
+    id: string;
+    title: string;
+  };
+}
+
+// Create test models
+const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<UserAttrs>()
+  .json<UserJSON>()
+  .create();
+
+const postModel = model()
+  .name('post')
+  .collection('posts')
+  .attrs<PostAttrs>()
+  .json<PostJSON>()
+  .create();
+
+// Create test model types
 type UserModel = typeof userModel;
 type PostModel = typeof postModel;
 
-// Test shareable schema type
+// Define test schema type
 type TestSchema = {
-  users: SchemaCollectionConfig<
+  users: CollectionConfig<
     UserModel,
     {
       posts: HasMany<PostModel>;
     }
   >;
-  posts: SchemaCollectionConfig<
+  posts: CollectionConfig<
     PostModel,
     {
       author: BelongsTo<UserModel, 'authorId'>;
@@ -37,11 +64,11 @@ type TestSchema = {
   >;
 };
 
-// Test model classes
+// Create test model classes
 const UserModelClass = Model.define<UserModel, TestSchema>(userModel);
 const PostModelClass = Model.define<PostModel, TestSchema>(postModel);
 
-// Test schema instance
+// Create test schema instance
 const testSchema = schema()
   .collections({
     users: collection()
@@ -61,10 +88,11 @@ const testSchema = schema()
 
 describe('Model', () => {
   beforeEach(() => {
+    // Clear test database
     testSchema.db.emptyData();
   });
 
-  describe('constructor', () => {
+  describe('Constructor', () => {
     it('should create a new model with basic attributes', () => {
       const user = new UserModelClass({
         attrs: { name: 'John Doe', email: 'john@example.com' },
@@ -364,9 +392,7 @@ describe('Model', () => {
           schema: testSchema,
         }).save();
 
-        // Update with a relationship
         post.update({ author });
-
         author.reload();
 
         expect(post.authorId).toBe(author.id);
@@ -458,14 +484,13 @@ describe('Model', () => {
         testSchema.db.getCollection('users').update(author.id!, { postIds: [post.id!] });
 
         const reloadedAuthor = author.reload();
-
         expect(reloadedAuthor.postIds).toEqual([post.id]);
         expect(reloadedAuthor.posts.length).toBe(1);
       });
     });
   });
 
-  describe('relationship methods', () => {
+  describe('Relationship methods', () => {
     describe('link()', () => {
       it('should link a belongsTo relationship', () => {
         const author = new UserModelClass({
@@ -683,7 +708,6 @@ describe('Model', () => {
         }).save();
 
         const relatedPosts = author.related('posts');
-
         expect(relatedPosts).toBeDefined();
         expect(relatedPosts?.length).toBe(2);
       });
@@ -698,7 +722,6 @@ describe('Model', () => {
         }).save();
 
         const relatedAuthor = post.related('author');
-
         expect(relatedAuthor).toBeNull();
       });
 
@@ -712,14 +735,13 @@ describe('Model', () => {
         }).save();
 
         const relatedPosts = author.related('posts');
-
         expect(relatedPosts).toBeDefined();
         expect(relatedPosts?.length).toBe(0);
       });
     });
   });
 
-  describe('serialization', () => {
+  describe('Serialization', () => {
     it('should serialize to JSON', () => {
       const user = new UserModelClass({
         attrs: { name: 'John Doe', email: 'john@example.com' },
@@ -757,12 +779,63 @@ describe('Model', () => {
       }).save();
 
       const json = post.toJSON();
-
       expect(json).toEqual({
         id: post.id,
         title: 'Test Post',
         content: 'Test content',
         authorId: author.id,
+      });
+    });
+
+    describe('with custom Serializer', () => {
+      it('should use provided serializer when serializing model', () => {
+        const userSerializer = new Serializer<UserModel, UserJSON>(userModel, {
+          attrs: ['id', 'name'],
+        });
+
+        const user = new UserModelClass({
+          attrs: { name: 'John Doe', email: 'secret@example.com' },
+          relationships: {
+            posts: associations.hasMany(postModel),
+          },
+          schema: testSchema,
+          serializer: userSerializer,
+        }).save();
+
+        const json = user.toJSON();
+
+        expect(json).toEqual({
+          id: user.id,
+          name: 'John Doe',
+        });
+        expect(json).not.toHaveProperty('email');
+      });
+
+      it('should use provided serializer with root wrapping for post model', () => {
+        const postSerializer = new Serializer<PostModel, PostJSON>(postModel, {
+          attrs: ['id', 'title'],
+          root: true,
+        });
+
+        const post = new PostModelClass({
+          attrs: { title: 'Test Post', content: 'Secret content' },
+          relationships: {
+            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+          },
+          schema: testSchema,
+          serializer: postSerializer,
+        }).save();
+
+        const json = post.toJSON();
+
+        expect(json).toEqual({
+          post: {
+            id: post.id,
+            title: 'Test Post',
+          },
+        });
+        expect(json).not.toHaveProperty('content');
+        expect(json).not.toHaveProperty('authorId');
       });
     });
   });

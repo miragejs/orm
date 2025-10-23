@@ -2,7 +2,7 @@ import { Factory } from '@src/factory';
 import { model, type ModelInstance } from '@src/model';
 import { type SchemaCollections, type SchemaInstance } from '@src/schema';
 
-// Setup test models
+// Define test model attributes
 interface UserAttrs {
   age?: number;
   createdAt?: string | null;
@@ -12,12 +12,14 @@ interface UserAttrs {
   role?: string;
 }
 
+// Create test model
 const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
 
+// Create test model type
 type UserModel = typeof userModel;
 
 describe('Factory', () => {
-  describe('constructor', () => {
+  describe('Constructor', () => {
     it('should initialize with token, attributes, traits, and afterCreate hook', () => {
       const attributes = {
         name: 'John Doe',
@@ -32,7 +34,7 @@ describe('Factory', () => {
         },
       };
       const afterCreate = (model: ModelInstance<UserModel>) => {
-        model.processed = true;
+        (model as any).processed = true;
       };
       const userFactory = new Factory(userModel, attributes, traits, undefined, afterCreate);
 
@@ -53,7 +55,7 @@ describe('Factory', () => {
     });
   });
 
-  describe('build method', () => {
+  describe('Build method', () => {
     const userFactory = new Factory(
       userModel,
       {
@@ -232,7 +234,7 @@ describe('Factory', () => {
     });
   });
 
-  describe('error handling', () => {
+  describe('Error handling', () => {
     it('should throw error for circular dependencies in attributes', () => {
       expect(() => {
         const factory = new Factory(

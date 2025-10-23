@@ -122,9 +122,9 @@ export type {
 // ----------------------------------------------------------------------------
 export { collection, schema } from './schema';
 export type {
+  Collection,
+  CollectionConfig,
   CollectionCreateInput,
-  SchemaCollection,
-  SchemaCollectionConfig,
   SchemaCollections,
   SchemaInstance,
 } from './schema';

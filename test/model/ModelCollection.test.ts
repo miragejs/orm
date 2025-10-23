@@ -1,26 +1,28 @@
 import { Model, ModelCollection, model, type ModelInstance } from '@src/model';
-import { collection, schema, type SchemaCollectionConfig } from '@src/schema';
+import { collection, schema, type CollectionConfig } from '@src/schema';
 
-// Setup test models
+// Define test model attributes
 interface UserAttrs {
   id: string;
   email: string;
   name: string;
 }
 
+// Create test model
 const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
 
+// Create test model type
 type UserModel = typeof userModel;
 
-// Test schema type
+// Define test schema type
 type TestSchema = {
-  users: SchemaCollectionConfig<UserModel>;
+  users: CollectionConfig<UserModel>;
 };
 
-// Test model class
+// Define model class
 const UserModelClass = Model.define<UserModel, TestSchema>(userModel);
 
-// Test schema instance
+// Create schema instance
 const testSchema = schema()
   .collections({
     users: collection().model(userModel).create(),
@@ -53,7 +55,7 @@ describe('ModelCollection', () => {
     testSchema.db.emptyData();
   });
 
-  describe('constructor', () => {
+  describe('Constructor', () => {
     it('should initialize with default values', () => {
       expect(userCollection.collectionName).toBe('users');
       expect(Array.from(userCollection)).toStrictEqual([user1, user2]);
@@ -68,7 +70,7 @@ describe('ModelCollection', () => {
     });
   });
 
-  describe('getters', () => {
+  describe('Getters', () => {
     it('should return correct length', () => {
       expect(userCollection.length).toBe(2);
 
@@ -105,7 +107,7 @@ describe('ModelCollection', () => {
     });
   });
 
-  describe('array-like iteration methods', () => {
+  describe('Array-like iteration methods', () => {
     it('should execute forEach for each model', () => {
       const mockCallback = vi.fn();
       userCollection.forEach(mockCallback);
@@ -156,7 +158,7 @@ describe('ModelCollection', () => {
     });
   });
 
-  describe('array-like utility methods', () => {
+  describe('Array-like utility methods', () => {
     it('should concatenate collections and arrays', () => {
       const otherCollection = new ModelCollection<UserModel, TestSchema>(userModel, [user3]);
       const concatenated = userCollection.concat(otherCollection);
@@ -345,7 +347,7 @@ describe('ModelCollection', () => {
     });
   });
 
-  describe('edge cases', () => {
+  describe('Edge cases', () => {
     it('should handle empty collection operations', () => {
       const emptyCollection = new ModelCollection<UserModel, TestSchema>(userModel);
 
@@ -395,7 +397,7 @@ describe('ModelCollection', () => {
         .create();
 
       type CommentSchema = {
-        comments: SchemaCollectionConfig<typeof CommentModel>;
+        comments: CollectionConfig<typeof CommentModel>;
       };
 
       const CommentModelClass = Model.define<typeof CommentModel, CommentSchema>(CommentModel);

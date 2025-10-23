@@ -1,8 +1,8 @@
 import { factory } from '@src/factory';
-import { model, type ModelTemplate } from '@src/model';
-import { collection, schema, type SchemaCollectionConfig } from '@src/schema';
+import { model } from '@src/model';
+import { collection, schema, type CollectionConfig } from '@src/schema';
 
-// Setup test models
+// Define test model attributes
 interface UserAttrs {
   id: string;
   name: string;
@@ -19,12 +19,14 @@ interface PostAttrs {
   userId: string;
 }
 
+// Create test models
 const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
 const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
 
+// Define test schema type
 type TestSchema = {
-  users: SchemaCollectionConfig<typeof userModel>;
-  posts: SchemaCollectionConfig<typeof postModel>;
+  users: CollectionConfig<typeof userModel>;
+  posts: CollectionConfig<typeof postModel>;
 };
 
 describe('Factory with Schema', () => {
@@ -89,14 +91,14 @@ describe('Factory with Schema', () => {
           role: 'admin',
           afterCreate: (model) => {
             hooksCalled.push('admin');
-            model.adminProcessed = true;
+            (model as any).adminProcessed = true;
           },
         },
         premium: {
           role: 'premium',
           afterCreate: (model) => {
             hooksCalled.push('premium');
-            model.premiumProcessed = true;
+            (model as any).premiumProcessed = true;
           },
         },
       })

@@ -1,5 +1,7 @@
 import ModelBuilder, { model } from '@src/model/ModelBuilder';
+import { MirageError } from '@src/utils';
 
+// Define test model attributes
 interface UserAttrs {
   id: string;
   name: string;
@@ -49,7 +51,7 @@ describe('ModelBuilder', () => {
     });
   });
 
-  describe('model() function', () => {
+  describe('model()', () => {
     it('should create a ModelBuilder instance', () => {
       const builder = model();
       expect(builder).toBeInstanceOf(ModelBuilder);
@@ -113,6 +115,60 @@ describe('ModelBuilder', () => {
       expect(userModel.modelName).toBe('user');
       expect(userModel.collectionName).toBe('users');
       expect(typeof userModel.key).toBe('symbol');
+    });
+  });
+
+  describe('Validation', () => {
+    it('should throw error for empty model name', () => {
+      expect(() => {
+        model().name('').collection('users').create();
+      }).toThrow(MirageError);
+
+      expect(() => {
+        model().name('').collection('users').create();
+      }).toThrow('Model name must be a non-empty string');
+    });
+
+    it('should throw error for whitespace-only model name', () => {
+      expect(() => {
+        model().name('   ').collection('users').create();
+      }).toThrow('Model name must be a non-empty string');
+    });
+
+    it('should throw error for empty collection name', () => {
+      expect(() => {
+        model().name('user').collection('').create();
+      }).toThrow(MirageError);
+
+      expect(() => {
+        model().name('user').collection('').create();
+      }).toThrow('Collection name must be a non-empty string');
+    });
+
+    it('should throw error for whitespace-only collection name', () => {
+      expect(() => {
+        model().name('user').collection('   ').create();
+      }).toThrow('Collection name must be a non-empty string');
+    });
+
+    it('should throw error when name() is not called before create()', () => {
+      expect(() => {
+        model().collection('users').create();
+      }).toThrow(MirageError);
+
+      expect(() => {
+        model().collection('users').create();
+      }).toThrow('Model name is required');
+    });
+
+    it('should throw error when collection() is not called before create()', () => {
+      expect(() => {
+        model().name('user').create();
+      }).toThrow(MirageError);
+
+      expect(() => {
+        model().name('user').create();
+      }).toThrow('Collection name is required');
     });
   });
 });

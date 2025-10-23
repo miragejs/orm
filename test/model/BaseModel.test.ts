@@ -2,19 +2,20 @@ import { DbCollection } from '@src/db';
 import { NumberIdentityManager } from '@src/id-manager';
 import { BaseModel } from '@src/model';
 
-// Setup test models
+// Define test model attributes
 interface UserAttrs {
   id: string;
   name: string;
   email: string;
 }
 
-const userDbCollection = new DbCollection<UserAttrs>('users');
-
-let user: BaseModel<UserAttrs>;
-
 describe('BaseModel', () => {
+  // Create test collection
+  const userDbCollection = new DbCollection<UserAttrs>('users');
+
+  let user: BaseModel<UserAttrs>;
   beforeEach(() => {
+    // Create test base model instance
     user = new BaseModel<UserAttrs>(
       'user',
       'users',
@@ -25,10 +26,11 @@ describe('BaseModel', () => {
       userDbCollection,
     );
 
+    // Clear test collection
     userDbCollection.clear();
   });
 
-  describe('constructor', () => {
+  describe('Constructor', () => {
     it('should initialize with default values', () => {
       expect(user.attrs).toEqual({ name: 'John', email: 'john@example.com', id: null });
       expect(user.modelName).toBe('user');
@@ -36,7 +38,7 @@ describe('BaseModel', () => {
     });
   });
 
-  describe('core functionality', () => {
+  describe('Core functionality', () => {
     it('should provide id getter', () => {
       expect(user.id).toBeNull();
       user.save();
@@ -86,7 +88,7 @@ describe('BaseModel', () => {
     });
   });
 
-  describe('serialization', () => {
+  describe('Serialization', () => {
     it('should serialize to JSON', () => {
       user.save();
       expect(user.toJSON()).toEqual({

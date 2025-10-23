@@ -228,30 +228,6 @@ export default class ModelCollection<
     return new ModelCollection(this._template, reversedModels, this._serializer);
   }
 
-  /**
-   * Convert the collection to a plain array
-   * @returns An array of the models
-   */
-  toArray(): ModelInstance<TTemplate, TSchema, TSerializer>[] {
-    return [...this.models];
-  }
-
-  /**
-   * Get a string representation of the collection
-   * @returns A string representation showing the collection name and count
-   */
-  toString(): string {
-    return `collection:${this.collectionName}(${this.models.map((model) => model.toString()).join(', ')})`;
-  }
-
-  /**
-   * Make the collection iterable
-   * @returns An iterator for the models
-   */
-  [Symbol.iterator](): Iterator<ModelInstance<TTemplate, TSchema, TSerializer>> {
-    return this.models[Symbol.iterator]();
-  }
-
   // -- CRUD OPERATIONS --
 
   /**
@@ -320,6 +296,24 @@ export default class ModelCollection<
     return this;
   }
 
+  // -- SERIALIZATION --
+
+  /**
+   * Convert the collection to a plain array
+   * @returns An array of the models
+   */
+  toArray(): ModelInstance<TTemplate, TSchema, TSerializer>[] {
+    return [...this.models];
+  }
+
+  /**
+   * Get a string representation of the collection
+   * @returns A string representation showing the collection name and count
+   */
+  toString(): string {
+    return `collection:${this.collectionName}(${this.models.map((model) => model.toString()).join(', ')})`;
+  }
+
   /**
    * Convert the collection to JSON
    * Uses serializer if configured, otherwise returns array of raw attributes
@@ -339,5 +333,13 @@ export default class ModelCollection<
       return (this._serializer as any).serializeCollection(this) as any;
     }
     return this.models.map((model) => model.attrs) as any;
+  }
+
+  /**
+   * Make the collection iterable
+   * @returns An iterator for the models
+   */
+  [Symbol.iterator](): Iterator<ModelInstance<TTemplate, TSchema, TSerializer>> {
+    return this.models[Symbol.iterator]();
   }
 }

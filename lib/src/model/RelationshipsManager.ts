@@ -101,10 +101,10 @@ export default class RelationshipsManager<
         const targetCollection = this._schema.getCollection(targetModel.collectionName);
 
         if (type === 'belongsTo') {
-          const id = rawValue as string | number;
+          const id = rawValue as any;
           processedValue = targetCollection.find(id);
         } else if (type === 'hasMany') {
-          const ids = rawValue as (string | number)[];
+          const ids = rawValue as any[];
           const models = ids
             .map((id) => targetCollection.find(id))
             .filter((m): m is ModelInstance<ModelTemplate, TSchema> => isModelInstance<TSchema>(m));
@@ -245,7 +245,7 @@ export default class RelationshipsManager<
         // Get old target for inverse update
         const targetCollectionName = relationship.targetModel.collectionName;
         const targetCollection = this._schema.getCollection(targetCollectionName);
-        const oldTarget = targetCollection.find(currentForeignKeyValue as string);
+        const oldTarget = targetCollection.find(currentForeignKeyValue as any);
 
         // Update inverse relationship on old target
         if (oldTarget && isModelInstance<TSchema>(oldTarget)) {
@@ -290,7 +290,7 @@ export default class RelationshipsManager<
         const targetCollection = this._schema.getCollection(targetCollectionName);
 
         currentIds.forEach((id) => {
-          const oldTarget = targetCollection.find(id as string);
+          const oldTarget = targetCollection.find(id as any);
           if (oldTarget && isModelInstance<TSchema>(oldTarget)) {
             this._updateInverseRelationship(relationshipName as string, oldTarget, 'unlink');
           }
@@ -419,7 +419,7 @@ export default class RelationshipsManager<
         return null;
       }
 
-      return targetCollection.find(singleId as string) as RelationshipTargetModel<
+      return targetCollection.find(singleId as any) as RelationshipTargetModel<
         TSchema,
         TRelationships,
         K
@@ -439,7 +439,7 @@ export default class RelationshipsManager<
       }
 
       const relatedModels = idsArray
-        .map((id) => targetCollection.find(id as string))
+        .map((id) => targetCollection.find(id as any))
         .filter((model): model is ModelInstance<ModelTemplate, TSchema> => model !== null);
 
       return new ModelCollection(targetModel, relatedModels) as RelationshipTargetModel<
@@ -619,7 +619,7 @@ export default class RelationshipsManager<
 
     // Update the target model directly in the database to avoid recursion
     if (Object.keys(updateAttrs).length > 0) {
-      this._schema.db.getCollection(targetCollectionName).update(targetModelId, updateAttrs);
+      this._schema.db.getCollection(targetCollectionName).update(targetModelId, updateAttrs as any);
     }
   }
 

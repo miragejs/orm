@@ -5,7 +5,7 @@ import type {
   FactoryAssociations,
 } from '@src/associations';
 import { ModelCollection, type ModelInstance, type ModelTemplate } from '@src/model';
-import { type SchemaInstance, type SchemaCollection, type SchemaCollections } from '@src/schema';
+import { type SchemaInstance, type Collection, type SchemaCollections } from '@src/schema';
 import { MirageError } from '@src/utils';
 
 /**
@@ -87,14 +87,14 @@ export default class AssociationsManager<
   }
 
   private _processCreate(
-    collection: SchemaCollection<TSchema, any, any, any, any>,
+    collection: Collection<TSchema, any, any, any, any>,
     traitsAndDefaults?: AssociationTraitsAndDefaults,
   ): ModelInstance<any, TSchema, any> {
     return collection.create(...(traitsAndDefaults || ([] as any)));
   }
 
   private _processCreateMany(
-    collection: SchemaCollection<TSchema, any, any, any, any>,
+    collection: Collection<TSchema, any, any, any, any>,
     count: number,
     traitsAndDefaults?: AssociationTraitsAndDefaults,
   ): ModelCollection<any, TSchema, any> {
@@ -102,7 +102,7 @@ export default class AssociationsManager<
   }
 
   private _processLink(
-    collection: SchemaCollection<TSchema, any, any, any, any>,
+    collection: Collection<TSchema, any, any, any, any>,
     query?: AssociationQuery,
     traitsAndDefaults?: AssociationTraitsAndDefaults,
   ): ModelInstance<any, TSchema, any> {
@@ -110,8 +110,11 @@ export default class AssociationsManager<
     let model: ModelInstance<any, TSchema, any> | null = null;
 
     if (query) {
-      // Use where to get matches, then shuffle and pick first
-      const matches = collection.where(query as any);
+      // Use findMany to get matches, then shuffle and pick first
+      const matches =
+        typeof query === 'function'
+          ? collection.findMany({ where: query } as any)
+          : collection.findMany(query as any);
       if (matches.length > 0) {
         const shuffled = this._shuffle(matches.models);
         model = shuffled[0];
@@ -134,7 +137,7 @@ export default class AssociationsManager<
   }
 
   private _processLinkMany(
-    collection: SchemaCollection<TSchema, any, any, any, any>,
+    collection: Collection<TSchema, any, any, any, any>,
     template: ModelTemplate,
     count: number,
     query?: AssociationQuery,
@@ -144,7 +147,10 @@ export default class AssociationsManager<
     let models: ModelCollection<any, TSchema, any>;
 
     if (query) {
-      models = collection.where(query as any);
+      models =
+        typeof query === 'function'
+          ? collection.findMany({ where: query } as any)
+          : collection.findMany(query as any);
     } else {
       models = collection.all();
     }

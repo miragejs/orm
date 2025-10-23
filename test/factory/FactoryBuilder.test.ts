@@ -2,6 +2,7 @@ import { Factory, FactoryBuilder, factory } from '@src/factory';
 import { model, ModelInstance } from '@src/model';
 import type { SchemaCollections, SchemaInstance } from '@src/schema';
 
+// Define test model attributes
 interface UserAttrs {
   id: string;
   createdAt?: string | null;
@@ -10,7 +11,7 @@ interface UserAttrs {
   role?: string;
 }
 
-// Extended type for models that have been processed by afterCreate hooks
+// Define extended type for models that have been processed by afterCreate hooks
 interface ProcessedUserAttrs extends UserAttrs {
   processed?: boolean;
   adminProcessed?: boolean;
@@ -19,15 +20,17 @@ interface ProcessedUserAttrs extends UserAttrs {
   extendedProcessed?: boolean;
 }
 
+// Create test models
 const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
-const processedUserMOdel = model()
+
+const processedUserModel = model()
   .name('processedUser')
   .collection('processedUsers')
   .attrs<ProcessedUserAttrs>()
   .create();
 
 describe('FactoryBuilder', () => {
-  describe('basic factory creation', () => {
+  describe('Constructor', () => {
     it('should create factory using builder pattern', () => {
       const userFactory = factory()
         .model(userModel)
@@ -108,7 +111,7 @@ describe('FactoryBuilder', () => {
       let schemaReceived: any = null;
 
       const userFactory = factory<SchemaCollections>()
-        .model(processedUserMOdel)
+        .model(processedUserModel)
         .attrs({ name: 'John' })
         .afterCreate((model, schema) => {
           hookCalled = true;
@@ -126,7 +129,7 @@ describe('FactoryBuilder', () => {
         name: 'John',
         email: 'john@example.com',
         role: 'user',
-      } as unknown as ModelInstance<typeof processedUserMOdel, SchemaCollections>;
+      } as unknown as ModelInstance<typeof processedUserModel, SchemaCollections>;
 
       const result = userFactory.processAfterCreateHooks(schemaMock, user);
 
@@ -137,7 +140,7 @@ describe('FactoryBuilder', () => {
     });
   });
 
-  describe('traits functionality', () => {
+  describe('Traits functionality', () => {
     it('should add traits and return new builder with merged traits', () => {
       const builder1 = factory()
         .model(userModel)
@@ -161,7 +164,7 @@ describe('FactoryBuilder', () => {
     });
   });
 
-  describe('factory extension', () => {
+  describe('Factory extension', () => {
     it('should extend existing factory using static method', () => {
       // Create base factory
       const baseFactory = factory()
@@ -206,10 +209,10 @@ describe('FactoryBuilder', () => {
     });
   });
 
-  describe('builder extend method', () => {
+  describe('Builder extend method', () => {
     it('should extend builder with additional configuration', () => {
       const baseBuilder = factory()
-        .model(processedUserMOdel)
+        .model(processedUserModel)
         .attrs({ name: 'John' })
         .traits({ admin: { role: 'admin' } })
         .create();

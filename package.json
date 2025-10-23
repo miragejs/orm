@@ -10,15 +10,17 @@
   "types": "./lib/dist/index.d.ts",
   "type": "module",
   "scripts": {
-    "build:prod": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm build",
-    "build": "tsup lib/src/index.ts --dts --out-dir lib/dist",
     "format": "prettier --check \"lib/src/**/*.ts\" \"test/**/*.ts\"",
     "format:fix": "prettier --write \"lib/src/**/*.ts\" \"test/**/*.ts\"",
     "lint": "eslint lib/src test/ --ext .ts",
     "lint:fix": "pnpm lint --fix",
+    "typecheck": "tsc --noEmit",
+    "check-all": "pnpm format && pnpm lint && pnpm typecheck",
+    "fix-all": "pnpm format:fix && pnpm lint:fix",
+    "build": "tsup lib/src/index.ts --dts --out-dir lib/dist",
+    "build:prod": "pnpm check-all && pnpm build",
     "test": "vitest run",
-    "test:dev": "vitest",
-    "typecheck": "tsc --noEmit"
+    "test:dev": "vitest"
   },
   "devDependencies": {
     "@eslint/js": "^9.27.0",

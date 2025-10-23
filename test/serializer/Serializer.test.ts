@@ -18,11 +18,11 @@ type PostAttrs = {
   authorId: string;
 };
 
-// Define test models
+// Create test models
 const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
 const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
 
-// Define model types
+// Create test model types
 type UserModel = typeof userModel;
 type PostModel = typeof postModel;
 
@@ -47,7 +47,7 @@ interface PostsJSON {
 }
 
 describe('Serializer', () => {
-  describe('basic serialization', () => {
+  describe('Constructor', () => {
     it('should serialize a model with default settings (no filtering)', () => {
       const serializer = new Serializer<UserModel>(userModel);
 
@@ -149,7 +149,7 @@ describe('Serializer', () => {
     });
   });
 
-  describe('collection serialization', () => {
+  describe('Collection serialization', () => {
     it('should serialize a collection without root wrapping', () => {
       const serializer = new Serializer<PostModel, PostJSON, PostJSON[]>(postModel, {
         attrs: ['id', 'title'],
@@ -225,7 +225,7 @@ describe('Serializer', () => {
     });
   });
 
-  describe('fallback behavior', () => {
+  describe('Fallback behavior', () => {
     it('should return raw attributes when no serializer is configured', () => {
       const userCollection = collection().model(userModel).create();
       const testSchema = schema().collections({ users: userCollection }).setup();
@@ -273,7 +273,7 @@ describe('Serializer', () => {
     });
   });
 
-  describe('serializer getters', () => {
+  describe('Serializer getters', () => {
     it('should expose modelName getter', () => {
       const serializer = new Serializer(userModel);
       expect(serializer.modelName).toBe('user');
@@ -285,7 +285,7 @@ describe('Serializer', () => {
     });
   });
 
-  describe('custom serializer extension', () => {
+  describe('Custom serializer extension', () => {
     it('should allow extending Serializer for custom logic', () => {
       class TimestampSerializer<T extends UserModel> extends Serializer<
         T,
@@ -324,7 +324,7 @@ describe('Serializer', () => {
     });
   });
 
-  describe('multiple collections with different serializers', () => {
+  describe('Multiple collections with different serializers', () => {
     it('should support different serializers for different collections', () => {
       const userSerializer = new Serializer<UserModel, UserJSON>(userModel, {
         attrs: ['id', 'name', 'email'],
@@ -376,7 +376,7 @@ describe('Serializer', () => {
     });
   });
 
-  describe('relationships serialization', () => {
+  describe('Relationships serialization', () => {
     describe('belongsTo relationships', () => {
       it('should side-load belongsTo with embed:false (default)', () => {
         const testSchema = schema()
@@ -662,7 +662,7 @@ describe('Serializer', () => {
       });
     });
 
-    describe('combined with other serializer options', () => {
+    describe('Combined with other serializer options', () => {
       it('should work with attrs filtering and relationships', () => {
         const testSchema = schema()
           .collections({
@@ -861,7 +861,7 @@ describe('Serializer', () => {
       });
     });
 
-    describe('collection serialization with relationships', () => {
+    describe('Collection serialization with relationships', () => {
       it('should serialize collection with embedded relationships', () => {
         const testSchema = schema()
           .collections({

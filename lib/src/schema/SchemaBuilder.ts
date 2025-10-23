@@ -1,5 +1,6 @@
 import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
-import type { GlobalSerializerConfig } from '@src/serializer';
+import type { StructuralSerializerOptions } from '@src/serializer';
+import { MirageError, type LoggerConfig } from '@src/utils';
 
 import Schema, { type SchemaInstance } from './Schema';
 import type { SchemaCollections, SchemaConfig } from './types';
@@ -28,11 +29,12 @@ import type { SchemaCollections, SchemaConfig } from './types';
 export default class SchemaBuilder<
   TCollections extends SchemaCollections = SchemaCollections,
   TIdentityManager extends IdentityManager<any> = StringIdentityManager,
-  TGlobalConfig extends GlobalSerializerConfig | undefined = undefined,
+  TGlobalConfig extends StructuralSerializerOptions | undefined = undefined,
 > {
   private _collections?: TCollections;
   private _identityManager?: TIdentityManager;
-  private _globalSerializerConfig?: GlobalSerializerConfig;
+  private _globalSerializerConfig?: StructuralSerializerOptions;
+  private _loggingConfig?: LoggerConfig;
 
   /**
    * Creates a new SchemaBuilder instance.
@@ -60,10 +62,48 @@ export default class SchemaBuilder<
   collections<C extends SchemaCollections>(
     collections: C,
   ): SchemaBuilder<C, TIdentityManager, TGlobalConfig> {
+    // Validate collections is not empty
+    if (Object.keys(collections).length === 0) {
+      throw new MirageError(
+        'Schema must have at least one collection. Provide collection configurations in the collections() method.',
+      );
+    }
+
+    // Validate collection names don't conflict with reserved Schema properties
+    const RESERVED_SCHEMA_PROPS = [
+      'db',
+      'identityManager',
+      'getCollection',
+      'loadSeeds',
+      'loadFixtures',
+    ];
+
+    for (const name of Object.keys(collections)) {
+      if (RESERVED_SCHEMA_PROPS.includes(name)) {
+        throw new MirageError(
+          `Collection name '${name}' conflicts with existing Schema property or method.\n\n` +
+            `The Schema instance has the following built-in properties and methods:\n` +
+            `  - schema.db: Database instance\n` +
+            `  - schema.identityManager: ID generation manager\n` +
+            `  - schema.getCollection(): Method to access collections\n` +
+            `  - schema.loadSeeds(): Method to load seed data\n` +
+            `  - schema.loadFixtures(): Method to load fixture data\n\n` +
+            `Please use a different collection name. Reserved names: ${RESERVED_SCHEMA_PROPS.join(', ')}`,
+        );
+      }
+
+      if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name)) {
+        throw new MirageError(
+          `Collection name '${name}' is not a valid JavaScript identifier. Use only letters, numbers, underscores, and dollar signs.`,
+        );
+      }
+    }
+
     const builder = new SchemaBuilder<C, TIdentityManager, TGlobalConfig>();
     builder._collections = collections;
     builder._identityManager = this._identityManager;
     builder._globalSerializerConfig = this._globalSerializerConfig;
+    builder._loggingConfig = this._loggingConfig;
     return builder;
   }
 
@@ -90,6 +130,7 @@ export default class SchemaBuilder<
     builder._collections = this._collections;
     builder._identityManager = identityManager;
     builder._globalSerializerConfig = this._globalSerializerConfig;
+    builder._loggingConfig = this._loggingConfig;
     return builder;
   }
 
@@ -109,13 +150,38 @@ export default class SchemaBuilder<
    *   .collections({ users: userCollection });
    * ```
    */
-  serializer<TConfig extends GlobalSerializerConfig>(
+  serializer<TConfig extends StructuralSerializerOptions>(
     config: TConfig,
   ): SchemaBuilder<TCollections, TIdentityManager, TConfig> {
     const builder = new SchemaBuilder<TCollections, TIdentityManager, TConfig>();
     builder._collections = this._collections;
     builder._identityManager = this._identityManager;
     builder._globalSerializerConfig = config;
+    builder._loggingConfig = this._loggingConfig;
+    return builder;
+  }
+
+  /**
+   * Sets the logging configuration for this schema.
+   *
+   * The logging config enables debug output for database operations, validations,
+   * and other schema behavior. This is useful for debugging test setup and understanding
+   * how the ORM is behaving.
+   * @param config - The logging configuration (enabled, level, prefix)
+   * @returns A new SchemaBuilder instance with the specified logging config
+   * @example
+   * ```typescript
+   * const builder = schema()
+   *   .logging({ enabled: true, level: 'debug' })
+   *   .collections({ users: userCollection });
+   * ```
+   */
+  logging(config: LoggerConfig): SchemaBuilder<TCollections, TIdentityManager, TGlobalConfig> {
+    const builder = new SchemaBuilder<TCollections, TIdentityManager, TGlobalConfig>();
+    builder._collections = this._collections;
+    builder._identityManager = this._identityManager;
+    builder._globalSerializerConfig = this._globalSerializerConfig;
+    builder._loggingConfig = config;
     return builder;
   }
 
@@ -144,7 +210,7 @@ export default class SchemaBuilder<
    */
   setup(): SchemaInstance<TCollections, SchemaConfig<TIdentityManager, TGlobalConfig>> {
     if (!this._collections) {
-      throw new Error(
+      throw new MirageError(
         'SchemaBuilder: collections are required. Call .collections() before .setup()',
       );
     }
@@ -152,6 +218,7 @@ export default class SchemaBuilder<
     const config = {
       identityManager: this._identityManager,
       globalSerializerConfig: this._globalSerializerConfig,
+      logging: this._loggingConfig,
     } as SchemaConfig<TIdentityManager, TGlobalConfig>;
 
     return new Schema(this._collections, config) as SchemaInstance<
