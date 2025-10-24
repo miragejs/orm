@@ -1,4 +1,4 @@
-import type { InferModelName, ModelTemplate } from '../model';
+import type { InferModelName, ModelTemplate } from '@src/model';
 
 import type { HasMany } from './types';
 

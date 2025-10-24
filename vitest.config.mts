@@ -14,6 +14,6 @@ export default defineConfig({
     },
     environment: 'node',
     globals: true,
-    include: ['test/**/*.test.ts'],
+    include: ['lib/**/*.test.ts', 'test/**/*.test.ts'],
   },
 });
