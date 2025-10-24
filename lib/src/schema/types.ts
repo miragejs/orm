@@ -1,5 +1,5 @@
 import type { DbCollection } from '@src/db';
-import type { Factory } from '@src/factory';
+import type { Factory, ModelTraits } from '@src/factory';
 import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
 import type {
   ModelAttrs,
@@ -49,11 +49,11 @@ export type Seeds<TSchema extends SchemaCollections = SchemaCollections> =
 export type FixtureLoadStrategy = 'auto' | 'manual';
 
 /**
- * A single fixture record - matches the model attributes with optional foreign keys
+ * A single fixture attributes object - matches the model attributes with optional foreign keys
  * @template TTemplate - The model template
  * @template TRelationships - The model relationships
  */
-export type FixtureRecord<
+export type FixtureAttrs<
   TTemplate extends ModelTemplate,
   TRelationships extends ModelRelationships = {},
 > = ModelAttrs<TTemplate> &
@@ -69,9 +69,9 @@ export interface FixtureConfig<
   TRelationships extends ModelRelationships = {},
 > {
   /**
-   * Array of fixture records to load
+   * Array of fixture attributes to load
    */
-  records: FixtureRecord<TTemplate, TRelationships>[];
+  records: FixtureAttrs<TTemplate, TRelationships>[];
   /**
    * When to load the fixtures (default: 'manual')
    */
@@ -175,13 +175,13 @@ export type SchemaDbCollections<TCollections extends SchemaCollections> = {
 };
 
 /**
- * Type for collection create/factory inputs - all attributes are optional
+ * Type for collection create/factory attributes - all attributes are optional
  * Used for passing attributes to create() methods where factory provides defaults
  * @template TTemplate - The model template
  * @template TSchema - The schema collections type
  * @template TRelationships - The model relationships
  */
-export type CollectionCreateInput<
+export type CollectionCreateAttrs<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
   TRelationships extends ModelRelationships = RelationshipsByTemplate<TTemplate, TSchema>,
@@ -189,3 +189,37 @@ export type CollectionCreateInput<
   (Record<string, never> extends TRelationships
     ? {}
     : Partial<RelatedModelAttrs<TSchema, TRelationships>>);
+
+// ----------------------------------------------------------------------------
+// Utility Types
+// ----------------------------------------------------------------------------
+
+/**
+ * Simplified Collection instance type helper that only requires the template parameter.
+ * Useful for typing collection references without verbose generic parameters.
+ * @template TTemplate - The model template (required)
+ * @template TRelationships - The model relationships (optional, defaults to {})
+ * @template TFactory - The factory type (optional, defaults to undefined)
+ * @template TSerializer - The serializer type (optional, defaults to undefined)
+ * @example
+ * ```typescript
+ * import { CollectionInstance } from '@miragejs/orm';
+ *
+ * // Simple usage
+ * const usersCollection: CollectionInstance<typeof userModel> = schema.users;
+ *
+ * // With relationships
+ * const usersCollection: CollectionInstance<
+ *   typeof userModel,
+ *   { posts: HasMany<typeof postModel> }
+ * > = schema.users;
+ * ```
+ */
+export type CollectionInstance<
+  TTemplate extends ModelTemplate,
+  TRelationships extends ModelRelationships = {},
+  TFactory extends
+    | Factory<TTemplate, SchemaCollections, ModelTraits<SchemaCollections, TTemplate>>
+    | undefined = undefined,
+  TSerializer = undefined,
+> = Collection<SchemaCollections, TTemplate, TRelationships, TFactory, TSerializer>;
