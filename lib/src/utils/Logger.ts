@@ -1,63 +1,4 @@
 /**
- * Log level type defining the severity of log messages.
- *
- * Log levels follow a hierarchy where setting a level shows that level and everything above it:
- * - `silent`: No logging
- * - `error`: Only errors
- * - `warn`: Warnings and errors
- * - `info`: Info, warnings, and errors
- * - `debug`: All messages (most verbose)
- * @example
- * ```typescript
- * // Debug level - see everything
- * schema().logging({ enabled: true, level: 'debug' })
- *
- * // Info level - only important operations
- * schema().logging({ enabled: true, level: 'info' })
- *
- * // Error level - only failures
- * schema().logging({ enabled: true, level: 'error' })
- * ```
- */
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'silent';
-
-/**
- * Logger configuration options.
- */
-export interface LoggerConfig {
-  /**
-   * Whether logging is enabled. When false, no logs are output regardless of level.
-   * @default false
-   */
-  enabled: boolean;
-
-  /**
-   * The minimum log level to output. Messages below this level are filtered out.
-   * @default 'info'
-   */
-  level: LogLevel;
-
-  /**
-   * Custom prefix for log messages. Useful for distinguishing ORM logs from other output.
-   * @default '[Mirage]'
-   */
-  prefix?: string;
-}
-
-/**
- * Numeric values for log levels to enable level comparison.
- * Lower numbers = more verbose, higher numbers = less verbose.
- * @internal
- */
-const LOG_LEVELS: Record<LogLevel, number> = {
-  debug: 0,
-  info: 1,
-  warn: 2,
-  error: 3,
-  silent: 4,
-};
-
-/**
  * Logger class for outputting structured log messages.
  *
  * Provides debug, info, warn, and error logging methods with automatic level filtering.
@@ -76,7 +17,7 @@ const LOG_LEVELS: Record<LogLevel, number> = {
  * logger.error('Validation failed', { errors: [...] });
  * ```
  */
-export class Logger {
+export default class Logger {
   private _config: LoggerConfig;
 
   /**
@@ -211,3 +152,62 @@ export class Logger {
     }
   }
 }
+
+/**
+ * Log level type defining the severity of log messages.
+ *
+ * Log levels follow a hierarchy where setting a level shows that level and everything above it:
+ * - `silent`: No logging
+ * - `error`: Only errors
+ * - `warn`: Warnings and errors
+ * - `info`: Info, warnings, and errors
+ * - `debug`: All messages (most verbose)
+ * @example
+ * ```typescript
+ * // Debug level - see everything
+ * schema().logging({ enabled: true, level: 'debug' })
+ *
+ * // Info level - only important operations
+ * schema().logging({ enabled: true, level: 'info' })
+ *
+ * // Error level - only failures
+ * schema().logging({ enabled: true, level: 'error' })
+ * ```
+ */
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'silent';
+
+/**
+ * Logger configuration options.
+ */
+export interface LoggerConfig {
+  /**
+   * Whether logging is enabled. When false, no logs are output regardless of level.
+   * @default false
+   */
+  enabled: boolean;
+
+  /**
+   * The minimum log level to output. Messages below this level are filtered out.
+   * @default 'info'
+   */
+  level: LogLevel;
+
+  /**
+   * Custom prefix for log messages. Useful for distinguishing ORM logs from other output.
+   * @default '[Mirage]'
+   */
+  prefix?: string;
+}
+
+/**
+ * Numeric values for log levels to enable level comparison.
+ * Lower numbers = more verbose, higher numbers = less verbose.
+ * @internal
+ */
+const LOG_LEVELS: Record<LogLevel, number> = {
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3,
+  silent: 4,
+};

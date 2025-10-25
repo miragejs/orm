@@ -8,7 +8,7 @@ import type {
   CollectionConfig,
   FixtureConfig,
   FixtureLoadStrategy,
-  FixtureRecord,
+  FixtureAttrs,
   SchemaCollections,
   Seeds,
 } from './types';
@@ -425,7 +425,7 @@ export default class CollectionBuilder<
    * ```
    */
   fixtures(
-    records: FixtureRecord<TTemplate, TRelationships>[],
+    records: FixtureAttrs<TTemplate, TRelationships>[],
     options?: { strategy?: FixtureLoadStrategy },
   ): CollectionBuilder<
     TTemplate,

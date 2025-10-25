@@ -203,7 +203,7 @@ export default class Factory<
         const trait = this.traits[name as TraitName<TTraits>];
 
         if (trait) {
-          const { afterCreate, ...extension } = trait;
+          const { afterCreate: _, ...extension } = trait;
 
           Object.entries(extension).forEach(([key, value]) => {
             // Skip id and association objects

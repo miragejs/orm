@@ -91,7 +91,13 @@ export type {
 // Factory Builder
 // ----------------------------------------------------------------------------
 export { factory } from './factory';
-export type { Factory, FactoryAttrs, ModelTraits, TraitDefinition } from './factory';
+export type {
+  Factory,
+  FactoryAfterCreateHook,
+  FactoryAttrs,
+  ModelTraits,
+  TraitDefinition,
+} from './factory';
 
 // ----------------------------------------------------------------------------
 // Associations
@@ -118,15 +124,27 @@ export type {
 } from './associations';
 
 // ----------------------------------------------------------------------------
+// Database & Query API
+// ----------------------------------------------------------------------------
+export type { DbRecordInput, OrderBy, QueryOptions, Where } from './db';
+
+// ----------------------------------------------------------------------------
 // Schema Builder
 // ----------------------------------------------------------------------------
 export { collection, schema } from './schema';
 export type {
   Collection,
   CollectionConfig,
-  CollectionCreateInput,
+  CollectionCreateAttrs,
+  CollectionInstance,
+  FixtureAttrs,
+  FixtureConfig,
+  FixtureLoadStrategy,
   SchemaCollections,
   SchemaInstance,
+  SeedFunction,
+  Seeds,
+  SeedScenarios,
 } from './schema';
 
 // ----------------------------------------------------------------------------

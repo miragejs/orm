@@ -280,7 +280,7 @@ export default class Model<
    *   - foreignKeys: Foreign keys (extracted from relationship models or defaults)
    */
   private static _separateAttrs<
-    TTemplate extends ModelTemplate,
+    _TTemplate extends ModelTemplate,
     TSchema extends SchemaCollections,
     TRelationships extends ModelRelationships,
   >(

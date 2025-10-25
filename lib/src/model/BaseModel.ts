@@ -157,7 +157,7 @@ export default class BaseModel<TAttrs extends { id: any }, TSerializer = undefin
    * @returns The simple string representation of the model and its id
    */
   toString(): string {
-    let idLabel = this.id ? `(${this.id})` : '';
+    const idLabel = this.id ? `(${this.id})` : '';
     return `model:${this.modelName}${idLabel}`;
   }
 

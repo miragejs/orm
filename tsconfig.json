@@ -24,7 +24,6 @@
   "include": [
     "lib/src/**/*",
     "lib/types/**/*",
-    "test/**/*",
     "tsup.config.ts",
     "vitest.config.mts"
   ],

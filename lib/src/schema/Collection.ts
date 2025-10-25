@@ -17,7 +17,7 @@ import { MirageError } from '@src/utils';
 
 import { BaseCollection } from './BaseCollection';
 import type { SchemaInstance } from './Schema';
-import type { CollectionConfig, CollectionCreateInput, SchemaCollections } from './types';
+import type { CollectionConfig, CollectionCreateAttrs, SchemaCollections } from './types';
 
 /**
  * Collection for managing models of a specific type
@@ -65,7 +65,7 @@ export default class Collection<
   create(
     ...traitsAndDefaults: (
       | FactoryTraitNames<TFactory>
-      | CollectionCreateInput<TTemplate, TSchema>
+      | CollectionCreateAttrs<TTemplate, TSchema>
     )[]
   ): ModelInstance<TTemplate, TSchema, TSerializer> {
     this._logger?.debug(`Creating ${this.modelName}`, {
@@ -75,7 +75,7 @@ export default class Collection<
 
     // Extract traits and defaults
     const traits: FactoryTraitNames<TFactory>[] = [];
-    let defaults: CollectionCreateInput<TTemplate, TSchema> = {};
+    let defaults: CollectionCreateAttrs<TTemplate, TSchema> = {};
 
     traitsAndDefaults.forEach((arg) => {
       if (typeof arg === 'string') {
@@ -165,7 +165,7 @@ export default class Collection<
     count: number,
     ...traitsAndDefaults: (
       | FactoryTraitNames<TFactory>
-      | CollectionCreateInput<TTemplate, TSchema>
+      | CollectionCreateAttrs<TTemplate, TSchema>
     )[]
   ): ModelCollection<TTemplate, TSchema, TSerializer> {
     const models = Array.from({ length: count }, () => this.create(...traitsAndDefaults));
@@ -182,7 +182,7 @@ export default class Collection<
     query: DbRecordInput<ModelAttrs<TTemplate, TSchema>>,
     ...traitsAndDefaults: (
       | FactoryTraitNames<TFactory>
-      | CollectionCreateInput<TTemplate, TSchema>
+      | CollectionCreateAttrs<TTemplate, TSchema>
     )[]
   ): ModelInstance<TTemplate, TSchema, TSerializer> {
     const existingModel = this.find(query);
@@ -192,7 +192,7 @@ export default class Collection<
 
     const newModel = this.create(
       ...traitsAndDefaults,
-      query as CollectionCreateInput<TTemplate, TSchema>,
+      query as CollectionCreateAttrs<TTemplate, TSchema>,
     );
     return newModel;
   }
@@ -211,7 +211,7 @@ export default class Collection<
       | ((model: ModelInstance<TTemplate, TSchema, TSerializer>) => boolean),
     ...traitsAndDefaults: (
       | FactoryTraitNames<TFactory>
-      | CollectionCreateInput<TTemplate, TSchema>
+      | CollectionCreateAttrs<TTemplate, TSchema>
     )[]
   ): ModelCollection<TTemplate, TSchema, TSerializer> {
     // Find existing models matching the query
@@ -235,7 +235,7 @@ export default class Collection<
     // Create the remaining models
     // If query is an object, include it in the creation attributes
     const queryAttrs =
-      typeof query === 'function' ? {} : (query as CollectionCreateInput<TTemplate, TSchema>);
+      typeof query === 'function' ? {} : (query as CollectionCreateAttrs<TTemplate, TSchema>);
 
     const newModels = Array.from({ length: needed }, () =>
       this.create(...traitsAndDefaults, queryAttrs),
@@ -344,8 +344,8 @@ export default class Collection<
     }
 
     // Insert all fixture records into the database at once
-    // Fixtures are typed as FixtureRecord which includes all model attributes
-    // The type assertion bridges FixtureRecord (all attrs including id) with
+    // Fixtures are typed as FixtureAttrs which includes all model attributes
+    // The type assertion bridges FixtureAttrs (all attrs including id) with
     // NewDbRecord (Omit<Record, 'id'> & { id?: id }), which are structurally compatible
     this._dbCollection.insertMany(
       this._fixtures.records as NewDbRecord<ModelAttrs<TTemplate, TSchema>>[],
