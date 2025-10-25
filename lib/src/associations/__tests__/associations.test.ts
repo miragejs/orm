@@ -136,4 +136,58 @@ describe('associations', () => {
       expect(relationships.favoritePost.foreignKey).toBe('favoritePostId');
     });
   });
+
+  describe('inverse option', () => {
+    describe('belongsTo', () => {
+      it('should create relationship without inverse (auto-detect)', () => {
+        const rel = associations.belongsTo(userModel);
+        expect(rel.inverse).toBeUndefined();
+      });
+
+      it('should create relationship with explicit inverse', () => {
+        const rel = associations.belongsTo(userModel, { inverse: 'authoredPosts' });
+        expect(rel.inverse).toBe('authoredPosts');
+      });
+
+      it('should create relationship with inverse disabled', () => {
+        const rel = associations.belongsTo(userModel, { inverse: null });
+        expect(rel.inverse).toBe(null);
+      });
+
+      it('should accept both foreignKey and inverse options', () => {
+        const rel = associations.belongsTo(userModel, {
+          foreignKey: 'creatorId',
+          inverse: 'createdPosts',
+        });
+        expect(rel.foreignKey).toBe('creatorId');
+        expect(rel.inverse).toBe('createdPosts');
+      });
+    });
+
+    describe('hasMany', () => {
+      it('should create relationship without inverse (auto-detect)', () => {
+        const rel = associations.hasMany(postModel);
+        expect(rel.inverse).toBeUndefined();
+      });
+
+      it('should create relationship with explicit inverse', () => {
+        const rel = associations.hasMany(postModel, { inverse: 'author' });
+        expect(rel.inverse).toBe('author');
+      });
+
+      it('should create relationship with inverse disabled', () => {
+        const rel = associations.hasMany(postModel, { inverse: null });
+        expect(rel.inverse).toBe(null);
+      });
+
+      it('should accept both foreignKey and inverse options', () => {
+        const rel = associations.hasMany(postModel, {
+          foreignKey: 'articleIds',
+          inverse: 'writer',
+        });
+        expect(rel.foreignKey).toBe('articleIds');
+        expect(rel.inverse).toBe('writer');
+      });
+    });
+  });
 });

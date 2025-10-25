@@ -39,6 +39,7 @@ export default class RelationshipsManager<
   private _model: Model<TTemplate, TSchema>;
   private _pendingRelationshipOperations: PendingRelationshipOperation[] = [];
   private _relationshipDefs?: RelationshipDefs<TRelationships>;
+  private _inverseMap: Map<string, string | null | undefined> = new Map();
   private _schema: SchemaInstance<TSchema>;
 
   constructor(
@@ -534,21 +535,48 @@ export default class RelationshipsManager<
         relationship,
       };
 
-      // Look for inverse relationship in the target model's collection
-      const targetCollectionName = relationship.targetModel.collectionName;
-      const targetCollection = this._schema.getCollection(targetCollectionName);
+      // Store the explicit inverse setting in the map
+      if ('inverse' in relationship) {
+        this._inverseMap.set(relationshipName, relationship.inverse);
+      }
 
-      if (targetCollection.relationships) {
-        for (const inverseRelationshipName in targetCollection.relationships) {
-          const inverseRelationship = targetCollection.relationships[inverseRelationshipName];
-          if (inverseRelationship.targetModel.modelName === this._model.modelName) {
-            relationshipDef.inverse = {
-              foreignKey: inverseRelationship.foreignKey,
-              relationshipName: inverseRelationshipName,
-              targetModel: relationship.targetModel,
-              type: inverseRelationship.type,
-            };
-            break;
+      // Handle inverse relationship based on the inverse option
+      const inverseOption = 'inverse' in relationship ? relationship.inverse : undefined;
+
+      if (inverseOption === null) {
+        // Explicitly disabled inverse - don't set inverse relationship
+        relationshipDef.inverse = undefined;
+      } else if (typeof inverseOption === 'string') {
+        // Explicit inverse relationship name provided
+        const targetCollectionName = relationship.targetModel.collectionName;
+        const targetCollection = this._schema.getCollection(targetCollectionName);
+
+        if (targetCollection.relationships && targetCollection.relationships[inverseOption]) {
+          const inverseRelationship = targetCollection.relationships[inverseOption];
+          relationshipDef.inverse = {
+            foreignKey: inverseRelationship.foreignKey,
+            relationshipName: inverseOption,
+            targetModel: relationship.targetModel,
+            type: inverseRelationship.type,
+          };
+        }
+      } else {
+        // Auto-detect inverse relationship (undefined or not specified)
+        const targetCollectionName = relationship.targetModel.collectionName;
+        const targetCollection = this._schema.getCollection(targetCollectionName);
+
+        if (targetCollection.relationships) {
+          for (const inverseRelationshipName in targetCollection.relationships) {
+            const inverseRelationship = targetCollection.relationships[inverseRelationshipName];
+            if (inverseRelationship.targetModel.modelName === this._model.modelName) {
+              relationshipDef.inverse = {
+                foreignKey: inverseRelationship.foreignKey,
+                relationshipName: inverseRelationshipName,
+                targetModel: relationship.targetModel,
+                type: inverseRelationship.type,
+              };
+              break;
+            }
           }
         }
       }
@@ -582,7 +610,21 @@ export default class RelationshipsManager<
     if (!modelId) return;
 
     const { inverse } = relationshipDef;
-    const { type, foreignKey } = inverse;
+    const { type, foreignKey, relationshipName: inverseRelName } = inverse;
+
+    // Check if the target model's inverse relationship has inverse: null
+    // If so, don't sync (respect the explicit disable)
+    const targetRelManager = (targetModel as any)._relationshipsManager as RelationshipsManager<
+      any,
+      TSchema
+    >;
+    if (targetRelManager?._inverseMap.has(inverseRelName)) {
+      const targetInverseSetting = targetRelManager._inverseMap.get(inverseRelName);
+      if (targetInverseSetting === null) {
+        // Target relationship explicitly disabled inverse sync
+        return;
+      }
+    }
 
     // Get the target model's ID to find it in the database
     const targetModelId = targetModel.id;

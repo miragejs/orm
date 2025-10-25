@@ -8,6 +8,7 @@ import type {
   LinkAssociation,
   LinkManyAssociation,
 } from '@src/associations';
+import { belongsTo, hasMany } from '@src/associations';
 import { model } from '@src/model';
 import type { CollectionConfig } from '@src/schema';
 import { expectTypeOf, test } from 'vitest';
@@ -172,4 +173,42 @@ test('FactoryAssociations record type should work correctly', () => {
 
   // Type is verified by the successful assignment above
   expectTypeOf(assoc).toBeObject();
+});
+
+// ============================================================================
+// INVERSE OPTION TESTS
+// ============================================================================
+
+test('BelongsTo should accept inverse option', () => {
+  const rel1 = belongsTo(userModel);
+  expectTypeOf(rel1.inverse).toEqualTypeOf<string | null | undefined>();
+  expectTypeOf(rel1.inverse).toBeNullable();
+
+  const rel2 = belongsTo(userModel, { inverse: 'posts' });
+  expectTypeOf(rel2.inverse).toEqualTypeOf<string | null | undefined>();
+
+  const rel3 = belongsTo(userModel, { inverse: null });
+  expectTypeOf(rel3.inverse).toEqualTypeOf<string | null | undefined>();
+});
+
+test('HasMany should accept inverse option', () => {
+  const rel1 = hasMany(postModel);
+  expectTypeOf(rel1.inverse).toEqualTypeOf<string | null | undefined>();
+  expectTypeOf(rel1.inverse).toBeNullable();
+
+  const rel2 = hasMany(postModel, { inverse: 'author' });
+  expectTypeOf(rel2.inverse).toEqualTypeOf<string | null | undefined>();
+
+  const rel3 = hasMany(postModel, { inverse: null });
+  expectTypeOf(rel3.inverse).toEqualTypeOf<string | null | undefined>();
+});
+
+test('Inverse option should work with foreignKey option', () => {
+  const rel1 = belongsTo(userModel, { foreignKey: 'creatorId', inverse: 'createdPosts' });
+  expectTypeOf(rel1.foreignKey).toBeString();
+  expectTypeOf(rel1.inverse).toEqualTypeOf<string | null | undefined>();
+
+  const rel2 = hasMany(postModel, { foreignKey: 'articleIds', inverse: 'author' });
+  expectTypeOf(rel2.foreignKey).toBeString();
+  expectTypeOf(rel2.inverse).toEqualTypeOf<string | null | undefined>();
 });
