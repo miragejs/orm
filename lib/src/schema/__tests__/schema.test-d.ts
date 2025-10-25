@@ -1,5 +1,5 @@
-import type { BelongsTo, HasMany } from '@src/associations';
-import { NumberIdentityManager, StringIdentityManager } from '@src/id-manager';
+import type { BelongsTo } from '@src/associations';
+import { StringIdentityManager } from '@src/id-manager';
 import { model } from '@src/model';
 import type {
   CollectionConfig,

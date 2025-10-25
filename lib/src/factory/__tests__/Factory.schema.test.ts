@@ -154,7 +154,7 @@ describe('Factory with Schema', () => {
       })
       .setup();
 
-    const user = testSchema.users.create('admin', 'premium');
+    testSchema.users.create('admin', 'premium');
 
     expect(hooksCalled).toEqual(['admin', 'premium']);
   });
@@ -189,7 +189,7 @@ describe('Factory with Schema', () => {
       })
       .setup();
 
-    const user = testSchema.users.create('admin');
+    testSchema.users.create('admin');
 
     expect(hooksCalled).toEqual(['factory', 'trait']);
   });

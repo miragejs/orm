@@ -373,7 +373,7 @@ describe('Schema with Logging', () => {
       // Try to load again - should conflict
       try {
         await testSchema.users.loadFixtures();
-      } catch (error) {
+      } catch (_error) {
         // Expected to throw
       }
 
@@ -387,7 +387,7 @@ describe('Schema with Logging', () => {
     });
 
     it('should log auto-loading fixtures', () => {
-      const testSchema = schema()
+      schema()
         .logging({ enabled: true, level: 'info' })
         .collections({
           users: collection<TestSchema>()
@@ -492,7 +492,7 @@ describe('Schema with Logging', () => {
 
       try {
         await testSchema.users.loadSeeds('nonexistent');
-      } catch (error) {
+      } catch (_error) {
         // Expected to throw
       }
 
@@ -618,7 +618,7 @@ describe('Schema with Logging', () => {
 
       try {
         await testSchema.users.loadFixtures();
-      } catch (error) {
+      } catch (_error) {
         // Expected to throw
       }
 
@@ -629,7 +629,7 @@ describe('Schema with Logging', () => {
 
   describe('Custom prefix', () => {
     it('should use custom prefix', () => {
-      const testSchema = schema()
+      schema()
         .logging({ enabled: true, level: 'debug', prefix: '[MyORM]' })
         .collections({
           users: collection<TestSchema>().model(userModel).create(),
