@@ -12,7 +12,7 @@ type TestSchema = {
   posts: CollectionConfig<PostModel>;
 };
 
-describe('Schema Fixtures', () => {
+describe('Schema with Fixtures', () => {
   describe('CollectionBuilder.fixtures()', () => {
     it('should accept fixture records and default to manual loading', () => {
       const fixtures = [

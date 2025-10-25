@@ -14,6 +14,11 @@ export default defineConfig({
     },
     environment: 'node',
     globals: true,
-    include: ['lib/**/*.test.ts', 'test/**/*.test.ts'],
+    include: ['lib/**/*.test.ts'],
+    typecheck: {
+      ignoreSourceErrors: true,
+      include: ['**/*.test-d.ts'],
+      only: true,
+    },
   },
 });

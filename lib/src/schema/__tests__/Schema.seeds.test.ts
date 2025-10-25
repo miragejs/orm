@@ -10,7 +10,7 @@ type TestSchema = {
   posts: CollectionConfig<PostModel>;
 };
 
-describe('Schema Seeds', () => {
+describe('Schema with Seeds', () => {
   describe('Collection.loadSeeds()', () => {
     describe('with function seeds', () => {
       const testSchema = schema()

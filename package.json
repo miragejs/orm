@@ -15,12 +15,14 @@
     "lint": "eslint lib/src --ext .ts",
     "lint:fix": "pnpm lint --fix",
     "typecheck": "tsc --noEmit",
-    "check-all": "pnpm format && pnpm lint && pnpm typecheck",
-    "fix-all": "pnpm format:fix && pnpm lint:fix",
     "build": "tsup lib/src/index.ts --dts --out-dir lib/dist",
     "build:prod": "pnpm check-all && pnpm build",
     "test": "vitest run",
-    "test:dev": "vitest"
+    "test:dev": "vitest",
+    "test:types": "vitest run --typecheck",
+    "check-all": "pnpm format && pnpm lint && pnpm typecheck",
+    "fix-all": "pnpm format:fix && pnpm lint:fix",
+    "test-all": "pnpm test:types && pnpm test"
   },
   "devDependencies": {
     "@eslint/js": "^9.27.0",
