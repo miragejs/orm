@@ -357,6 +357,14 @@ export type ModelAttrAccessors<TTemplate extends ModelTemplate> = {
 };
 
 /**
+ * Type for model only attributes without ID
+ */
+export type ModelOnlyAttrs<TTemplate extends ModelTemplate> = Omit<
+  InferModelAttrs<TTemplate>,
+  'id'
+>;
+
+/**
  * Type for model attributes that includes regular attributes, foreign keys, and relationship model instances
  * Only relationship-related properties are optional
  * @template TTemplate - The model template

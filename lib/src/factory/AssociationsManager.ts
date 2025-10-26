@@ -5,7 +5,12 @@ import type {
   FactoryAssociations,
 } from '@src/associations';
 import { ModelCollection, type ModelInstance, type ModelTemplate } from '@src/model';
-import { type SchemaInstance, type Collection, type SchemaCollections } from '@src/schema';
+import type {
+  SchemaInstance,
+  Collection,
+  SchemaCollections,
+  CollectionCreateAttrs,
+} from '@src/schema';
 import { MirageError } from '@src/utils';
 
 /**
@@ -90,7 +95,9 @@ export default class AssociationsManager<
     collection: Collection<TSchema, any, any, any, any>,
     traitsAndDefaults?: AssociationTraitsAndDefaults,
   ): ModelInstance<any, TSchema, any> {
-    return collection.create(...(traitsAndDefaults || ([] as any)));
+    return collection.create(
+      ...((traitsAndDefaults ?? []) as CollectionCreateAttrs<TTemplate, TSchema>[]),
+    );
   }
 
   private _processCreateMany(
@@ -98,7 +105,10 @@ export default class AssociationsManager<
     count: number,
     traitsAndDefaults?: AssociationTraitsAndDefaults,
   ): ModelCollection<any, TSchema, any> {
-    return collection.createList(count, ...(traitsAndDefaults || ([] as any)));
+    return collection.createList(
+      count,
+      ...((traitsAndDefaults ?? []) as CollectionCreateAttrs<TTemplate, TSchema>[]),
+    );
   }
 
   private _processLink(
@@ -128,9 +138,11 @@ export default class AssociationsManager<
       }
     }
 
-    // Create if not found (with traits and defaults)
+    // Create if not found (with traits and defaults) // Create if not found (with traits and defaults)
     if (!model) {
-      model = collection.create(...(traitsAndDefaults || ([] as any)));
+      model = collection.create(
+        ...((traitsAndDefaults ?? []) as CollectionCreateAttrs<TTemplate, TSchema>[]),
+      );
     }
 
     return model;
@@ -161,7 +173,10 @@ export default class AssociationsManager<
     // Create more if needed (with traits and defaults)
     const needed = count - shuffledModels.length;
     if (needed > 0) {
-      const newModels = collection.createList(needed, ...(traitsAndDefaults || ([] as any)));
+      const newModels = collection.createList(
+        needed,
+        ...((traitsAndDefaults ?? []) as CollectionCreateAttrs<TTemplate, TSchema>[]),
+      );
       // Combine shuffled existing with new ones
       const allModels = [...shuffledModels, ...newModels.models];
       return new ModelCollection(template, allModels);

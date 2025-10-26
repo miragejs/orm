@@ -71,6 +71,8 @@ export default class Schema<
     if (!collection) {
       throw new MirageError(`Collection '${String(collectionName)}' not found`);
     }
+    // Type assertion needed: Map storage loses specific generic parameters
+    // TypeScript can't verify stored collection matches complex conditional return type
     return collection as any;
   }
 

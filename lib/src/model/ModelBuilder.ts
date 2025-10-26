@@ -209,10 +209,12 @@ export default class ModelBuilder<
       key: Symbol(`Model:${this._modelName}`),
       modelName: this._modelName,
       collectionName: this._collectionName,
-      // Type-only property
-      __attrs: undefined as any as TModelAttrs,
-      // Type-only property
-      __json: undefined as any as {
+      // Type-only property: Placeholder for type inference only, never accessed at runtime
+      // Using 'undefined as unknown as Type' to carry type information through the template
+      __attrs: undefined as unknown as TModelAttrs,
+      // Type-only property: Placeholder for serialized type information
+      // Using 'undefined as unknown as Type' to carry type information through the template
+      __json: undefined as unknown as {
         model: TSerializedModel;
         collection: TSerializedCollection;
       },

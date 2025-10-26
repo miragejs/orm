@@ -524,7 +524,7 @@ describe('Schema with Relationships', () => {
             users: collection()
               .model(userModel)
               .relationships({
-                posts: hasMany(postModel, { inverse: 'author' }),
+                posts: hasMany(postModel, { inverse: null }),
               })
               .create(),
             posts: collection()

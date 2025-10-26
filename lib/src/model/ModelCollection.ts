@@ -330,8 +330,9 @@ export default class ModelCollection<
       'serializeCollection' in this._serializer &&
       typeof this._serializer.serializeCollection === 'function'
     ) {
-      return (this._serializer as any).serializeCollection(this) as any;
+      return this._serializer.serializeCollection(this);
     }
+    // Type assertion needed: Array of attrs may not exactly match conditional return type
     return this.models.map((model) => model.attrs) as any;
   }
 

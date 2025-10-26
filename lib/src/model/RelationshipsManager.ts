@@ -22,6 +22,7 @@ import type {
   RelationshipsByTemplate,
 } from './types';
 
+// TODO: Improve type inference for related models accross the helper methods
 /**
  * ModelRelationshipsManager - Handles all relationship operations
  * Separated from core model logic for better maintainability
@@ -102,10 +103,10 @@ export default class RelationshipsManager<
         const targetCollection = this._schema.getCollection(targetModel.collectionName);
 
         if (type === 'belongsTo') {
-          const id = rawValue as any;
+          const id = rawValue as RelatedModelAttrs<TSchema, TRelationships>['id'];
           processedValue = targetCollection.find(id);
         } else if (type === 'hasMany') {
-          const ids = rawValue as any[];
+          const ids = rawValue as RelatedModelAttrs<TSchema, TRelationships>['id'][];
           const models = ids
             .map((id) => targetCollection.find(id))
             .filter((m): m is ModelInstance<ModelTemplate, TSchema> => isModelInstance<TSchema>(m));
@@ -224,12 +225,13 @@ export default class RelationshipsManager<
     targetModel: RelationshipTargetModel<TSchema, TRelationships, K>,
   ): RelationshipUpdateResult {
     const foreignKeyUpdates: Record<string, ForeignKeyValue> = {};
+    const relationshipNameString = String(relationshipName);
 
     if (!this._relationshipDefs || !this._schema) {
       return { foreignKeyUpdates };
     }
 
-    const relationshipDef = this._getRelationshipDef(relationshipName);
+    const relationshipDef = this._getRelationshipDef(relationshipNameString);
     if (!relationshipDef) {
       return { foreignKeyUpdates };
     }
@@ -246,11 +248,12 @@ export default class RelationshipsManager<
         // Get old target for inverse update
         const targetCollectionName = relationship.targetModel.collectionName;
         const targetCollection = this._schema.getCollection(targetCollectionName);
+        // Type assertion needed: find() accepts complex union of ID types
         const oldTarget = targetCollection.find(currentForeignKeyValue as any);
 
         // Update inverse relationship on old target
         if (oldTarget && isModelInstance<TSchema>(oldTarget)) {
-          this._updateInverseRelationship(relationshipName as string, oldTarget, 'unlink');
+          this._updateInverseRelationship(relationshipNameString, oldTarget, 'unlink');
         }
       }
 
@@ -259,7 +262,7 @@ export default class RelationshipsManager<
 
       // Update inverse relationship on new target
       if (isModelInstance<TSchema>(targetModel)) {
-        this._updateInverseRelationship(relationshipName as string, targetModel, 'link');
+        this._updateInverseRelationship(relationshipNameString, targetModel, 'link');
       }
     } else if (type === 'hasMany') {
       // Extract new target IDs
@@ -291,9 +294,10 @@ export default class RelationshipsManager<
         const targetCollection = this._schema.getCollection(targetCollectionName);
 
         currentIds.forEach((id) => {
+          // Type assertion needed: find() accepts complex union of ID types
           const oldTarget = targetCollection.find(id as any);
           if (oldTarget && isModelInstance<TSchema>(oldTarget)) {
-            this._updateInverseRelationship(relationshipName as string, oldTarget, 'unlink');
+            this._updateInverseRelationship(relationshipNameString, oldTarget, 'unlink');
           }
         });
       }
@@ -303,7 +307,7 @@ export default class RelationshipsManager<
 
       // Update inverse relationships on new targets
       newTargetModels.forEach((model) => {
-        this._updateInverseRelationship(relationshipName as string, model, 'link');
+        this._updateInverseRelationship(relationshipNameString, model, 'link');
       });
     }
 
@@ -322,12 +326,13 @@ export default class RelationshipsManager<
     targetModel?: RelationshipTargetModel<TSchema, TRelationships, K>,
   ): RelationshipUpdateResult {
     const foreignKeyUpdates: Record<string, ForeignKeyValue> = {};
+    const relationshipNameString = String(relationshipName);
 
     if (!this._relationshipDefs || !this._schema) {
       return { foreignKeyUpdates };
     }
 
-    const relationshipDef = this._getRelationshipDef(relationshipName);
+    const relationshipDef = this._getRelationshipDef(relationshipNameString);
     if (!relationshipDef) {
       return { foreignKeyUpdates };
     }
@@ -337,14 +342,14 @@ export default class RelationshipsManager<
 
     if (type === 'belongsTo') {
       // Get the current target model before unlinking for inverse update
-      const currentTarget = this.related(relationshipName);
+      const currentTarget = this.related(relationshipNameString);
 
       // Set FK to null
       foreignKeyUpdates[foreignKey] = null;
 
       // Update inverse relationship
       if (isModelInstance<TSchema>(currentTarget)) {
-        this._updateInverseRelationship(relationshipName as string, currentTarget, 'unlink');
+        this._updateInverseRelationship(relationshipNameString, currentTarget, 'unlink');
       }
     } else if (type === 'hasMany') {
       if (targetModel) {
@@ -372,17 +377,17 @@ export default class RelationshipsManager<
 
         // Update inverse relationships
         modelsToUnlink.forEach((model) => {
-          this._updateInverseRelationship(relationshipName as string, model, 'unlink');
+          this._updateInverseRelationship(relationshipNameString, model, 'unlink');
         });
       } else {
         // Unlink all items (no targetModel provided)
-        const currentTargets = this.related(relationshipName);
+        const currentTargets = this.related(relationshipNameString);
         foreignKeyUpdates[foreignKey] = [];
 
         // Update inverse relationships
         if (isModelCollection<TSchema>(currentTargets)) {
           currentTargets.models.forEach((target) => {
-            this._updateInverseRelationship(relationshipName as string, target, 'unlink');
+            this._updateInverseRelationship(relationshipNameString, target, 'unlink');
           });
         }
       }
@@ -420,11 +425,7 @@ export default class RelationshipsManager<
         return null;
       }
 
-      return targetCollection.find(singleId as any) as RelationshipTargetModel<
-        TSchema,
-        TRelationships,
-        K
-      >;
+      return targetCollection.find(singleId) as RelationshipTargetModel<TSchema, TRelationships, K>;
     }
 
     if (type === 'hasMany') {
@@ -440,7 +441,7 @@ export default class RelationshipsManager<
       }
 
       const relatedModels = idsArray
-        .map((id) => targetCollection.find(id as any))
+        .map((id) => targetCollection.find(id))
         .filter((model): model is ModelInstance<ModelTemplate, TSchema> => model !== null);
 
       return new ModelCollection(targetModel, relatedModels) as RelationshipTargetModel<
@@ -614,6 +615,8 @@ export default class RelationshipsManager<
 
     // Check if the target model's inverse relationship has inverse: null
     // If so, don't sync (respect the explicit disable)
+    // Type assertion needed: Accessing private _relationshipsManager property on model
+    // This is internal logic for inverse sync, accessing implementation details
     const targetRelManager = (targetModel as any)._relationshipsManager as RelationshipsManager<
       any,
       TSchema
@@ -661,6 +664,8 @@ export default class RelationshipsManager<
 
     // Update the target model directly in the database to avoid recursion
     if (Object.keys(updateAttrs).length > 0) {
+      // Type assertion needed: Partial update object with dynamic foreign keys
+      // TypeScript can't verify all possible foreign key patterns match record type
       this._schema.db.getCollection(targetCollectionName).update(targetModelId, updateAttrs as any);
     }
   }

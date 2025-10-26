@@ -148,7 +148,8 @@ export default class BaseModel<TAttrs extends { id: any }, TSerializer = undefin
     ) {
       return this._serializer.serialize(this);
     }
-    // Type assertion needed due to conditional return type
+    // Type assertion needed due to conditional return type complexity
+    // TypeScript can't verify TAttrs matches the conditional type in all cases
     return { ...this._attrs } as any;
   }
 
