@@ -303,7 +303,8 @@ export default class Model<
     }
 
     // Step 2: Process attributes
-    for (const [key, value] of Object.entries(attrs)) {
+    for (const key in attrs) {
+      const value = attrs[key];
       if (key in relationships) {
         // Relationship attribute (model instance)
         const relationship = relationships[key];
@@ -449,9 +450,9 @@ export default class Model<
       // Initialize foreign key if it doesn't exist in attrs
       if (!(foreignKey in this._attrs)) {
         if (type === 'belongsTo') {
-          (this as any)._attrs[foreignKey] = null;
+          (this._attrs as Record<string, unknown>)[foreignKey] = null;
         } else if (type === 'hasMany') {
-          (this as any)._attrs[foreignKey] = [];
+          (this._attrs as Record<string, unknown>)[foreignKey] = [];
         }
       }
     }

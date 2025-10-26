@@ -115,15 +115,18 @@ export default class DB<TCollections extends DbCollections> {
   loadData<TData extends Record<string, DbRecord[]>>(
     data: TData,
   ): DbInstance<TCollections & DbCollectionsFromStaticData<TData>> {
-    (Object.entries(data) as [keyof TCollections, TData[keyof TData]][]).forEach(
-      ([name, records]) => {
-        if (this.hasCollection(name)) {
-          this.getCollection(name).insertMany(records);
-        } else {
-          this.createCollection(name, { initialData: records });
-        }
-      },
-    );
+    type CollectionNames = keyof TCollections;
+
+    for (const key in data) {
+      const records = data[key];
+      const name = key as CollectionNames;
+
+      if (this.hasCollection(name)) {
+        this.getCollection(name).insertMany(records);
+      } else {
+        this.createCollection(name, { initialData: records });
+      }
+    }
 
     return this as unknown as DbInstance<TCollections & DbCollectionsFromStaticData<TData>>;
   }

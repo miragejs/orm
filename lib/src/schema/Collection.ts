@@ -131,6 +131,8 @@ export default class Collection<
         id: model.id,
         collection: this.collectionName,
       });
+      // Type assertion needed: factory hook expects specific model instance type
+      // but we're working with a more general model type at this point
       return this._factory.processAfterCreateHooks(
         this._schema,
         model as any,
@@ -279,7 +281,8 @@ export default class Collection<
       this._logger?.info(`Loading all seeds for collection '${this.collectionName}'`, {
         scenarios: Object.keys(seedScenarios),
       });
-      for (const [name, seedFn] of Object.entries(seedScenarios)) {
+      for (const name in seedScenarios) {
+        const seedFn = seedScenarios[name];
         this._logger?.debug(`Running seed scenario '${name}' for '${this.collectionName}'`);
         await seedFn(this._schema);
       }
@@ -384,5 +387,7 @@ export function createCollection<
       TSerializer
     >
   : never {
+  // Type assertion needed: Factory function with complex conditional return type
+  // TypeScript can't verify generic parameters match the conditional type structure
   return new Collection(schema, config) as any;
 }

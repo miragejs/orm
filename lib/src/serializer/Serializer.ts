@@ -153,7 +153,8 @@ export default class Serializer<
         const { sideLoaded } = this._getRelationships(model);
 
         // Merge side-loaded data, deduplicating by ID
-        for (const [key, value] of Object.entries(sideLoaded)) {
+        for (const key in sideLoaded) {
+          const value = sideLoaded[key];
           if (!allSideLoaded[key]) {
             allSideLoaded[key] = [];
           }
@@ -225,7 +226,7 @@ export default class Serializer<
     const foreignKeys: string[] = [];
 
     for (const relName of this._include) {
-      // Access the relationship from the model
+      // Access the relationship from the model (dynamic property - models/collections)
       const relatedData = (model as any)[relName];
 
       // Skip if relationship doesn't exist or is undefined

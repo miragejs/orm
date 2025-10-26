@@ -63,6 +63,13 @@ export type BelongsTo<
   foreignKey: TForeign;
   targetModel: TTarget;
   type: 'belongsTo';
+  /**
+   * The name of the inverse relationship on the target model.
+   * - `undefined`: Auto-detect inverse relationship (default behavior)
+   * - `string`: Explicit inverse relationship name
+   * - `null`: No inverse relationship (disable synchronization)
+   */
+  inverse?: string | null;
 };
 
 /**
@@ -78,6 +85,13 @@ export type HasMany<
   foreignKey: TForeign;
   targetModel: TTarget;
   type: 'hasMany';
+  /**
+   * The name of the inverse relationship on the target model.
+   * - `undefined`: Auto-detect inverse relationship (default behavior)
+   * - `string`: Explicit inverse relationship name
+   * - `null`: No inverse relationship (disable synchronization)
+   */
+  inverse?: string | null;
 };
 
 /**

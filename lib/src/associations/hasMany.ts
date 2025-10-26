@@ -7,11 +7,23 @@ import type { HasMany } from './types';
  * @param targetModel - The template of the model that is being related to.
  * @param opts - The options for the relationship.
  * @param opts.foreignKey - The foreign key of the relationship.
+ * @param opts.inverse - The name of the inverse relationship on the target model, or null to disable.
  * @returns The relationship definition object.
+ * @example
+ * ```typescript
+ * // Auto-detect inverse
+ * posts: hasMany(postModel)
+ *
+ * // Explicit inverse
+ * authoredPosts: hasMany(postModel, { inverse: 'author' })
+ *
+ * // No inverse (no synchronization)
+ * archivedPosts: hasMany(postModel, { inverse: null })
+ * ```
  */
 export default function hasMany<
   TTarget extends ModelTemplate,
-  const TOpts extends { foreignKey?: string } | undefined = undefined,
+  const TOpts extends { foreignKey?: string; inverse?: string | null } | undefined = undefined,
 >(
   targetModel: TTarget,
   opts?: TOpts,
@@ -30,5 +42,6 @@ export default function hasMany<
     foreignKey,
     targetModel,
     type: 'hasMany',
+    inverse: opts?.inverse,
   };
 }

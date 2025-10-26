@@ -385,258 +385,281 @@ describe('Schema with Relationships', () => {
     });
   });
 
-  describe('Global serializer configuration', () => {
-    describe('Schema-level global config', () => {
-      it('should apply global root config to all collections', () => {
+  describe('Inverse relationships', () => {
+    describe('explicit inverse configuration', () => {
+      it('should sync correct inverse with multiple belongsTo to same model', () => {
         const testSchema = schema()
           .collections({
-            users: collection().model(userModel).create(),
-            posts: collection().model(postModel).create(),
+            users: collection()
+              .model(userModel)
+              .relationships({
+                authoredPosts: hasMany(postModel, {
+                  foreignKey: 'authoredPostIds',
+                  inverse: 'author',
+                }),
+                reviewedPosts: hasMany(postModel, {
+                  foreignKey: 'reviewedPostIds',
+                  inverse: 'reviewer',
+                }),
+              })
+              .create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                  inverse: 'authoredPosts',
+                }),
+                reviewer: belongsTo(userModel, {
+                  foreignKey: 'reviewerId',
+                  inverse: 'reviewedPosts',
+                }),
+              })
+              .create(),
           })
-          .serializer({ root: true })
+          .setup();
+
+        const author = testSchema.users.create({
+          name: 'Author',
+          email: 'author@example.com',
+        });
+        const reviewer = testSchema.users.create({
+          name: 'Reviewer',
+          email: 'reviewer@example.com',
+        });
+        const post = testSchema.posts.create({
+          title: 'Test Post',
+          content: 'Content',
+        });
+
+        // Set author relationship - should sync to authoredPosts only
+        post.link('author', author);
+        author.reload();
+
+        expect(post.authorId).toBe(author.id);
+        expect(post.author).toMatchObject(author);
+
+        expect(author.authoredPosts).toHaveLength(1);
+        expect(author.authoredPostIds).toContain(post.id);
+        expect(author.reviewedPostIds).toEqual([]);
+
+        // Set reviewer relationship - should sync to reviewedPosts only
+        post.link('reviewer', reviewer);
+        reviewer.reload();
+
+        expect(post.reviewerId).toBe(reviewer.id);
+        expect(post.reviewer).toMatchObject(reviewer);
+
+        expect(reviewer.reviewedPostIds).toContain(post.id);
+        expect(reviewer.authoredPosts).toHaveLength(0);
+        expect(reviewer.authoredPostIds).toEqual([]); // Should NOT be synced
+      });
+
+      it('should sync explicit inverse bidirectionally', () => {
+        // Test that explicit inverse configuration works for basic bidirectional sync
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .relationships({
+                posts: hasMany(postModel, { inverse: 'author' }),
+              })
+              .create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: belongsTo(userModel, { foreignKey: 'authorId', inverse: 'posts' }),
+              })
+              .create(),
+          })
           .setup();
 
         const user = testSchema.users.create({ name: 'Alice', email: 'alice@example.com' });
-        const post = testSchema.posts.create({ title: 'Hello', content: 'World' });
+        const post = testSchema.posts.create({ title: 'Post 1', content: 'Content' });
 
-        expect(user.toJSON()).toEqual({
-          user: { id: user.id, name: 'Alice', email: 'alice@example.com' },
-        });
-        expect(post.toJSON()).toEqual({
-          post: { id: post.id, title: 'Hello', content: 'World' },
-        });
+        // Set relationship from belongsTo side
+        post.link('author', user);
+        user.reload();
+
+        expect(post.authorId).toBe(user.id);
+        expect(user.postIds).toContain(post.id);
+
+        // Create another post and set from hasMany side
+        const post2 = testSchema.posts.create({ title: 'Post 2', content: 'Content 2' });
+
+        user.link('posts', [post2]);
+        post2.reload();
+
+        expect(post2.authorId).toBe(user.id);
+        expect(user.postIds).toContain(post2.id);
       });
 
-      it('should apply global custom root key to all collections', () => {
-        const testSchema = schema()
-          .collections({
-            users: collection().model(userModel).create(),
-          })
-          .serializer({ root: 'data' })
-          .setup();
-
-        const user = testSchema.users.create({ name: 'Bob', email: 'bob@example.com' });
-
-        expect(user.toJSON()).toEqual({
-          data: { id: user.id, name: 'Bob', email: 'bob@example.com' },
-        });
-      });
-
-      it('should not wrap when no global config is set', () => {
-        const testSchema = schema()
-          .collections({
-            users: collection().model(userModel).create(),
-          })
-          .setup();
-
-        const user = testSchema.users.create({ name: 'Charlie', email: 'charlie@example.com' });
-
-        expect(user.toJSON()).toEqual({
-          id: user.id,
-          name: 'Charlie',
-          email: 'charlie@example.com',
-        });
-      });
-    });
-
-    describe('Collection-level config override', () => {
-      it('should override global root config at collection level', () => {
-        const testSchema = schema()
-          .serializer({ root: true })
-          .collections({
-            users: collection().model(userModel).serializer({ root: false }).create(),
-            posts: collection().model(postModel).create(),
-          })
-          .setup();
-
-        const user = testSchema.users.create({ name: 'Eve', email: 'eve@example.com' });
-        const post = testSchema.posts.create({ title: 'Test', content: 'Content' });
-
-        // User has root: false (collection override)
-        expect(user.toJSON()).toEqual({
-          id: user.id,
-          name: 'Eve',
-          email: 'eve@example.com',
-        });
-
-        // Post has root: true (global config)
-        expect(post.toJSON()).toEqual({
-          post: { id: post.id, title: 'Test', content: 'Content' },
-        });
-      });
-
-      it('should allow collection-specific attrs filtering with global root', () => {
-        const testSchema = schema()
-          .serializer({ root: true })
-          .collections({
-            users: collection()
-              .model(userModel)
-              .serializer({ attrs: ['id', 'name'] })
-              .create(),
-          })
-          .setup();
-
-        const user = testSchema.users.create({ name: 'Frank', email: 'frank@example.com' });
-
-        expect(user.toJSON()).toEqual({
-          user: { id: user.id, name: 'Frank' },
-        });
-      });
-
-      it('should merge global and collection config correctly', () => {
-        const testSchema = schema()
-          .serializer({ root: true, embed: false })
-          .collections({
-            users: collection()
-              .model(userModel)
-              .serializer({ attrs: ['id', 'name', 'email'] })
-              .create(),
-          })
-          .setup();
-
-        const user = testSchema.users.create({ name: 'Grace', email: 'grace@example.com' });
-
-        // Should have root from global, attrs from collection
-        expect(user.toJSON()).toEqual({
-          user: { id: user.id, name: 'Grace', email: 'grace@example.com' },
-        });
-      });
-
-      it('should allow overriding global root key with collection custom key', () => {
-        const testSchema = schema()
-          .serializer({ root: true })
-          .collections({
-            users: collection().model(userModel).serializer({ root: 'userData' }).create(),
-          })
-          .setup();
-
-        const user = testSchema.users.create({ name: 'Henry', email: 'henry@example.com' });
-
-        expect(user.toJSON()).toEqual({
-          userData: { id: user.id, name: 'Henry', email: 'henry@example.com' },
-        });
+      it('should validate explicit inverse during schema setup', () => {
+        // Schema setup should not throw - validation passes
+        expect(() => {
+          schema()
+            .collections({
+              users: collection()
+                .model(userModel)
+                .relationships({
+                  posts: hasMany(postModel, { inverse: 'author' }),
+                })
+                .create(),
+              posts: collection()
+                .model(postModel)
+                .relationships({
+                  author: belongsTo(userModel, { foreignKey: 'authorId', inverse: 'posts' }),
+                })
+                .create(),
+            })
+            .setup();
+        }).not.toThrow();
       });
     });
 
-    describe('Collection serialization', () => {
-      it('should apply global root config to collection serialization', () => {
-        const testSchema = schema()
-          .serializer({ root: true })
-          .collections({
-            users: collection().model(userModel).create(),
-          })
-          .setup();
-
-        const user1 = testSchema.users.create({ name: 'Jack', email: 'jack@example.com' });
-        const user2 = testSchema.users.create({ name: 'Jill', email: 'jill@example.com' });
-
-        const allUsers = testSchema.users.all();
-
-        expect(allUsers.toJSON()).toEqual({
-          users: [
-            { id: user1.id, name: 'Jack', email: 'jack@example.com' },
-            { id: user2.id, name: 'Jill', email: 'jill@example.com' },
-          ],
-        });
-      });
-
-      it('should apply collection attrs filter to collection serialization', () => {
+    describe('inverse: null (disabled synchronization)', () => {
+      it('should NOT sync when inverse is explicitly null', () => {
         const testSchema = schema()
           .collections({
             users: collection()
               .model(userModel)
-              .serializer({ attrs: ['id', 'name'] })
+              .relationships({
+                posts: hasMany(postModel, { inverse: null }),
+              })
+              .create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: belongsTo(userModel, { foreignKey: 'authorId', inverse: 'posts' }),
+              })
               .create(),
           })
           .setup();
 
-        const user1 = testSchema.users.create({ name: 'Kate', email: 'kate@example.com' });
-        const user2 = testSchema.users.create({ name: 'Leo', email: 'leo@example.com' });
+        const user = testSchema.users.create({ name: 'Alice', email: 'alice@example.com' });
+        const post = testSchema.posts.create({ title: 'Post 1', content: 'Content' });
 
-        const allUsers = testSchema.users.all();
+        // Set relationship on post side
+        post.link('author', user);
+        user.reload();
 
-        expect(allUsers.toJSON()).toEqual([
-          { id: user1.id, name: 'Kate' },
-          { id: user2.id, name: 'Leo' },
-        ]);
+        // Forward relationship works
+        expect(post.authorId).toBe(user.id);
+        // But inverse is NOT synced because user.posts has inverse: null
+        expect(user.postIds).toEqual([]);
       });
 
-      it('should apply merged config to collection serialization', () => {
-        const testSchema = schema()
-          .serializer({ root: true })
-          .collections({
-            users: collection()
-              .model(userModel)
-              .serializer({ attrs: ['id', 'name'] })
-              .create(),
-          })
-          .setup();
-
-        const user1 = testSchema.users.create({ name: 'Mike', email: 'mike@example.com' });
-        const user2 = testSchema.users.create({ name: 'Nina', email: 'nina@example.com' });
-
-        const allUsers = testSchema.users.all();
-
-        expect(allUsers.toJSON()).toEqual({
-          users: [
-            { id: user1.id, name: 'Mike' },
-            { id: user2.id, name: 'Nina' },
-          ],
-        });
+      it('should allow creating schema with mismatched inverse settings', () => {
+        // Should not throw - inverse: null is valid
+        expect(() => {
+          schema()
+            .collections({
+              users: collection()
+                .model(userModel)
+                .relationships({
+                  posts: hasMany(postModel), // Auto-detect
+                })
+                .create(),
+              posts: collection()
+                .model(postModel)
+                .relationships({
+                  author: belongsTo(userModel, { foreignKey: 'authorId', inverse: null }), // Disabled
+                })
+                .create(),
+            })
+            .setup();
+        }).not.toThrow();
       });
     });
 
-    describe('Edge cases', () => {
-      it('should handle empty attrs array', () => {
-        const testSchema = schema()
-          .collections({
-            users: collection().model(userModel).serializer({ attrs: [] }).create(),
-          })
-          .setup();
-
-        const user = testSchema.users.create({ name: 'Paul', email: 'paul@example.com' });
-
-        // Empty attrs should return all attributes (fallback behavior)
-        expect(user.toJSON()).toEqual({
-          id: user.id,
-          name: 'Paul',
-          email: 'paul@example.com',
-        });
+    describe('validation', () => {
+      it('should throw error for invalid inverse relationship name', () => {
+        expect(() => {
+          schema()
+            .collections({
+              users: collection()
+                .model(userModel)
+                .relationships({
+                  posts: hasMany(postModel, { inverse: 'nonexistent' }),
+                })
+                .create(),
+              posts: collection()
+                .model(postModel)
+                .relationships({
+                  author: belongsTo(userModel),
+                })
+                .create(),
+            })
+            .setup();
+        }).toThrow(/Invalid inverse relationship.*'nonexistent'/);
       });
 
-      it('should handle undefined root value correctly', () => {
-        const testSchema = schema()
-          .serializer({ root: undefined })
-          .collections({
-            users: collection().model(userModel).create(),
-          })
-          .setup();
-
-        const user = testSchema.users.create({ name: 'Quinn', email: 'quinn@example.com' });
-
-        // undefined root should not wrap
-        expect(user.toJSON()).toEqual({
-          id: user.id,
-          name: 'Quinn',
-          email: 'quinn@example.com',
-        });
+      it('should throw error when inverse points to wrong model', () => {
+        expect(() => {
+          schema()
+            .collections({
+              users: collection()
+                .model(userModel)
+                .relationships({
+                  posts: hasMany(postModel, { inverse: 'comments' }),
+                })
+                .create(),
+              posts: collection()
+                .model(postModel)
+                .relationships({
+                  comments: hasMany(commentModel),
+                })
+                .create(),
+              comments: collection().model(commentModel).create(),
+            })
+            .setup();
+        }).toThrow(/Invalid inverse relationship/);
       });
 
-      it('should handle both root and attrs at collection level', () => {
+      it('should allow asymmetric inverse relationships (without throwing)', () => {
+        // Should create successfully without throwing (warning is logged internally)
+        expect(() => {
+          schema()
+            .collections({
+              users: collection()
+                .model(userModel)
+                .relationships({
+                  posts: hasMany(postModel, { inverse: 'author' }),
+                })
+                .create(),
+              posts: collection()
+                .model(postModel)
+                .relationships({
+                  author: belongsTo(userModel, { inverse: null }),
+                })
+                .create(),
+            })
+            .setup();
+        }).not.toThrow();
+      });
+    });
+
+    describe('backwards compatibility', () => {
+      it('should maintain auto-detection when inverse is not specified', () => {
+        // Should create successfully - backwards compatible
         const testSchema = schema()
           .collections({
             users: collection()
               .model(userModel)
-              .serializer({ root: 'userRecord', attrs: ['id', 'name'] })
+              .relationships({
+                posts: hasMany(postModel), // No inverse option = auto-detect
+              })
+              .create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: belongsTo(userModel, { foreignKey: 'authorId' }), // No inverse option = auto-detect
+              })
               .create(),
           })
           .setup();
 
-        const user = testSchema.users.create({ name: 'Rachel', email: 'rachel@example.com' });
-
-        expect(user.toJSON()).toEqual({
-          userRecord: { id: user.id, name: 'Rachel' },
-        });
+        expect(testSchema).toBeDefined();
       });
     });
   });

@@ -1,5 +1,11 @@
 import type { FactoryAssociations } from '@src/associations';
-import type { InferModelAttrs, ModelAttrs, ModelInstance, ModelTemplate } from '@src/model';
+import type {
+  InferModelAttrs,
+  ModelAttrs,
+  ModelInstance,
+  ModelOnlyAttrs,
+  ModelTemplate,
+} from '@src/model';
 import type { SchemaCollections, SchemaInstance } from '@src/schema';
 
 export type FactoryAfterCreateHook<
@@ -24,10 +30,10 @@ export type TraitName<TTraits> =
   TTraits extends Record<string, any> ? Extract<keyof TTraits, string> : never;
 
 export type FactoryAttrs<TTemplate extends ModelTemplate> = {
-  [K in Exclude<keyof InferModelAttrs<TTemplate>, 'id'>]?:
-    | InferModelAttrs<TTemplate>[K]
+  [K in keyof ModelOnlyAttrs<TTemplate>]?:
+    | ModelOnlyAttrs<TTemplate>[K]
     | ((
-        this: Record<keyof InferModelAttrs<TTemplate>, any>,
+        this: ModelOnlyAttrs<TTemplate>,
         modelId: NonNullable<ModelAttrs<TTemplate>['id']>,
       ) => InferModelAttrs<TTemplate>[K]);
 };

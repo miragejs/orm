@@ -248,7 +248,16 @@ export default class QueryManager<TRecord extends DbRecord> {
     // Convert orderBy to array of [field, direction] tuples
     const pairs: Array<readonly [keyof TRecord, 'asc' | 'desc']> = Array.isArray(orderBy)
       ? orderBy
-      : (Object.entries(orderBy) as Array<[keyof TRecord, 'asc' | 'desc']>);
+      : (() => {
+          const result: Array<[keyof TRecord, 'asc' | 'desc']> = [];
+          for (const key in orderBy) {
+            const direction = orderBy[key];
+            if (direction) {
+              result.push([key as keyof TRecord, direction]);
+            }
+          }
+          return result;
+        })();
 
     return [...records].sort((a, b) => {
       for (const [field, direction] of pairs) {
@@ -290,7 +299,16 @@ export default class QueryManager<TRecord extends DbRecord> {
   ): TRecord[] {
     const pairs: Array<readonly [keyof TRecord, 'asc' | 'desc']> = Array.isArray(orderBy)
       ? orderBy
-      : (Object.entries(orderBy) as Array<[keyof TRecord, 'asc' | 'desc']>);
+      : (() => {
+          const result: Array<[keyof TRecord, 'asc' | 'desc']> = [];
+          for (const key in orderBy) {
+            const direction = orderBy[key];
+            if (direction) {
+              result.push([key as keyof TRecord, direction]);
+            }
+          }
+          return result;
+        })();
 
     return records.filter((record) => {
       for (const [field, direction] of pairs) {

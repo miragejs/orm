@@ -168,30 +168,24 @@ export default class Factory<
   private _processAttributes(
     attrs: FactoryAttrs<TTemplate>,
     modelId?: ModelId<TTemplate>,
-  ): PartialModelAttrs<TTemplate> {
-    const keys = this._sortAttrs(attrs, modelId);
+  ): PartialModelAttrs<TTemplate, TSchema> {
+    const attributes = attrs as PartialModelAttrs<TTemplate, TSchema>;
+    const keys = this._sortAttrs(attributes, modelId);
 
-    const result = keys.reduce(
-      (acc, key) => {
-        if (key === 'id') {
-          return acc;
-        }
+    const result = keys.reduce((acc, key) => {
+      const value = attributes[key];
 
-        const currentKey = key as keyof PartialModelAttrs<TTemplate>;
-        const value = (attrs as any)[currentKey];
+      if (typeof value === 'function') {
+        return {
+          ...acc,
+          [key]: value.call(attrs, modelId),
+        };
+      }
 
-        if (typeof value === 'function') {
-          acc[key as string] = value.call(attrs, modelId);
-        } else {
-          acc[key as string] = value;
-        }
+      return acc;
+    }, attributes);
 
-        return acc;
-      },
-      {} as Record<string, any>,
-    );
-
-    return result as PartialModelAttrs<TTemplate>;
+    return result;
   }
 
   private _buildWithTraits(
@@ -205,13 +199,14 @@ export default class Factory<
         if (trait) {
           const { afterCreate: _, ...extension } = trait;
 
-          Object.entries(extension).forEach(([key, value]) => {
+          for (const key in extension) {
+            const value = extension[key as keyof typeof extension];
             // Skip id and association objects
             if (key !== 'id' && !this._isAssociation(value)) {
               traitAttributes[key] =
                 typeof value === 'function' ? value.call(this.attributes, modelId) : value;
             }
-          });
+          }
         }
 
         return traitAttributes;
@@ -256,11 +251,12 @@ export default class Factory<
       const trait = this.traits[name as TraitName<TTraits>];
 
       if (trait) {
-        Object.entries(trait).forEach(([key, value]) => {
+        for (const key in trait) {
+          const value = trait[key];
           if (this._isAssociation(value)) {
             associations[key] = value;
           }
-        });
+        }
       }
     });
 
@@ -278,23 +274,23 @@ export default class Factory<
   }
 
   private _sortAttrs(
-    attrs: FactoryAttrs<TTemplate>,
-    modelId?: NonNullable<ModelId<TTemplate>>,
-  ): (keyof FactoryAttrs<TTemplate>)[] {
+    attrs: PartialModelAttrs<TTemplate, TSchema>,
+    modelId?: ModelId<TTemplate>,
+  ): (keyof PartialModelAttrs<TTemplate, TSchema>)[] {
     const visited = new Set<string>();
     const processing = new Set<string>();
 
     const detectCycle = (key: string): boolean => {
       if (processing.has(key)) {
-        throw new MirageError(`Circular dependency detected: ${key}`);
+        throw new MirageError(`Circular dependency detected: ${String(key)}`);
       }
       if (visited.has(key)) {
         return false;
       }
 
       processing.add(key);
-      const value = attrs[key as keyof FactoryAttrs<TTemplate>];
 
+      const value = attrs[key as keyof PartialModelAttrs<TTemplate, TSchema>];
       if (typeof value === 'function') {
         // Create a proxy to track property access
         const proxy = new Proxy(attrs, {
@@ -319,6 +315,6 @@ export default class Factory<
     Object.keys(attrs).forEach(detectCycle);
 
     // Return keys in their original order
-    return Object.keys(attrs) as (keyof FactoryAttrs<TTemplate>)[];
+    return Object.keys(attrs) as (keyof PartialModelAttrs<TTemplate, TSchema>)[];
   }
 }

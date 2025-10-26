@@ -71,6 +71,8 @@ export default class Schema<
     if (!collection) {
       throw new MirageError(`Collection '${String(collectionName)}' not found`);
     }
+    // Type assertion needed: Map storage loses specific generic parameters
+    // TypeScript can't verify stored collection matches complex conditional return type
     return collection as any;
   }
 
@@ -133,7 +135,8 @@ export default class Schema<
     // Track collections with auto-loading fixtures
     const autoLoadCollections: any[] = [];
 
-    for (const [collectionName, collectionConfig] of Object.entries(collections)) {
+    for (const collectionName in collections) {
+      const collectionConfig = collections[collectionName];
       const {
         model,
         factory,
@@ -188,6 +191,9 @@ export default class Schema<
       count: this._collections.size,
     });
 
+    // Validate inverse relationships after all collections are registered
+    this._validateInverseRelationships(collections);
+
     // Auto-load fixtures for collections with 'auto' strategy
     // This is done synchronously after all collections are registered
     // to ensure relationships are set up properly
@@ -199,6 +205,76 @@ export default class Schema<
         // Load fixtures synchronously using a non-async approach
         // Since we're in a constructor context, we need to handle this carefully
         void collection.loadFixtures();
+      }
+    }
+  }
+
+  /**
+   * Validate that all inverse relationships are correctly defined
+   * This checks that explicit inverse relationships exist and point back correctly
+   * @param collections - The schema collections to validate
+   * @private
+   */
+  private _validateInverseRelationships(collections: TCollections): void {
+    for (const collectionName in collections) {
+      const collectionConfig = collections[collectionName];
+      const relationships = collectionConfig.relationships;
+      if (!relationships) continue;
+
+      for (const relName in relationships) {
+        const relationship = relationships[relName];
+
+        // Skip if no explicit inverse is specified
+        if (relationship.inverse === undefined) {
+          continue;
+        }
+
+        // Skip if inverse is explicitly disabled
+        if (relationship.inverse === null) {
+          continue;
+        }
+
+        const inverseName = relationship.inverse as string;
+        const targetCollectionName = relationship.targetModel.collectionName;
+        const targetCollectionConfig = collections[targetCollectionName as keyof TCollections];
+
+        if (!targetCollectionConfig) {
+          throw new MirageError(
+            `Invalid inverse relationship: '${collectionName}.${relName}' ` +
+              `declares inverse '${inverseName}' but target collection '${targetCollectionName}' does not exist.`,
+          );
+        }
+
+        const targetRelationships = targetCollectionConfig.relationships;
+        if (!targetRelationships || !targetRelationships[inverseName]) {
+          throw new MirageError(
+            `Invalid inverse relationship: '${collectionName}.${relName}' ` +
+              `declares inverse '${inverseName}' but '${targetCollectionName}.${inverseName}' does not exist.`,
+          );
+        }
+
+        // Validate that inverse relationship points back to this collection
+        const inverseRel = targetRelationships[inverseName];
+        if (inverseRel.targetModel.collectionName !== collectionConfig.model.collectionName) {
+          throw new MirageError(
+            `Invalid inverse relationship: '${collectionName}.${relName}' ` +
+              `declares inverse '${inverseName}', but '${targetCollectionName}.${inverseName}' ` +
+              `points to '${inverseRel.targetModel.collectionName}', not '${collectionName}'.`,
+          );
+        }
+
+        // Warn about asymmetric inverse relationships
+        if (
+          inverseRel.inverse !== undefined &&
+          inverseRel.inverse !== null &&
+          inverseRel.inverse !== relName
+        ) {
+          this.logger?.warn(
+            `Asymmetric inverse relationship: '${collectionName}.${relName}' → '${inverseName}', ` +
+              `but '${targetCollectionName}.${inverseName}' → '${inverseRel.inverse || 'auto'}'. ` +
+              `Consider making inverses mutual for consistency.`,
+          );
+        }
       }
     }
   }

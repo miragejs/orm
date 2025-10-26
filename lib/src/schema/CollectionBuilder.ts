@@ -110,13 +110,14 @@ export default class CollectionBuilder<
     builder._template = template;
     // Preserve factory if it exists, casting it to the new template type
     // This allows for flexibility in the builder pattern while maintaining type safety at build time
-    builder._factory = this._factory as any;
+    builder._factory = this._factory as unknown as typeof builder._factory;
     builder._relationships = this._relationships;
-    builder._serializerConfig = this._serializerConfig as any;
+    builder._serializerConfig = this
+      ._serializerConfig as unknown as typeof builder._serializerConfig;
     builder._serializerInstance = this._serializerInstance;
     builder._identityManager = this._identityManager;
     builder._seeds = this._seeds;
-    builder._fixtures = this._fixtures as any;
+    builder._fixtures = this._fixtures as unknown as typeof builder._fixtures;
     return builder;
   }
 
@@ -184,7 +185,8 @@ export default class CollectionBuilder<
 
     const SUPPORTED_RELATIONSHIP_TYPES = ['hasMany', 'belongsTo'];
 
-    for (const [key, relationship] of Object.entries(relationships)) {
+    for (const key in relationships) {
+      const relationship = relationships[key];
       if (!relationship || typeof relationship !== 'object') {
         throw new MirageError(
           `Invalid relationship '${key}'. Expected a relationship object created with hasMany() or belongsTo().`,
@@ -230,7 +232,7 @@ export default class CollectionBuilder<
     builder._serializerConfig = this._serializerConfig;
     builder._serializerInstance = this._serializerInstance;
     builder._seeds = this._seeds;
-    builder._fixtures = this._fixtures as any;
+    builder._fixtures = this._fixtures as unknown as typeof builder._fixtures;
     return builder;
   }
 

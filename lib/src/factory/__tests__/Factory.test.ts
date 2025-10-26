@@ -21,7 +21,7 @@ type UserModel = typeof userModel;
 
 describe('Factory', () => {
   describe('Constructor', () => {
-    it('should initialize with token, attributes, traits, and afterCreate hook', () => {
+    it('should initialize with model, attributes, traits, and afterCreate hook', () => {
       const attributes = {
         name: 'John Doe',
         role: 'user',
