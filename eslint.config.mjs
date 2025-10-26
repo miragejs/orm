@@ -1,6 +1,6 @@
 import js from '@eslint/js';
 import { defineConfig } from 'eslint/config';
-import eslintPluginImport from 'eslint-plugin-import';
+import importX from 'eslint-plugin-import-x';
 import eslintPluginJSDoc from 'eslint-plugin-jsdoc';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import unusedImports from 'eslint-plugin-unused-imports';
@@ -8,12 +8,25 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 const baseRules = {
-  'import/order': [
+  'import-x/order': [
     'error',
     {
       alphabetize: { order: 'asc', caseInsensitive: true },
       groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
       'newlines-between': 'always',
+    },
+  ],
+  'no-restricted-syntax': [
+    'error',
+    // Allow for...in, for...of, and regular for loops - they are all useful
+    // Only restrict genuinely problematic patterns
+    {
+      selector: 'LabeledStatement',
+      message: 'Labels are a form of GOTO; using them makes code confusing and hard to maintain.',
+    },
+    {
+      selector: 'WithStatement',
+      message: '`with` is disallowed in strict mode because it makes code impossible to predict and optimize.',
     },
   ],
 };
@@ -53,7 +66,7 @@ export default defineConfig([
     files: ['**/*.{js,mjs,cjs}'],
     plugins: {
       js,
-      import: eslintPluginImport,
+      'import-x': importX,
       jsdoc: eslintPluginJSDoc,
     },
     rules: {
@@ -83,7 +96,7 @@ export default defineConfig([
       },
     },
     plugins: {
-      import: eslintPluginImport,
+      'import-x': importX,
       jsdoc: eslintPluginJSDoc,
       'unused-imports': unusedImports,
     },
@@ -106,16 +119,16 @@ export default defineConfig([
         },
       ],
       'unused-imports/no-unused-imports': 'error',
-        'unused-imports/no-unused-vars': [
-          'warn',
-          {
-            vars: 'all',
-            varsIgnorePattern: '^_',
-            args: 'after-used',
-            argsIgnorePattern: '^_',
-            caughtErrorsIgnorePattern: '^_',
-          },
-        ],
+      'unused-imports/no-unused-vars': [
+        'warn',
+        {
+          vars: 'all',
+          varsIgnorePattern: '^_',
+          args: 'after-used',
+          argsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
       // Relax strict rules for existing codebase
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-empty-object-type': 'off',
@@ -139,7 +152,7 @@ export default defineConfig([
       },
     },
     rules: {
-      'import/no-default-export': 'off',
+      'import-x/no-default-export': 'off',
       // Relax JSDoc rules for test files
       'jsdoc/require-jsdoc': 'off',
       'jsdoc/require-param': 'off',
@@ -159,7 +172,7 @@ export default defineConfig([
       },
     },
     rules: {
-      'import/no-default-export': 'off',
+      'import-x/no-default-export': 'off',
       'jsdoc/require-jsdoc': 'off',
       'jsdoc/require-param': 'off',
       'jsdoc/require-returns': 'off',
@@ -185,7 +198,7 @@ export default defineConfig([
   {
     files: ['*.config.{js,mjs,cjs,ts,mts,cts}'],
     rules: {
-      'import/no-default-export': 'off',
+      'import-x/no-default-export': 'off',
       // Relax JSDoc rules for config files
       'jsdoc/require-jsdoc': 'off',
       'jsdoc/require-param': 'off',
