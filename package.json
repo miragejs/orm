@@ -18,7 +18,7 @@
   "author": "Kyrylo Hrishchenko",
   "repository": {
     "type": "git",
-    "url": "https://github.com/miragejs/orm.git"
+    "url": "git+https://github.com/miragejs/orm.git"
   },
   "homepage": "https://github.com/miragejs/orm",
   "bugs": {
