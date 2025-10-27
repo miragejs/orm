@@ -43,9 +43,10 @@
     "fix:lint": "pnpm check:lint --fix",
     "fix:format": "prettier --write \"lib/src/**/*.ts\"",
     "fix:all": "pnpm fix:lint && pnpm fix:format",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "test:types": "vitest run --typecheck",
     "test:all": "pnpm test:types && pnpm test",
+    "test:coverage": "vitest run --coverage && open coverage/index.html",
     "test:watch": "vitest",
     "build": "tsup lib/src/index.ts --dts --out-dir lib/dist",
     "build:checks": "pnpm check:all && pnpm test:all && pnpm build",
@@ -64,6 +65,7 @@
     "@types/node": "^22.15.21",
     "@typescript-eslint/eslint-plugin": "^8.32.1",
     "@typescript-eslint/parser": "^8.32.1",
+    "@vitest/coverage-v8": "^4.0.4",
     "eslint": "^9.27.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-import-x": "^4.6.3",
@@ -75,7 +77,7 @@
     "tsup": "^8.5.0",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.32.1",
-    "vitest": "^3.1.4"
+    "vitest": "^4.0.4"
   },
   "engines": {
     "node": ">=18"
