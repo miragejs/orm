@@ -16,6 +16,12 @@ jobs:
     environment: npm-publish   # protect this environment with required reviewers
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -23,11 +29,7 @@ jobs:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
           cache: 'pnpm'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
+          cache-dependency-path: '**/pnpm-lock.yaml'
 
       - name: Install
         run: pnpm install --frozen-lockfile
