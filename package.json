@@ -1,6 +1,6 @@
 {
   "name": "miragejs-orm",
-  "version": "0.1.0",
+  "version": "1.0.0-next.0",
   "description": "A modern, type-safe rework of MirageJS focusing on ORM capabilities with a fresh API and the same philosophy.",
   "keywords": [
     "miragejs",
