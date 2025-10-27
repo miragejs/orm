@@ -22,7 +22,7 @@
     "fix-all": "pnpm format:fix && pnpm lint:fix",
     "test-all": "pnpm test:types && pnpm test",
     "build": "tsup lib/src/index.ts --dts --out-dir lib/dist",
-    "build:prod": "pnpm check-all && pnpm test-all && pnpm build"
+    "build:checks": "pnpm check-all && pnpm test-all && pnpm build"
   },
   "devDependencies": {
     "@eslint/js": "^9.27.0",
