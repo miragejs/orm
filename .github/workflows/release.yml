@@ -14,8 +14,11 @@ jobs:
     name: Version & Publish
     runs-on: ubuntu-latest
     environment: npm-publish   # protect this environment with required reviewers
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code 
+        uses: actions/checkout@v4
       
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -43,4 +46,3 @@ jobs:
           publish: pnpm release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
