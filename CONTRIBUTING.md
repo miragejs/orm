@@ -38,7 +38,7 @@ Contributions, discussions, and feedback are very welcome ❤️
 
 3. **Run the full local build check (lint, types, tests):**
    ```bash
-   pnpm run check-all
+   pnpm run check:all
    ```
 
 ---

@@ -1,23 +1,22 @@
 {
   "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
     "baseUrl": "./",
     "declaration": true,
+    "declarationMap": true,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["ESNext"],
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "Bundler",
     "noEmit": true,
     "outDir": "./lib/dist",
-    "paths": {
-      "@src/*": ["./lib/src/*"]
-    },
+    "paths": { "@src/*": ["./lib/src/*"] },
     "resolveJsonModule": true,
     "rootDir": "./",
     "skipLibCheck": true,
     "strict": true,
-    "target": "ESNext",
+    "target": "ES2022",
     "typeRoots": ["./node_modules", "./node_modules/@types", "./lib/types"],
     "types": ["node", "vitest/globals"]
   },

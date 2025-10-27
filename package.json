@@ -1,28 +1,53 @@
 {
   "name": "@miragejs/orm",
   "version": "0.1.0",
-  "description": "ORM features of MirageJS server",
-  "keywords": [],
+  "description": "A modern, type-safe rework of MirageJS focusing on ORM capabilities with a fresh API and the same philosophy.",
+  "keywords": [
+    "miragejs",
+    "orm",
+    "typescript",
+    "frontend",
+    "testing",
+    "development",
+    "mocks",
+    "factories",
+    "fixtures",
+    "data-generation"
+  ],
   "license": "MIT",
   "author": "Kyrylo Hrishchenko",
-  "main": "./lib/dist/index.js",
-  "module": "./lib/dist/index.mjs",
-  "types": "./lib/dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/miragejs/orm.git"
+  },
+  "homepage": "https://github.com/miragejs/orm",
+  "bugs": {
+    "url": "https://github.com/miragejs/orm/issues"
+  },
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./lib/dist/index.d.ts",
+      "default": "./lib/dist/index.js"
+    }
+  },
+  "types": "./lib/dist/index.d.ts",
+  "files": ["lib/dist/"],
   "scripts": {
-    "format": "prettier --check \"lib/src/**/*.ts\"",
-    "format:fix": "prettier --write \"lib/src/**/*.ts\"",
-    "lint": "eslint lib/src --ext .ts",
-    "lint:fix": "pnpm lint --fix",
-    "typecheck": "tsc --noEmit",
+    "check:lint": "eslint lib/src --ext .ts",
+    "check:format": "prettier --check \"lib/src/**/*.ts\"",
+    "check:types": "tsc --noEmit",
+    "check:all": "pnpm check:lint && pnpm check:format && pnpm check:types",
+    "fix:lint": "pnpm check:lint --fix",
+    "fix:format": "prettier --write \"lib/src/**/*.ts\"",
+    "fix:all": "pnpm fix:lint && pnpm fix:format",
     "test": "vitest run",
-    "test:dev": "vitest",
     "test:types": "vitest run --typecheck",
-    "check-all": "pnpm format && pnpm lint && pnpm typecheck",
-    "fix-all": "pnpm format:fix && pnpm lint:fix",
-    "test-all": "pnpm test:types && pnpm test",
+    "test:all": "pnpm test:types && pnpm test",
+    "test:watch": "vitest",
     "build": "tsup lib/src/index.ts --dts --out-dir lib/dist",
-    "build:checks": "pnpm check-all && pnpm test-all && pnpm build"
+    "build:checks": "pnpm check:all && pnpm test:all && pnpm build",
+    "prepack": "pnpm build"
   },
   "devDependencies": {
     "@eslint/js": "^9.27.0",
@@ -42,5 +67,7 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.32.1",
     "vitest": "^3.1.4"
-  }
+  },
+  "engines": { "node": ">=18" },
+  "sideEffects": false
 }
