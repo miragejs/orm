@@ -33,6 +33,21 @@ jobs:
 
       - name: Install
         run: pnpm install --frozen-lockfile
+      
+      - name: Who am I (npm)
+        run: |
+          npm whoami || echo "npm whoami failed"
+
+      - name: Show npm registry and scope
+        run: |
+          npm config get registry
+          npm config get @miragejs:registry || true
+
+      - name: Check access (best-effort)
+        run: |
+          npm access ls-packages $(npm whoami) || true
+          npm access ls-collaborators @miragejs/orm || true
+
 
       # This action either opens/updates the "Version Packages" PR,
       # or, if we're on main AND that PR has been merged, it will run "pnpm release"
