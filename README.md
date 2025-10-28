@@ -34,6 +34,7 @@ While MirageJS is an excellent solution for full API mocking, `miragejs-orm` tak
 - **🪶 Zero Dependencies** - No external dependencies means smaller bundle size (~50KB) and no supply chain concerns
 - **🔌 Framework Agnostic** - Use with any HTTP interceptor library (MSW, Mirage Server, Axios interceptors, etc.) or testing framework
 - **⚡ Modern Fluent API** - Declarative builder patterns let you construct schemas, models, and factories with an intuitive, chainable API
+- **📝 Consistent Method Naming** - Predictable singular/plural conventions (`create`/`createMany`, `find`/`findMany`) replace MirageJS's inconsistent naming
 - **📦 No Inflection Magic** - You control exactly how your model names and attributes are formatted - what you define is what you get
 - **✅ Battle Tested** - 700+ test cases with 96% code coverage, including type tests, ensure reliability
 - **🔧 Modern Tooling** - Built with modern build tools and package standards for optimal developer experience
@@ -207,7 +208,7 @@ const userCollection = collection()
 const user = appSchema.users.create({ name: 'Alice', email: 'alice@example.com' });
 
 // Create multiple records
-const users = appSchema.users.createList([
+const users = appSchema.users.createMany([
   { name: 'Alice', email: 'alice@example.com' },
   { name: 'Bob', email: 'bob@example.com' },
   { name: 'Charlie', email: 'charlie@example.com' }
@@ -217,9 +218,15 @@ const users = appSchema.users.createList([
 const adminUser = appSchema.users.create('admin');
 
 // Find or create by attributes
-const user = appSchema.users.findOrCreateBy(
+const user = appSchema.users.findOrCreate(
   { email: 'alice@example.com' },
   { name: 'Alice', role: 'user' }
+);
+
+// Find many or create by attributes
+const users = appSchema.users.findManyOrCreate(
+  [{ email: 'alice@example.com' }, { email: 'bob@example.com' }],
+  { role: 'user' }
 );
 
 // Query - find by ID
@@ -258,6 +265,20 @@ appSchema.users.delete('1');
 // Delete multiple records
 appSchema.users.deleteMany(['1', '2', '3']);
 ```
+
+**Improved Naming Conventions** 🎯
+
+Unlike MirageJS's inconsistent method naming, MirageJS ORM introduces clear, predictable conventions:
+
+**Collection Methods:**
+- ✅ **Singular/Plural Pattern** - `create()` / `createMany()`, `find()` / `findMany()`, `delete()` / `deleteMany()`
+- ✅ **Consistent Query API** - `find({ where })` replaces `find()`, `findBy()`, and `where()`
+- ✅ **Explicit Intent** - `findOrCreate()` / `findManyOrCreate()` clearly express their purpose
+
+**Before (MirageJS):** `create`, `createList`, `find`, `findBy`, `where`, `findOrCreateBy`  
+**After (MirageJS ORM):** `create`, `createMany`, `find({ where })`, `findMany({ where })`, `findOrCreate`, `findManyOrCreate`
+
+This consistency makes the API more intuitive and easier to learn!
 
 ### 3. Relationships
 
