@@ -233,10 +233,10 @@ const users = appSchema.users.findManyOrCreate(
 const user = appSchema.users.find('1');
 
 // Query - find with conditions
-const admins = appSchema.users.find({ where: { role: 'admin' } });
+const admins = appSchema.users.findMany({ where: { role: 'admin' } });
 
 // Query - find with predicate function
-const activeUsers = appSchema.users.find({ 
+const activeUsers = appSchema.users.findMany({ 
   where: (user) => user.isActive && user.role === 'admin'
 });
 
@@ -943,10 +943,10 @@ MirageJS ORM provides powerful query capabilities including advanced operators, 
 
 ```typescript
 // Simple equality
-const admins = appSchema.users.find({ where: { role: 'admin' } });
+const admins = appSchema.users.findMany({ where: { role: 'admin' } });
 
 // Predicate function
-const recentPosts = appSchema.posts.find({ 
+const recentPosts = appSchema.posts.findMany({ 
   where: (post) => new Date(post.createdAt) > new Date('2024-01-01')
 });
 ```
@@ -955,42 +955,42 @@ const recentPosts = appSchema.posts.find({
 
 ```typescript
 // Comparison operators
-const youngUsers = appSchema.users.find({ 
+const youngUsers = appSchema.users.findMany({ 
   where: { age: { lt: 30 } }  // Less than
 });
 
-const adults = appSchema.users.find({ 
+const adults = appSchema.users.findMany({ 
   where: { age: { gte: 18 } }  // Greater than or equal
 });
 
-const rangeUsers = appSchema.users.find({ 
+const rangeUsers = appSchema.users.findMany({ 
   where: { age: { between: [25, 35] } }  // Between (inclusive)
 });
 
 // String operators
-const gmailUsers = appSchema.users.find({ 
+const gmailUsers = appSchema.users.findMany({ 
   where: { email: { like: '%@gmail.com' } }  // SQL-style wildcards
 });
 
-const nameSearch = appSchema.users.find({ 
+const nameSearch = appSchema.users.findMany({ 
   where: { name: { ilike: '%john%' } }  // Case-insensitive search
 });
 
-const usersStartingWithA = appSchema.users.find({ 
+const usersStartingWithA = appSchema.users.findMany({ 
   where: { name: { startsWith: 'A' } }
 });
 
 // Null checks
-const usersWithoutEmail = appSchema.users.find({ 
+const usersWithoutEmail = appSchema.users.findMany({ 
   where: { email: { isNull: true } }
 });
 
 // Array operators
-const admins = appSchema.users.find({ 
+const admins = appSchema.users.findMany({ 
   where: { tags: { contains: 'admin' } }  // Array includes value
 });
 
-const multipleRoles = appSchema.users.find({ 
+const multipleRoles = appSchema.users.findMany({ 
   where: { tags: { contains: ['admin', 'moderator'] } }  // Array includes all values
 });
 ```
@@ -1005,7 +1005,7 @@ const multipleRoles = appSchema.users.find({
 
 ```typescript
 // AND - all conditions must match
-const activeAdmins = appSchema.users.find({ 
+const activeAdmins = appSchema.users.findMany({ 
   where: { 
     AND: [
       { status: 'active' },
@@ -1015,7 +1015,7 @@ const activeAdmins = appSchema.users.find({
 });
 
 // OR - at least one condition must match
-const flaggedUsers = appSchema.users.find({ 
+const flaggedUsers = appSchema.users.findMany({ 
   where: { 
     OR: [
       { status: 'suspended' },
@@ -1025,14 +1025,14 @@ const flaggedUsers = appSchema.users.find({
 });
 
 // NOT - negate condition
-const nonAdmins = appSchema.users.find({ 
+const nonAdmins = appSchema.users.findMany({ 
   where: { 
     NOT: { role: 'admin' }
   }
 });
 
 // Complex combinations
-const eligibleUsers = appSchema.users.find({ 
+const eligibleUsers = appSchema.users.findMany({ 
   where: { 
     AND: [
       {
@@ -1054,19 +1054,19 @@ const eligibleUsers = appSchema.users.find({
 
 ```typescript
 // Page 1: First 10 users
-const page1 = appSchema.users.find({ 
+const page1 = appSchema.users.findMany({ 
   limit: 10,
   offset: 0
 });
 
 // Page 2: Next 10 users
-const page2 = appSchema.users.find({ 
+const page2 = appSchema.users.findMany({ 
   limit: 10,
   offset: 10
 });
 
 // Combined with filtering and sorting
-const activeUsersPage2 = appSchema.users.find({ 
+const activeUsersPage2 = appSchema.users.findMany({ 
   where: { status: 'active' },
   orderBy: { createdAt: 'desc' },
   offset: 20,
@@ -1080,21 +1080,21 @@ More efficient for large datasets and prevents inconsistencies when data changes
 
 ```typescript
 // First page
-const firstPage = appSchema.users.find({ 
+const firstPage = appSchema.users.findMany({ 
   orderBy: { createdAt: 'desc' },
   limit: 10
 });
 
 // Next page using last item as cursor
 const lastUser = firstPage[firstPage.length - 1];
-const nextPage = appSchema.users.find({ 
+const nextPage = appSchema.users.findMany({ 
   orderBy: { createdAt: 'desc' },
   cursor: { createdAt: lastUser.createdAt },
   limit: 10
 });
 
 // Multi-field cursor for unique sorting
-const page = appSchema.users.find({ 
+const page = appSchema.users.findMany({ 
   orderBy: [
     ['score', 'desc'],
     ['createdAt', 'asc']
@@ -1108,7 +1108,7 @@ const page = appSchema.users.find({
 
 ```typescript
 // Complex query with all features
-const results = appSchema.users.find({ 
+const results = appSchema.users.findMany({ 
   where: { 
     AND: [
       { status: 'active' },
@@ -1237,7 +1237,7 @@ appSchema.users.create({ name: 'Charlie' });
 // [Mirage] DEBUG: Created user with factory { collection: 'users', id: '2' }
 
 // Query records
-const users = appSchema.users.find({ where: { name: 'Charlie' } });
+const users = appSchema.users.findMany({ where: { name: 'Charlie' } });
 // [Mirage] DEBUG: Query 'users': findMany
 // [Mirage] DEBUG: Query 'users' returned 1 records
 
