@@ -16,25 +16,26 @@
   ],
   "license": "MIT",
   "author": "Kyrylo Hrishchenko",
+  "homepage": "https://github.com/miragejs/orm",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/miragejs/orm.git"
   },
-  "homepage": "https://github.com/miragejs/orm",
   "bugs": {
     "url": "https://github.com/miragejs/orm/issues"
   },
   "type": "module",
+  "main": "./lib/dist/index.js",
+  "types": "./lib/dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./lib/dist/index.d.ts",
       "default": "./lib/dist/index.js"
     }
   },
-  "types": "./lib/dist/index.d.ts",
-  "files": [
-    "lib/dist/"
-  ],
+  "files": ["lib/dist/"],
+  "engines": { "node": ">=18" },
+  "sideEffects": false,
   "scripts": {
     "check:lint": "eslint lib/src --ext .ts",
     "check:format": "prettier --check \"lib/src/**/*.ts\"",
@@ -78,9 +79,5 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.32.1",
     "vitest": "^4.0.4"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "sideEffects": false
+  }
 }
