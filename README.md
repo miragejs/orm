@@ -552,22 +552,17 @@ const autoSchema = schema()
 
 #### Seeds
 
-Define scenarios for different contexts:
+Define seed scenarios at the collection level for different testing contexts:
 
 ```typescript
-import { schema } from 'miragejs-orm';
+import { collection, schema } from 'miragejs-orm';
 import { faker } from '@faker-js/faker';
 
-const appSchema = schema()
-  .collections({
-    users: userCollection,
-    posts: postCollection,
-  })
+// Define seeds in the collection builder
+const userCollection = collection()
+  .model(userModel)
+  .factory(userFactory)
   .seeds({
-    default: (schema) => {
-      schema.users.create({ name: 'Default User' });
-    },
-    
     userForm: (schema) => {
       // Create a user with all fields populated for form testing
       schema.users.create({
@@ -581,6 +576,21 @@ const appSchema = schema()
       });
     },
     
+    adminUser: (schema) => {
+      // Create admin user for permission testing
+      schema.users.create({
+        name: 'Admin User',
+        email: 'admin@example.com',
+        role: 'admin',
+      });
+    },
+  })
+  .create();
+
+const postCollection = collection()
+  .model(postModel)
+  .factory(postFactory)
+  .seeds({
     postAuthor: (schema) => {
       // Create posts and assign a user to a random subset
       schema.posts.createMany(20);
@@ -595,6 +605,13 @@ const appSchema = schema()
       });
     },
   })
+  .create();
+
+const appSchema = schema()
+  .collections({
+    users: userCollection,
+    posts: postCollection,
+  })
   .setup();
 
 // Load all seeds for all collections
@@ -603,9 +620,9 @@ appSchema.loadSeeds();
 // Or load seeds for a specific collection
 appSchema.users.loadSeeds();
 
-// Or load seeds for a specific scenario
+// Or load a specific scenario for a collection
 appSchema.users.loadSeeds('userForm');
-
+appSchema.posts.loadSeeds('postAuthor');
 ```
 
 ### 6. Serializers
@@ -1217,7 +1234,7 @@ const appSchema = schema()
       .model(userModel)
       .factory(userFactory)
       .fixtures([{ id: '1', name: 'Alice' }])
-      .seeds({ default: (schema) => schema.users.create({ name: 'Bob' }) })
+      .seeds({ testData: (schema) => schema.users.create({ name: 'Bob' }) })
       .create(),
   })
   .setup();
@@ -1241,9 +1258,9 @@ const users = appSchema.users.findMany({ where: { name: 'Charlie' } });
 // [Mirage] DEBUG: Query 'users': findMany
 // [Mirage] DEBUG: Query 'users' returned 1 records
 
-// Load seeds
-appSchema.loadSeeds();
-// [Mirage] INFO: Seeds loaded successfully for 'users' { scenario: 'default' }
+// Load seeds for a specific scenario
+appSchema.users.loadSeeds('testData');
+// [Mirage] INFO: Seeds loaded successfully for 'users' { scenario: 'testData' }
 ```
 
 **Use Cases:**
@@ -1391,9 +1408,11 @@ const userCollection = collection<AppCollections>() // Typing collection isn't n
   .relationships({
     posts: associations.hasMany(postModel),
   })
-  .seeds((schema) => { // ...until you need to use typed schema with IDE autocomplete support
-    schema.users.create({ name: 'John', email: 'john@example.com' });
-    schema.users.create({ name: 'Jane', email: 'jane@example.com' });
+  .seeds({ // ...until you need to use typed schema with IDE autocomplete support
+    testUsers: (schema) => {
+      schema.users.create({ name: 'John', email: 'john@example.com' });
+      schema.users.create({ name: 'Jane', email: 'jane@example.com' });
+    },
   })
   .create();
 ```
