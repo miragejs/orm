@@ -92,8 +92,8 @@ describe('Schema', () => {
       expect(post.content).toBe('This is a test post');
     });
 
-    it('creates multiple models with createList', () => {
-      const users = testSchema.users.createList(3, 'admin');
+    it('creates multiple models with createMany', () => {
+      const users = testSchema.users.createMany(3, 'admin');
       expect(users.length).toBe(3);
       expect(users.models[0].email).toBe('admin@example.com');
       expect(users.models[1].email).toBe('admin@example.com');
