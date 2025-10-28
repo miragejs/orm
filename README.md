@@ -1336,9 +1336,9 @@ const testSchema = schema()
 
 MirageJS ORM is built with TypeScript-first design. Here are best practices for getting the most out of type safety.
 
-### Defining Shareable Model Types
+### Defining Shareable Model Template Types
 
-Use `typeof` to create reusable model types:
+Use `typeof` to create reusable model template types that can be shared across your schema:
 
 ```typescript
 // -- @test/schema/models/user.model.ts --
@@ -1427,6 +1427,48 @@ export type AppCollections = {
 export type AppSchema = SchemaInstance<AppCollections>;
 
 ```
+
+### Typing Model Instances
+
+Use the `ModelInstance` type to properly type materialized model instances with full relationship support:
+
+```typescript
+import type { ModelInstance } from 'miragejs-orm';
+import type { UserModel } from '@test/schema/models';
+import type { AppCollections } from '@test/schema/types';
+
+// Type a user model instance
+type UserInstance = ModelInstance<UserModel, AppCollections>;
+
+// Usage in functions or variable assignments
+function processUser(user: UserInstance) {
+  // Full type safety for attributes
+  console.log(user.name);     // ✅ string
+  console.log(user.email);    // ✅ string
+  console.log(user.role);     // ✅ string
+  
+  // Full type safety for relationships
+  console.log(user.posts);    // ✅ ModelCollection<PostModel>
+  user.posts.forEach(post => {
+    console.log(post.title);  // ✅ Fully typed
+  });
+  
+  // Full type safety for methods
+  user.update({ name: 'New Name' });  // ✅ Type-safe attributes
+  user.save();                        // ✅ Method available
+  user.destroy();                     // ✅ Method available
+}
+```
+
+**How Type Inference Works:**
+
+The `ModelInstance<TTemplate, TSchema>` type uses the schema to construct the complete model type:
+
+1. **Attributes** - Extracted from the model template's `attrs` type
+2. **Relationships** - Looked up from the schema's collection configuration
+3. **Foreign Keys** - Automatically inferred from relationship definitions
+4. **Methods** - Inherited from the base `Model` class (`.save()`, `.update()`, `.destroy()`, `.reload()`, `.link()`, `.unlink()`, `.related()`)
+5. **Accessors** - Both attribute accessors and relationship accessors are fully typed
 
 ### Typing Collections
 
