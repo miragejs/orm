@@ -1,0 +1,17 @@
+<svg viewBox="0 0 75 70" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+    <!-- Horizontal lines -->
+    <path d="M-2.84217094e-14,45.956 L74.724,45.956" stroke="#05C77E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M15.346,55.956 L59.377,55.956" stroke="#05C77E" stroke-width="3.9937" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M30.694,65.956 L44.029,65.956" stroke="#05C77E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Right triangle -->
+    <polyline stroke="#05C77E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill-rule="nonzero" points="40.066 30.581 49.661 16.128 66.376 45.956"/>
+    
+    <!-- Circle/ring -->
+    <path d="M52.661,-1.77635684e-15 C59.8440155,-1.77635684e-15 65.667,5.82298454 65.667,13.006 C65.667,18.6437838 62.0798555,23.4437451 57.0634462,25.2480043 L55.1941169,21.9111027 C59.0746424,20.8093965 61.917,17.2396323 61.917,13.006 C61.917,7.89405236 57.7729476,3.75 52.661,3.75 C47.5490524,3.75 43.405,7.89405236 43.405,13.006 C43.405,15.2129486 44.1773904,17.2394958 45.4665957,18.8300659 L43.3230653,22.0591357 C41.0526191,19.7177165 39.655,16.525074 39.655,13.006 C39.655,5.82298454 45.4779845,-1.77635684e-15 52.661,-1.77635684e-15 Z" fill="#05C77E" fill-rule="nonzero"/>
+    
+    <!-- Left triangle -->
+    <polyline stroke="#05C77E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" points="8.348 45.956 27.588 11.742 49.918 45.956"/>
+  </g>
+</svg>
