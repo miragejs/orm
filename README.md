@@ -1282,12 +1282,6 @@ const testSchema = schema()
     level: 'debug' 
   })
   .setup();
-
-// Production - Disable logging
-const prodSchema = schema()
-  .collections({ users: userCollection })
-  .logging({ enabled: false, level: 'silent' })
-  .setup();
 ```
 
 ---
