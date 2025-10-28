@@ -14,8 +14,17 @@ jobs:
     name: Version & Publish
     runs-on: ubuntu-latest
     environment: npm-publish   # protect this environment with required reviewers
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code 
+        uses: actions/checkout@v4
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -23,11 +32,7 @@ jobs:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
           cache: 'pnpm'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
+          cache-dependency-path: '**/pnpm-lock.yaml'
 
       - name: Install
         run: pnpm install --frozen-lockfile
@@ -38,7 +43,6 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-          publish: pnpm release --tag next # 👈 temporarilyadd --tag next for prereleases
+          publish: pnpm release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

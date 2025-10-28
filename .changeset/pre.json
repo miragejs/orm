@@ -2,9 +2,9 @@
   "mode": "pre",
   "tag": "next",
   "initialVersions": {
-    "@miragejs/orm": "0.1.0"
+    "miragejs-orm": "0.1.0"
   },
   "changesets": [
-    "swift-trees-follow"
+    "short-lions-stay"
   ]
 }
