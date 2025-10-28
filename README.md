@@ -1144,6 +1144,135 @@ appSchema.db.users.insert({ id: '1', name: 'Alice' });
 appSchema.db.users.remove({ id: '1' });
 ```
 
+### Debugging
+
+Enable logging to understand what the ORM is doing under the hood. This is invaluable for debugging tests, understanding query behavior, and troubleshooting data issues.
+
+**Enable Logging:**
+
+```typescript
+import { schema } from 'miragejs-orm';
+
+const appSchema = schema()
+  .collections({
+    users: userCollection,
+    posts: postCollection,
+  })
+  .logging({ 
+    enabled: true, 
+    level: 'debug' 
+  })
+  .setup();
+```
+
+**Log Levels:**
+
+```typescript
+// Debug - Most verbose, shows all operations
+schema().logging({ enabled: true, level: 'debug' })
+// Output: Schema initialization, collection registration, create/find operations, query details
+
+// Info - Important operations and results
+schema().logging({ enabled: true, level: 'info' })
+// Output: Fixtures loaded, seeds loaded, high-level operations
+
+// Warn - Potential issues and unusual patterns
+schema().logging({ enabled: true, level: 'warn' })
+// Output: Foreign key mismatches, deprecated usage
+
+// Error - Only failures and validation errors
+schema().logging({ enabled: true, level: 'error' })
+// Output: Operation failures, validation errors
+
+// Silent - No logging (default)
+schema().logging({ enabled: true, level: 'silent' })
+```
+
+**Custom Prefix:**
+
+```typescript
+import { schema } from 'miragejs-orm';
+
+const testSchema = schema()
+  .collections({ users: userCollection })
+  .logging({ 
+    enabled: true, 
+    level: 'debug',
+    prefix: '[MyApp Test]'  // Custom prefix instead of default '[Mirage]'
+  })
+  .setup();
+
+// Output: [MyApp Test] DEBUG: Schema initialized
+```
+
+**What Gets Logged:**
+
+```typescript
+import { schema, collection } from 'miragejs-orm';
+
+const appSchema = schema()
+  .logging({ enabled: true, level: 'debug' })
+  .collections({
+    users: collection()
+      .model(userModel)
+      .factory(userFactory)
+      .fixtures([{ id: '1', name: 'Alice' }])
+      .seeds({ default: (schema) => schema.users.create({ name: 'Bob' }) })
+      .create(),
+  })
+  .setup();
+
+// Console output:
+// [Mirage] DEBUG: Registering collections { count: 1, names: ['users'] }
+// [Mirage] DEBUG: Collection 'users' initialized { modelName: 'user' }
+// [Mirage] DEBUG: Schema initialized { collections: ['users'] }
+
+// Load fixtures
+appSchema.loadFixtures();
+// [Mirage] INFO: Fixtures loaded successfully for 'users' { count: 1 }
+
+// Create a record
+appSchema.users.create({ name: 'Charlie' });
+// [Mirage] DEBUG: Creating user { collection: 'users' }
+// [Mirage] DEBUG: Created user with factory { collection: 'users', id: '2' }
+
+// Query records
+const users = appSchema.users.find({ where: { name: 'Charlie' } });
+// [Mirage] DEBUG: Query 'users': findMany
+// [Mirage] DEBUG: Query 'users' returned 1 records
+
+// Load seeds
+appSchema.loadSeeds();
+// [Mirage] INFO: Seeds loaded successfully for 'users' { scenario: 'default' }
+```
+
+**Use Cases:**
+
+```typescript
+import { schema } from 'miragejs-orm';
+
+// Development - See what's happening
+const devSchema = schema()
+  .collections({ users: userCollection })
+  .logging({ enabled: true, level: 'info' })
+  .setup();
+
+// Testing - Debug failing tests
+const testSchema = schema()
+  .collections({ users: userCollection })
+  .logging({
+    enabled: process.env.DEBUG === 'true',  // Enable via env var
+    level: 'debug' 
+  })
+  .setup();
+
+// Production - Disable logging
+const prodSchema = schema()
+  .collections({ users: userCollection })
+  .logging({ enabled: false, level: 'silent' })
+  .setup();
+```
+
 ---
 
 <div align="center">
@@ -1154,90 +1283,139 @@ appSchema.db.users.remove({ id: '1' });
 
 MirageJS ORM is built with TypeScript-first design. Here are best practices for getting the most out of type safety.
 
-### Shareable Model Types
+### Defining Shareable Model Types
 
 Use `typeof` to create reusable model types:
 
 ```typescript
+// -- @test/schema/models/user.model.ts --
 import { model } from 'miragejs-orm';
+import type { User } from '@domain/users/types';
 
-// Define model template
+// Define user model attributes type
+export type UserAttrs = { name: string; email: string; role: string };
+// Define user model output type to be produced during serialization
+export type UserJSON = { user: User; current?: boolean };
+
+// Create user model template
 export const userModel = model('user', 'users')
-  .attrs<{ name: string; email: string; role: string }>()
+  .attrs<UserAttrs>()
+  .json<UserJSON, User[]>()
   .create();
 
-export const postModel = model('post', 'posts')
-  .attrs<{ title: string; content: string; authorId: string }>()
-  .create();
-
-// Create shareable types
+// Define a shareable user model type
 export type UserModel = typeof userModel;
-export type PostModel = typeof postModel;
-
-// Use in other files
-import type { UserModel, PostModel } from './models';
 ```
 
-### Typing Schema and Collections
+```typescript
+// -- @test/schema/models/post.model.ts --
+import { model } from 'miragejs-orm';
+import type { Post } from '@domain/posts/types';
+
+// Define post attributes type
+export type PostAttrs = { title: string; content: string; authorId: string };
+
+// Create post model template
+export const postModel = model('post', 'posts')
+  .attrs<PostAttrs>()
+  .json<Post, Post[]>() // Use existing Post entity type without transformations
+  .create();
+
+// Define shareable post model type
+export type PostModel = typeof postModel;
+```
+
+```typescript
+// -- @test/schema/collections/user.collection.ts --
+// Use shareable model types in your collections
+import { userModel, type UserModel, postModel, type PostModel } from '@test/schema/models';
+```
+
+### Typing Schema
 
 Define explicit schema types for use across your application:
 
 ```typescript
+// -- @test/schema/types.ts --
 import { model, collection, schema, associations } from 'miragejs-orm';
-import type { CollectionConfig, SchemaCollections } from 'miragejs-orm';
+import type { CollectionConfig, HasMany, BelongsTo, SchemaInstance } from 'miragejs-orm';
+import type { UserModel, PostModel } from './models';
 
-// Define your models
-export const userModel = model('user', 'users')
-  .attrs<{ name: string; email: string }>()
-  .create();
-
-export const postModel = model('post', 'posts')
-  .attrs<{ title: string; content: string; authorId: string }>()
-  .create();
-
-// Define schema collections type
-export type AppSchemaCollections = {
-  users: CollectionConfig<typeof userModel>;
-  posts: CollectionConfig<typeof postModel>;
+// Define your schema collections type
+export type AppCollections = {
+  users: CollectionConfig<
+    UserModel,
+    {
+      posts: HasMany<PostModel>;
+    },
+    Factory<
+      UserModel,
+      AppCollections,
+      {
+        admin: TraitDefinition<AppCollections, UserModel>;
+      }
+    >
+  >;
+  posts: CollectionConfig<
+    PostModel,
+    {
+      author: BelongsTo<UserModel, 'authorId'>
+    },
+    Factory<
+      UserModel,
+      AppCollections,
+      {
+        admin: TraitDefinition<AppCollections, UserModel>;
+      }
+    >
+  >;
 };
 
-// Create your schema
-export const appSchema = schema()
-  .collections({
-    users: collection<AppSchemaCollections>()
-      .model(userModel)
-      .relationships({
-        posts: associations.hasMany(postModel),
-      })
-      .create(),
-      
-    posts: collection<AppSchemaCollections>()
-      .model(postModel)
-      .relationships({
-        author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
-      })
-      .create(),
-  })
-  .setup();
+export type AppSchema = SchemaInstance<AppCollections>;
 
-// Export schema instance type
-export type AppSchema = typeof appSchema;
 ```
 
-### Typing Factory Hooks with Schema
+### Typing Collections
 
-Pass schema type to factories for type-safe `afterCreate` hooks:
+Pass schema type to collections for type-safe `schema` usage and data validation (e.g., seeds, fixtures, etc.):
+
+```typescript
+// -- @test/schema/collections/user.collection.ts --
+import { model, collection, schema, associations } from 'miragejs-orm';
+import { userModel, postModel } from '@test/schema/models';
+import type { AppCollections } from '@test/schema/types';
+
+// Create user collection
+const userCollection = collection<AppCollections>() // Typing collection isn't necessary...
+  .model(userModel)
+  .relationships({
+    posts: associations.hasMany(postModel),
+  })
+  .seeds((schema) => { // ...until you need to use typed schema with IDE autocomplete support
+    schema.users.create({ name: 'John', email: 'john@example.com' });
+    schema.users.create({ name: 'Jane', email: 'jane@example.com' });
+  })
+  .create();
+```
+
+### Typing Factories
+
+Pass schema type to factories for type-safe `associations` and `afterCreate` hooks:
 
 ```typescript
 import { factory, associations } from 'miragejs-orm';
-import type { AppSchemaCollections } from './schema';
-import { userModel, postModel } from './models';
+import { userModel, postModel } from '@test/schema/models';
+import type { AppCollections } from '@test/schema/types';
 
-export const postFactory = factory<AppSchemaCollections>()
+export const postFactory = factory<AppCollections>()
   .model(postModel)
   .attrs({
     title: () => 'Sample Post',
     content: () => 'Content here',
+  })
+  .associations({
+    // Types enable autocomplete - IDE suggests 'posts' as a relationship
+    posts: associations.createMany<AppCollections>(postModel, 3, 'published'), // ...and post model attributes or traits
   })
   .afterCreate((post, schema) => {
     // schema is fully typed! IDE autocomplete works perfectly
@@ -1245,53 +1423,6 @@ export const postFactory = factory<AppSchemaCollections>()
     if (user) {
       post.update({ author: user });
     }
-  })
-  .create();
-```
-
-### Typing Associations for Autocomplete
-
-Use model types to enable autocomplete in factory associations:
-
-```typescript
-import { factory, associations } from 'miragejs-orm';
-import type { AppSchemaCollections } from './schema';
-import { userModel, postModel } from './models';
-
-export const userFactory = factory<AppSchemaCollections>()
-  .model(userModel)
-  .traits({
-    withPosts: {
-      // Types enable autocomplete - IDE suggests 'posts' as a relationship
-      posts: associations.createMany(postModel, 3),
-    },
-    withLinkedPost: {
-      // Autocomplete knows what associations are available
-      posts: associations.link(postModel),
-    },
-  })
-  .create();
-```
-
-### Typing Collection Seeds
-
-Pass schema type to collections created separately for typed seeds:
-
-```typescript
-import { collection } from 'miragejs-orm';
-import type { AppSchemaCollections } from './schema';
-import { userModel } from './models';
-
-export const userCollection = collection<AppSchemaCollections>()
-  .model(userModel)
-  .seeds({
-    default: (schema) => {
-      // schema is typed! Autocomplete shows schema.users, schema.posts, etc.
-      schema.users.create({ name: 'Alice', email: 'alice@example.com' });
-      
-      // IDE knows about other collections
-      const posts = schema.posts.all();
-    },
   })
   .create();
 ```
@@ -1315,43 +1446,21 @@ MirageJS ORM is **fully modular** — all components can be created separately a
 ### Recommended Project Structure
 
 ```typescript
-// schema/models/user.model.ts
-interface UserAttrs {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-}
+// schema/models - Centralized model templates
 
+// schema/models/user.model.ts
 export const userModel = model('user', 'users')
   .attrs<UserAttrs>()
   .create();
 
-// Export shareable type
-export type UserModel = typeof userModel;
-
 // schema/models/post.model.ts
-interface PostAttrs {
-  id: string;
-  title: string;
-  content: string;
-  authorId: string;
-}
-
-interface PostJSON {
-  id: string;
-  title: string;
-  content: string;
-}
-
 export const postModel = model('post', 'posts')
   .attrs<PostAttrs>()
-  .json<PostJSON>()
   .create();
 
-export type PostModel = typeof postModel;
+// schema/collections/users - Collection-specific components
 
-// schema/collections/users/user.factory.ts
+// schema/collections/users/user.factory.ts - Factory for creating user instances
 import { factory } from 'miragejs-orm';
 import { userModel } from '@test/schema/models';
 
@@ -1364,27 +1473,14 @@ export const userFactory = factory()
   })
   .create();
 
-// schema/collections/users/user.seeds.ts
-import type { SeedFunction } from 'miragejs-orm';
-import type { AppSchemaCollections } from '@test/schema/types';
-
-export const userSeeds: SeedFunction<AppSchemaCollections> = {
-  default: (schema) => {
-    schema.users.create({ name: 'Default User' });
-  },
-  admin: (schema) => {
-    schema.users.create({ name: 'Admin', role: 'admin' });
-  },
-};
-
-// schema/collections/users/user.collection.ts
+// schema/collections/users/user.collection.ts - Collection configuration with relationships
 import { collection, associations } from 'miragejs-orm';
-import type { AppSchemaCollections } from '@test/schema/types';
+import type { AppCollections } from '@test/schema/types';
 import { userModel, postModel } from '@test/schema/models';
 import { userFactory } from './user.factory';
 import { userSeeds } from './user.seeds';
 
-export const userCollection = collection<AppSchemaCollections>()
+export const userCollection = collection<AppCollections>()
   .model(userModel)
   .factory(userFactory)
   .relationships({
@@ -1393,13 +1489,26 @@ export const userCollection = collection<AppSchemaCollections>()
   .seeds(userSeeds)
   .create();
 
+// schema/collections/users/user.seeds.ts - Seed scenarios for different contexts
+import type { SeedFunction } from 'miragejs-orm';
+import type { AppCollections } from '@test/schema/types';
+
+export const userSeeds: SeedFunction<AppCollections> = {
+  current(schema) {
+    schema.users.create({ name: 'Default User', current: true });
+  },
+  admin(schema) {
+    schema.users.create({ name: 'Admin', role: 'admin' });
+  },
+};
+
 // schema/types.ts - Centralized type definitions
 import type { CollectionConfig } from 'miragejs-orm';
-import type { userModel, postModel } from './models';
+import type { UserModel, PostModel } from './models';
 
-export type AppSchemaCollections = {
-  users: CollectionConfig<typeof userModel>;
-  posts: CollectionConfig<typeof postModel>;
+export type AppCollections = {
+  users: CollectionConfig<UserModel>;
+  posts: CollectionConfig<PostModel>;
 };
 
 // schema/app.schema.ts - Main application schema
@@ -1413,9 +1522,7 @@ export const appSchema = schema()
   })
   .setup();
 
-export type AppSchema = typeof appSchema;
-
-// schema/variations/dev.schema.ts - Development schema
+// schema/variations/dev.schema.ts - Development schema with seeds
 import { schema } from 'miragejs-orm';
 import { userCollection, postCollection } from '@test/schema/collections';
 
@@ -1429,7 +1536,7 @@ export const devSchema = schema()
 
 devSchema.loadSeeds();
 
-// schema/variations/test.schema.ts - Testing schema
+// schema/variations/test.schema.ts - Testing schema with fixtures
 import { schema, collection } from 'miragejs-orm';
 import { userModel } from '@test/schema/models';
 
@@ -1467,7 +1574,7 @@ schema/
 │       ├── post.seeds.ts
 │       └── post.collection.ts
 │
-├── types.ts                  # Centralized AppSchemaCollections type
+├── types.ts                  # Centralized AppCollections type
 ├── schema.ts                 # Main application schema
 │
 └── variations/              # Environment-specific schemas (optional)
@@ -1477,18 +1584,18 @@ schema/
 ```
 
 **Benefits of This Structure:**
-- 🗂️ **Models are centralized** - Easy to find and import from one location
-- 📦 **Collections are self-contained** - Everything related to a collection in one folder
-- 🔄 **Type exports alongside templates** - `UserModel` type lives with `userModel`
-- 🎯 **Schema variations** - Multiple schemas for different environments without duplication
-- 🚫 **No circular dependencies** - Clear one-way flow: `models → collections → schemas`
+- 🗂️ **Centralized Models** - Easy to find and import from one location
+- 📦 **Self-Contained Collections** - Everything related to a collection lives in one folder
+- 🔄 **Co-located Types** - `UserModel` type lives alongside `userModel` template
+- 🎯 **Environment Variations** - Multiple schemas for different environments without duplication
+- 🚫 **No Circular Dependencies** - Clear one-way flow: `models → collections → schemas`
 
 **Why This Works:**
-1. **Models** are completely independent - no imports from other modules
+1. **Models** are completely independent — no imports from other modules
 2. **Factories** only import models
-3. **Seeds** only import types and models
+3. **Seeds** only import types (not model instances)
 4. **Collections** import models, factories, and seeds from their own directory
-5. **Schemas** import collections and compose them
+5. **Schemas** import collections and compose them into the final schema
 
 ## 📖 API Reference
 
