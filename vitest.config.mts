@@ -47,9 +47,6 @@ export default defineConfig({
       // Clean coverage directory before running tests
       clean: true,
 
-      // Show all files, including those with 0% coverage
-      all: true,
-
       // Output directory
       reportsDirectory: './coverage',
     },

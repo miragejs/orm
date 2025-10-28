@@ -1,5 +1,6 @@
 import { factory } from '@src/factory';
 import { model } from '@src/model';
+import type { Mock } from 'vitest';
 
 import { collection } from '../CollectionBuilder';
 import { schema } from '../SchemaBuilder';
@@ -44,9 +45,9 @@ type TestSchema = {
 };
 
 describe('Schema with Logging', () => {
-  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
-  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  let consoleLogSpy: Mock<typeof vi.spyOn>;
+  let consoleWarnSpy: Mock<typeof vi.spyOn>;
+  let consoleErrorSpy: Mock<typeof vi.spyOn>;
 
   beforeEach(() => {
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
