@@ -439,10 +439,10 @@ import { factory, associations } from 'miragejs-orm';
 
 const userFactory = factory()
   .model(userModel)
+  .associations({
+    posts: associations.createMany(postModel, 3),
+  })
   .traits({
-    withPosts: {
-      posts: associations.createMany(postModel, 3),
-    },
     withProfile: {
       profile: associations.create(profileModel),
     },
@@ -454,7 +454,7 @@ const userFactory2 = factory()
   .model(userModel)
   .traits({
     withExistingPost: {
-      posts: associations.link(postModel),  // Finds first existing post, creates one if none exist
+      post: associations.link(postModel),  // Finds first existing post, creates one if none exist
     },
     withExistingPosts: {
       posts: associations.linkMany(postModel, 3),  // Finds/creates up to 3 posts
