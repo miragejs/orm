@@ -49,3 +49,37 @@ jobs:
 
       - name: Build (smoke)
         run: pnpm build
+
+  coverage:
+    name: Coverage (Node 20, V8)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: '**/pnpm-lock.yaml'
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Run coverage (Vitest V8)
+        run: pnpm test:coverage
+
+      - name: Upload coverage artifact (lcov)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-lcov
+          path: coverage/lcov.info
+          if-no-files-found: warn
+        
