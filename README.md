@@ -34,7 +34,6 @@ While MirageJS is an excellent solution for full API mocking, `miragejs-orm` tak
 - **🪶 Zero Dependencies** - No external dependencies means smaller bundle size (~50KB) and no supply chain concerns
 - **🔌 Framework Agnostic** - Use with any HTTP interceptor library (MSW, Mirage Server, Axios interceptors, etc.) or testing framework
 - **⚡ Modern Fluent API** - Declarative builder patterns let you construct schemas, models, and factories with an intuitive, chainable API
-- **📝 Consistent Method Naming** - Predictable singular/plural conventions (`create`/`createMany`, `find`/`findMany`) replace MirageJS's inconsistent naming
 - **📦 No Inflection Magic** - You control exactly how your model names and attributes are formatted - what you define is what you get
 - **✅ Battle Tested** - 700+ test cases with 96% code coverage, including type tests, ensure reliability
 - **🔧 Modern Tooling** - Built with modern build tools and package standards for optimal developer experience
@@ -153,7 +152,7 @@ console.log(post.author.name);  // 'Alice'
 
 ## 📚 Core Concepts
 
-### 1. Models (Model Templates)
+### 1. Model Templates
 
 **Model Templates** define the structure of your data entities. They're created using the `model()` builder and are schema-less at runtime but fully typed at compile time.
 
@@ -204,44 +203,44 @@ const userCollection = collection()
 
 **Collection Methods:**
 ```typescript
-// Create single record
+// Create with factory defaults
+const user = appSchema.users.create();
+
+// Create with custom attributes
 const user = appSchema.users.create({ name: 'Alice', email: 'alice@example.com' });
 
-// Create multiple records
-const users = appSchema.users.createMany([
-  { name: 'Alice', email: 'alice@example.com' },
-  { name: 'Bob', email: 'bob@example.com' },
-  { name: 'Charlie', email: 'charlie@example.com' }
-]);
-
 // Create with factory traits
-const adminUser = appSchema.users.create('admin');
+const adminUser = appSchema.users.create({ name: 'Admin' }, 'admin');
+
+// Create multiple records
+const users = appSchema.users.createMany(3);
 
 // Find or create by attributes
-const user = appSchema.users.findOrCreate(
+const user = appSchema.users.findOrCreateBy(
   { email: 'alice@example.com' },
   { name: 'Alice', role: 'user' }
 );
 
 // Find many or create by attributes
-const users = appSchema.users.findManyOrCreate(
-  [{ email: 'alice@example.com' }, { email: 'bob@example.com' }],
-  { role: 'user' }
+const users = appSchema.users.findManyOrCreateBy(
+  5,
+  { role: 'user' },
+  { isActive: true }
 );
 
 // Query - find by ID
 const user = appSchema.users.find('1');
 
 // Query - find with conditions
-const admins = appSchema.users.findMany({ where: { role: 'admin' } });
+const admin = appSchema.users.find({ where: { role: 'admin' } });
+
+// Query - find many by IDs
+const users = appSchema.users.findMany(['1', '2', '3']);
 
 // Query - find with predicate function
 const activeUsers = appSchema.users.findMany({ 
   where: (user) => user.isActive && user.role === 'admin'
 });
-
-// Query - find many by IDs
-const users = appSchema.users.findMany(['1', '2', '3']);
 
 // Query - get all records
 const allUsers = appSchema.users.all();
@@ -273,14 +272,57 @@ Unlike MirageJS's inconsistent method naming, MirageJS ORM introduces clear, pre
 **Collection Methods:**
 - ✅ **Singular/Plural Pattern** - `create()` / `createMany()`, `find()` / `findMany()`, `delete()` / `deleteMany()`
 - ✅ **Consistent Query API** - `find({ where })` replaces `find()`, `findBy()`, and `where()`
-- ✅ **Explicit Intent** - `findOrCreate()` / `findManyOrCreate()` clearly express their purpose
+- ✅ **Explicit Intent** - `findOrCreateBy()` / `findManyOrCreateBy()` clearly express their purpose
 
 **Before (MirageJS):** `create`, `createList`, `find`, `findBy`, `where`, `findOrCreateBy`  
-**After (MirageJS ORM):** `create`, `createMany`, `find({ where })`, `findMany({ where })`, `findOrCreate`, `findManyOrCreate`
+**After (MirageJS ORM):** `create`, `createMany`, `find({ where })`, `findMany({ where })`, `findOrCreateBy`, `findManyOrCreateBy`
 
 This consistency makes the API more intuitive and easier to learn!
 
-### 3. Relationships
+### 3. Records vs Models
+
+Understanding the distinction between **Records** and **Models** is fundamental to working with miragejs-orm:
+
+**Records** are plain JavaScript objects stored in the database (`DbCollection`). They contain:
+- Simple data attributes (name, email, etc.)
+- Foreign keys (userId, postIds, etc.)
+- An `id` field
+- No methods or behavior
+
+**Models** are class instances that wrap records and provide rich functionality:
+- All record attributes via accessors (`user.name`, `post.title`)
+- Relationship accessors (`user.posts`, `post.author`)
+- CRUD methods (`.save()`, `.update()`, `.destroy()`, `.reload()`)
+- Relationship methods (`.related()`, `.link()`, `.unlink()`)
+- Serialization (`.toJSON()`, `.toString()`)
+- Status tracking (`.isNew()`, `.isSaved()`)
+
+```typescript
+// When you create a model, it materializes into a Model instance
+const user = appSchema.users.create({ name: 'Alice', email: 'alice@example.com' });
+
+// The Model instance wraps a Record stored in the database
+console.log(user instanceof Model); // true
+console.log(user.name); // 'Alice' - attribute accessor
+console.log(user.posts); // ModelCollection - relationship accessor
+
+// Under the hood, the record is just:
+// { id: '1', name: 'Alice', email: 'alice@example.com', postIds: [] }
+
+// Models are materialized when:
+// - Creating: appSchema.users.create(...)
+// - Finding: appSchema.users.find('1')
+// - Querying: appSchema.users.findMany({ where: ... })
+// - Accessing relationships: user.posts (returns ModelCollection of Models)
+```
+
+**Why This Matters:**
+- 🗄️ **Storage Efficiency** - The database stores lightweight records, not heavy model instances
+- 🔄 **Fresh Data** - Each query materializes new model instances with the latest record data
+- 🎯 **Type Safety** - Models provide type-safe accessors and methods, records are just data
+- 🔗 **Relationships** - Models handle relationship logic, records only store foreign keys
+
+### 4. Relationships
 
 Define relationships between models to create a relational data structure using **Associations**.
 
@@ -371,7 +413,7 @@ const student = appSchema.students.create({
 console.log(student.courses.length); // 2
 ```
 
-### 4. Factories
+### 5. Factories
 
 Factories help you generate realistic test data with minimal boilerplate.
 
@@ -487,7 +529,7 @@ const postFactory = factory()
   .create();
 ```
 
-### 5. Schema
+### 6. Schema
 
 The schema is your in-memory database that ties everything together.
 
@@ -625,7 +667,7 @@ appSchema.users.loadSeeds('userForm');
 appSchema.posts.loadSeeds('postAuthor');
 ```
 
-### 6. Serializers
+### 7. Serializers
 
 Control how your models are formatted when converted to JSON. Serializers can be configured at three levels: using the Serializer class, collection-level options, or global schema options.
 

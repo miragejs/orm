@@ -158,12 +158,12 @@ export default class Collection<
   }
 
   /**
-   * Create a list of models for the collection.
+   * Create multiple models for the collection.
    * @param count - The number of models to create.
    * @param traitsAndDefaults - The traits or default values to use for the models.
    * @returns A list of model instances.
    */
-  createList(
+  createMany(
     count: number,
     ...traitsAndDefaults: (
       | FactoryTraitNames<TFactory>

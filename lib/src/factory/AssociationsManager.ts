@@ -105,7 +105,7 @@ export default class AssociationsManager<
     count: number,
     traitsAndDefaults?: AssociationTraitsAndDefaults,
   ): ModelCollection<any, TSchema, any> {
-    return collection.createList(
+    return collection.createMany(
       count,
       ...((traitsAndDefaults ?? []) as CollectionCreateAttrs<TTemplate, TSchema>[]),
     );
@@ -173,7 +173,7 @@ export default class AssociationsManager<
     // Create more if needed (with traits and defaults)
     const needed = count - shuffledModels.length;
     if (needed > 0) {
-      const newModels = collection.createList(
+      const newModels = collection.createMany(
         needed,
         ...((traitsAndDefaults ?? []) as CollectionCreateAttrs<TTemplate, TSchema>[]),
       );
