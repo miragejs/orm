@@ -1,6 +1,6 @@
 {
-  "name": "@miragejs/orm",
-  "version": "0.1.0",
+  "name": "miragejs-orm",
+  "version": "1.0.0-next.0",
   "description": "A modern, type-safe rework of MirageJS focusing on ORM capabilities with a fresh API and the same philosophy.",
   "keywords": [
     "miragejs",
@@ -16,25 +16,26 @@
   ],
   "license": "MIT",
   "author": "Kyrylo Hrishchenko",
+  "homepage": "https://github.com/miragejs/orm",
   "repository": {
     "type": "git",
-    "url": "https://github.com/miragejs/orm.git"
+    "url": "git+https://github.com/miragejs/orm.git"
   },
-  "homepage": "https://github.com/miragejs/orm",
   "bugs": {
     "url": "https://github.com/miragejs/orm/issues"
   },
   "type": "module",
+  "main": "./lib/dist/index.js",
+  "types": "./lib/dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./lib/dist/index.d.ts",
       "default": "./lib/dist/index.js"
     }
   },
-  "types": "./lib/dist/index.d.ts",
-  "files": [
-    "lib/dist/"
-  ],
+  "files": ["lib/dist/"],
+  "engines": { "node": ">=18" },
+  "sideEffects": false,
   "scripts": {
     "check:lint": "eslint lib/src --ext .ts",
     "check:format": "prettier --check \"lib/src/**/*.ts\"",
@@ -44,6 +45,7 @@
     "fix:format": "prettier --write \"lib/src/**/*.ts\"",
     "fix:all": "pnpm fix:lint && pnpm fix:format",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:types": "vitest run --typecheck",
     "test:all": "pnpm test:types && pnpm test",
     "test:watch": "vitest",
@@ -64,6 +66,7 @@
     "@types/node": "^22.15.21",
     "@typescript-eslint/eslint-plugin": "^8.32.1",
     "@typescript-eslint/parser": "^8.32.1",
+    "@vitest/coverage-v8": "^4.0.4",
     "eslint": "^9.27.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-import-x": "^4.6.3",
@@ -75,10 +78,6 @@
     "tsup": "^8.5.0",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.32.1",
-    "vitest": "^3.1.4"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "sideEffects": false
+    "vitest": "^4.0.4"
+  }
 }

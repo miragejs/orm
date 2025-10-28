@@ -1,9 +1,11 @@
+import type { Mock } from 'vitest';
+
 import Logger from '../Logger';
 
 describe('Logger', () => {
-  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
-  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  let consoleLogSpy: Mock<typeof vi.spyOn>;
+  let consoleWarnSpy: Mock<typeof vi.spyOn>;
+  let consoleErrorSpy: Mock<typeof vi.spyOn>;
 
   beforeEach(() => {
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
