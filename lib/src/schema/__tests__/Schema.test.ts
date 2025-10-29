@@ -92,12 +92,39 @@ describe('Schema', () => {
       expect(post.content).toBe('This is a test post');
     });
 
-    it('creates multiple models with createMany', () => {
+    it('creates multiple models with createMany (count + traits)', () => {
       const users = testSchema.users.createMany(3, 'admin');
       expect(users.length).toBe(3);
       expect(users.models[0].email).toBe('admin@example.com');
       expect(users.models[1].email).toBe('admin@example.com');
       expect(users.models[2].email).toBe('admin@example.com');
+    });
+
+    it('creates multiple models with createMany (array of attributes)', () => {
+      const users = testSchema.users.createMany([
+        [{ email: 'alice@example.com' }],
+        [{ email: 'bob@example.com' }],
+        ['admin'],
+      ]);
+      expect(users.length).toBe(3);
+      expect(users.models[0].email).toBe('alice@example.com');
+      expect(users.models[1].email).toBe('bob@example.com');
+      expect(users.models[2].email).toBe('admin@example.com');
+    });
+
+    it('creates multiple models with createMany (array with mixed traits and attributes)', () => {
+      const posts = testSchema.posts.createMany([
+        [{ title: 'First Post', content: 'First content' }],
+        [{ title: 'Second Post' }], // Uses factory default for content
+        [{ content: 'Third content' }], // Uses factory default for title
+      ]);
+      expect(posts.length).toBe(3);
+      expect(posts.models[0].title).toBe('First Post');
+      expect(posts.models[0].content).toBe('First content');
+      expect(posts.models[1].title).toBe('Second Post');
+      expect(posts.models[1].content).toBe('This is a test post');
+      expect(posts.models[2].title).toBe('Hello World'); // Factory default
+      expect(posts.models[2].content).toBe('Third content');
     });
   });
 
