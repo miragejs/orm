@@ -212,8 +212,15 @@ const user = appSchema.users.create({ name: 'Alice', email: 'alice@example.com' 
 // Create with factory traits
 const adminUser = appSchema.users.create({ name: 'Admin' }, 'admin');
 
-// Create multiple records
+// Create multiple identical records
 const users = appSchema.users.createMany(3);
+
+// Create multiple different records: two regular users and one admin
+const users = appSchema.users.createMany([
+  [{ name: 'Alice', email: 'alice@example.com' }],
+  [{ name: 'Bob', email: 'bob@example.com' }],
+  ['admin'],  // Using a trait
+]);
 
 // Find or create by attributes
 const user = appSchema.users.findOrCreateBy(
@@ -279,50 +286,7 @@ Unlike MirageJS's inconsistent method naming, MirageJS ORM introduces clear, pre
 
 This consistency makes the API more intuitive and easier to learn!
 
-### 3. Records vs Models
-
-Understanding the distinction between **Records** and **Models** is fundamental to working with miragejs-orm:
-
-**Records** are plain JavaScript objects stored in the database (`DbCollection`). They contain:
-- Simple data attributes (name, email, etc.)
-- Foreign keys (userId, postIds, etc.)
-- An `id` field
-- No methods or behavior
-
-**Models** are class instances that wrap records and provide rich functionality:
-- All record attributes via accessors (`user.name`, `post.title`)
-- Relationship accessors (`user.posts`, `post.author`)
-- CRUD methods (`.save()`, `.update()`, `.destroy()`, `.reload()`)
-- Relationship methods (`.related()`, `.link()`, `.unlink()`)
-- Serialization (`.toJSON()`, `.toString()`)
-- Status tracking (`.isNew()`, `.isSaved()`)
-
-```typescript
-// When you create a model, it materializes into a Model instance
-const user = appSchema.users.create({ name: 'Alice', email: 'alice@example.com' });
-
-// The Model instance wraps a Record stored in the database
-console.log(user instanceof Model); // true
-console.log(user.name); // 'Alice' - attribute accessor
-console.log(user.posts); // ModelCollection - relationship accessor
-
-// Under the hood, the record is just:
-// { id: '1', name: 'Alice', email: 'alice@example.com', postIds: [] }
-
-// Models are materialized when:
-// - Creating: appSchema.users.create(...)
-// - Finding: appSchema.users.find('1')
-// - Querying: appSchema.users.findMany({ where: ... })
-// - Accessing relationships: user.posts (returns ModelCollection of Models)
-```
-
-**Why This Matters:**
-- 🗄️ **Storage Efficiency** - The database stores lightweight records, not heavy model instances
-- 🔄 **Fresh Data** - Each query materializes new model instances with the latest record data
-- 🎯 **Type Safety** - Models provide type-safe accessors and methods, records are just data
-- 🔗 **Relationships** - Models handle relationship logic, records only store foreign keys
-
-### 4. Relationships
+### 3. Relationships
 
 Define relationships between models to create a relational data structure using **Associations**.
 
@@ -413,7 +377,7 @@ const student = appSchema.students.create({
 console.log(student.courses.length); // 2
 ```
 
-### 5. Factories
+### 4. Factories
 
 Factories help you generate realistic test data with minimal boilerplate.
 
@@ -529,7 +493,7 @@ const postFactory = factory()
   .create();
 ```
 
-### 6. Schema
+### 5. Schema
 
 The schema is your in-memory database that ties everything together.
 
@@ -667,7 +631,7 @@ appSchema.users.loadSeeds('userForm');
 appSchema.posts.loadSeeds('postAuthor');
 ```
 
-### 7. Serializers
+### 6. Serializers
 
 Control how your models are formatted when converted to JSON. Serializers can be configured at three levels: using the Serializer class, collection-level options, or global schema options.
 
@@ -806,6 +770,49 @@ console.log(post.toJSON());
 - `include`: Array of relationship names to include - *Collection-level only*
 
 **Note:** Collection-level options override global schema options.
+
+### 7. Records vs Models
+
+Understanding the distinction between **Records** and **Models** is fundamental to working with miragejs-orm:
+
+**Records** are plain JavaScript objects stored in the database (`DbCollection`). They contain:
+- Simple data attributes (name, email, etc.)
+- Foreign keys (userId, postIds, etc.)
+- An `id` field
+- No methods or behavior
+
+**Models** are class instances that wrap records and provide rich functionality:
+- All record attributes via accessors (`user.name`, `post.title`)
+- Relationship accessors (`user.posts`, `post.author`)
+- CRUD methods (`.save()`, `.update()`, `.destroy()`, `.reload()`)
+- Relationship methods (`.related()`, `.link()`, `.unlink()`)
+- Serialization (`.toJSON()`, `.toString()`)
+- Status tracking (`.isNew()`, `.isSaved()`)
+
+```typescript
+// When you create a model, it materializes into a Model instance
+const user = appSchema.users.create({ name: 'Alice', email: 'alice@example.com' });
+
+// The Model instance wraps a Record stored in the database
+console.log(user instanceof Model); // true
+console.log(user.name); // 'Alice' - attribute accessor
+console.log(user.posts); // ModelCollection - relationship accessor
+
+// Under the hood, the record is just:
+// { id: '1', name: 'Alice', email: 'alice@example.com', postIds: [] }
+
+// Models are materialized when:
+// - Creating: appSchema.users.create(...)
+// - Finding: appSchema.users.find('1')
+// - Querying: appSchema.users.findMany({ where: ... })
+// - Accessing relationships: user.posts (returns ModelCollection of Models)
+```
+
+**Why This Matters:**
+- 🗄️ **Storage Efficiency** - The database stores lightweight records, not heavy model instances
+- 🔄 **Fresh Data** - Each query materializes new model instances with the latest record data
+- 🎯 **Type Safety** - Models provide type-safe accessors and methods, records are just data
+- 🔗 **Relationships** - Models handle relationship logic, records only store foreign keys
 
 ---
 

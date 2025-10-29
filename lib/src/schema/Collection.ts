@@ -158,10 +158,10 @@ export default class Collection<
   }
 
   /**
-   * Create multiple models for the collection.
+   * Create multiple models with the same attributes.
    * @param count - The number of models to create.
-   * @param traitsAndDefaults - The traits or default values to use for the models.
-   * @returns A list of model instances.
+   * @param traitsAndDefaults - The traits or default values to use for all models.
+   * @returns A collection of model instances.
    */
   createMany(
     count: number,
@@ -169,8 +169,45 @@ export default class Collection<
       | FactoryTraitNames<TFactory>
       | CollectionCreateAttrs<TTemplate, TSchema>
     )[]
+  ): ModelCollection<TTemplate, TSchema, TSerializer>;
+
+  /**
+   * Create multiple models with different attributes.
+   * @param models - An array of traits/attributes for each model to create.
+   * @returns A collection of model instances.
+   */
+  createMany(
+    models: (FactoryTraitNames<TFactory> | CollectionCreateAttrs<TTemplate, TSchema>)[][],
+  ): ModelCollection<TTemplate, TSchema, TSerializer>;
+
+  /**
+   * Implementation signature for createMany overloads.
+   * @internal
+   * @param countOrModels - Either a count or an array of model attributes.
+   * @param traitsAndDefaults - Optional traits and defaults (used with count).
+   * @returns A collection of model instances.
+   */
+  createMany(
+    countOrModels:
+      | number
+      | (FactoryTraitNames<TFactory> | CollectionCreateAttrs<TTemplate, TSchema>)[][],
+    ...traitsAndDefaults: (
+      | FactoryTraitNames<TFactory>
+      | CollectionCreateAttrs<TTemplate, TSchema>
+    )[]
   ): ModelCollection<TTemplate, TSchema, TSerializer> {
-    const models = Array.from({ length: count }, () => this.create(...traitsAndDefaults));
+    let models: ModelInstance<TTemplate, TSchema, TSerializer>[];
+
+    if (typeof countOrModels === 'number') {
+      // Original behavior: create N models with same traits
+      models = Array.from({ length: countOrModels }, () => this.create(...traitsAndDefaults));
+    } else {
+      // New behavior: create models with individual traits
+      models = countOrModels.map((modelTraitsAndDefaults) =>
+        this.create(...modelTraitsAndDefaults),
+      );
+    }
+
     return new ModelCollection(this._template, models, this._serializer);
   }
 
