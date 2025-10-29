@@ -8,7 +8,7 @@ import type {
 } from './types';
 
 /**
- * Always create N new related models and link them (with schema type for trait validation)
+ * Always create N identical related models and link them (with schema type for trait validation)
  * @template TSchema - The schema collections type
  * @template TModel - The model template (inferred from model parameter)
  * @param model - Model template to create
@@ -23,7 +23,7 @@ export default function createMany<TSchema extends SchemaCollections, TModel ext
 ): CreateManyAssociation<TModel>;
 
 /**
- * Always create N new related models and link them (without schema type - traits not validated)
+ * Always create N identical related models and link them (without schema type - traits not validated)
  * @template TModel - The model template (inferred from model parameter)
  * @param model - Model template to create
  * @param count - Number of models to create
@@ -37,24 +37,59 @@ export default function createMany<TModel extends ModelTemplate>(
 ): CreateManyAssociation<TModel>;
 
 /**
+ * Create multiple different related models and link them (with schema type for trait validation)
+ * @template TSchema - The schema collections type
+ * @template TModel - The model template (inferred from model parameter)
+ * @param model - Model template to create
+ * @param models - Array of traits/defaults for each model - trait names are validated against schema
+ * @returns The create many association
+ */
+export default function createMany<TSchema extends SchemaCollections, TModel extends ModelTemplate>(
+  model: TModel,
+  models: TypedAssociationTraitsAndDefaults<TSchema, TModel>[],
+): CreateManyAssociation<TModel>;
+
+/**
+ * Create multiple different related models and link them (without schema type - traits not validated)
+ * @template TModel - The model template (inferred from model parameter)
+ * @param model - Model template to create
+ * @param models - Array of traits/defaults for each model - trait names are strings
+ * @returns The create many association
+ */
+export default function createMany<TModel extends ModelTemplate>(
+  model: TModel,
+  models: AssociationTraitsAndDefaults[],
+): CreateManyAssociation<TModel>;
+
+/**
  * Implementation
  * @param model - Model template
- * @param count - Number of models
- * @param traitsAndDefaults - Traits and defaults
+ * @param countOrModels - Number of models or array of model definitions
+ * @param traitsAndDefaults - Traits and defaults (for count mode)
  * @returns Create many association
  */
 export default function createMany(
   model: ModelTemplate,
-  count: number,
+  countOrModels: number | AssociationTraitsAndDefaults[],
   ...traitsAndDefaults: AssociationTraitsAndDefaults
 ): CreateManyAssociation<ModelTemplate> {
-  return {
-    type: 'createMany',
-    model,
-    count,
-    traitsAndDefaults:
-      traitsAndDefaults.length > 0
-        ? (traitsAndDefaults as AssociationTraitsAndDefaults)
-        : undefined,
-  };
+  if (typeof countOrModels === 'number') {
+    // Count mode: create N identical models
+    return {
+      type: 'createMany',
+      model,
+      count: countOrModels,
+      traitsAndDefaults:
+        traitsAndDefaults.length > 0
+          ? (traitsAndDefaults as AssociationTraitsAndDefaults)
+          : undefined,
+    };
+  } else {
+    // Array mode: create different models
+    return {
+      type: 'createMany',
+      model,
+      models: countOrModels,
+    };
+  }
 }
