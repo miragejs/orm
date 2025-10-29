@@ -371,6 +371,51 @@ describe('Factory associations', () => {
       expect(comments[0].content).toBe('Nice!');
       expect(comments[0].approved).toBe(true);
     });
+
+    it('should create multiple different related models using array syntax', () => {
+      const postFactory = factory<TestSchema>()
+        .model(postModel)
+        .attrs({
+          title: 'My Post',
+          content: 'Content',
+        })
+        .associations({
+          comments: associations.createMany<TestSchema, CommentModel>(commentModel, [
+            [{ content: 'First comment' }],
+            ['approved', { content: 'Second comment' }],
+            [{ content: 'Third comment', approved: false }],
+          ]),
+        })
+        .create();
+
+      const testSchema = schema()
+        .collections({
+          users: collection().model(userModel).factory(userFactory).create(),
+          posts: collection()
+            .model(postModel)
+            .factory(postFactory)
+            .relationships(postRelationships)
+            .create(),
+          comments: collection()
+            .model(commentModel)
+            .factory(commentFactory)
+            .relationships(commentRelationships)
+            .create(),
+          tags: collection().model(tagModel).factory(tagFactory).create(),
+        })
+        .setup();
+
+      const post = testSchema.posts.create();
+      const comments = post.comments.models;
+
+      expect(comments.length).toBe(3);
+      expect(comments[0].content).toBe('First comment');
+      expect(comments[0].approved).toBeUndefined(); // Factory has no default
+      expect(comments[1].content).toBe('Second comment');
+      expect(comments[1].approved).toBe(true); // From trait
+      expect(comments[2].content).toBe('Third comment');
+      expect(comments[2].approved).toBe(false); // Explicitly set
+    });
   });
 
   describe('link()', () => {

@@ -18,7 +18,7 @@
 
 ## ✨ What is miragejs-orm?
 
-**miragejs-orm** is a complete TypeScript rewrite of the powerful ORM layer from MirageJS, designed to give frontend developers the freedom to quickly create type-safe mocks for both testing and development—without backend dependencies.
+**miragejs-orm** is a complete TypeScript rewrite of the powerful ORM layer from MirageJS, designed to give frontend developers the freedom to quickly create type-safe mocks for both testing and development — without backend dependencies.
 
 Build realistic, relational data models in memory with factories, traits, relationships, and serialization, all with **100% type safety** and a modern, fluent API.
 
@@ -279,10 +279,9 @@ Unlike MirageJS's inconsistent method naming, MirageJS ORM introduces clear, pre
 **Collection Methods:**
 - ✅ **Singular/Plural Pattern** - `create()` / `createMany()`, `find()` / `findMany()`, `delete()` / `deleteMany()`
 - ✅ **Consistent Query API** - `find({ where })` replaces `find()`, `findBy()`, and `where()`
-- ✅ **Explicit Intent** - `findOrCreateBy()` / `findManyOrCreateBy()` clearly express their purpose
 
-**Before (MirageJS):** `create`, `createList`, `find`, `findBy`, `where`, `findOrCreateBy`  
-**After (MirageJS ORM):** `create`, `createMany`, `find({ where })`, `findMany({ where })`, `findOrCreateBy`, `findManyOrCreateBy`
+**Before (MirageJS):** `create` / `createList`, `find` / `findBy` / `where`, `findOrCreateBy`  
+**After (MirageJS ORM):** `create` / `createMany`, `find({ where })` / `findMany({ where })`, `findOrCreateBy` / `findManyOrCreateBy`
 
 This consistency makes the API more intuitive and easier to learn!
 
@@ -446,12 +445,25 @@ import { factory, associations } from 'miragejs-orm';
 const userFactory = factory()
   .model(userModel)
   .associations({
+    // Create 3 identical posts
     posts: associations.createMany(postModel, 3),
   })
   .traits({
     withProfile: {
       profile: associations.create(profileModel),
     },
+  })
+  .create();
+
+// Create multiple different related models
+const authorFactory = factory()
+  .model(userModel)
+  .associations({
+    posts: associations.createMany(postModel, [
+      [{ title: 'First Post', published: true }],
+      [{ title: 'Draft Post', published: false }],
+      ['featured'], // Using a trait
+    ]),
   })
   .create();
 
@@ -1709,7 +1721,7 @@ We're working on a comprehensive documentation website with detailed API referen
 
 In the meantime:
 - **TypeScript Definitions**: See the [TypeScript definitions](./lib/dist/index.d.ts) for complete API signatures
-- **IDE Autocomplete**: The library is fully typed—your IDE will provide inline documentation and type hints
+- **IDE Autocomplete**: The library is fully typed — your IDE will provide inline documentation and type hints
 - **This README**: Contains extensive examples covering most use cases
 
 ---

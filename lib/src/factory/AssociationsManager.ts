@@ -65,6 +65,7 @@ export default class AssociationsManager<
             collection,
             association.count,
             association.traitsAndDefaults,
+            association.models,
           );
           break;
 
@@ -102,13 +103,20 @@ export default class AssociationsManager<
 
   private _processCreateMany(
     collection: Collection<TSchema, any, any, any, any>,
-    count: number,
-    traitsAndDefaults?: AssociationTraitsAndDefaults,
+    count: number | undefined,
+    traitsAndDefaults: AssociationTraitsAndDefaults | undefined,
+    models: AssociationTraitsAndDefaults[] | undefined,
   ): ModelCollection<any, TSchema, any> {
-    return collection.createMany(
-      count,
-      ...((traitsAndDefaults ?? []) as CollectionCreateAttrs<TTemplate, TSchema>[]),
-    );
+    if (models) {
+      // Array mode: create different models
+      return collection.createMany(models as CollectionCreateAttrs<TTemplate, TSchema>[][]);
+    } else {
+      // Count mode: create N identical models
+      return collection.createMany(
+        count!,
+        ...((traitsAndDefaults ?? []) as CollectionCreateAttrs<TTemplate, TSchema>[]),
+      );
+    }
   }
 
   private _processLink(

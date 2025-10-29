@@ -168,8 +168,10 @@ export interface CreateAssociation<TModel extends ModelTemplate = ModelTemplate>
 export interface CreateManyAssociation<TModel extends ModelTemplate = ModelTemplate>
   extends BaseAssociation<TModel> {
   type: 'createMany';
-  /** Number of models to create */
-  count: number;
+  /** Number of models to create (for identical models) */
+  count?: number;
+  /** Array of traits/defaults for each model (for different models) */
+  models?: AssociationTraitsAndDefaults[];
 }
 
 /**

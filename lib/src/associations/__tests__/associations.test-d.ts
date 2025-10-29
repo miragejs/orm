@@ -1,5 +1,6 @@
 import type {
   Association,
+  AssociationTraitsAndDefaults,
   BelongsTo,
   CreateAssociation,
   CreateManyAssociation,
@@ -129,14 +130,27 @@ test('CreateAssociation type should work correctly', () => {
 });
 
 test('CreateManyAssociation type should work correctly', () => {
-  const assoc: CreateManyAssociation<typeof postModel> = {
+  // Count mode
+  const countAssoc: CreateManyAssociation<typeof postModel> = {
     type: 'createMany',
     model: postModel,
     count: 5,
   };
 
-  expectTypeOf(assoc).toEqualTypeOf<CreateManyAssociation<typeof postModel>>();
-  expectTypeOf(assoc.count).toEqualTypeOf<number>();
+  expectTypeOf(countAssoc).toEqualTypeOf<CreateManyAssociation<typeof postModel>>();
+  expectTypeOf(countAssoc.count).toEqualTypeOf<number | undefined>();
+  expectTypeOf(countAssoc.models).toEqualTypeOf<AssociationTraitsAndDefaults[] | undefined>();
+
+  // Array mode
+  const arrayAssoc: CreateManyAssociation<typeof postModel> = {
+    type: 'createMany',
+    model: postModel,
+    models: [[{ title: 'First' }], [{ title: 'Second' }]],
+  };
+
+  expectTypeOf(arrayAssoc).toEqualTypeOf<CreateManyAssociation<typeof postModel>>();
+  expectTypeOf(arrayAssoc.count).toEqualTypeOf<number | undefined>();
+  expectTypeOf(arrayAssoc.models).toEqualTypeOf<AssociationTraitsAndDefaults[] | undefined>();
 });
 
 test('LinkAssociation type should work correctly', () => {
