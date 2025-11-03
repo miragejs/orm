@@ -58,7 +58,7 @@ const jsdocRules = {
 
 export default defineConfig([
   {
-    ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**'],
+    ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**', 'examples/**'],
   },
 
   // JS support

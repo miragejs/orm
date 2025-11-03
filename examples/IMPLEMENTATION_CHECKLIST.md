@@ -5,106 +5,148 @@ Track progress on building the example project. Check off items as they're compl
 ## 📦 Phase 1: Project Setup & Schema
 
 ### Project Initialization
-- [ ] Create `/examples/task-management-dashboard/` directory
-- [ ] Initialize `package.json` with Vite + React
-- [ ] Add TypeScript configuration (`tsconfig.json`)
-- [ ] Configure Vite (`vite.config.ts`)
-- [ ] Create `index.html` entry point
-- [ ] Install all dependencies
-  - [ ] React & React DOM
-  - [ ] Material UI & Icons
-  - [ ] React Router 7
-  - [ ] Faker.js
-  - [ ] Link to local `miragejs-orm`
-- [ ] Verify build works (`npm run dev`)
+- [x] Create `/examples/task-management-dashboard/` directory
+- [x] Initialize `package.json` with Vite + React
+- [x] Add TypeScript configuration (`tsconfig.json`)
+- [x] Configure Vite (`vite.config.ts`)
+- [x] Create `index.html` entry point
+- [x] Install all dependencies
+  - [x] React & React DOM
+  - [x] Material UI & Icons
+  - [x] React Router 7
+  - [x] Faker.js
+  - [x] MSW 2
+  - [x] Link to local `miragejs-orm` (file:../../lib)
+- [x] Verify build works (`pnpm dev`)
+- [x] Configure path aliases (@features, @components, @hooks, @utils, @types, @test)
+- [x] Initialize MSW (mockServiceWorker.js in public/)
+- [x] Create feature-based directory structure
+- [x] Create "Hello World" app with Material-UI
+- [x] Test miragejs-orm import
+- [x] Configure ESLint (root ignores examples/**)
+- [x] Remove workspace configuration (standalone project)
+
+### Shared Types & Enums
+- [ ] Create `src/types/enums.ts`
+  - [ ] Define `UserRole` enum (USER, MANAGER)
+  - [ ] Define `TaskStatus` enum (TODO, IN_PROGRESS, REVIEW, DONE)
+  - [ ] Define `TaskPriority` enum (LOW, MEDIUM, HIGH, URGENT)
+- [ ] Export enums from `src/types/index.ts`
 
 ### Data Models
-- [ ] Create `src/schema/models/` directory
-- [ ] Define `user.model.ts`
-  - [ ] UserAttrs interface
-  - [ ] Export userModel with belongsTo/hasMany
-- [ ] Define `team.model.ts`
-  - [ ] TeamAttrs interface
-  - [ ] Export teamModel with relationships
-- [ ] Define `task.model.ts`
-  - [ ] TaskAttrs interface
-  - [ ] Export taskModel with relationships
-- [ ] Define `comment.model.ts`
+- [ ] Create `test/schema/models/` directory
+- [ ] Define `test/schema/models/user.model.ts`
+  - [ ] UserAttrs interface with UserRole enum
+  - [ ] Export userModel template
+- [ ] Define `test/schema/models/team.model.ts`
+  - [ ] TeamAttrs interface (with department property)
+  - [ ] Export teamModel template
+- [ ] Define `test/schema/models/task.model.ts`
+  - [ ] TaskAttrs interface with TaskStatus and TaskPriority enums
+  - [ ] Export taskModel template
+- [ ] Define `test/schema/models/comment.model.ts`
   - [ ] CommentAttrs interface
-  - [ ] Export commentModel with relationships
+  - [ ] Export commentModel template
 
-### Relationships
-- [ ] Create `src/schema/relationships/index.ts`
-- [ ] Define user relationships
+### Domain Structure (Collections, Factories, Relationships, Serializers)
+
+#### Users Domain
+- [ ] Create `test/schema/users/` directory
+- [ ] Create `test/schema/users/collection.ts`
+- [ ] Create `test/schema/users/factory.ts`
+  - [ ] Define factory with Faker attributes
+  - [ ] Add trait: `user` (UserRole.USER)
+  - [ ] Add trait: `manager` (UserRole.MANAGER)
+  - [ ] Add trait: `withTasks` (creates 5-10 random tasks)
+- [ ] Create `test/schema/users/relationships.ts`
   - [ ] belongsTo: team
   - [ ] hasMany: tasks
   - [ ] hasMany: comments
-- [ ] Define team relationships
+- [ ] Create `test/schema/users/serializer.ts` (if needed)
+
+#### Teams Domain
+- [ ] Create `test/schema/teams/` directory
+- [ ] Create `test/schema/teams/collection.ts`
+- [ ] Create `test/schema/teams/factory.ts`
+  - [ ] Define factory with Faker attributes
+  - [ ] Add trait: `withManager` (creates and assigns manager)
+- [ ] Create `test/schema/teams/relationships.ts`
   - [ ] hasMany: members (users)
   - [ ] belongsTo: manager (user)
-- [ ] Define task relationships
+- [ ] Create `test/schema/teams/serializer.ts` (if needed)
+
+#### Tasks Domain
+- [ ] Create `test/schema/tasks/` directory
+- [ ] Create `test/schema/tasks/collection.ts`
+- [ ] Create `test/schema/tasks/factory.ts`
+  - [ ] Define factory with Faker attributes
+  - [ ] Add trait: `todo` (TaskStatus.TODO)
+  - [ ] Add trait: `inProgress` (TaskStatus.IN_PROGRESS)
+  - [ ] Add trait: `review` (TaskStatus.REVIEW)
+  - [ ] Add trait: `done` (TaskStatus.DONE)
+  - [ ] Add trait: `lowPriority` (TaskPriority.LOW)
+  - [ ] Add trait: `highPriority` (TaskPriority.HIGH)
+  - [ ] Add trait: `urgent` (TaskPriority.URGENT)
+  - [ ] Add trait: `overdue` (dueDate in past)
+- [ ] Create `test/schema/tasks/relationships.ts`
   - [ ] belongsTo: assignee (user)
   - [ ] belongsTo: team
   - [ ] hasMany: comments
-- [ ] Define comment relationships
+- [ ] Create `test/schema/tasks/serializer.ts` (if needed)
+
+#### Comments Domain
+- [ ] Create `test/schema/comments/` directory
+- [ ] Create `test/schema/comments/collection.ts`
+- [ ] Create `test/schema/comments/factory.ts`
+  - [ ] Define factory with Faker attributes
+  - [ ] Add trait: `recent` (created within 24 hours)
+  - [ ] Add trait: `old` (created 30+ days ago)
+- [ ] Create `test/schema/comments/relationships.ts`
   - [ ] belongsTo: author (user)
   - [ ] belongsTo: task
-
-### Factories
-- [ ] Create `src/schema/factories/` directory
-- [ ] Create `user.factory.ts`
-  - [ ] Basic attributes with Faker
-  - [ ] Trait: `user` (role: user)
-  - [ ] Trait: `manager` (role: manager)
-  - [ ] Trait: `admin` (role: admin)
-  - [ ] Trait: `withAvatar`
-- [ ] Create `team.factory.ts`
-  - [ ] Basic attributes with Faker
-  - [ ] Trait: `withManager`
-- [ ] Create `task.factory.ts`
-  - [ ] Basic attributes with Faker
-  - [ ] Trait: `todo`
-  - [ ] Trait: `inProgress`
-  - [ ] Trait: `review`
-  - [ ] Trait: `done`
-  - [ ] Trait: `lowPriority`
-  - [ ] Trait: `highPriority`
-  - [ ] Trait: `urgent`
-  - [ ] Trait: `overdue`
-- [ ] Create `comment.factory.ts`
-  - [ ] Basic attributes with Faker
-  - [ ] Trait: `recent`
-  - [ ] Trait: `old`
+- [ ] Create `test/schema/comments/serializer.ts` (if needed)
 
 ### Seeds
-- [ ] Create `src/schema/seeds/index.ts`
-- [ ] Create test users
-  - [ ] Regular user: `user@example.com`
-  - [ ] Manager: `manager@example.com`
-- [ ] Create 3 teams (Engineering, Design, Marketing)
-- [ ] Create team members (4-6 per team)
-- [ ] Create tasks for each user
-  - [ ] Mix of statuses
-  - [ ] Random priorities
-  - [ ] Some with comments
-- [ ] Create comments for tasks
-  - [ ] Random authors from team
-  - [ ] Chronological order
+- [ ] Create `test/schema/seeds.ts`
+- [ ] Create test users using traits
+  - [ ] Regular user: `user@example.com` with 'user' trait
+  - [ ] Manager: `manager@example.com` with 'manager' trait
+- [ ] Create 3 teams with departments (Engineering/Product, Design/Product, Marketing/Growth)
+  - [ ] Use `withManager` trait for each team
+- [ ] Create team members (5 per team) using `withTasks` trait
+- [ ] Create random tasks using Faker helpers
+  - [ ] Use `faker.helpers.arrayElement()` for random status traits
+  - [ ] Use `faker.helpers.weightedArrayElement()` for random priority traits
+  - [ ] Use `faker.datatype.boolean(0.15)` for 15% overdue tasks
+- [ ] Create comments for 60% of tasks
+  - [ ] Use `faker.helpers.arrayElements()` to select tasks
+  - [ ] Use `faker.number.int({ min: 5, max: 15 })` for comment count
+  - [ ] Use `faker.helpers.arrayElement()` for random age trait and author
+  - [ ] Ensure chronological order
 
 ### Schema Setup
-- [ ] Create `src/schema/index.ts`
-- [ ] Initialize schema with all collections
-- [ ] Add factories to collections
-- [ ] Add relationships to collections
+- [ ] Create `test/schema/index.ts`
+- [ ] Import all models from `./models/`
+- [ ] Import all domain configurations (users, teams, tasks, comments)
+- [ ] Initialize schema with collections
+  - [ ] Add users collection with factory, relationships, serializer
+  - [ ] Add teams collection with factory, relationships, serializer
+  - [ ] Add tasks collection with factory, relationships, serializer
+  - [ ] Add comments collection with factory, relationships, serializer
 - [ ] Run seeds on initialization
 - [ ] Export schema instance
 
-### React Integration
-- [ ] Create `src/hooks/useSchema.tsx`
-- [ ] Create SchemaContext
-- [ ] Create SchemaProvider component
-- [ ] Export useSchema hook
-- [ ] Wrap App with SchemaProvider in `main.tsx`
+### MSW Integration
+- [ ] Create `test/mocks/browser.ts`
+  - [ ] Import and initialize MSW worker
+  - [ ] Import handlers
+  - [ ] Start worker with handlers
+- [ ] Create `test/mocks/handlers/index.ts`
+  - [ ] Export combined handlers array
+- [ ] Initialize MSW in `src/main.tsx`
+  - [ ] Import worker from `@test/mocks/browser`
+  - [ ] Start worker before rendering app
+  - [ ] Add console log for confirmation
 
 ---
 
