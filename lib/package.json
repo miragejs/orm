@@ -1,5 +1,5 @@
 {
-  "name": "@miragejs/orm",
+  "name": "miragejs-orm",
   "version": "1.0.0-next.0",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
