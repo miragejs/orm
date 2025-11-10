@@ -9,17 +9,21 @@ import type { FactoryAttrs, FactoryAfterCreateHook, ModelTraits } from './types'
 /**
  * Builder class for creating factories with fluent API
  * @template TTemplate - The model template
+ * @template TTraits - The trait names as string union
  * @template TSchema - The schema collections type
- * @template TTraits - The traits type
  */
 export default class FactoryBuilder<
   TTemplate extends ModelTemplate = ModelTemplate,
+  TTraits extends string = string,
   TSchema extends SchemaCollections = SchemaCollections,
-  TTraits extends ModelTraits<TSchema, TTemplate> = {},
 > {
   protected _template?: TTemplate;
   protected _attributes: FactoryAttrs<TTemplate> = {} as FactoryAttrs<TTemplate>;
-  protected _traits: TTraits = {} as TTraits;
+  protected _traits: ModelTraits<TTraits, TTemplate, TSchema> = {} as ModelTraits<
+    TTraits,
+    TTemplate,
+    TSchema
+  >;
   protected _associations?: FactoryAssociations<TTemplate, TSchema>;
   protected _afterCreate?: FactoryAfterCreateHook<TSchema, TTemplate>;
 
@@ -31,8 +35,8 @@ export default class FactoryBuilder<
    * @param template - The model template
    * @returns A new builder instance with the specified template
    */
-  model<T extends ModelTemplate>(template: T): FactoryBuilder<T, TSchema, {}> {
-    const builder = new FactoryBuilder<T, TSchema, {}>();
+  model<T extends ModelTemplate>(template: T): FactoryBuilder<T, string, TSchema> {
+    const builder = new FactoryBuilder<T, string, TSchema>();
     builder._template = template;
     return builder;
   }
@@ -50,15 +54,30 @@ export default class FactoryBuilder<
   /**
    * Add traits to the factory
    * @param traits - The traits to add
-   * @returns A new builder instance with the added traits
+   * @returns A new builder instance with the merged traits
    */
-  traits<T extends ModelTraits<TSchema, TTemplate>>(
-    traits: T,
-  ): FactoryBuilder<TTemplate, TSchema, TTraits & T> {
-    const builder = new FactoryBuilder<TTemplate, TSchema, TTraits & T>();
+  traits<TNewTraits extends string>(
+    traits: ModelTraits<TNewTraits, TTemplate, TSchema>,
+  ): FactoryBuilder<
+    TTemplate,
+    string extends TTraits ? TNewTraits : TTraits | TNewTraits,
+    TSchema
+  > {
+    const builder = new FactoryBuilder<
+      TTemplate,
+      string extends TTraits ? TNewTraits : TTraits | TNewTraits,
+      TSchema
+    >();
     builder._template = this._template;
     builder._attributes = this._attributes;
-    builder._traits = { ...this._traits, ...traits } as TTraits & T;
+    builder._traits = {
+      ...this._traits,
+      ...traits,
+    } as unknown as ModelTraits<
+      string extends TTraits ? TNewTraits : TTraits | TNewTraits,
+      TTemplate,
+      TSchema
+    >;
     builder._afterCreate = this._afterCreate;
     builder._associations = this._associations;
     return builder;
@@ -91,15 +110,19 @@ export default class FactoryBuilder<
    */
   extend<
     TTemplate extends ModelTemplate = ModelTemplate,
+    TTraits extends string = string,
     TSchema extends SchemaCollections = SchemaCollections,
-    TTraits extends ModelTraits<TSchema, TTemplate> = {},
   >(
-    originalFactory: Factory<TTemplate, TSchema, TTraits>,
-  ): FactoryBuilder<TTemplate, TSchema, TTraits> {
-    const builder = new FactoryBuilder<TTemplate, TSchema, TTraits>();
+    originalFactory: Factory<TTemplate, TTraits, TSchema>,
+  ): FactoryBuilder<TTemplate, TTraits, TSchema> {
+    const builder = new FactoryBuilder<TTemplate, TTraits, TSchema>();
     builder._template = originalFactory.template;
     builder._attributes = { ...originalFactory.attributes };
-    builder._traits = { ...originalFactory.traits };
+    builder._traits = { ...(originalFactory.traits as any) } as ModelTraits<
+      TTraits,
+      TTemplate,
+      TSchema
+    >;
     builder._associations = { ...originalFactory.associations };
     builder._afterCreate = originalFactory.afterCreate;
     return builder;
@@ -109,7 +132,7 @@ export default class FactoryBuilder<
    * Build the final factory instance
    * @returns The factory instance
    */
-  create(): Factory<TTemplate, TSchema, TTraits> {
+  create(): Factory<TTemplate, TTraits, TSchema> {
     if (!this._template) {
       throw new MirageError(
         'Model template must be set before creating factory. Call .model() first.',
@@ -119,7 +142,7 @@ export default class FactoryBuilder<
     return new Factory(
       this._template,
       this._attributes,
-      this._traits,
+      this._traits as ModelTraits<TTraits, TTemplate, TSchema>,
       this._associations,
       this._afterCreate,
     );
@@ -133,8 +156,8 @@ export default class FactoryBuilder<
  */
 export function factory<TSchema extends SchemaCollections>(): FactoryBuilder<
   ModelTemplate,
-  TSchema,
-  {}
+  string,
+  TSchema
 > {
-  return new FactoryBuilder<ModelTemplate, TSchema, {}>();
+  return new FactoryBuilder<ModelTemplate, string, TSchema>();
 }

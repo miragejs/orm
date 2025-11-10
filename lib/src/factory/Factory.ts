@@ -11,21 +11,21 @@ import type { SchemaCollections, SchemaInstance } from '@src/schema';
 import { MirageError } from '@src/utils';
 
 import AssociationsManager from './AssociationsManager';
-import type { FactoryAttrs, FactoryAfterCreateHook, ModelTraits, TraitName } from './types';
+import type { FactoryAttrs, FactoryAfterCreateHook, ModelTraits, TraitDefinition } from './types';
 
 /**
  * Factory that builds model attributes with optional schema support.
  * @template TTemplate - The model template (inferred from constructor)
- * @template TSchema - The schema collections type (never = sch)
- * @template TTraits - The factory traits (inferred from constructor)
+ * @template TTraits - The factory trait names as string union (e.g., 'admin' | 'manager')
+ * @template TSchema - The schema collections type (optional, defaults to SchemaCollections)
  */
 export default class Factory<
   TTemplate extends ModelTemplate = ModelTemplate,
+  TTraits extends string = string,
   TSchema extends SchemaCollections = SchemaCollections,
-  TTraits extends ModelTraits<TSchema, TTemplate> = {},
 > {
   readonly attributes: FactoryAttrs<TTemplate>;
-  readonly traits: TTraits;
+  readonly traits: ModelTraits<TTraits, TTemplate, TSchema>;
   readonly associations?: FactoryAssociations<TTemplate, TSchema>;
   readonly afterCreate?: FactoryAfterCreateHook<TSchema, TTemplate>;
 
@@ -35,7 +35,11 @@ export default class Factory<
   constructor(
     template: TTemplate,
     attributes: FactoryAttrs<TTemplate>,
-    traits: TTraits = {} as TTraits,
+    traits: ModelTraits<TTraits, TTemplate, TSchema> = {} as ModelTraits<
+      TTraits,
+      TTemplate,
+      TSchema
+    >,
     associations?: FactoryAssociations<TTemplate, TSchema>,
     afterCreate?: FactoryAfterCreateHook<TSchema, TTemplate>,
   ) {
@@ -65,7 +69,7 @@ export default class Factory<
    */
   build(
     modelId: ModelId<TTemplate>,
-    ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TTemplate, TSchema>)[]
+    ...traitsAndDefaults: (TTraits | PartialModelAttrs<TTemplate, TSchema>)[]
   ): ModelAttrs<TTemplate, TSchema> {
     const traitNames: string[] = [];
     const defaults: PartialModelAttrs<TTemplate, TSchema> = {};
@@ -104,7 +108,7 @@ export default class Factory<
   processAssociations(
     schema: SchemaInstance<TSchema>,
     skipKeys?: string[],
-    traitsAndDefaults?: (TraitName<TTraits> | PartialModelAttrs<TTemplate, TSchema>)[],
+    traitsAndDefaults?: (TTraits | PartialModelAttrs<TTemplate, TSchema>)[],
   ): Record<string, ModelInstance<any, TSchema> | ModelCollection<any, TSchema>> {
     // Get trait associations
     const traitAssociations = this._getTraitAssociations(traitsAndDefaults);
@@ -135,9 +139,11 @@ export default class Factory<
   processAfterCreateHooks(
     schema: SchemaInstance<TSchema>,
     model: ModelInstance<TTemplate, TSchema>,
-    ...traitsAndDefaults: (TraitName<TTraits> | PartialModelAttrs<TTemplate, TSchema>)[]
+    ...traitsAndDefaults: (TTraits | PartialModelAttrs<TTemplate, TSchema>)[]
   ): ModelInstance<TTemplate, TSchema> {
-    const traitNames: string[] = traitsAndDefaults.filter((arg) => typeof arg === 'string');
+    const traitNames: TTraits[] = traitsAndDefaults.filter(
+      (arg) => typeof arg === 'string',
+    ) as TTraits[];
     const hooks: FactoryAfterCreateHook<TSchema, TTemplate>[] = [];
 
     if (this.afterCreate) {
@@ -145,10 +151,14 @@ export default class Factory<
     }
 
     traitNames.forEach((name) => {
-      const trait = this.traits[name as TraitName<TTraits>];
+      const trait = this.traits?.[name];
 
-      if (trait?.afterCreate) {
-        hooks.push(trait.afterCreate);
+      if (trait) {
+        const { afterCreate } = trait as TraitDefinition<TTemplate, TSchema>;
+
+        if (afterCreate) {
+          hooks.push(afterCreate);
+        }
       }
     });
 
@@ -194,10 +204,10 @@ export default class Factory<
   ): PartialModelAttrs<TTemplate> {
     const result = traitNames.reduce(
       (traitAttributes, name) => {
-        const trait = this.traits[name as TraitName<TTraits>];
+        const trait = this.traits?.[name as TTraits];
 
         if (trait) {
-          const { afterCreate: _, ...extension } = trait;
+          const { afterCreate: _, ...extension } = trait as TraitDefinition<TTemplate, TSchema>;
 
           for (const key in extension) {
             const value = extension[key as keyof typeof extension];
@@ -238,7 +248,7 @@ export default class Factory<
    * @returns The merged associations from all traits
    */
   private _getTraitAssociations(
-    traitsAndDefaults?: (TraitName<TTraits> | PartialModelAttrs<TTemplate, TSchema>)[],
+    traitsAndDefaults?: (TTraits | PartialModelAttrs<TTemplate, TSchema>)[],
   ): FactoryAssociations<TTemplate, TSchema> {
     if (!traitsAndDefaults) {
       return {};
@@ -248,11 +258,12 @@ export default class Factory<
     const associations: Record<string, any> = {};
 
     traitNames.forEach((name) => {
-      const trait = this.traits[name as TraitName<TTraits>];
+      const trait = this.traits?.[name as TTraits];
 
       if (trait) {
-        for (const key in trait) {
-          const value = trait[key];
+        const typedTrait = trait as TraitDefinition<TTemplate, TSchema>;
+        for (const key in typedTrait) {
+          const value = typedTrait[key as keyof TraitDefinition<TTemplate, TSchema>];
           if (this._isAssociation(value)) {
             associations[key] = value;
           }

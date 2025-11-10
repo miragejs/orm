@@ -1,5 +1,5 @@
 import type { DbCollection, DbRecordInput, QueryOptions, WhereHelperFns } from '@src/db';
-import type { Factory, ModelTraits } from '@src/factory';
+import type { Factory } from '@src/factory';
 import type { IdentityManager } from '@src/id-manager';
 import {
   Model,
@@ -31,9 +31,7 @@ export abstract class BaseCollection<
   TSchema extends SchemaCollections = SchemaCollections,
   TTemplate extends ModelTemplate = ModelTemplate,
   TRelationships extends ModelRelationships = {},
-  TFactory extends
-    | Factory<TTemplate, TSchema, ModelTraits<TSchema, TTemplate>>
-    | undefined = undefined,
+  TFactory extends Factory<TTemplate, any, any> | undefined = undefined,
   TSerializer = undefined,
 > {
   readonly modelName: string;

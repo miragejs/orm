@@ -11,12 +11,13 @@ interface UserAttrs {
   id: string;
   name: string;
   role?: string;
+  processed?: boolean;
 }
 
 // Create test model
 const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
 
-// Create test model type
+// Define test model type
 type UserModel = typeof userModel;
 
 describe('Factory', () => {
@@ -35,8 +36,9 @@ describe('Factory', () => {
         },
       };
       const afterCreate = (model: ModelInstance<UserModel>) => {
-        (model as any).processed = true;
+        model.processed = true;
       };
+
       const userFactory = new Factory(userModel, attributes, traits, undefined, afterCreate);
 
       expect(userFactory.template).toBe(userModel);
@@ -51,7 +53,7 @@ describe('Factory', () => {
 
       expect(userFactory.template).toBe(userModel);
       expect(userFactory.attributes).toBe(attributes);
-      expect(userFactory.traits).toEqual({});
+      expect(userFactory.traits).toMatchObject({});
       expect(userFactory.afterCreate).toBeUndefined();
     });
   });
@@ -141,17 +143,13 @@ describe('Factory', () => {
     });
 
     it('should handle function attributes correctly', () => {
-      const dynamicFactory = new Factory(
-        userModel,
-        {
-          email: (id: string) => `dynamic${id}@test.com`,
-          name: function (this: any, id: string) {
-            return `User ${id}`;
-          },
-          role: 'member',
+      const dynamicFactory = new Factory(userModel, {
+        email: (id: string) => `dynamic${id}@test.com`,
+        name: function (this: Omit<UserAttrs, 'id'>, id: string) {
+          return `User ${id}`;
         },
-        {},
-      );
+        role: 'member',
+      });
       const attrs = dynamicFactory.build('999');
 
       expect(attrs).toEqual({
@@ -163,19 +161,15 @@ describe('Factory', () => {
     });
 
     it('should handle static values', () => {
-      const staticFactory = new Factory(
-        userModel,
-        {
-          email: 'static@example.com',
-          name: 'Static User',
-          role: 'guest',
-          createdAt: '2024-01-01T00:00:00Z',
-        },
-        {},
-      );
-      const attrs = staticFactory.build('static');
+      const staticFactory = new Factory(userModel, {
+        email: 'static@example.com',
+        name: 'Static User',
+        role: 'guest',
+        createdAt: '2024-01-01T00:00:00Z',
+      });
+      const model = staticFactory.build('static');
 
-      expect(attrs).toEqual({
+      expect(model).toEqual({
         id: 'static',
         email: 'static@example.com',
         name: 'Static User',
@@ -188,13 +182,13 @@ describe('Factory', () => {
   describe('processAfterCreateHooks method', () => {
     it('should be callable with schema, model, and traits parameters', () => {
       let hookCalled = false;
-      let modelReceived: any = null;
-      let schemaReceived: any = null;
+      let modelReceived: ModelInstance<UserModel> | null = null;
+      let schemaReceived: SchemaInstance<SchemaCollections> | null = null;
 
       const factory = new Factory(
         userModel,
         { name: 'John', email: 'john@example.com' },
-        {},
+        undefined,
         undefined,
         (model, schema) => {
           hookCalled = true;
@@ -205,7 +199,7 @@ describe('Factory', () => {
 
       // Create a simple schema mock
       const schemaMock = { users: { create: () => ({}) } };
-      const model = { id: '1', name: 'John', email: 'john@example.com' };
+      const model = { id: '1', name: 'John' };
 
       const result = factory.processAfterCreateHooks(
         schemaMock as unknown as SchemaInstance<SchemaCollections>,
@@ -238,18 +232,14 @@ describe('Factory', () => {
   describe('Error handling', () => {
     it('should throw error for circular dependencies in attributes', () => {
       expect(() => {
-        const factory = new Factory(
-          userModel,
-          {
-            email: function (this: any) {
-              return this.name + '@example.com';
-            },
-            name: function (this: any) {
-              return this.email.split('@')[0];
-            },
+        const factory = new Factory(userModel, {
+          email: function (this: Omit<UserAttrs, 'id'>) {
+            return this.name + '@example.com';
           },
-          {},
-        );
+          name: function (this: Omit<UserAttrs, 'id'>) {
+            return this.email.split('@')[0];
+          },
+        });
 
         factory.build('1');
       }).toThrow('Circular dependency detected');

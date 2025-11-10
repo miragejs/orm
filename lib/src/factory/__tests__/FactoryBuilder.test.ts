@@ -1,5 +1,5 @@
 import { model, ModelInstance } from '@src/model';
-import type { SchemaCollections, SchemaInstance } from '@src/schema';
+import type { CollectionConfig, SchemaCollections, SchemaInstance } from '@src/schema';
 
 import Factory from '../Factory';
 import { factory } from '../FactoryBuilder';
@@ -12,30 +12,21 @@ interface UserAttrs {
   email: string;
   name: string;
   role?: string;
-}
-
-// Define extended type for models that have been processed by afterCreate hooks
-interface ProcessedUserAttrs extends UserAttrs {
   processed?: boolean;
-  adminProcessed?: boolean;
-  premiumProcessed?: boolean;
-  baseProcessed?: boolean;
-  extendedProcessed?: boolean;
 }
 
 // Create test models
 const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
 
-const processedUserModel = model()
-  .name('processedUser')
-  .collection('processedUsers')
-  .attrs<ProcessedUserAttrs>()
-  .create();
+// Define test model type
+type UserModel = typeof userModel;
 
 describe('FactoryBuilder', () => {
   describe('Constructor', () => {
     it('should create factory using builder pattern', () => {
-      const userFactory = factory()
+      const userFactory = factory<{
+        users: CollectionConfig<UserModel, {}, Factory<UserModel, 'admin' | 'premium'>>;
+      }>()
         .model(userModel)
         .attrs({
           createdAt: null,
@@ -114,12 +105,12 @@ describe('FactoryBuilder', () => {
       let schemaReceived: any = null;
 
       const userFactory = factory<SchemaCollections>()
-        .model(processedUserModel)
+        .model(userModel)
         .attrs({ name: 'John' })
         .afterCreate((model, schema) => {
           hookCalled = true;
           schemaReceived = schema;
-          (model as ProcessedUserAttrs).processed = true;
+          model.processed = true;
         })
         .create();
 
@@ -132,7 +123,7 @@ describe('FactoryBuilder', () => {
         name: 'John',
         email: 'john@example.com',
         role: 'user',
-      } as unknown as ModelInstance<typeof processedUserModel, SchemaCollections>;
+      } as unknown as ModelInstance<UserModel, SchemaCollections>;
 
       const result = userFactory.processAfterCreateHooks(schemaMock, user);
 
@@ -215,7 +206,7 @@ describe('FactoryBuilder', () => {
   describe('Builder extend method', () => {
     it('should extend builder with additional configuration', () => {
       const baseBuilder = factory()
-        .model(processedUserModel)
+        .model(userModel)
         .attrs({ name: 'John' })
         .traits({ admin: { role: 'admin' } })
         .create();

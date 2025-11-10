@@ -1,5 +1,5 @@
 import type { DbCollection } from '@src/db';
-import type { Factory, ModelTraits } from '@src/factory';
+import type { Factory } from '@src/factory';
 import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
 import type {
   ModelAttrs,
@@ -218,8 +218,6 @@ export type CollectionCreateAttrs<
 export type CollectionInstance<
   TTemplate extends ModelTemplate,
   TRelationships extends ModelRelationships = {},
-  TFactory extends
-    | Factory<TTemplate, SchemaCollections, ModelTraits<SchemaCollections, TTemplate>>
-    | undefined = undefined,
+  TFactory extends Factory<TTemplate, any, SchemaCollections> | undefined = undefined,
   TSerializer = undefined,
 > = Collection<SchemaCollections, TTemplate, TRelationships, TFactory, TSerializer>;

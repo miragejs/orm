@@ -4,7 +4,6 @@ import { collection, schema, type CollectionConfig } from '@src/schema';
 
 import type Factory from '../Factory';
 import { factory } from '../FactoryBuilder';
-import type { TraitDefinition } from '../types';
 
 // Define test model attributes
 type UserAttrs = {
@@ -52,18 +51,7 @@ type TagModel = typeof tagModel;
 
 // Define test schema type
 type TestSchema = {
-  users: CollectionConfig<
-    UserModel,
-    {},
-    Factory<
-      UserModel,
-      TestSchema,
-      {
-        admin: TraitDefinition<TestSchema, UserModel>;
-        verified: TraitDefinition<TestSchema, UserModel>;
-      }
-    >
-  >;
+  users: CollectionConfig<UserModel, {}, Factory<UserModel, 'admin' | 'verified'>>;
   posts: CollectionConfig<
     PostModel,
     {
@@ -71,13 +59,7 @@ type TestSchema = {
       comments: HasMany<CommentModel>;
       tags: HasMany<TagModel>;
     },
-    Factory<
-      PostModel,
-      TestSchema,
-      {
-        published: TraitDefinition<TestSchema, PostModel>;
-      }
-    >
+    Factory<PostModel, 'published'>
   >;
   comments: CollectionConfig<
     CommentModel,
@@ -85,26 +67,9 @@ type TestSchema = {
       post: BelongsTo<PostModel, 'postId'>;
       user: BelongsTo<UserModel, 'userId'>;
     },
-    Factory<
-      CommentModel,
-      TestSchema,
-      {
-        approved: TraitDefinition<TestSchema, CommentModel>;
-      }
-    >
+    Factory<CommentModel, 'approved'>
   >;
-  tags: CollectionConfig<
-    TagModel,
-    {},
-    Factory<
-      TagModel,
-      TestSchema,
-      {
-        active: TraitDefinition<TestSchema, TagModel>;
-        featured: TraitDefinition<TestSchema, TagModel>;
-      }
-    >
-  >;
+  tags: CollectionConfig<TagModel, {}, Factory<TagModel, 'active' | 'featured'>>;
 };
 
 // Setup test relationships
@@ -158,14 +123,14 @@ const tagFactory = factory()
 describe('Factory associations', () => {
   describe('create()', () => {
     it('should create one new related model', () => {
-      const postFactory = factory<TestSchema>()
+      const postFactory = factory()
         .model(postModel)
         .attrs({
           title: 'My Post',
           content: 'Content',
         })
         .associations({
-          author: associations.create<TestSchema, UserModel>(userModel, 'admin'),
+          author: associations.create(userModel, 'admin'),
         })
         .create();
 
@@ -208,7 +173,7 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(userFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
             .relationships(postRelationships)
@@ -241,7 +206,7 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(userFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
             .relationships(postRelationships)
@@ -276,7 +241,7 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(userFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
             .relationships(postRelationships)
@@ -313,7 +278,7 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(userFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
             .relationships(postRelationships)
@@ -350,7 +315,7 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(userFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
             .relationships(postRelationships)
@@ -391,7 +356,7 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(userFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
             .relationships(postRelationships)
@@ -434,7 +399,7 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(userFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
             .relationships(postRelationships)
@@ -470,7 +435,7 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(userFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
             .relationships(postRelationships)
@@ -505,7 +470,7 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(userFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
             .relationships(postRelationships)
@@ -545,7 +510,7 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(userFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
             .relationships(postRelationships)
@@ -579,9 +544,7 @@ describe('Factory associations', () => {
             userModel,
             { role: 'admin' },
             'verified',
-            {
-              name: 'New Admin',
-            },
+            { name: 'New Admin' },
           ),
         })
         .create();
@@ -589,7 +552,7 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(userFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
             .relationships(postRelationships)
@@ -626,7 +589,7 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(userFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
             .relationships(postRelationships)
@@ -665,7 +628,7 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(userFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
             .relationships(postRelationships)
@@ -707,7 +670,7 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(userFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
             .relationships(postRelationships)
@@ -750,7 +713,7 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(userFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
             .relationships(postRelationships)
@@ -783,7 +746,7 @@ describe('Factory associations', () => {
 
   describe('traits', () => {
     it('should support defining associations in traits', () => {
-      const customPostFactory = factory<TestSchema>()
+      const postFactory = factory<TestSchema>()
         .model(postModel)
         .attrs({
           title: 'My Post',
@@ -800,9 +763,9 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(userFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
-            .factory(customPostFactory)
+            .factory(postFactory)
             .relationships(postRelationships)
             .create(),
           comments: collection()
@@ -823,7 +786,7 @@ describe('Factory associations', () => {
     });
 
     it('should support multiple associations in a trait', () => {
-      const customPostFactory = factory<TestSchema>()
+      const postFactory = factory<TestSchema>()
         .model(postModel)
         .attrs({
           title: 'My Post',
@@ -841,9 +804,9 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(userFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
-            .factory(customPostFactory)
+            .factory(postFactory)
             .relationships(postRelationships)
             .create(),
           comments: collection()
@@ -865,7 +828,7 @@ describe('Factory associations', () => {
     });
 
     it('should merge trait associations with factory associations', () => {
-      const customPostFactory = factory<TestSchema>()
+      const postFactory = factory<TestSchema>()
         .model(postModel)
         .attrs({
           title: 'My Post',
@@ -884,9 +847,9 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(userFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
-            .factory(customPostFactory)
+            .factory(postFactory)
             .relationships(postRelationships)
             .create(),
           comments: collection()
@@ -907,7 +870,7 @@ describe('Factory associations', () => {
     });
 
     it('should prioritize factory associations over trait associations', () => {
-      const customPostFactory = factory<TestSchema>()
+      const postFactory = factory<TestSchema>()
         .model(postModel)
         .attrs({
           title: 'My Post',
@@ -927,9 +890,9 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(userFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
-            .factory(customPostFactory)
+            .factory(postFactory)
             .relationships(postRelationships)
             .create(),
           comments: collection()
@@ -949,7 +912,7 @@ describe('Factory associations', () => {
     });
 
     it('should allow combining multiple traits with associations', () => {
-      const customPostFactory = factory<TestSchema>()
+      const postFactory = factory<TestSchema>()
         .model(postModel)
         .attrs({
           title: 'My Post',
@@ -971,9 +934,9 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(userFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
-            .factory(customPostFactory)
+            .factory(postFactory)
             .relationships(postRelationships)
             .create(),
           comments: collection()
@@ -995,7 +958,7 @@ describe('Factory associations', () => {
     });
 
     it('should allow user-provided relationships to override trait associations', () => {
-      const customPostFactory = factory<TestSchema>()
+      const postFactory = factory<TestSchema>()
         .model(postModel)
         .attrs({
           title: 'My Post',
@@ -1011,9 +974,9 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(userFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
-            .factory(customPostFactory)
+            .factory(postFactory)
             .relationships(postRelationships)
             .create(),
           comments: collection()
@@ -1059,7 +1022,7 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(customUserFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
             .relationships(postRelationships)
@@ -1116,12 +1079,12 @@ describe('Factory associations', () => {
       const testSchema = schema()
         .collections({
           users: collection().model(userModel).factory(customUserFactory).create(),
-          posts: collection()
+          posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
             .relationships(postRelationships)
             .create(),
-          comments: collection()
+          comments: collection<TestSchema>()
             .model(commentModel)
             .factory(customCommentFactory)
             .relationships(commentRelationships)

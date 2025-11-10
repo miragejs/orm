@@ -1,4 +1,4 @@
-import type { Factory, ModelTraits } from '@src/factory';
+import type { Factory } from '@src/factory';
 import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
 import type { ModelTemplate, ModelRelationships } from '@src/model';
 import { Serializer, type SerializerOptions } from '@src/serializer';
@@ -12,6 +12,8 @@ import type {
   SchemaCollections,
   Seeds,
 } from './types';
+
+const SUPPORTED_RELATIONSHIP_TYPES = ['hasMany', 'belongsTo'];
 
 /**
  * A fluent builder for creating schema collection configurations.
@@ -38,9 +40,7 @@ export default class CollectionBuilder<
   TTemplate extends ModelTemplate = ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
   TRelationships extends ModelRelationships = {},
-  TFactory extends
-    | Factory<TTemplate, TSchema, ModelTraits<TSchema, TTemplate>>
-    | undefined = undefined,
+  TFactory extends Factory<any, any, any> | undefined = undefined,
   TIdentityManager extends IdentityManager = StringIdentityManager,
   TSerializer = undefined,
 > {
@@ -78,7 +78,7 @@ export default class CollectionBuilder<
     T,
     TSchema,
     TRelationships,
-    TFactory extends undefined ? undefined : Factory<T, TSchema, ModelTraits<TSchema, T>>,
+    TFactory extends undefined ? undefined : Factory<T, any, TSchema>,
     TIdentityManager,
     TSerializer
   > {
@@ -103,7 +103,7 @@ export default class CollectionBuilder<
       T,
       TSchema,
       TRelationships,
-      TFactory extends undefined ? undefined : Factory<T, TSchema, ModelTraits<TSchema, T>>,
+      TFactory extends undefined ? undefined : Factory<T, any, TSchema>,
       TIdentityManager,
       TSerializer
     >();
@@ -182,8 +182,6 @@ export default class CollectionBuilder<
         'Invalid relationships configuration. Expected an object with relationship definitions.',
       );
     }
-
-    const SUPPORTED_RELATIONSHIP_TYPES = ['hasMany', 'belongsTo'];
 
     for (const key in relationships) {
       const relationship = relationships[key];

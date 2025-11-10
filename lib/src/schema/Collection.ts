@@ -1,5 +1,5 @@
 import type { DbRecordInput, NewDbRecord, QueryOptions } from '@src/db';
-import type { Factory, FactoryTraitNames, ModelTraits } from '@src/factory';
+import type { Factory, FactoryTraitNames } from '@src/factory';
 import {
   Model,
   ModelCollection,
@@ -31,9 +31,7 @@ export default class Collection<
   TSchema extends SchemaCollections = SchemaCollections,
   TTemplate extends ModelTemplate = ModelTemplate,
   TRelationships extends ModelRelationships = {},
-  TFactory extends
-    | Factory<TTemplate, TSchema, ModelTraits<TSchema, TTemplate>>
-    | undefined = undefined,
+  TFactory extends Factory<TTemplate, any, any> | undefined = undefined,
   TSerializer = undefined,
 > extends BaseCollection<TSchema, TTemplate, TRelationships, TFactory, TSerializer> {
   /**
