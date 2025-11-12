@@ -87,32 +87,35 @@ A comprehensive real-world example demonstrating the full capabilities of `mirag
 │   │   │       └── index.ts
 │   │   └── schema/                     # ORM Schema (domain structure)
 │   │       ├── models/                 # All model templates together
-│   │       │   ├── user.model.ts
-│   │       │   ├── team.model.ts
-│   │       │   ├── task.model.ts
-│   │       │   └── comment.model.ts
-│   │       ├── users/                  # User collection domain
-│   │       │   ├── collection.ts
-│   │       │   ├── factory.ts
-│   │       │   ├── relationships.ts
-│   │       │   └── serializer.ts
-│   │       ├── teams/                  # Team collection domain
-│   │       │   ├── collection.ts
-│   │       │   ├── factory.ts
-│   │       │   ├── relationships.ts
-│   │       │   └── serializer.ts
-│   │       ├── tasks/                  # Task collection domain
-│   │       │   ├── collection.ts
-│   │       │   ├── factory.ts
-│   │       │   ├── relationships.ts
-│   │       │   └── serializer.ts
-│   │       ├── comments/               # Comment collection domain
-│   │       │   ├── collection.ts
-│   │       │   ├── factory.ts
-│   │       │   ├── relationships.ts
-│   │       │   └── serializer.ts
+│   │       │   ├── userModel.ts
+│   │       │   ├── teamModel.ts
+│   │       │   ├── taskModel.ts
+│   │       │   ├── commentModel.ts
+│   │       │   └── index.ts
+│   │       ├── collections/            # Collection domains
+│   │       │   ├── users/              # User collection domain
+│   │       │   │   ├── userCollection.ts
+│   │       │   │   ├── userFactory.ts
+│   │       │   │   └── index.ts
+│   │       │   ├── teams/              # Team collection domain
+│   │       │   │   ├── teamCollection.ts
+│   │       │   │   ├── teamFactory.ts
+│   │       │   │   └── index.ts
+│   │       │   ├── tasks/              # Task collection domain
+│   │       │   │   ├── taskCollection.ts
+│   │       │   │   ├── taskFactory.ts
+│   │       │   │   └── index.ts
+│   │       │   ├── comments/           # Comment collection domain
+│   │       │   │   ├── commentCollection.ts
+│   │       │   │   ├── commentFactory.ts
+│   │       │   │   └── index.ts
+│   │       │   └── index.ts
+│   │       ├── types/                  # Schema type definitions
+│   │       │   ├── schema.ts
+│   │       │   └── index.ts
+│   │       ├── setupSchema.ts          # Schema initialization
 │   │       ├── seeds.ts                # Seed data
-│   │       └── index.ts                # Schema initialization
+│   │       └── index.ts                # Main export
 │   └── README.md
 ```
 

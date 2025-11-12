@@ -73,8 +73,14 @@ function App() {
             <Typography component="li" variant="body2" sx={{ mb: 1 }}>
               ✅ miragejs-orm import working (from local lib)
             </Typography>
+            <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+              ✅ Schema initialized (users, teams, tasks, comments)
+            </Typography>
+            <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+              ✅ Models, collections, relationships configured
+            </Typography>
             <Typography component="li" variant="body2">
-              ⏳ Next: Set up ORM schema & models
+              ⏳ Next: Create seeds & MSW handlers
             </Typography>
           </Box>
         </Paper>

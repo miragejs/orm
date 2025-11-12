@@ -27,84 +27,85 @@ Track progress on building the example project. Check off items as they're compl
 - [x] Remove workspace configuration (standalone project)
 
 ### Shared Types & Enums
-- [ ] Create `src/types/enums.ts`
-  - [ ] Define `UserRole` enum (USER, MANAGER)
-  - [ ] Define `TaskStatus` enum (TODO, IN_PROGRESS, REVIEW, DONE)
-  - [ ] Define `TaskPriority` enum (LOW, MEDIUM, HIGH, URGENT)
-- [ ] Export enums from `src/types/index.ts`
+- [x] Create `src/shared/types/enums.ts`
+  - [x] Define `UserRole` enum (USER, MANAGER)
+  - [x] Define `TaskStatus` enum (TODO, IN_PROGRESS, REVIEW, DONE)
+  - [x] Define `TaskPriority` enum (LOW, MEDIUM, HIGH, URGENT)
+- [x] Export enums from `src/shared/types/index.ts`
 
 ### Data Models
-- [ ] Create `test/schema/models/` directory
-- [ ] Define `test/schema/models/user.model.ts`
-  - [ ] UserAttrs interface with UserRole enum
-  - [ ] Export userModel template
-- [ ] Define `test/schema/models/team.model.ts`
-  - [ ] TeamAttrs interface (with department property)
-  - [ ] Export teamModel template
-- [ ] Define `test/schema/models/task.model.ts`
-  - [ ] TaskAttrs interface with TaskStatus and TaskPriority enums
-  - [ ] Export taskModel template
-- [ ] Define `test/schema/models/comment.model.ts`
-  - [ ] CommentAttrs interface
-  - [ ] Export commentModel template
+- [x] Create `test/schema/models/` directory
+- [x] Define `test/schema/models/userModel.ts`
+  - [x] UserAttrs interface with UserRole enum
+  - [x] Export userModel template
+- [x] Define `test/schema/models/teamModel.ts`
+  - [x] TeamAttrs interface (with department property)
+  - [x] Export teamModel template
+- [x] Define `test/schema/models/taskModel.ts`
+  - [x] TaskAttrs interface with TaskStatus and TaskPriority enums
+  - [x] Export taskModel template
+- [x] Define `test/schema/models/commentModel.ts`
+  - [x] CommentAttrs interface
+  - [x] Export commentModel template
+- [x] Create `test/schema/models/index.ts` to export all models
 
-### Domain Structure (Collections, Factories, Relationships, Serializers)
+### Domain Structure (Collections, Factories, Relationships)
 
 #### Users Domain
-- [ ] Create `test/schema/users/` directory
-- [ ] Create `test/schema/users/collection.ts`
-- [ ] Create `test/schema/users/factory.ts`
-  - [ ] Define factory with Faker attributes
-  - [ ] Add trait: `user` (UserRole.USER)
-  - [ ] Add trait: `manager` (UserRole.MANAGER)
-  - [ ] Add trait: `withTasks` (creates 5-10 random tasks)
-- [ ] Create `test/schema/users/relationships.ts`
-  - [ ] belongsTo: team
-  - [ ] hasMany: tasks
-  - [ ] hasMany: comments
-- [ ] Create `test/schema/users/serializer.ts` (if needed)
+- [x] Create `test/schema/collections/users/` directory
+- [x] Create `test/schema/collections/users/userCollection.ts` (with inline relationships)
+- [x] Create `test/schema/collections/users/userFactory.ts`
+  - [x] Define factory with Faker attributes
+  - [x] Add trait: `user` (UserRole.USER)
+  - [x] Add trait: `manager` (UserRole.MANAGER)
+  - [ ] Add trait: `withTasks` (creates 5-10 random tasks using associations)
+- [x] Define relationships inline in collection:
+  - [x] belongsTo: team
+  - [x] hasMany: tasks
+  - [x] hasMany: comments
+- [x] Create `test/schema/collections/users/index.ts`
 
 #### Teams Domain
-- [ ] Create `test/schema/teams/` directory
-- [ ] Create `test/schema/teams/collection.ts`
-- [ ] Create `test/schema/teams/factory.ts`
-  - [ ] Define factory with Faker attributes
+- [x] Create `test/schema/collections/teams/` directory
+- [x] Create `test/schema/collections/teams/teamCollection.ts` (with inline relationships)
+- [x] Create `test/schema/collections/teams/teamFactory.ts`
+  - [x] Define factory with Faker attributes
   - [ ] Add trait: `withManager` (creates and assigns manager)
-- [ ] Create `test/schema/teams/relationships.ts`
-  - [ ] hasMany: members (users)
-  - [ ] belongsTo: manager (user)
-- [ ] Create `test/schema/teams/serializer.ts` (if needed)
+- [x] Define relationships inline in collection:
+  - [x] hasMany: members (users)
+  - [x] belongsTo: manager (user)
+- [x] Create `test/schema/collections/teams/index.ts`
 
 #### Tasks Domain
-- [ ] Create `test/schema/tasks/` directory
-- [ ] Create `test/schema/tasks/collection.ts`
-- [ ] Create `test/schema/tasks/factory.ts`
-  - [ ] Define factory with Faker attributes
-  - [ ] Add trait: `todo` (TaskStatus.TODO)
-  - [ ] Add trait: `inProgress` (TaskStatus.IN_PROGRESS)
-  - [ ] Add trait: `review` (TaskStatus.REVIEW)
-  - [ ] Add trait: `done` (TaskStatus.DONE)
-  - [ ] Add trait: `lowPriority` (TaskPriority.LOW)
-  - [ ] Add trait: `highPriority` (TaskPriority.HIGH)
-  - [ ] Add trait: `urgent` (TaskPriority.URGENT)
-  - [ ] Add trait: `overdue` (dueDate in past)
-- [ ] Create `test/schema/tasks/relationships.ts`
-  - [ ] belongsTo: assignee (user)
-  - [ ] belongsTo: team
-  - [ ] hasMany: comments
-- [ ] Create `test/schema/tasks/serializer.ts` (if needed)
+- [x] Create `test/schema/collections/tasks/` directory
+- [x] Create `test/schema/collections/tasks/taskCollection.ts` (with inline relationships)
+- [x] Create `test/schema/collections/tasks/taskFactory.ts`
+  - [x] Define factory with Faker attributes
+  - [x] Add trait: `todo` (TaskStatus.TODO)
+  - [x] Add trait: `inProgress` (TaskStatus.IN_PROGRESS)
+  - [x] Add trait: `review` (TaskStatus.REVIEW)
+  - [x] Add trait: `done` (TaskStatus.DONE)
+  - [x] Add trait: `lowPriority` (TaskPriority.LOW)
+  - [x] Add trait: `highPriority` (TaskPriority.HIGH)
+  - [x] Add trait: `urgent` (TaskPriority.URGENT)
+  - [x] Add trait: `overdue` (dueDate in past)
+- [x] Define relationships inline in collection:
+  - [x] belongsTo: assignee (user)
+  - [x] belongsTo: team
+  - [x] hasMany: comments
+- [x] Create `test/schema/collections/tasks/index.ts`
 
 #### Comments Domain
-- [ ] Create `test/schema/comments/` directory
-- [ ] Create `test/schema/comments/collection.ts`
-- [ ] Create `test/schema/comments/factory.ts`
-  - [ ] Define factory with Faker attributes
-  - [ ] Add trait: `recent` (created within 24 hours)
-  - [ ] Add trait: `old` (created 30+ days ago)
-- [ ] Create `test/schema/comments/relationships.ts`
-  - [ ] belongsTo: author (user)
-  - [ ] belongsTo: task
-- [ ] Create `test/schema/comments/serializer.ts` (if needed)
+- [x] Create `test/schema/collections/comments/` directory
+- [x] Create `test/schema/collections/comments/commentCollection.ts` (with inline relationships)
+- [x] Create `test/schema/collections/comments/commentFactory.ts`
+  - [x] Define factory with Faker attributes
+  - [x] Add trait: `recent` (created within 24 hours)
+  - [x] Add trait: `old` (created 30+ days ago)
+- [x] Define relationships inline in collection:
+  - [x] belongsTo: author (user)
+  - [x] belongsTo: task
+- [x] Create `test/schema/collections/comments/index.ts`
 
 ### Seeds
 - [ ] Create `test/schema/seeds.ts`
@@ -125,16 +126,16 @@ Track progress on building the example project. Check off items as they're compl
   - [ ] Ensure chronological order
 
 ### Schema Setup
-- [ ] Create `test/schema/index.ts`
-- [ ] Import all models from `./models/`
-- [ ] Import all domain configurations (users, teams, tasks, comments)
-- [ ] Initialize schema with collections
-  - [ ] Add users collection with factory, relationships, serializer
-  - [ ] Add teams collection with factory, relationships, serializer
-  - [ ] Add tasks collection with factory, relationships, serializer
-  - [ ] Add comments collection with factory, relationships, serializer
+- [x] Create `test/schema/types/` directory
+- [x] Create `test/schema/types/schema.ts` for AppCollections and AppSchema types
+- [x] Create `test/schema/types/index.ts` to export types
+- [x] Create `test/schema/setupSchema.ts` for schema initialization
+- [x] Import all models from `./models/`
+- [x] Import all domain collections (users, teams, tasks, comments)
+- [x] Initialize schema with all collections
+- [x] Log schema initialization for verification
+- [x] Create `test/schema/index.ts` to export schema and types
 - [ ] Run seeds on initialization
-- [ ] Export schema instance
 
 ### MSW Integration
 - [ ] Create `test/mocks/browser.ts`
