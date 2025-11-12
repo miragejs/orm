@@ -231,5 +231,48 @@ describe('Schema with Seeds', () => {
       const posts = mixedSchema.posts.all();
       expect(posts.length).toBe(0);
     });
+
+    it('should load seeds for a specific collection when collectionName is provided', async () => {
+      await testSchema.loadSeeds('users');
+
+      const users = testSchema.users.all();
+      expect(users.length).toBe(2);
+      expect(users.models[0].name).toBe('John');
+      expect(users.models[1].name).toBe('Jane');
+
+      // Posts should not be loaded
+      const posts = testSchema.posts.all();
+      expect(posts.length).toBe(0);
+    });
+
+    it('should load seeds for another specific collection', async () => {
+      await testSchema.loadSeeds('posts');
+
+      const posts = testSchema.posts.all();
+      expect(posts.length).toBe(3);
+      expect(posts.models[0].title).toBe('Post 1');
+
+      // Users should not be loaded
+      const users = testSchema.users.all();
+      expect(users.length).toBe(0);
+    });
+
+    it('should allow loading seeds for specific collections sequentially', async () => {
+      await testSchema.loadSeeds('users');
+      await testSchema.loadSeeds('posts');
+
+      const users = testSchema.users.all();
+      expect(users.length).toBe(2);
+
+      const posts = testSchema.posts.all();
+      expect(posts.length).toBe(3);
+    });
+
+    it('should throw error when loading seeds for non-existent collection', async () => {
+      // @ts-expect-error - Testing invalid collection name
+      await expect(testSchema.loadSeeds('nonexistent')).rejects.toThrow(
+        "Collection 'nonexistent' not found",
+      );
+    });
   });
 });

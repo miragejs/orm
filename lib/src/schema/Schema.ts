@@ -76,49 +76,79 @@ export default class Schema<
   }
 
   /**
-   * Load all seeds for all collections in the schema.
+   * Load seeds for all collections or a specific collection in the schema.
    * This will run all seed scenarios for each collection.
    * To load specific scenarios, use collection.loadSeeds(scenarioId) on individual collections.
+   * @param collectionName - Optional collection name to load seeds for. If not provided, loads for all collections.
    * @example
    * ```typescript
    * // Load all seeds for all collections
    * await schema.loadSeeds();
    *
-   * // Or load specific scenario for a single collection
-   * await schema.users.loadSeeds('development');
+   * // Or load seeds for a specific collection
+   * await schema.loadSeeds('users');
+   *
    * ```
    */
-  async loadSeeds(): Promise<void> {
-    this.logger?.info('Loading seeds for all collections', {
-      collections: Array.from(this._collections.keys()),
-    });
+  async loadSeeds(collectionName?: keyof TCollections): Promise<void> {
+    if (collectionName) {
+      this.logger?.info(`Loading seeds for collection '${String(collectionName)}'`);
 
-    for (const collection of this._collections.values()) {
+      const collection = this.getCollection(collectionName);
       await collection.loadSeeds();
-    }
 
-    this.logger?.info('All seeds loaded successfully', this.db.dump());
+      this.logger?.info(
+        `Seeds loaded successfully for '${String(collectionName)}'`,
+        this.db.dump(),
+      );
+    } else {
+      this.logger?.info('Loading seeds for all collections', {
+        collections: Array.from(this._collections.keys()),
+      });
+
+      for (const collection of this._collections.values()) {
+        await collection.loadSeeds();
+      }
+
+      this.logger?.info('All seeds loaded successfully', this.db.dump());
+    }
   }
 
   /**
-   * Load all fixtures for all collections in the schema.
+   * Load fixtures for all collections or a specific collection in the schema.
    * This will insert all fixture records into each collection's database.
+   * @param collectionName - Optional collection name to load fixtures for. If not provided, loads for all collections.
    * @example
    * ```typescript
    * // Load all fixtures for all collections
    * await schema.loadFixtures();
+   *
+   * // Load fixtures for a specific collection
+   * await schema.loadFixtures('users');
    * ```
    */
-  async loadFixtures(): Promise<void> {
-    this.logger?.info('Loading fixtures for all collections', {
-      collections: Array.from(this._collections.keys()),
-    });
+  async loadFixtures(collectionName?: keyof TCollections): Promise<void> {
+    if (collectionName) {
+      this.logger?.info(`Loading fixtures for collection '${String(collectionName)}'`);
 
-    for (const collection of this._collections.values()) {
+      const collection = this.getCollection(collectionName);
       await collection.loadFixtures();
-    }
 
-    this.logger?.info('All fixtures loaded successfully', this.db.dump());
+      this.logger?.info(
+        `Fixtures loaded successfully for '${String(collectionName)}'`,
+        this.db.dump(),
+      );
+    } else {
+      this.logger?.info('Loading fixtures for all collections', {
+        collections: Array.from(this._collections.keys()),
+      });
+
+      for (const collection of this._collections.values()) {
+        await collection.loadFixtures();
+      }
+
+      this.logger?.info('All fixtures loaded successfully', this.db.dump());
+    }
   }
 
   /**

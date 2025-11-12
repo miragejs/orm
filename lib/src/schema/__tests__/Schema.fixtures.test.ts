@@ -302,6 +302,117 @@ describe('Schema with Fixtures', () => {
       const postsAfterLoad = mixedSchema.posts.all();
       expect(postsAfterLoad.length).toBe(1);
     });
+
+    it('should load fixtures for a specific collection when collectionName is provided', async () => {
+      const testSchema = schema()
+        .collections({
+          users: collection<TestSchema>()
+            .model(userModel)
+            .fixtures([
+              { id: '1', name: 'User 1', email: 'user1@example.com' },
+              { id: '2', name: 'User 2', email: 'user2@example.com' },
+            ])
+            .create(),
+          posts: collection<TestSchema>()
+            .model(postModel)
+            .fixtures([
+              { id: 1, title: 'Post 1', content: 'Content 1' },
+              { id: 2, title: 'Post 2', content: 'Content 2' },
+              { id: 3, title: 'Post 3', content: 'Content 3' },
+            ])
+            .create(),
+        })
+        .setup();
+
+      await testSchema.loadFixtures('users');
+
+      const users = testSchema.users.all();
+      expect(users.length).toBe(2);
+      expect(users.models[0].name).toBe('User 1');
+      expect(users.models[1].name).toBe('User 2');
+
+      // Posts should not be loaded
+      const posts = testSchema.posts.all();
+      expect(posts.length).toBe(0);
+    });
+
+    it('should load fixtures for another specific collection', async () => {
+      const testSchema = schema()
+        .collections({
+          users: collection<TestSchema>()
+            .model(userModel)
+            .fixtures([
+              { id: '1', name: 'User 1', email: 'user1@example.com' },
+              { id: '2', name: 'User 2', email: 'user2@example.com' },
+            ])
+            .create(),
+          posts: collection<TestSchema>()
+            .model(postModel)
+            .fixtures([
+              { id: 1, title: 'Post 1', content: 'Content 1' },
+              { id: 2, title: 'Post 2', content: 'Content 2' },
+              { id: 3, title: 'Post 3', content: 'Content 3' },
+            ])
+            .create(),
+        })
+        .setup();
+
+      await testSchema.loadFixtures('posts');
+
+      const posts = testSchema.posts.all();
+      expect(posts.length).toBe(3);
+      expect(posts.models[0].title).toBe('Post 1');
+
+      // Users should not be loaded
+      const users = testSchema.users.all();
+      expect(users.length).toBe(0);
+    });
+
+    it('should allow loading fixtures for specific collections sequentially', async () => {
+      const testSchema = schema()
+        .collections({
+          users: collection<TestSchema>()
+            .model(userModel)
+            .fixtures([
+              { id: '1', name: 'User 1', email: 'user1@example.com' },
+              { id: '2', name: 'User 2', email: 'user2@example.com' },
+            ])
+            .create(),
+          posts: collection<TestSchema>()
+            .model(postModel)
+            .fixtures([
+              { id: 1, title: 'Post 1', content: 'Content 1' },
+              { id: 2, title: 'Post 2', content: 'Content 2' },
+            ])
+            .create(),
+        })
+        .setup();
+
+      await testSchema.loadFixtures('users');
+      await testSchema.loadFixtures('posts');
+
+      const users = testSchema.users.all();
+      expect(users.length).toBe(2);
+
+      const posts = testSchema.posts.all();
+      expect(posts.length).toBe(2);
+    });
+
+    it('should throw error when loading fixtures for non-existent collection', async () => {
+      const testSchema = schema()
+        .collections({
+          users: collection<TestSchema>()
+            .model(userModel)
+            .fixtures([{ id: '1', name: 'User', email: 'user@example.com' }])
+            .create(),
+        })
+        .setup();
+
+      // @ts-expect-error - Testing invalid collection name
+      await expect(testSchema.loadFixtures('nonexistent')).rejects.toThrow(
+        "Collection 'nonexistent' not found",
+      );
+    });
   });
 
   describe('Fixtures with Seeds', () => {
