@@ -156,3 +156,9 @@ export type {
   SerializerOptions,
   StructuralSerializerOptions,
 } from './serializer';
+
+// ----------------------------------------------------------------------------
+// Logger
+// ----------------------------------------------------------------------------
+export { Logger, LogLevel } from './utils';
+export type { LoggerConfig } from './utils';

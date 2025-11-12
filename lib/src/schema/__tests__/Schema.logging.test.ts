@@ -73,7 +73,7 @@ describe('Schema with Logging', () => {
       expect(consoleLogSpy).toHaveBeenCalledWith(
         '[Mirage] DEBUG: Schema initialized',
         expect.objectContaining({
-          collections: ['users'],
+          users: expect.any(Array),
         }),
       );
     });
@@ -107,6 +107,14 @@ describe('Schema with Logging', () => {
           posts: collection<TestSchema>().model(postModel).create(),
         })
         .setup();
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        '[Mirage] DEBUG: Schema initialized',
+        expect.objectContaining({
+          users: expect.any(Array),
+          posts: expect.any(Array),
+        }),
+      );
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
         '[Mirage] DEBUG: Registering collections',
@@ -544,7 +552,10 @@ describe('Schema with Logging', () => {
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
         '[Mirage] INFO: All seeds loaded successfully',
-        '',
+        expect.objectContaining({
+          users: expect.any(Array),
+          posts: expect.any(Array),
+        }),
       );
     });
 
@@ -577,7 +588,10 @@ describe('Schema with Logging', () => {
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
         '[Mirage] INFO: All fixtures loaded successfully',
-        '',
+        expect.objectContaining({
+          users: expect.any(Array),
+          posts: expect.any(Array),
+        }),
       );
     });
   });

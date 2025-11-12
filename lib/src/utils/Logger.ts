@@ -5,9 +5,11 @@
  * Used internally by the ORM to log database operations, seed/fixture loading, and errors.
  * @example
  * ```typescript
+ * import { Logger, LogLevel } from '@miragejs/orm';
+ *
  * const logger = new Logger({
  *   enabled: true,
- *   level: 'debug',
+ *   level: LogLevel.DEBUG,
  *   prefix: '[MyApp]'
  * });
  *
@@ -27,7 +29,7 @@ export default class Logger {
    * ```typescript
    * const logger = new Logger({
    *   enabled: true,
-   *   level: 'debug',
+   *   level: LogLevel.DEBUG,
    *   prefix: '[Mirage]'
    * });
    * ```
@@ -45,7 +47,7 @@ export default class Logger {
    * Debug logs are the most verbose and show low-level operational details.
    * Use for troubleshooting, understanding flow, and performance analysis.
    *
-   * Only outputs if logger is enabled and level is set to 'debug'.
+   * Only outputs if logger is enabled and level is set to DEBUG.
    * @param message - The debug message to log
    * @param context - Optional context object with additional information
    * @example
@@ -55,7 +57,7 @@ export default class Logger {
    * ```
    */
   debug(message: string, context?: Record<string, unknown>): void {
-    this._log('debug', message, context);
+    this._log(LogLevel.DEBUG, message, context);
   }
 
   /**
@@ -64,7 +66,7 @@ export default class Logger {
    * Info logs show normal operations and important events.
    * Use for high-level actions, successful operations, and summaries.
    *
-   * Only outputs if logger is enabled and level is 'debug' or 'info'.
+   * Only outputs if logger is enabled and level is DEBUG or INFO.
    * @param message - The info message to log
    * @param context - Optional context object with additional information
    * @example
@@ -74,7 +76,7 @@ export default class Logger {
    * ```
    */
   info(message: string, context?: Record<string, unknown>): void {
-    this._log('info', message, context);
+    this._log(LogLevel.INFO, message, context);
   }
 
   /**
@@ -83,7 +85,7 @@ export default class Logger {
    * Warning logs indicate something unexpected but not breaking.
    * Use for deprecated features, unusual patterns, and potential issues.
    *
-   * Only outputs if logger is enabled and level is 'debug', 'info', or 'warn'.
+   * Only outputs if logger is enabled and level is DEBUG, INFO, or WARN.
    * @param message - The warning message to log
    * @param context - Optional context object with additional information
    * @example
@@ -93,7 +95,7 @@ export default class Logger {
    * ```
    */
   warn(message: string, context?: Record<string, unknown>): void {
-    this._log('warn', message, context);
+    this._log(LogLevel.WARN, message, context);
   }
 
   /**
@@ -102,7 +104,7 @@ export default class Logger {
    * Error logs indicate something failed or broke.
    * Use for operations that couldn't complete and validation failures.
    *
-   * Only outputs if logger is enabled and level is not 'silent'.
+   * Only outputs if logger is enabled and level is not SILENT.
    * @param message - The error message to log
    * @param context - Optional context object with additional information
    * @example
@@ -112,7 +114,7 @@ export default class Logger {
    * ```
    */
   error(message: string, context?: Record<string, unknown>): void {
-    this._log('error', message, context);
+    this._log(LogLevel.ERROR, message, context);
   }
 
   /**
@@ -130,23 +132,29 @@ export default class Logger {
       return;
     }
 
-    if (LOG_LEVELS[level] < LOG_LEVELS[this._config.level]) {
+    // Normalize configured level to enum value
+    const configLevel =
+      typeof this._config.level === 'string'
+        ? LOG_LEVEL_MAP[this._config.level]
+        : this._config.level;
+
+    if (level < configLevel) {
       return;
     }
 
     const prefix = this._config.prefix;
-    const levelLabel = level.toUpperCase();
+    const levelLabel = LogLevel[level];
     const logMessage = `${prefix} ${levelLabel}: ${message}`;
 
     switch (level) {
-      case 'debug':
-      case 'info':
+      case LogLevel.DEBUG:
+      case LogLevel.INFO:
         console.log(logMessage, context || '');
         break;
-      case 'warn':
+      case LogLevel.WARN:
         console.warn(logMessage, context || '');
         break;
-      case 'error':
+      case LogLevel.ERROR:
         console.error(logMessage, context || '');
         break;
     }
@@ -154,27 +162,39 @@ export default class Logger {
 }
 
 /**
- * Log level type defining the severity of log messages.
+ * Log level enum defining the severity of log messages.
  *
- * Log levels follow a hierarchy where setting a level shows that level and everything above it:
- * - `silent`: No logging
- * - `error`: Only errors
- * - `warn`: Warnings and errors
- * - `info`: Info, warnings, and errors
- * - `debug`: All messages (most verbose)
+ * Log levels follow a hierarchy where setting a level shows that level and everything above it.
+ * Lower numeric values = more verbose, higher values = less verbose.
+ * - `DEBUG = 0`: All messages (most verbose)
+ * - `INFO = 1`: Info, warnings, and errors
+ * - `WARN = 2`: Warnings and errors
+ * - `ERROR = 3`: Only errors
+ * - `SILENT = 4`: No logging
  * @example
  * ```typescript
+ * import { LogLevel } from '@miragejs/orm';
+ *
  * // Debug level - see everything
- * schema().logging({ enabled: true, level: 'debug' })
+ * schema().logging({ enabled: true, level: LogLevel.DEBUG })
  *
  * // Info level - only important operations
- * schema().logging({ enabled: true, level: 'info' })
+ * schema().logging({ enabled: true, level: LogLevel.INFO })
  *
  * // Error level - only failures
- * schema().logging({ enabled: true, level: 'error' })
+ * schema().logging({ enabled: true, level: LogLevel.ERROR })
+ *
+ * // String values still supported for backward compatibility
+ * schema().logging({ enabled: true, level: 'debug' })
  * ```
  */
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'silent';
+export enum LogLevel {
+  DEBUG = 0,
+  INFO = 1,
+  WARN = 2,
+  ERROR = 3,
+  SILENT = 4,
+}
 
 /**
  * Logger configuration options.
@@ -188,9 +208,10 @@ export interface LoggerConfig {
 
   /**
    * The minimum log level to output. Messages below this level are filtered out.
-   * @default 'info'
+   * Can use enum values (LogLevel.DEBUG) or string values ('debug') for backward compatibility.
+   * @default LogLevel.INFO
    */
-  level: LogLevel;
+  level: LogLevel | 'debug' | 'info' | 'warn' | 'error' | 'silent';
 
   /**
    * Custom prefix for log messages. Useful for distinguishing ORM logs from other output.
@@ -200,14 +221,13 @@ export interface LoggerConfig {
 }
 
 /**
- * Numeric values for log levels to enable level comparison.
- * Lower numbers = more verbose, higher numbers = less verbose.
+ * Map string log level names to enum values for backward compatibility.
  * @internal
  */
-const LOG_LEVELS: Record<LogLevel, number> = {
-  debug: 0,
-  info: 1,
-  warn: 2,
-  error: 3,
-  silent: 4,
+const LOG_LEVEL_MAP: Record<string, LogLevel> = {
+  debug: LogLevel.DEBUG,
+  info: LogLevel.INFO,
+  warn: LogLevel.WARN,
+  error: LogLevel.ERROR,
+  silent: LogLevel.SILENT,
 };

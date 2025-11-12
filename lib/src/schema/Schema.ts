@@ -43,12 +43,11 @@ export default class Schema<
     // Create logger if logging is enabled
     if (config?.logging?.enabled) {
       this.logger = new Logger(config.logging);
-      this.logger.debug('Schema initialized', {
-        collections: Object.keys(collections),
-      });
     }
 
     this._registerCollections(collections);
+
+    this.logger?.debug('Schema initialized', this.db.dump());
   }
 
   /**
@@ -98,7 +97,7 @@ export default class Schema<
       await collection.loadSeeds();
     }
 
-    this.logger?.info('All seeds loaded successfully');
+    this.logger?.info('All seeds loaded successfully', this.db.dump());
   }
 
   /**
@@ -119,7 +118,7 @@ export default class Schema<
       await collection.loadFixtures();
     }
 
-    this.logger?.info('All fixtures loaded successfully');
+    this.logger?.info('All fixtures loaded successfully', this.db.dump());
   }
 
   /**

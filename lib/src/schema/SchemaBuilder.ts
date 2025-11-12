@@ -167,21 +167,28 @@ export default class SchemaBuilder<
    * The logging config enables debug output for database operations, validations,
    * and other schema behavior. This is useful for debugging test setup and understanding
    * how the ORM is behaving.
-   * @param config - The logging configuration (enabled, level, prefix)
+   * @param config - The logging configuration (enabled, level, prefix), or undefined to skip
    * @returns A new SchemaBuilder instance with the specified logging config
    * @example
    * ```typescript
    * const builder = schema()
    *   .logging({ enabled: true, level: 'debug' })
    *   .collections({ users: userCollection });
+   *
+   * // Conditional logging - ignores undefined
+   * const builder = schema()
+   *   .logging(process.env.DEBUG ? { enabled: true, level: 'debug' } : undefined)
+   *   .collections({ users: userCollection });
    * ```
    */
-  logging(config: LoggerConfig): SchemaBuilder<TCollections, TIdentityManager, TGlobalConfig> {
+  logging(
+    config: LoggerConfig | undefined,
+  ): SchemaBuilder<TCollections, TIdentityManager, TGlobalConfig> {
     const builder = new SchemaBuilder<TCollections, TIdentityManager, TGlobalConfig>();
     builder._collections = this._collections;
     builder._identityManager = this._identityManager;
     builder._globalSerializerConfig = this._globalSerializerConfig;
-    builder._loggingConfig = config;
+    builder._loggingConfig = config ?? this._loggingConfig;
     return builder;
   }
 
