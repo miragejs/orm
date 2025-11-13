@@ -274,6 +274,86 @@ describe('Schema with Seeds', () => {
         "Collection 'nonexistent' not found",
       );
     });
+
+    it('should load only default scenario when onlyDefault option is true', async () => {
+      const testSchema = schema()
+        .collections({
+          users: collection<TestSchema>()
+            .model(userModel)
+            .seeds((schema) => {
+              schema.users.create({ name: 'Default User', email: 'default@example.com' });
+            })
+            .create(),
+          posts: collection<TestSchema>()
+            .model(postModel)
+            .seeds((schema) => {
+              schema.posts.create({ title: 'Default Post', content: 'Default content' });
+            })
+            .create(),
+        })
+        .setup();
+
+      // Load only default scenarios (function seeds) using object syntax
+      await testSchema.loadSeeds({ onlyDefault: true });
+
+      const users = testSchema.users.all();
+      expect(users.length).toBe(1);
+      expect(users.models[0].name).toBe('Default User');
+
+      const posts = testSchema.posts.all();
+      expect(posts.length).toBe(1);
+      expect(posts.models[0].title).toBe('Default Post');
+    });
+
+    it('should load only default scenario for specific collection', async () => {
+      const testSchema = schema()
+        .collections({
+          users: collection<TestSchema>()
+            .model(userModel)
+            .seeds((schema) => {
+              schema.users.create({ name: 'Default User', email: 'default@example.com' });
+            })
+            .create(),
+          posts: collection<TestSchema>()
+            .model(postModel)
+            .seeds((schema) => {
+              schema.posts.create({ title: 'Post', content: 'Content' });
+            })
+            .create(),
+        })
+        .setup();
+
+      // Load only default scenario for users using object syntax
+      await testSchema.loadSeeds({ collectionName: 'users', onlyDefault: true });
+
+      const users = testSchema.users.all();
+      expect(users.length).toBe(1);
+      expect(users.models[0].name).toBe('Default User');
+
+      // Posts should not be loaded
+      const posts = testSchema.posts.all();
+      expect(posts.length).toBe(0);
+    });
+
+    it('should work with function seeds as default scenario', async () => {
+      const testSchema = schema()
+        .collections({
+          users: collection<TestSchema>()
+            .model(userModel)
+            .seeds((schema) => {
+              schema.users.create({ name: 'Function Seed', email: 'function@example.com' });
+            })
+            .create(),
+        })
+        .setup();
+
+      // Load with onlyDefault - should work with function seeds (treated as 'default')
+      await testSchema.loadSeeds({ onlyDefault: true });
+
+      const users = testSchema.users.all();
+      expect(users.length).toBe(1);
+      expect(users.models[0].name).toBe('Function Seed');
+    });
   });
 
   describe('Seed load tracking (duplicate prevention)', () => {

@@ -79,35 +79,84 @@ export default class Schema<
    * Load seeds for all collections or a specific collection in the schema.
    * This will run all seed scenarios for each collection.
    * To load specific scenarios, use collection.loadSeeds(scenarioId) on individual collections.
-   * @param collectionName - Optional collection name to load seeds for. If not provided, loads for all collections.
    * @example
    * ```typescript
    * // Load all seeds for all collections
    * await schema.loadSeeds();
    *
-   * // Or load seeds for a specific collection
+   * // Load seeds for a specific collection
    * await schema.loadSeeds('users');
    *
+   * // Load only default scenarios for all collections
+   * await schema.loadSeeds({ onlyDefault: true });
+   *
+   * // Load only default scenario for a specific collection
+   * await schema.loadSeeds({ collectionName: 'users', onlyDefault: true });
    * ```
    */
-  async loadSeeds(collectionName?: keyof TCollections): Promise<void> {
+  async loadSeeds(): Promise<void>;
+  /**
+   * Load seeds for a specific collection
+   * @param collectionName - The name of the collection to load seeds for
+   */
+  async loadSeeds(collectionName: keyof TCollections): Promise<void>;
+  /**
+   * Load only default scenarios for all collections
+   * @param options - Load options with onlyDefault flag
+   */
+  async loadSeeds(options: { onlyDefault: boolean }): Promise<void>;
+  /**
+   * Load seeds for a specific collection with options
+   * @param options - Load options with collectionName and optional onlyDefault flag
+   */
+  async loadSeeds(options: {
+    collectionName: keyof TCollections;
+    onlyDefault?: boolean;
+  }): Promise<void>;
+  /**
+   * Implementation method for loading seeds
+   * @param collectionNameOrOptions - Collection name or options object
+   */
+  async loadSeeds(
+    collectionNameOrOptions?:
+      | keyof TCollections
+      | { collectionName?: keyof TCollections; onlyDefault?: boolean },
+  ): Promise<void> {
+    // Parse arguments
+    let collectionName: keyof TCollections | undefined;
+    let onlyDefault = false;
+
+    if (typeof collectionNameOrOptions === 'object') {
+      // Object parameter: { collectionName?, onlyDefault? }
+      collectionName = collectionNameOrOptions.collectionName;
+      onlyDefault = collectionNameOrOptions.onlyDefault ?? false;
+    } else {
+      // String parameter: collectionName
+      collectionName = collectionNameOrOptions;
+    }
+
     if (collectionName) {
-      this.logger?.info(`Loading seeds for collection '${String(collectionName)}'`);
+      this.logger?.info(
+        `Loading seeds for collection '${String(collectionName)}'${onlyDefault ? ' (default only)' : ''}`,
+      );
 
       const collection = this.getCollection(collectionName);
-      await collection.loadSeeds();
+      await collection.loadSeeds(onlyDefault ? 'default' : undefined);
 
       this.logger?.info(
         `Seeds loaded successfully for '${String(collectionName)}'`,
         this.db.dump(),
       );
     } else {
-      this.logger?.info('Loading seeds for all collections', {
-        collections: Array.from(this._collections.keys()),
-      });
+      this.logger?.info(
+        `Loading seeds for all collections${onlyDefault ? ' (default only)' : ''}`,
+        {
+          collections: Array.from(this._collections.keys()),
+        },
+      );
 
       for (const collection of this._collections.values()) {
-        await collection.loadSeeds();
+        await collection.loadSeeds(onlyDefault ? 'default' : undefined);
       }
 
       this.logger?.info('All seeds loaded successfully', this.db.dump());
