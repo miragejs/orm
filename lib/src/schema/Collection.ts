@@ -307,6 +307,14 @@ export default class Collection<
       return;
     }
 
+    // Check if collection is empty and reset seed tracking if it is
+    if (this._dbCollection.isEmpty && this._loadedSeeds.size > 0) {
+      this._logger?.debug(
+        `Collection '${this.collectionName}' is empty, resetting seed load tracking`,
+      );
+      this._loadedSeeds.clear();
+    }
+
     // Normalize seeds to always be an object
     const seedScenarios: Record<string, (schema: SchemaInstance<TSchema>) => void | Promise<void>> =
       typeof this._seeds === 'function' ? { default: this._seeds } : this._seeds;
@@ -317,9 +325,23 @@ export default class Collection<
         scenarios: Object.keys(seedScenarios),
       });
       for (const name in seedScenarios) {
+        // Check if this scenario has already been loaded
+        if (this._loadedSeeds.has(name)) {
+          this._logger?.warn(
+            `Seed scenario '${name}' for '${this.collectionName}' has already been loaded, skipping`,
+            {
+              loadCount: this._loadedSeeds.get(name),
+            },
+          );
+          continue;
+        }
+
         const seedFn = seedScenarios[name];
         this._logger?.debug(`Running seed scenario '${name}' for '${this.collectionName}'`);
         await seedFn(this._schema);
+
+        // Track that this scenario has been loaded
+        this._loadedSeeds.set(name, (this._loadedSeeds.get(name) || 0) + 1);
       }
       this._logger?.info(`Seeds loaded successfully for '${this.collectionName}'`);
       return;
@@ -339,8 +361,23 @@ export default class Collection<
       );
     }
 
+    // Check if this scenario has already been loaded
+    if (this._loadedSeeds.has(scenarioId)) {
+      this._logger?.warn(
+        `Seed scenario '${scenarioId}' for '${this.collectionName}' has already been loaded, skipping`,
+        {
+          loadCount: this._loadedSeeds.get(scenarioId),
+        },
+      );
+      return;
+    }
+
     this._logger?.info(`Loading seed scenario '${scenarioId}' for '${this.collectionName}'`);
     await seedScenarios[scenarioId](this._schema);
+
+    // Track that this scenario has been loaded
+    this._loadedSeeds.set(scenarioId, (this._loadedSeeds.get(scenarioId) || 0) + 1);
+
     this._logger?.info(`Seed scenario '${scenarioId}' loaded successfully`);
   }
 

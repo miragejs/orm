@@ -50,6 +50,13 @@ export abstract class BaseCollection<
   protected readonly _seeds?: Seeds<TSchema>;
   protected readonly _fixtures?: FixtureConfig<TTemplate, TRelationships>;
 
+  /**
+   * Track which seed scenarios have been loaded to prevent duplicate data.
+   * Maps scenario IDs to the number of times they've been loaded.
+   * @protected
+   */
+  protected _loadedSeeds: Map<string, number> = new Map();
+
   constructor(
     schema: SchemaInstance<TSchema>,
     config: {

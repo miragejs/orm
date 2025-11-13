@@ -275,4 +275,200 @@ describe('Schema with Seeds', () => {
       );
     });
   });
+
+  describe('Seed load tracking (duplicate prevention)', () => {
+    describe('with function seeds', () => {
+      it('should prevent loading seeds multiple times', async () => {
+        const testSchema = schema()
+          .collections({
+            users: collection<TestSchema>()
+              .model(userModel)
+              .seeds((schema) => {
+                schema.users.create({ name: 'John', email: 'john@example.com' });
+                schema.users.create({ name: 'Jane', email: 'jane@example.com' });
+              })
+              .create(),
+          })
+          .setup();
+
+        // Load seeds first time
+        await testSchema.users.loadSeeds();
+        expect(testSchema.users.all().length).toBe(2);
+
+        // Try to load seeds again - should be skipped
+        await testSchema.users.loadSeeds();
+        expect(testSchema.users.all().length).toBe(2); // Still 2, not 4
+      });
+
+      it('should allow reloading seeds after collection is emptied', async () => {
+        const testSchema = schema()
+          .collections({
+            users: collection<TestSchema>()
+              .model(userModel)
+              .seeds((schema) => {
+                schema.users.create({ name: 'John', email: 'john@example.com' });
+              })
+              .create(),
+          })
+          .setup();
+
+        // Load seeds first time
+        await testSchema.users.loadSeeds();
+        expect(testSchema.users.all().length).toBe(1);
+
+        // Empty the collection
+        testSchema.db.emptyData();
+        expect(testSchema.users.all().length).toBe(0);
+
+        // Load seeds again - should work because collection is empty
+        await testSchema.users.loadSeeds();
+        expect(testSchema.users.all().length).toBe(1);
+      });
+    });
+
+    describe('with named scenario seeds', () => {
+      it('should prevent loading same scenario multiple times', async () => {
+        const testSchema = schema()
+          .collections({
+            users: collection<TestSchema>()
+              .model(userModel)
+              .seeds({
+                basic: (schema) => {
+                  schema.users.create({ name: 'John', email: 'john@example.com' });
+                },
+                admin: (schema) => {
+                  schema.users.create({ name: 'Admin', email: 'admin@example.com' });
+                },
+              })
+              .create(),
+          })
+          .setup();
+
+        // Load basic scenario
+        await testSchema.users.loadSeeds('basic');
+        expect(testSchema.users.all().length).toBe(1);
+
+        // Try to load basic again - should be skipped
+        await testSchema.users.loadSeeds('basic');
+        expect(testSchema.users.all().length).toBe(1); // Still 1, not 2
+
+        // Load admin scenario - should work (different scenario)
+        await testSchema.users.loadSeeds('admin');
+        expect(testSchema.users.all().length).toBe(2);
+      });
+
+      it('should prevent loading all scenarios multiple times', async () => {
+        const testSchema = schema()
+          .collections({
+            users: collection<TestSchema>()
+              .model(userModel)
+              .seeds({
+                basic: (schema) => {
+                  schema.users.create({ name: 'John', email: 'john@example.com' });
+                },
+                admin: (schema) => {
+                  schema.users.create({ name: 'Admin', email: 'admin@example.com' });
+                },
+              })
+              .create(),
+          })
+          .setup();
+
+        // Load all scenarios
+        await testSchema.users.loadSeeds();
+        expect(testSchema.users.all().length).toBe(2);
+
+        // Try to load all again - should skip both
+        await testSchema.users.loadSeeds();
+        expect(testSchema.users.all().length).toBe(2); // Still 2, not 4
+      });
+
+      it('should skip already loaded scenarios when loading all', async () => {
+        const testSchema = schema()
+          .collections({
+            users: collection<TestSchema>()
+              .model(userModel)
+              .seeds({
+                basic: (schema) => {
+                  schema.users.create({ name: 'John', email: 'john@example.com' });
+                },
+                admin: (schema) => {
+                  schema.users.create({ name: 'Admin', email: 'admin@example.com' });
+                },
+              })
+              .create(),
+          })
+          .setup();
+
+        // Load basic scenario only
+        await testSchema.users.loadSeeds('basic');
+        expect(testSchema.users.all().length).toBe(1);
+
+        // Load all scenarios - should only load admin (basic already loaded)
+        await testSchema.users.loadSeeds();
+        expect(testSchema.users.all().length).toBe(2);
+      });
+
+      it('should reset tracking and reload after collection is emptied', async () => {
+        const testSchema = schema()
+          .collections({
+            users: collection<TestSchema>()
+              .model(userModel)
+              .seeds({
+                basic: (schema) => {
+                  schema.users.create({ name: 'John', email: 'john@example.com' });
+                },
+              })
+              .create(),
+          })
+          .setup();
+
+        // Load seeds
+        await testSchema.users.loadSeeds('basic');
+        expect(testSchema.users.all().length).toBe(1);
+
+        // Try to load again - should be skipped
+        await testSchema.users.loadSeeds('basic');
+        expect(testSchema.users.all().length).toBe(1);
+
+        // Empty collection
+        testSchema.db.emptyData();
+
+        // Load seeds again - should work because collection is empty
+        await testSchema.users.loadSeeds('basic');
+        expect(testSchema.users.all().length).toBe(1);
+      });
+    });
+
+    describe('with schema-level loadSeeds', () => {
+      it('should prevent duplicate loading across schema-level calls', async () => {
+        const testSchema = schema()
+          .collections({
+            users: collection<TestSchema>()
+              .model(userModel)
+              .seeds((schema) => {
+                schema.users.create({ name: 'User', email: 'user@example.com' });
+              })
+              .create(),
+            posts: collection<TestSchema>()
+              .model(postModel)
+              .seeds((schema) => {
+                schema.posts.create({ title: 'Post', content: 'Content' });
+              })
+              .create(),
+          })
+          .setup();
+
+        // Load all seeds
+        await testSchema.loadSeeds();
+        expect(testSchema.users.all().length).toBe(1);
+        expect(testSchema.posts.all().length).toBe(1);
+
+        // Try to load all again - should skip both
+        await testSchema.loadSeeds();
+        expect(testSchema.users.all().length).toBe(1);
+        expect(testSchema.posts.all().length).toBe(1);
+      });
+    });
+  });
 });
