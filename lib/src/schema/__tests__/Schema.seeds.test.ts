@@ -280,20 +280,30 @@ describe('Schema with Seeds', () => {
         .collections({
           users: collection<TestSchema>()
             .model(userModel)
-            .seeds((schema) => {
-              schema.users.create({ name: 'Default User', email: 'default@example.com' });
+            .seeds({
+              default: (schema) => {
+                schema.users.create({ name: 'Default User', email: 'default@example.com' });
+              },
+              admin: (schema) => {
+                schema.users.create({ name: 'Admin', email: 'admin@example.com' });
+              },
             })
             .create(),
           posts: collection<TestSchema>()
             .model(postModel)
-            .seeds((schema) => {
-              schema.posts.create({ title: 'Default Post', content: 'Default content' });
+            .seeds({
+              default: (schema) => {
+                schema.posts.create({ title: 'Default Post', content: 'Default content' });
+              },
+              featured: (schema) => {
+                schema.posts.create({ title: 'Featured Post', content: 'Featured content' });
+              },
             })
             .create(),
         })
         .setup();
 
-      // Load only default scenarios (function seeds) using object syntax
+      // Load only default scenarios using object syntax
       await testSchema.loadSeeds({ onlyDefault: true });
 
       const users = testSchema.users.all();
@@ -310,14 +320,21 @@ describe('Schema with Seeds', () => {
         .collections({
           users: collection<TestSchema>()
             .model(userModel)
-            .seeds((schema) => {
-              schema.users.create({ name: 'Default User', email: 'default@example.com' });
+            .seeds({
+              default: (schema) => {
+                schema.users.create({ name: 'Default User', email: 'default@example.com' });
+              },
+              admin: (schema) => {
+                schema.users.create({ name: 'Admin', email: 'admin@example.com' });
+              },
             })
             .create(),
           posts: collection<TestSchema>()
             .model(postModel)
-            .seeds((schema) => {
-              schema.posts.create({ title: 'Post', content: 'Content' });
+            .seeds({
+              default: (schema) => {
+                schema.posts.create({ title: 'Post', content: 'Content' });
+              },
             })
             .create(),
         })

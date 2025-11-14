@@ -381,17 +381,16 @@ describe('CollectionBuilder', () => {
       expect(testCollection.seeds).toBe(seedScenarios);
     });
 
-    it('should throw error if "default" is used as a scenario name', () => {
-      expect(() => {
-        collection()
-          .model(userModel)
-          .seeds({
-            default: () => {},
-          })
-          .create();
-      }).toThrow(
-        "The 'default' scenario name is reserved. Please use a different name for your seed scenario.",
-      );
+    it('should allow "default" to be used as a scenario name', () => {
+      const seedFn = () => {};
+      const testCollection = collection()
+        .model(userModel)
+        .seeds({
+          default: seedFn,
+        })
+        .create();
+
+      expect(testCollection.seeds).toEqual({ default: seedFn });
     });
 
     it('should preserve other configurations when setting seeds', () => {

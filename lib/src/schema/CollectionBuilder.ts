@@ -368,13 +368,6 @@ export default class CollectionBuilder<
     TIdentityManager,
     TSerializer
   > {
-    // Validate that 'default' is not used as a scenario name
-    if (typeof seeds === 'object' && !Array.isArray(seeds) && 'default' in seeds) {
-      throw new MirageError(
-        "The 'default' scenario name is reserved. Please use a different name for your seed scenario.",
-      );
-    }
-
     const builder = new CollectionBuilder<
       TTemplate,
       TSchema,
