@@ -61,7 +61,7 @@ describe('Serializer', () => {
         role: 'admin',
         password: 'secret123',
       });
-      const json = user.toJSON();
+      const json: UserAttrs = user.toJSON();
 
       expect(json).toEqual({
         id: '1',
@@ -86,7 +86,7 @@ describe('Serializer', () => {
         password: 'secret123',
         role: 'admin',
       });
-      const json = user.toJSON();
+      const json: UserJSON = user.toJSON();
 
       expect(json).toEqual({
         id: '1',
@@ -112,7 +112,7 @@ describe('Serializer', () => {
         password: 'secret123',
         role: 'admin',
       });
-      const json = user.toJSON();
+      const json: UserRootJSON = user.toJSON();
 
       expect(json).toEqual({
         user: {
@@ -138,7 +138,7 @@ describe('Serializer', () => {
         password: 'secret123',
         role: 'admin',
       });
-      const json = user.toJSON();
+      const json: { person: UserJSON } = user.toJSON();
 
       expect(json).toEqual({
         person: {
@@ -171,7 +171,7 @@ describe('Serializer', () => {
       });
 
       const posts = testSchema.posts.all();
-      const json = posts.toJSON();
+      const json: PostJSON[] = posts.toJSON();
 
       expect(json).toEqual([
         { id: '1', title: 'First Post' },
@@ -200,7 +200,7 @@ describe('Serializer', () => {
       });
 
       const posts = testSchema.posts.all();
-      const json = posts.toJSON();
+      const json: PostsJSON = posts.toJSON();
 
       expect(json).toEqual({
         posts: [
@@ -220,7 +220,7 @@ describe('Serializer', () => {
       const testSchema = schema().collections({ posts: postCollection }).setup();
 
       const posts = testSchema.posts.all();
-      const json = posts.toJSON();
+      const json: PostsJSON = posts.toJSON();
 
       expect(json).toEqual({ posts: [] });
     });
@@ -237,7 +237,7 @@ describe('Serializer', () => {
         password: 'secret123',
         role: 'admin',
       });
-      const json = user.toJSON();
+      const json: UserAttrs = user.toJSON();
 
       // Should return all attributes when no serializer
       expect(json).toEqual({
@@ -265,7 +265,7 @@ describe('Serializer', () => {
       });
 
       const posts = testSchema.posts.all();
-      const json = posts.toJSON();
+      const json: PostAttrs[] = posts.toJSON();
 
       expect(json).toEqual([
         { id: '1', title: 'First Post', content: 'Content 1', authorId: '1' },
@@ -314,7 +314,7 @@ describe('Serializer', () => {
         password: 'secret123',
         role: 'admin',
       });
-      const json = user.toJSON();
+      const json: UserJSON & { timestamp: string } = user.toJSON();
 
       expect(json).toEqual({
         id: '1',
@@ -327,7 +327,7 @@ describe('Serializer', () => {
 
   describe('Multiple collections with different serializers', () => {
     it('should support different serializers for different collections', () => {
-      const userSerializer = new Serializer<UserModel, UserJSON>(userModel, {
+      const userSerializer = new Serializer<UserModel, { user: UserJSON }>(userModel, {
         attrs: ['id', 'name', 'email'],
         root: 'user',
       });
@@ -357,8 +357,8 @@ describe('Serializer', () => {
         authorId: user.id,
       });
 
-      const userJson = user.toJSON();
-      const postJson = post.toJSON();
+      const userJson: { user: UserJSON } = user.toJSON();
+      const postJson: PostJSON = post.toJSON();
 
       // User should have root wrapping
       expect(userJson).toEqual({

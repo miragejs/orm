@@ -239,6 +239,7 @@ export default class CollectionBuilder<
    *
    * Accepts either a configuration object (attrs, root, embed, include) or a custom
    * serializer instance. The config will be merged with global schema config if present.
+   * @template S - The serializer type (inferred from the instance passed)
    * @param configOrSerializer - The serializer configuration object or instance
    * @returns A new CollectionBuilder instance with the specified serializer
    * @example
@@ -254,25 +255,23 @@ export default class CollectionBuilder<
    *   .serializer(new CustomUserSerializer(userModel));
    * ```
    */
-  serializer(
-    configOrSerializer: SerializerOptions<TTemplate> | any,
-  ): CollectionBuilder<TTemplate, TSchema, TRelationships, TFactory, TIdentityManager, any>;
-
-  /**
-   * Sets the serializer configuration or instance for this collection.
-   * @param configOrSerializer - The serializer configuration object or instance
-   * @returns A new CollectionBuilder instance with the specified serializer
-   */
-  serializer(
-    configOrSerializer: any,
-  ): CollectionBuilder<TTemplate, TSchema, TRelationships, TFactory, TIdentityManager, any> {
+  serializer<S>(
+    configOrSerializer: SerializerOptions<TTemplate> | S,
+  ): CollectionBuilder<
+    TTemplate,
+    TSchema,
+    TRelationships,
+    TFactory,
+    TIdentityManager,
+    S extends SerializerOptions<TTemplate> ? Serializer<TTemplate> : S
+  > {
     const builder = new CollectionBuilder<
       TTemplate,
       TSchema,
       TRelationships,
       TFactory,
       TIdentityManager,
-      any
+      S extends SerializerOptions<TTemplate> ? Serializer<TTemplate> : S
     >();
     builder._template = this._template;
     builder._factory = this._factory;
@@ -283,9 +282,9 @@ export default class CollectionBuilder<
 
     // Determine if it's a config object or a serializer instance
     if (configOrSerializer instanceof Serializer) {
-      builder._serializerInstance = configOrSerializer;
+      builder._serializerInstance = configOrSerializer as any;
     } else {
-      builder._serializerConfig = configOrSerializer;
+      builder._serializerConfig = configOrSerializer as any;
     }
 
     return builder;
