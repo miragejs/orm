@@ -46,7 +46,7 @@ export default class FactoryBuilder<
    * @param attributes - The factory attributes
    * @returns The builder instance for chaining
    */
-  attrs(attributes: FactoryAttrs<TTemplate>): this {
+  attrs(attributes: Partial<FactoryAttrs<TTemplate>>): this {
     this._attributes = { ...this._attributes, ...attributes };
     return this;
   }

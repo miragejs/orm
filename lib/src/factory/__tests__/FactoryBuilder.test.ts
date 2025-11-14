@@ -74,7 +74,10 @@ describe('FactoryBuilder', () => {
       const builderWithModel = builder.model(userModel);
       expect(builderWithModel).toBeInstanceOf(FactoryBuilder);
 
-      const builderWithAttrs = builderWithModel.attrs({ name: 'Test User' });
+      const builderWithAttrs = builderWithModel.attrs({
+        name: 'Test User',
+        email: 'test@example.com',
+      });
       expect(builderWithAttrs).toBeInstanceOf(FactoryBuilder);
 
       const builderWithTraits = builderWithAttrs.traits({
@@ -89,8 +92,7 @@ describe('FactoryBuilder', () => {
     it('should merge attributes when called multiple times', () => {
       const userFactory = factory()
         .model(userModel)
-        .attrs({ name: 'John' })
-        .attrs({ email: 'john@example.com' })
+        .attrs({ name: 'John', email: 'john@example.com' })
         .attrs({ role: 'user' })
         .create();
 
@@ -106,7 +108,7 @@ describe('FactoryBuilder', () => {
 
       const userFactory = factory<SchemaCollections>()
         .model(userModel)
-        .attrs({ name: 'John' })
+        .attrs({ name: 'John', email: 'john@example.com' })
         .afterCreate((model, schema) => {
           hookCalled = true;
           schemaReceived = schema;
@@ -207,13 +209,13 @@ describe('FactoryBuilder', () => {
     it('should extend builder with additional configuration', () => {
       const baseBuilder = factory()
         .model(userModel)
-        .attrs({ name: 'John' })
+        .attrs({ name: 'John', email: 'john.doe@example.com' })
         .traits({ admin: { role: 'admin' } })
         .create();
 
       const extendedBuilder = factory()
         .extend(baseBuilder)
-        .attrs({ email: 'john@example.com' })
+        .attrs({ email: 'john@example.com' }) // Override email from base
         .traits({ premium: { role: 'premium' } })
         .afterCreate((user) => {
           user.processed = true;

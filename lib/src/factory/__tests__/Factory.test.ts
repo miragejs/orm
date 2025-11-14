@@ -2,6 +2,7 @@ import { model, type ModelInstance } from '@src/model';
 import { type SchemaCollections, type SchemaInstance } from '@src/schema';
 
 import Factory from '../Factory';
+import { resolveFactoryAttr } from '../utils';
 
 // Define test model attributes
 interface UserAttrs {
@@ -145,7 +146,7 @@ describe('Factory', () => {
     it('should handle function attributes correctly', () => {
       const dynamicFactory = new Factory(userModel, {
         email: (id: string) => `dynamic${id}@test.com`,
-        name: function (this: Omit<UserAttrs, 'id'>, id: string) {
+        name: function (id: string) {
           return `User ${id}`;
         },
         role: 'member',
@@ -233,11 +234,17 @@ describe('Factory', () => {
     it('should throw error for circular dependencies in attributes', () => {
       expect(() => {
         const factory = new Factory(userModel, {
-          email: function (this: Omit<UserAttrs, 'id'>) {
-            return this.name + '@example.com';
+          email: function (id) {
+            // Access this.name to create circular dependency
+            // The proxy will detect this before the function executes
+            const name = resolveFactoryAttr(this.name, id);
+            return name + '@example.com';
           },
-          name: function (this: Omit<UserAttrs, 'id'>) {
-            return this.email.split('@')[0];
+          name: function (id) {
+            // Access this.email to create circular dependency
+            // The proxy will detect this before the function executes
+            const email = resolveFactoryAttr(this.email, id);
+            return email?.split('@')[0] ?? '';
           },
         });
 
@@ -256,5 +263,59 @@ describe('Factory', () => {
         email: 'john@example.com',
       });
     });
+  });
+});
+
+describe('resolveFactoryAttr', () => {
+  it('should call function attributes with modelId', () => {
+    const attr = (id: string) => `value-${id}`;
+    const result = resolveFactoryAttr(attr, '123');
+    expect(result).toBe('value-123');
+  });
+
+  it('should return static values as-is', () => {
+    const attr = 'static-value';
+    const result = resolveFactoryAttr(attr, '123');
+    expect(result).toBe('static-value');
+  });
+
+  it('should work with complex types', () => {
+    const attr = (id: number) => ({ count: id * 2, valid: true });
+    const result = resolveFactoryAttr(attr, 5);
+    expect(result).toEqual({ count: 10, valid: true });
+  });
+
+  it('should work with arrays', () => {
+    const attr = (id: string) => [`item-${id}`, 'static'];
+    const result = resolveFactoryAttr(attr, 'abc');
+    expect(result).toEqual(['item-abc', 'static']);
+  });
+
+  it('should be usable in factory attribute functions', () => {
+    const factory = new Factory(userModel, {
+      name: () => 'John Doe',
+      email: function (id: string) {
+        const name = resolveFactoryAttr(this.name, id);
+        return `${name}@example.com`.toLowerCase().replace(/\s+/g, '.');
+      },
+    });
+
+    const attrs = factory.build('1');
+    expect(attrs.email).toBe('john.doe@example.com');
+  });
+
+  it('should handle chained attribute dependencies', () => {
+    const factory = new Factory(userModel, {
+      name: () => 'John',
+      role: 'admin',
+      email: function (id: string) {
+        const name = resolveFactoryAttr(this.name, id);
+        const role = resolveFactoryAttr(this.role, id);
+        return `${name}.${role}@example.com`.toLowerCase();
+      },
+    });
+
+    const attrs = factory.build('1');
+    expect(attrs.email).toBe('john.admin@example.com');
   });
 });

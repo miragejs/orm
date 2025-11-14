@@ -9,10 +9,10 @@ export type FactoryAttrs<
   TTemplate extends ModelTemplate,
   TModelAttrs = Omit<InferModelAttrs<TTemplate>, 'id'>,
 > = {
-  [K in keyof TModelAttrs]?:
+  [K in keyof TModelAttrs]:
     | TModelAttrs[K]
     | ((
-        this: TModelAttrs,
+        this: FactoryAttrs<TTemplate, TModelAttrs>,
         modelId: NonNullable<InferModelAttrs<TTemplate>['id']>,
       ) => TModelAttrs[K]);
 };
@@ -50,3 +50,28 @@ export type FactoryTraitNames<TFactory> = TFactory extends {
 }
   ? TraitName<TTraits>
   : never;
+
+/**
+ * Helper type to work with factory attribute functions in the `this` context.
+ * Extracts the function signature for a factory attribute.
+ * @template TAttr - The factory attribute type (can be a value or function)
+ * @template TModelId - The model ID type
+ * @example
+ * ```ts
+ * const attrs: FactoryAttrs<UserModel> = {
+ *   name: () => 'John',
+ *   email: function(id: string) {
+ *     // Type-safe access to this.name
+ *     const getName = this.name as FactoryAttrFunc<typeof this.name, string>;
+ *     const name = typeof getName === 'function' ? getName(id) : getName;
+ *     return `${name}@example.com`;
+ *   }
+ * };
+ * ```
+ */
+export type FactoryAttrFunc<TAttr, TModelId> = TAttr extends (
+  this: any,
+  modelId: TModelId,
+) => infer R
+  ? (this: any, modelId: TModelId) => R
+  : TAttr;

@@ -90,10 +90,11 @@ export type {
 // ----------------------------------------------------------------------------
 // Factory Builder
 // ----------------------------------------------------------------------------
-export { factory } from './factory';
+export { factory, resolveFactoryAttr } from './factory';
 export type {
   Factory,
   FactoryAfterCreateHook,
+  FactoryAttrFunc,
   FactoryAttrs,
   ModelTraits,
   TraitDefinition,

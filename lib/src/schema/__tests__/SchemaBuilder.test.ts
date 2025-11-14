@@ -18,7 +18,6 @@ interface PostAttrs {
   id: number;
   title: string;
   content: string;
-  authorId: string;
 }
 
 // Create test models
@@ -273,7 +272,7 @@ describe('SchemaBuilder', () => {
       expect(() => {
         schema()
           .collections({
-            db: testCollection as any,
+            db: testCollection,
           })
           .setup();
       }).toThrow(MirageError);
@@ -281,7 +280,7 @@ describe('SchemaBuilder', () => {
       expect(() => {
         schema()
           .collections({
-            db: testCollection as any,
+            db: testCollection,
           })
           .setup();
       }).toThrow(`Collection name 'db' conflicts with existing Schema property or method`);
@@ -294,14 +293,14 @@ describe('SchemaBuilder', () => {
       expect(() => {
         schema()
           .collections({
-            identityManager: testCollection as any,
+            identityManager: testCollection,
           })
           .setup();
       }).toThrow('identityManager');
       expect(() => {
         schema()
           .collections({
-            identityManager: testCollection as any,
+            identityManager: testCollection,
           })
           .setup();
       }).toThrow('schema.identityManager: ID generation manager');
@@ -314,7 +313,7 @@ describe('SchemaBuilder', () => {
       expect(() => {
         schema()
           .collections({
-            getCollection: testCollection as any,
+            getCollection: testCollection,
           })
           .setup();
       }).toThrow('getCollection');
@@ -327,7 +326,7 @@ describe('SchemaBuilder', () => {
       expect(() => {
         schema()
           .collections({
-            loadSeeds: testCollection as any,
+            loadSeeds: testCollection,
           })
           .setup();
       }).toThrow('loadSeeds');
@@ -340,7 +339,7 @@ describe('SchemaBuilder', () => {
       expect(() => {
         schema()
           .collections({
-            loadFixtures: testCollection as any,
+            loadFixtures: testCollection,
           })
           .setup();
       }).toThrow('loadFixtures');
@@ -353,7 +352,7 @@ describe('SchemaBuilder', () => {
       expect(() => {
         schema()
           .collections({
-            '123invalid': testCollection as any,
+            '123invalid': testCollection,
           })
           .setup();
       }).toThrow(MirageError);
@@ -361,7 +360,7 @@ describe('SchemaBuilder', () => {
       expect(() => {
         schema()
           .collections({
-            '123invalid': testCollection as any,
+            '123invalid': testCollection,
           })
           .setup();
       }).toThrow('is not a valid JavaScript identifier');
@@ -374,7 +373,7 @@ describe('SchemaBuilder', () => {
       expect(() => {
         schema()
           .collections({
-            'user collection': testCollection as any,
+            'user collection': testCollection,
           })
           .setup();
       }).toThrow('is not a valid JavaScript identifier');

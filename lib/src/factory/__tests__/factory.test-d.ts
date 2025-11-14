@@ -5,18 +5,20 @@
  * Run: pnpm test:types
  */
 
-import { model } from '@src/model';
+import { model, ModelInstance } from '@src/model';
 import type { CollectionConfig } from '@src/schema';
 import type { SchemaInstance } from '@src/schema/Schema';
 import { expectTypeOf, test } from 'vitest';
 
 import type {
   FactoryAfterCreateHook,
+  FactoryAttrFunc,
   FactoryAttrs,
   ModelTraits,
   TraitDefinition,
   TraitName,
 } from '../types';
+import { resolveFactoryAttr } from '../utils';
 
 // Test model attributes
 interface UserAttrs {
@@ -68,13 +70,25 @@ test('FactoryAttrs should work with this context', () => {
   expectTypeOf(attrs).toEqualTypeOf<FactoryAttrs<UserModel>>();
 });
 
-test('FactoryAttrs should work with optional attributes', () => {
+test('FactoryAttrs should require all attributes based on model attributes interface', () => {
+  // UserAttrs has: id, name, email, role?, permissions?
+  // FactoryAttrs should require: name, email (required fields, excluding id)
+  // and also allow: role, permissions (optional fields)
   const attrs: FactoryAttrs<UserModel> = {
     name: () => 'John',
+    email: () => 'john@example.com',
     role: () => 'user',
+    permissions: () => ['read', 'write'],
   };
 
   expectTypeOf(attrs).toEqualTypeOf<FactoryAttrs<UserModel>>();
+
+  // This should produce a type error - missing required 'email'
+  // @ts-expect-error - Property 'email' is missing
+  const _incompleteAttrs: FactoryAttrs<UserModel> = {
+    name: () => 'John',
+    role: () => 'user',
+  };
 });
 
 test('TraitDefinition should work with attributes only', () => {
@@ -89,8 +103,11 @@ test('TraitDefinition should work with attributes only', () => {
 test('TraitDefinition should work with afterCreate hook', () => {
   const trait: TraitDefinition<UserModel, TestSchema> = {
     role: 'admin',
-    afterCreate: (model: any, schema: SchemaInstance<TestSchema>) => {
-      const user = schema.users;
+    afterCreate: (
+      _model: ModelInstance<UserModel, TestSchema>,
+      _schema: SchemaInstance<TestSchema>,
+    ) => {
+      // Hook implementation - just verifying types
     },
   };
 
@@ -130,13 +147,19 @@ test('ModelTraits should work with afterCreate hooks', () => {
   const traits: ModelTraits<'admin' | 'verified', UserModel, TestSchema> = {
     admin: {
       role: 'admin',
-      afterCreate: (model: any, schema: SchemaInstance<TestSchema>) => {
+      afterCreate: (
+        model: ModelInstance<UserModel, TestSchema>,
+        _schema: SchemaInstance<TestSchema>,
+      ) => {
         console.log('Created admin:', model.id);
       },
     },
     verified: {
       email: () => 'verified@example.com',
-      afterCreate: (model: any, schema: SchemaInstance<TestSchema>) => {
+      afterCreate: (
+        _model: ModelInstance<UserModel, TestSchema>,
+        _schema: SchemaInstance<TestSchema>,
+      ) => {
         // Send verification email
       },
     },
@@ -147,8 +170,8 @@ test('ModelTraits should work with afterCreate hooks', () => {
 
 test('FactoryAfterCreateHook should work as standalone', () => {
   const hook: FactoryAfterCreateHook<TestSchema, UserModel> = (
-    model: any,
-    schema: SchemaInstance<TestSchema>,
+    model: ModelInstance<UserModel, TestSchema>,
+    _schema: SchemaInstance<TestSchema>,
   ) => {
     console.log('Created user:', model.id);
     const name = model.name;
@@ -160,8 +183,8 @@ test('FactoryAfterCreateHook should work as standalone', () => {
 
 test('FactoryAfterCreateHook should work with async', () => {
   const hook: FactoryAfterCreateHook<TestSchema, UserModel> = async (
-    model: any,
-    schema: SchemaInstance<TestSchema>,
+    model: ModelInstance<UserModel, TestSchema>,
+    _schema: SchemaInstance<TestSchema>,
   ) => {
     await Promise.resolve();
     console.log('User:', model.id);
@@ -192,4 +215,160 @@ test('TraitDefinition should allow partial attributes', () => {
   };
 
   expectTypeOf(partialTrait).toEqualTypeOf<TraitDefinition<UserModel, TestSchema>>();
+});
+
+test('FactoryAttrs this context should allow calling other attribute functions', () => {
+  const attrs: FactoryAttrs<UserModel> = {
+    name: () => 'John Doe',
+    email: function (id: string) {
+      // Should be able to call this.name as a function
+      const name = typeof this.name === 'function' ? this.name(id) : this.name;
+      return `${name}@example.com`.toLowerCase().replace(/\s+/g, '.');
+    },
+  };
+
+  expectTypeOf(attrs).toEqualTypeOf<FactoryAttrs<UserModel>>();
+});
+
+test('FactoryAttrs this context should allow accessing static values', () => {
+  const attrs: FactoryAttrs<UserModel> = {
+    name: 'Static Name',
+    email: function (id: string) {
+      // Should be able to access this.name as a value
+      const name = typeof this.name === 'function' ? this.name(id) : this.name;
+      return `${name}${id}@example.com`;
+    },
+  };
+
+  expectTypeOf(attrs).toEqualTypeOf<FactoryAttrs<UserModel>>();
+});
+
+test('FactoryAttrs this context should handle mixed static and function attributes', () => {
+  const attrs: FactoryAttrs<UserModel> = {
+    name: () => 'John',
+    role: 'admin',
+    email: function (id: string) {
+      // Should handle both function and static attributes
+      const name = typeof this.name === 'function' ? this.name(id) : this.name;
+      const role = typeof this.role === 'function' ? this.role(id) : this.role;
+      return `${name}.${role}@example.com`;
+    },
+  };
+
+  expectTypeOf(attrs).toEqualTypeOf<FactoryAttrs<UserModel>>();
+});
+
+test('FactoryAttrs this context should allow chaining attribute dependencies', () => {
+  const attrs: FactoryAttrs<UserModel> = {
+    name: () => 'John Doe',
+    email: function (id: string) {
+      const name = typeof this.name === 'function' ? this.name(id) : this.name;
+      return `${name}@example.com`.toLowerCase();
+    },
+    role: function (id: string) {
+      // Should be able to reference email which references name
+      const email = typeof this.email === 'function' ? this.email(id) : this.email;
+      return email?.includes('admin') ? 'admin' : 'user';
+    },
+  };
+
+  expectTypeOf(attrs).toEqualTypeOf<FactoryAttrs<UserModel>>();
+});
+
+test('FactoryAttrs this context should preserve type safety', () => {
+  const attrs: FactoryAttrs<PostModel> = {
+    title: () => 'Post Title',
+    content: function (id: number) {
+      // this.title is required, so resolved value is string (not string | undefined)
+      const title = typeof this.title === 'function' ? this.title(id) : this.title;
+      expectTypeOf(title).toEqualTypeOf<string>();
+      return `Content for ${title}`;
+    },
+    published: function (id: number) {
+      // this.published is optional, so resolved value is boolean | undefined
+      const pub = typeof this.published === 'function' ? this.published(id) : this.published;
+      expectTypeOf(pub).toEqualTypeOf<boolean | undefined>();
+      return pub ?? false;
+    },
+  };
+
+  expectTypeOf(attrs).toEqualTypeOf<FactoryAttrs<PostModel>>();
+});
+
+test('FactoryAttrFunc should provide type safety for attribute functions', () => {
+  const attrs: FactoryAttrs<UserModel> = {
+    name: () => 'John Doe',
+    email: function (id: string) {
+      // Using FactoryAttrFunc for type assertion
+      const getName = this.name as FactoryAttrFunc<typeof this.name, string>;
+      const name = typeof getName === 'function' ? getName(id) : getName;
+      expectTypeOf(name).toEqualTypeOf<string>();
+      return `${name}@example.com`;
+    },
+  };
+
+  expectTypeOf(attrs).toEqualTypeOf<FactoryAttrs<UserModel>>();
+});
+
+test('resolveFactoryAttr should resolve function attributes', () => {
+  const attrs: FactoryAttrs<UserModel> = {
+    name: () => 'John Doe',
+    email: function (id: string) {
+      // Using resolveFactoryAttr helper
+      const name = resolveFactoryAttr(this.name!, id);
+      expectTypeOf(name).toEqualTypeOf<string>();
+      return `${name}@example.com`;
+    },
+  };
+
+  expectTypeOf(attrs).toEqualTypeOf<FactoryAttrs<UserModel>>();
+});
+
+test('resolveFactoryAttr should resolve static values', () => {
+  const attrs: FactoryAttrs<UserModel> = {
+    name: 'Static Name',
+    email: function (id: string) {
+      // resolveFactoryAttr works with static values too
+      const name = resolveFactoryAttr(this.name!, id);
+      expectTypeOf(name).toEqualTypeOf<string>();
+      return `${name}@example.com`;
+    },
+  };
+
+  expectTypeOf(attrs).toEqualTypeOf<FactoryAttrs<UserModel>>();
+});
+
+test('resolveFactoryAttr should work with complex attribute chains', () => {
+  const attrs: FactoryAttrs<PostModel> = {
+    title: () => 'Post Title',
+    content: function (id: number) {
+      const title = resolveFactoryAttr(this.title!, id);
+      expectTypeOf(title).toEqualTypeOf<string>();
+      return `Content for ${title}`;
+    },
+    published: function (id: number) {
+      const content = resolveFactoryAttr(this.content!, id);
+      expectTypeOf(content).toEqualTypeOf<string>();
+      return content.length > 10;
+    },
+  };
+
+  expectTypeOf(attrs).toEqualTypeOf<FactoryAttrs<PostModel>>();
+});
+
+test('resolveFactoryAttr should work with required attributes only', () => {
+  const attrs: FactoryAttrs<UserModel> = {
+    name: () => 'John',
+    email: () => 'john@example.com',
+    role: function (id: string) {
+      // Required attributes work directly with resolveFactoryAttr
+      const name = resolveFactoryAttr(this.name!, id);
+      const email = resolveFactoryAttr(this.email!, id);
+      expectTypeOf(name).toEqualTypeOf<string>();
+      expectTypeOf(email).toEqualTypeOf<string>();
+      return `${name}:${email}`;
+    },
+  };
+
+  expectTypeOf(attrs).toEqualTypeOf<FactoryAttrs<UserModel>>();
 });

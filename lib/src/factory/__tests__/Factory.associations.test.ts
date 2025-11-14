@@ -18,15 +18,12 @@ type PostAttrs = {
   id: string;
   title: string;
   content: string;
-  authorId: string;
   published?: boolean;
 };
 
 type CommentAttrs = {
   id: string;
   content: string;
-  postId: string;
-  userId: string;
   approved?: boolean;
 };
 
@@ -101,8 +98,6 @@ const commentFactory = factory()
   .model(commentModel)
   .attrs({
     content: 'Great post!',
-    postId: '',
-    userId: '',
   })
   .traits({
     approved: { approved: true },
@@ -1005,6 +1000,7 @@ describe('Factory associations', () => {
         .attrs({
           name: 'John Doe',
           email: 'john@example.com',
+          role: 'user',
         })
         .create();
 
@@ -1049,6 +1045,7 @@ describe('Factory associations', () => {
         .attrs({
           name: 'John Doe',
           email: 'john@example.com',
+          role: 'user',
         })
         .create();
 
@@ -1056,8 +1053,6 @@ describe('Factory associations', () => {
         .model(commentModel)
         .attrs({
           content: 'Great post!',
-          postId: '',
-          userId: '',
         })
         .associations({
           user: associations.create(userModel),

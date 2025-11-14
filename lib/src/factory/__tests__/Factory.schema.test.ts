@@ -17,7 +17,7 @@ interface PostAttrs {
   title: string;
   content: string;
   subscription: string;
-  userId: string;
+  userId?: string; // Optional, can be set by afterCreate hooks or associations
 }
 
 // Create test models
@@ -37,6 +37,7 @@ describe('Factory with Schema', () => {
       .attrs({
         name: 'John',
         email: 'john@example.com',
+        role: 'user',
       })
       .traits({
         admin: { role: 'admin' },
@@ -86,6 +87,7 @@ describe('Factory with Schema', () => {
       .attrs({
         name: 'John',
         email: 'john@example.com',
+        role: 'user',
       })
       .traits({
         admin: {
@@ -129,17 +131,18 @@ describe('Factory with Schema', () => {
       .attrs({
         name: 'John',
         email: 'john@example.com',
+        role: 'user',
       })
       .traits({
         admin: {
           role: 'admin',
-          afterCreate: () => {
+          afterCreate: (_model) => {
             hooksCalled.push('admin');
           },
         },
         premium: {
           role: 'premium',
-          afterCreate: () => {
+          afterCreate: (_model) => {
             hooksCalled.push('premium');
           },
         },
@@ -167,16 +170,17 @@ describe('Factory with Schema', () => {
       .attrs({
         name: 'John',
         email: 'john@example.com',
+        role: 'user',
       })
       .traits({
         admin: {
           role: 'admin',
-          afterCreate: () => {
+          afterCreate: (_model) => {
             hooksCalled.push('trait');
           },
         },
       })
-      .afterCreate(() => {
+      .afterCreate((_model) => {
         hooksCalled.push('factory');
       })
       .create();
@@ -227,11 +231,12 @@ describe('Factory with Schema', () => {
       .attrs({
         name: 'John',
         email: 'john@example.com',
+        role: 'user',
       })
       .traits({
         admin: {
           role: 'admin',
-          afterCreate: () => {
+          afterCreate: (_model) => {
             hooksCalled.push('admin');
           },
         },
@@ -261,8 +266,9 @@ describe('Factory with Schema', () => {
       .attrs({
         name: 'John',
         email: 'john@example.com',
+        role: 'user',
       })
-      .afterCreate(() => {
+      .afterCreate((_model) => {
         userHooks.push('user-created');
       })
       .create();
