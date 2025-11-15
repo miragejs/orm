@@ -70,6 +70,11 @@ export type BelongsTo<
    * - `null`: No inverse relationship (disable synchronization)
    */
   inverse?: string | null;
+  /**
+   * The collection name to use for side-loading during serialization.
+   * Defaults to targetModel.collectionName.
+   */
+  collectionName: string;
 };
 
 /**
@@ -92,6 +97,11 @@ export type HasMany<
    * - `null`: No inverse relationship (disable synchronization)
    */
   inverse?: string | null;
+  /**
+   * The collection name to use for side-loading during serialization.
+   * Defaults to targetModel.collectionName.
+   */
+  collectionName: string;
 };
 
 /**

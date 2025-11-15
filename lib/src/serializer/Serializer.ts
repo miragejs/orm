@@ -49,9 +49,33 @@ export default class Serializer<
     this._modelName = template.modelName;
     this._collectionName = template.collectionName;
     this._attrs = options?.attrs;
-    this._root = options?.root;
-    this._embed = options?.embed;
     this._include = options?.include;
+
+    // Determine effective embed value
+    // When include is specified without embed, default to false (side-load mode)
+    // When include is not specified, embed is undefined (no relationships)
+    // When embed is explicitly true, use true (embed mode)
+    const hasInclude = options?.include && options.include.length > 0;
+    const effectiveEmbed = hasInclude && options?.embed === undefined ? false : options?.embed;
+    this._embed = effectiveEmbed;
+
+    // Side-load mode (embed=false) requires root wrapping for side-loaded relationships
+    // Auto-enable root when embed=false
+    if (effectiveEmbed === false) {
+      if (options?.root === false) {
+        // Warn user that root=false will be ignored with embed=false
+        console.warn(
+          `[Mirage Serializer]: 'root' cannot be disabled when 'embed' is false. ` +
+            `Side-loaded relationships require root wrapping. ` +
+            `The 'root=false' setting will be ignored and 'root=true' will be used instead.`,
+        );
+      }
+      // Force root to true when embed=false (use collection name as default root key)
+      this._root = options?.root === false ? true : (options?.root ?? true);
+    } else {
+      // For embed=true or no relationships, respect the user's root setting
+      this._root = options?.root;
+    }
   }
 
   /**
@@ -73,35 +97,47 @@ export default class Serializer<
   /**
    * Serialize raw data from a model without structural wrapping
    * This method extracts and returns the data (attributes + relationships)
-   * without applying any root wrapping. Used for embedding relationships.
+   * without applying any root wrapping. Used internally by serialize().
    * @param model - The model instance to serialize
    * @returns The serialized model data without root wrapping
    */
-  serializeData<TSchema extends SchemaCollections>(
+  private serializeData<TSchema extends SchemaCollections>(
     model: ModelInstance<TTemplate, TSchema>,
   ): Record<string, any> {
     const attrs = this._getAttributes(model);
 
-    if (this._embed) {
-      // Embed mode: merge embedded relationships, removing foreign keys
-      const { embedded, foreignKeys } = this._getRelationships(model);
-      const filteredAttrs = { ...attrs };
+    // Default behavior: if include is not specified or empty, return only attributes
+    // No foreign keys for relationships and no relationship data
+    if (!this._include || this._include.length === 0) {
+      // Remove all foreign keys from attributes when include is empty
+      return this._removeForeignKeys(attrs, model);
+    }
 
-      // Remove foreign keys from attributes when embedding
+    const { embedded, sideLoaded, foreignKeys } = this._getRelationships(model);
+
+    if (this._embed) {
+      // Embed mode (embed=true):
+      // - Remove foreign keys from attributes
+      // - Merge embedded relationships directly into the result
+      // Example: { id: 1, name: 'John', posts: [...] } (no postIds)
+      const filteredAttrs = { ...attrs };
       for (const fk of foreignKeys) {
         delete filteredAttrs[fk];
       }
-
       return { ...filteredAttrs, ...embedded };
     }
 
-    // Default: return attributes as-is (foreign keys remain)
-    return attrs;
+    // Side-load mode (embed=false):
+    // - Keep foreign keys in attributes
+    // - Merge side-loaded relationships at the same level
+    // Example: { id: 1, name: 'John', postIds: [...], posts: [...] }
+    return { ...attrs, ...sideLoaded };
   }
 
   /**
    * Serialize a single model instance with structural formatting
-   * Applies root wrapping and side-loading if configured
+   * Applies root wrapping if configured
+   * Can be overridden in custom serializers.
    * @param model - The model instance to serialize
    * @returns The serialized model with structural formatting applied
    */
@@ -110,26 +146,24 @@ export default class Serializer<
   ): TSerializedModel {
     const data = this.serializeData(model);
 
-    // Get side-loaded relationships (only when embed: false)
-    const { sideLoaded } = this._embed ? { sideLoaded: {} } : this._getRelationships(model);
-
     if (this._root) {
       const rootKey = typeof this._root === 'string' ? this._root : this._modelName;
-      // With root wrapping: merge side-loaded at root level
-      return { [rootKey]: data, ...sideLoaded } as TSerializedModel;
+      // With root wrapping: wrap data in root key
+      return { [rootKey]: data } as TSerializedModel;
     }
 
-    // Without root wrapping: merge side-loaded at same level
-    return { ...data, ...sideLoaded } as TSerializedModel;
+    // Without root wrapping: return data as-is
+    return data as TSerializedModel;
   }
 
   /**
    * Serialize raw data from a collection without structural wrapping
    * Returns an array of serialized model data without root wrapping
+   * Used internally by serializeCollection().
    * @param collection - The model collection to serialize
    * @returns Array of serialized model data
    */
-  serializeCollectionData<TSchema extends SchemaCollections>(
+  private serializeCollectionData<TSchema extends SchemaCollections>(
     collection: ModelCollection<TTemplate, TSchema>,
   ): Record<string, any>[] {
     return collection.models.map((model) => this.serializeData(model));
@@ -137,7 +171,8 @@ export default class Serializer<
 
   /**
    * Serialize a model collection with structural formatting
-   * Applies root wrapping and side-loading if configured
+   * Applies root wrapping if configured
+   * Can be overridden in custom serializers.
    * @param collection - The model collection to serialize
    * @returns The serialized collection with structural formatting applied
    */
@@ -146,50 +181,22 @@ export default class Serializer<
   ): TSerializedCollection {
     const data = this.serializeCollectionData(collection);
 
-    // Collect all side-loaded relationships from all models
-    const allSideLoaded: Record<string, any[]> = {};
-    if (!this._embed && this._include) {
-      for (const model of collection.models) {
-        const { sideLoaded } = this._getRelationships(model);
-
-        // Merge side-loaded data, deduplicating by ID
-        for (const key in sideLoaded) {
-          const value = sideLoaded[key];
-          if (!allSideLoaded[key]) {
-            allSideLoaded[key] = [];
-          }
-
-          // Add to side-loaded array if not already present (dedupe by id)
-          if (Array.isArray(value)) {
-            for (const item of value) {
-              if (!allSideLoaded[key].some((existing) => existing.id === item.id)) {
-                allSideLoaded[key].push(item);
-              }
-            }
-          } else if (value && !allSideLoaded[key].some((existing) => existing.id === value.id)) {
-            allSideLoaded[key].push(value);
-          }
-        }
-      }
-    }
-
     if (this._root) {
       const rootKey = typeof this._root === 'string' ? this._root : this._collectionName;
-      // With root wrapping: merge side-loaded at root level
-      return { [rootKey]: data, ...allSideLoaded } as TSerializedCollection;
+      // With root wrapping: wrap data in root key
+      return { [rootKey]: data } as TSerializedCollection;
     }
 
-    // Without root wrapping: return array (side-loading not supported without root)
+    // Without root wrapping: return array directly
     return data as TSerializedCollection;
   }
 
   /**
    * Get the attributes to include in serialization
-   * Can be overridden in subclasses for custom serialization logic
    * @param model - The model instance
    * @returns Object with attributes
    */
-  protected _getAttributes<TSchema extends SchemaCollections>(
+  private _getAttributes<TSchema extends SchemaCollections>(
     model: ModelInstance<TTemplate, TSchema>,
   ): Record<string, any> {
     // If specific attributes are configured, only include those
@@ -213,17 +220,17 @@ export default class Serializer<
    * @param model - The model instance
    * @returns Object with embedded, sideLoaded, and foreignKeys
    */
-  protected _getRelationships<TSchema extends SchemaCollections>(
+  private _getRelationships<TSchema extends SchemaCollections>(
     model: ModelInstance<TTemplate, TSchema>,
   ): { embedded: Record<string, any>; sideLoaded: Record<string, any>; foreignKeys: string[] } {
-    // If no relationships are configured to include, return empty
-    if (!this._include || this._include.length === 0) {
-      return { embedded: {}, sideLoaded: {}, foreignKeys: [] };
-    }
-
     const embedded: Record<string, any> = {};
     const sideLoaded: Record<string, any> = {};
     const foreignKeys: string[] = [];
+
+    // include defaults to [] - no relationships are included by default
+    if (!this._include || this._include.length === 0) {
+      return { embedded, sideLoaded, foreignKeys };
+    }
 
     for (const relName of this._include) {
       // Access the relationship from the model (dynamic property - models/collections)
@@ -234,51 +241,101 @@ export default class Serializer<
         continue;
       }
 
+      // Check if it's a ModelCollection (hasMany)
+      const isCollection =
+        relatedData !== null && typeof relatedData === 'object' && 'models' in relatedData;
+
       // Handle null relationships (belongsTo with no related model)
       if (relatedData === null) {
         if (this._embed) {
+          // Embed mode: set relationship to null and track FK to remove
           embedded[relName] = null;
-          // Track foreign key to remove even when null (e.g., 'authorId')
           foreignKeys.push(`${relName}Id`);
         } else {
-          sideLoaded[relName] = null;
+          // Side-load mode: set relationship to empty array using collectionName
+          const relationships = model.relationships as Record<string, any> | undefined;
+          const relationship = relationships?.[relName];
+          const collectionName = relationship?.collectionName || relName;
+          sideLoaded[collectionName] = [];
         }
         continue;
       }
 
-      // Check if it's a ModelCollection (hasMany)
-      const isCollection =
-        relatedData && typeof relatedData === 'object' && 'models' in relatedData;
-
       if (this._embed) {
-        // Embed mode: replace foreign keys with full models
+        // Embed mode (embed=true):
+        // - Embed relationships directly in the result
+        // - Track foreign keys to remove from attributes
         if (isCollection) {
-          // HasMany: serialize each model in the collection
+          // HasMany: embed array of models
           embedded[relName] = relatedData.models.map((relModel: any) => {
             return { ...relModel.attrs };
           });
           // Track foreign key to remove (e.g., 'postIds')
           foreignKeys.push(`${relName.replace(/s$/, '')}Ids`);
         } else {
-          // BelongsTo: serialize single model
+          // BelongsTo: embed single model
           embedded[relName] = { ...relatedData.attrs };
           // Track foreign key to remove (e.g., 'authorId')
           foreignKeys.push(`${relName}Id`);
         }
       } else {
-        // Side-load mode: keep foreign keys, add full models separately
+        // Side-load mode (embed=false):
+        // - Add relationships as arrays (even belongsTo) at the same level
+        // - Use collectionName from relationship definition for all relationship names
+        // - Foreign keys remain in attributes (not tracked for removal)
         if (isCollection) {
-          // HasMany: side-load all models as array
-          sideLoaded[relName] = relatedData.models.map((relModel: any) => {
+          // HasMany: side-load array of models using collectionName
+          const relationships = model.relationships as Record<string, any> | undefined;
+          const relationship = relationships?.[relName];
+          const collectionName = relationship?.collectionName || relName;
+          sideLoaded[collectionName] = relatedData.models.map((relModel: any) => {
             return { ...relModel.attrs };
           });
         } else {
-          // BelongsTo: side-load single model
-          sideLoaded[relName] = { ...relatedData.attrs };
+          // BelongsTo: side-load as array using collectionName from relationship
+          const relationships = model.relationships as Record<string, any> | undefined;
+          const relationship = relationships?.[relName];
+          const collectionName = relationship?.collectionName || relName;
+          sideLoaded[collectionName] = [{ ...relatedData.attrs }];
         }
       }
     }
 
     return { embedded, sideLoaded, foreignKeys };
+  }
+
+  /**
+   * Remove all foreign keys from attributes
+   * This is used when include=[] to exclude relationship foreign keys
+   * @param attrs - The attributes object
+   * @param model - The model instance
+   * @returns Attributes without foreign keys
+   */
+  private _removeForeignKeys<TSchema extends SchemaCollections>(
+    attrs: Record<string, any>,
+    model: ModelInstance<TTemplate, TSchema>,
+  ): Record<string, any> {
+    const result = { ...attrs };
+    const relationships = model.relationships as Record<string, any> | undefined;
+
+    if (!relationships) {
+      return result;
+    }
+
+    // Remove foreign keys based on relationship definitions
+    for (const relName in relationships) {
+      const relationship = relationships[relName];
+      if (relationship.type === 'hasMany') {
+        // Remove hasMany foreign key array (e.g., 'postIds')
+        const singularName = relName.replace(/s$/, '');
+        delete result[`${singularName}Ids`];
+      } else if (relationship.type === 'belongsTo') {
+        // Remove belongsTo foreign key (e.g., 'authorId')
+        const fk = relationship.foreignKey || `${relName}Id`;
+        delete result[fk];
+      }
+    }
+
+    return result;
   }
 }

@@ -55,6 +55,27 @@ describe('associations', () => {
       expect(relationship.targetModel.modelName).toBe('user');
       expect(relationship.targetModel.collectionName).toBe('users');
     });
+
+    it('should use default collectionName from target model', () => {
+      const relationship = associations.belongsTo(userModel);
+      expect(relationship.collectionName).toBe('users');
+    });
+
+    it('should accept custom collectionName option', () => {
+      const relationship = associations.belongsTo(userModel, { collectionName: 'authors' });
+      expect(relationship.collectionName).toBe('authors');
+    });
+
+    it('should accept collectionName with other options', () => {
+      const relationship = associations.belongsTo(userModel, {
+        foreignKey: 'authorId',
+        inverse: 'posts',
+        collectionName: 'authors',
+      });
+      expect(relationship.foreignKey).toBe('authorId');
+      expect(relationship.inverse).toBe('posts');
+      expect(relationship.collectionName).toBe('authors');
+    });
   });
 
   describe('hasMany', () => {
@@ -83,6 +104,27 @@ describe('associations', () => {
       const relationship = associations.hasMany(postModel);
       expect(relationship.targetModel.modelName).toBe('post');
       expect(relationship.targetModel.collectionName).toBe('posts');
+    });
+
+    it('should use default collectionName from target model', () => {
+      const relationship = associations.hasMany(postModel);
+      expect(relationship.collectionName).toBe('posts');
+    });
+
+    it('should accept custom collectionName option', () => {
+      const relationship = associations.hasMany(postModel, { collectionName: 'articles' });
+      expect(relationship.collectionName).toBe('articles');
+    });
+
+    it('should accept collectionName with other options', () => {
+      const relationship = associations.hasMany(postModel, {
+        foreignKey: 'articleIds',
+        inverse: 'author',
+        collectionName: 'articles',
+      });
+      expect(relationship.foreignKey).toBe('articleIds');
+      expect(relationship.inverse).toBe('author');
+      expect(relationship.collectionName).toBe('articles');
     });
   });
 

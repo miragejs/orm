@@ -49,6 +49,7 @@ test('BelongsTo relationship should work correctly', () => {
     type: 'belongsTo',
     targetModel: userModel,
     foreignKey: 'userId',
+    collectionName: 'users',
   };
 
   expectTypeOf(relation.type).toEqualTypeOf<'belongsTo'>();
@@ -61,6 +62,7 @@ test('BelongsTo with custom foreign key should work', () => {
     type: 'belongsTo',
     targetModel: userModel,
     foreignKey: 'ownerId',
+    collectionName: 'users',
   };
 
   expectTypeOf(relation.foreignKey).toEqualTypeOf<'ownerId'>();
@@ -71,6 +73,7 @@ test('HasMany relationship should work correctly', () => {
     type: 'hasMany',
     targetModel: postModel,
     foreignKey: 'postIds',
+    collectionName: 'posts',
   };
 
   expectTypeOf(relation.type).toEqualTypeOf<'hasMany'>();
@@ -83,6 +86,7 @@ test('HasMany with custom foreign key should work', () => {
     type: 'hasMany',
     targetModel: postModel,
     foreignKey: 'articleIds',
+    collectionName: 'posts',
   };
 
   expectTypeOf(relation.foreignKey).toEqualTypeOf<'articleIds'>();
