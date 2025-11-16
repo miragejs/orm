@@ -155,7 +155,7 @@ export default class Schema<
         },
       );
 
-      for (const collection of this._collections.values()) {
+      for (const [_, collection] of this._collections) {
         await collection.loadSeeds(onlyDefault ? 'default' : undefined);
       }
 
@@ -192,7 +192,7 @@ export default class Schema<
         collections: Array.from(this._collections.keys()),
       });
 
-      for (const collection of this._collections.values()) {
+      for (const [_, collection] of this._collections) {
         await collection.loadFixtures();
       }
 
