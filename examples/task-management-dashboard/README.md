@@ -96,34 +96,37 @@ MSW Handlers (intercept)
 
 ```
 src/
-├── features/              # Feature modules (self-contained)
-│   ├── auth/             # Login & authentication
-│   │   ├── api/          # authApi.ts - API client
-│   │   ├── components/   # LoginForm.tsx
-│   │   ├── hooks/        # useAuth.tsx
-│   │   └── LoginPage.tsx # Feature entry point
-│   ├── user-dashboard/   # User task dashboard
-│   │   ├── api/          # userTasksApi.ts
-│   │   ├── components/   # TaskCard, TaskSection, etc.
-│   │   └── UserDashboard.tsx
-│   └── team-dashboard/   # Team management
-│       ├── api/          # teamApi.ts
-│       ├── components/   # TeamMembersTable, etc.
-│       └── TeamDashboard.tsx
-├── components/           # Shared UI components
-├── hooks/                # Shared React hooks
-├── types/                # Shared TypeScript types & enums
-└── utils/                # Utility functions
+├── main.tsx              # App entry point (with MSW initialization)
+├── Root.tsx              # Root component with router provider
+├── routes.tsx            # Route configuration (Data Mode)
+├── features/             # Feature modules
+│   ├── auth/            # Authentication feature
+│   │   ├── Login.tsx          # Login page with action
+│   │   ├── api/
+│   │   │   ├── login.ts       # login()
+│   │   │   └── logout.ts      # logout()
+│   │   └── components/
+│   │       └── LoginForm.tsx  # Login form UI
+│   └── app-layout/      # App layout feature (protected root)
+│       ├── AppLayout.tsx      # Protected layout with loader
+│       ├── api/
+│       │   └── getUser.ts     # getUser()
+│       └── components/
+│           └── Sidebar.tsx    # Navigation sidebar
+└── shared/               # Shared utilities
+    ├── components/
+    │   └── ErrorBoundary.tsx # Route error boundary
+    └── types/           # Shared types & enums
+        ├── enums.ts     # UserRole, TaskStatus, TaskPriority
+        ├── user.ts      # User type
+        └── index.ts
 
 test/                     # Test infrastructure (MSW + ORM)
-├── mocks/                # MSW configuration
-│   ├── browser.ts        # MSW browser instance
+├── server/               # MSW server setup
+│   ├── browser.ts        # MSW browser worker
 │   └── handlers/         # API route handlers
-│       ├── auth.handlers.ts
-│       ├── users.handlers.ts
-│       ├── teams.handlers.ts
-│       ├── tasks.handlers.ts
-│       ├── comments.handlers.ts
+│       ├── authHandlers.ts   # POST /api/auth/login, /logout
+│       ├── userHandlers.ts   # GET /api/users/me, /:id
 │       └── index.ts
 └── schema/               # ORM Schema (domain-organized)
     ├── models/           # All model templates together
@@ -153,20 +156,91 @@ test/                     # Test infrastructure (MSW + ORM)
     ├── types/            # Schema type definitions
     │   ├── schema.ts
     │   └── index.ts
-    ├── setupSchema.ts    # Schema initialization
-    ├── seeds.ts          # Seed data generation
-    └── index.ts          # Main export
+    ├── devSchema.ts      # Development schema (logging enabled)
+    └── testSchema.ts     # Test schema (logging disabled)
 ```
 
 ### Why This Structure?
 
-**Feature-Based:** Each feature contains its own API client and components, making it self-contained and easy to understand.
+**Feature-Based:** Each feature is self-contained with its own route components, API calls, and UI components, making the codebase easy to navigate and understand.
 
-**Domain Schema:** Collections are organized by entity (users/, teams/, etc.), keeping related configuration together.
+**Loader/Action Pattern:** Data fetching and mutations are handled through React Router loaders and actions instead of hooks, providing built-in caching, error handling, and loading states.
 
-**Separation of Concerns:** UI, API, and data layers are clearly separated.
+**Single-Purpose API Files:** Each API file contains one function, making them focused and easy to test. No large "god files" that export many functions.
+
+**Shared Types:** Common types like `User` are extracted to `shared/types/` for reuse across features.
+
+**Domain Schema:** ORM collections are organized by entity (`test/schema/collections/users/`, `teams/`, etc.), keeping models, factories, and relationships together.
+
+**Separation of Concerns:** Features, routes, API clients, MSW handlers, and ORM schema are clearly separated into distinct layers.
 
 ## 🎨 Features Walkthrough
+
+### 0. Authentication & Protected Routes
+
+**What it shows:**
+- Gradient login page with email authentication
+- Protected app layout with navigation sidebar
+- User avatar menu with logout functionality
+- Automatic redirect when not authenticated
+
+**Tech Stack:**
+- **React Router 7** - Loaders and Actions for data fetching and mutations
+- **MSW** - Intercepts API calls for `/api/auth/login` and `/api/auth/logout`
+- **Cookie-based sessions** - Simulated with MSW response headers
+
+**Implementation Details:**
+
+```typescript
+// src/routes/auth/LoginPage.tsx
+export async function action({ request }: ActionFunctionArgs) {
+  const formData = await request.formData();
+  const email = formData.get('email') as string;
+  
+  try {
+    await login(email); // API call
+    return { redirect: '/app' };
+  } catch (error) {
+    return { error: error.message };
+  }
+}
+
+// src/features/app-layout/AppLayout.tsx (Protected Route)
+export async function loader({ request }: LoaderFunctionArgs) {
+  try {
+    const user = await getUser(); // API call from ./api/getUser
+    return { user };
+  } catch (error) {
+    // Not authenticated - redirect to login
+    return redirect('/auth');
+  }
+}
+
+// test/server/handlers/authHandlers.ts
+http.post('/api/auth/login', async ({ request }) => {
+  const { email } = await request.json();
+  const user = appSchema.users.find({ email }); // ORM query
+  
+  if (!user) {
+    return HttpResponse.json({ error: 'User not found' }, { status: 404 });
+  }
+  
+  return HttpResponse.json(
+    { user: { ...user.attrs } },
+    {
+      headers: {
+        'Set-Cookie': `userId=${user.id}; Path=/; HttpOnly`,
+      },
+    },
+  );
+});
+```
+
+**Try It:**
+1. Visit the app - redirected to `/auth`
+2. Enter `user@example.com` or `manager@example.com`
+3. Automatically redirected to `/app/dashboard`
+4. Click avatar → Logout → Redirected back to login
 
 ### 1. User Dashboard
 
@@ -421,7 +495,7 @@ teams.models.forEach(team => {
 
 ### 6. Collection Queries
 
-**Location:** Any `test/mocks/handlers/*.handlers.ts`
+**Location:** Any `test/server/handlers/*.ts`
 
 ```typescript
 // Simple find
@@ -460,7 +534,7 @@ const results = schema.tasks.findMany({
 
 ### 7. Nested Relationship Access
 
-**Location:** `test/mocks/handlers/tasks.handlers.ts`
+**Location:** `test/server/handlers/` (future task handlers)
 
 ```typescript
 http.get('/api/tasks/:id', ({ params }) => {
