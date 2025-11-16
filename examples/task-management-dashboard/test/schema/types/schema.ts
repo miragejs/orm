@@ -4,6 +4,7 @@ import type {
   Factory,
   HasMany,
   SchemaInstance,
+  Serializer,
 } from 'miragejs-orm';
 import type { UserModel, TeamModel, TaskModel, CommentModel } from '../models';
 
@@ -19,7 +20,9 @@ export type AppCollections = {
       tasks: HasMany<TaskModel>;
       comments: HasMany<CommentModel>;
     },
-    Factory<UserModel, 'manager' | 'withTasks', AppCollections>
+    Factory<UserModel, 'manager' | 'withTasks', AppCollections>,
+    Serializer<UserModel>,
+    AppCollections
   >;
   teams: CollectionConfig<
     TeamModel,
@@ -27,7 +30,9 @@ export type AppCollections = {
       members: HasMany<UserModel, 'memberIds'>;
       manager: BelongsTo<UserModel, 'managerId'>;
     },
-    Factory<TeamModel>
+    Factory<TeamModel, 'withManager' | 'withMembers', AppCollections>,
+    undefined,
+    AppCollections
   >;
   tasks: CollectionConfig<
     TaskModel,
@@ -46,7 +51,9 @@ export type AppCollections = {
       | 'highPriority'
       | 'urgent'
       | 'overdue'
-    >
+    >,
+    undefined,
+    AppCollections
   >;
   comments: CollectionConfig<
     CommentModel,
