@@ -31,7 +31,7 @@ export default function Logo({ variant = 'full', size = 'medium' }: LogoProps) {
         <DashboardIcon
           sx={{
             fontSize: iconSize,
-            color: 'primary.main',
+            color: 'secondary.main',
           }}
         />
       </Box>
@@ -50,7 +50,7 @@ export default function Logo({ variant = 'full', size = 'medium' }: LogoProps) {
       <DashboardIcon
         sx={{
           fontSize: iconSize,
-          color: 'primary.main',
+          color: 'secondary.main',
         }}
       />
       <Typography
@@ -58,7 +58,8 @@ export default function Logo({ variant = 'full', size = 'medium' }: LogoProps) {
         component="span"
         sx={{
           fontWeight: 700,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: (theme) =>
+            `linear-gradient(135deg, ${theme.palette.secondary.light} 0%, ${theme.palette.secondary.main} 100%)`,
           backgroundClip: 'text',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',

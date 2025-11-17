@@ -5,13 +5,9 @@ import {
   IconButton,
   Avatar,
   Menu,
-  MenuItem,
   Typography,
   Box,
 } from '@mui/material';
-import { useNavigate } from 'react-router';
-import { logout } from '@/features/auth/api';
-import { Logo } from '@shared/components/ErrorBoundary';
 import type { User } from '@shared/types';
 
 interface HeaderProps {
@@ -19,10 +15,9 @@ interface HeaderProps {
 }
 
 /**
- * Header Component with user menu and logout
+ * Header Component with user menu
  */
 export default function Header({ user }: HeaderProps) {
-  const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -33,16 +28,6 @@ export default function Header({ user }: HeaderProps) {
     setAnchorEl(null);
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/auth');
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-    handleMenuClose();
-  };
-
   return (
     <AppBar
       position="static"
@@ -50,12 +35,9 @@ export default function Header({ user }: HeaderProps) {
       elevation={1}
       sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
     >
-      <Toolbar sx={{ justifyContent: 'space-between' }}>
-        {/* Brand Logo */}
-        <Logo size="small" />
-
+      <Toolbar sx={{ justifyContent: 'flex-end' }}>
         {/* User Avatar and Menu */}
-        <IconButton onClick={handleMenuOpen} sx={{ ml: 2 }}>
+        <IconButton onClick={handleMenuOpen}>
           <Avatar src={user.avatar} alt={user.name}>
             {user.name.charAt(0)}
           </Avatar>
@@ -82,7 +64,6 @@ export default function Header({ user }: HeaderProps) {
               {user.role}
             </Typography>
           </Box>
-          <MenuItem onClick={handleLogout}>Logout</MenuItem>
         </Menu>
       </Toolbar>
     </AppBar>

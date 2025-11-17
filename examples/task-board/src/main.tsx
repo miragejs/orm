@@ -3,16 +3,17 @@ import ReactDOM from 'react-dom/client';
 import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
 import Root from './Root';
 import { initMockServer } from '@test/server/browser';
+import { lightGreen, purple } from '@mui/material/colors';
 
 // Create Material-UI theme
 const theme = createTheme({
   palette: {
-    mode: 'light',
+    mode: 'dark',
     primary: {
-      main: '#667eea',
+      main: purple[500],
     },
     secondary: {
-      main: '#764ba2',
+      main: lightGreen[500],
     },
   },
 });
