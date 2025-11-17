@@ -1,4 +1,4 @@
-import { Box, Container } from '@mui/material';
+import { Box } from '@mui/material';
 import { redirect } from 'react-router';
 import type { ActionFunctionArgs } from 'react-router';
 import { login } from './api';
@@ -31,16 +31,16 @@ export default function Login() {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
+        width: '100vw',
+        height: '100vh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        overflow: 'hidden',
       }}
     >
-      <Container maxWidth="sm">
-        <LoginForm />
-      </Container>
+      <LoginForm />
     </Box>
   );
 }

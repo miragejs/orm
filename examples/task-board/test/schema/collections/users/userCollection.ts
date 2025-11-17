@@ -13,11 +13,12 @@ export const usersCollection = collection<AppCollections>()
   })
   .serializer({
     include: ['team'],
+    embed: true,
   })
   .seeds({
     default(schema) {
       // Get DevX team
-      const devXTeam = schema.teams.findOrCreateBy({ name: 'DevX' });
+      const devXTeam = schema.teams.find({ name: 'DevX' });
 
       // Create current user
       schema.users.create({

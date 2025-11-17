@@ -11,7 +11,15 @@ interface MainContentProps {
  */
 export default function MainContent({ user }: MainContentProps) {
   return (
-    <Box component="main" sx={{ flexGrow: 1, p: 3, bgcolor: 'background.default' }}>
+    <Box
+      component="main"
+      sx={{
+        flexGrow: 1,
+        p: 3,
+        bgcolor: 'background.default',
+        overflow: 'auto',
+      }}
+    >
       {/* Welcome Message */}
       <Typography variant="h4" component="h1" gutterBottom>
         Hello, {user.name.split(' ')[0]}!

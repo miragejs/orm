@@ -31,7 +31,7 @@ export default function AppLayout() {
   const { user } = useLoaderData() as LoaderData;
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+    <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
       {/* Sidebar Navigation */}
       <Sidebar />
 
