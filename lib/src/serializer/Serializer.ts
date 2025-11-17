@@ -1,4 +1,9 @@
-import type { InferModelAttrs, ModelInstance, ModelTemplate } from '@src/model';
+import type {
+  InferSerializedCollection,
+  InferSerializedModel,
+  ModelInstance,
+  ModelTemplate,
+} from '@src/model';
 import type ModelCollection from '@src/model/ModelCollection';
 import type { SchemaCollections } from '@src/schema';
 
@@ -32,8 +37,8 @@ import type { SerializerOptions } from './types';
  */
 export default class Serializer<
   TTemplate extends ModelTemplate,
-  TSerializedModel = InferModelAttrs<TTemplate>,
-  TSerializedCollection = TSerializedModel[],
+  TSerializedModel = InferSerializedModel<TTemplate>,
+  TSerializedCollection = InferSerializedCollection<TTemplate>,
   TOptions extends SerializerOptions<TTemplate> = SerializerOptions<TTemplate>,
 > {
   protected _template: TTemplate;
@@ -99,8 +104,8 @@ export default class Serializer<
    * @param model - The model instance to serialize
    * @returns The serialized model data without root wrapping
    */
-  private serializeData<TSchema extends SchemaCollections, TSerializer = any>(
-    model: ModelInstance<TTemplate, TSchema, TSerializer>,
+  private serializeData<TSchema extends SchemaCollections>(
+    model: ModelInstance<TTemplate, TSchema, Serializer<TTemplate>>,
   ): Record<string, any> {
     const attrs = this._getAttributes(model);
 
@@ -165,8 +170,8 @@ export default class Serializer<
    * @param model - The model instance to serialize
    * @returns The serialized model with structural formatting applied
    */
-  serialize<TSchema extends SchemaCollections, TSerializer = any>(
-    model: ModelInstance<TTemplate, TSchema, TSerializer>,
+  serialize<TSchema extends SchemaCollections>(
+    model: ModelInstance<TTemplate, TSchema, Serializer<TTemplate>>,
   ): TSerializedModel {
     const data = this.serializeData(model);
 

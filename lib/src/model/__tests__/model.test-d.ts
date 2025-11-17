@@ -437,7 +437,7 @@ test('ModelCollection from relationship accessor should use target collection se
     title: string;
   }
 
-  type PostSerializer = Serializer<typeof postModel, PostJSON>;
+  type PostSerializer = Serializer<typeof postModel, PostJSON, PostJSON[]>;
 
   // When accessing user.posts, the collection should have the post serializer
   type PostsCollection = ModelCollection<typeof postModel, TestSchema, PostSerializer>;

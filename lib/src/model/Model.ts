@@ -1,6 +1,7 @@
 import { Relationships } from '@src/associations';
 import type { DbCollection } from '@src/db';
 import type { SchemaCollections } from '@src/schema';
+import { Serializer } from '@src/serializer';
 
 import BaseModel from './BaseModel';
 import RelationshipsManager from './RelationshipsManager';
@@ -31,7 +32,7 @@ import type {
 export default class Model<
   TTemplate extends ModelTemplate = ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
-  TSerializer = undefined,
+  TSerializer = Serializer<TTemplate>,
 > extends BaseModel<ModelAttrs<TTemplate, TSchema>, TSerializer> {
   public readonly relationships?: RelationshipsByTemplate<TTemplate, TSchema>;
   protected _relationshipsManager?: RelationshipsManager<TTemplate, TSchema>;
@@ -99,7 +100,7 @@ export default class Model<
   static define<
     TTemplate extends ModelTemplate,
     TSchema extends SchemaCollections = SchemaCollections,
-    TSerializer = undefined,
+    TSerializer = Serializer<TTemplate>,
   >(template: TTemplate): ModelClass<TTemplate, TSchema, TSerializer> {
     return class extends Model<TTemplate, TSchema, TSerializer> {
       constructor(

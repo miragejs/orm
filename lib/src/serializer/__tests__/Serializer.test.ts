@@ -1,10 +1,10 @@
 import { associations } from '@src/associations';
-import { model } from '@src/model';
-import { collection, schema } from '@src/schema';
+import { model, ModelInstance } from '@src/model';
+import { collection, schema, SchemaCollections } from '@src/schema';
 
 import Serializer from '../Serializer';
 
-// Define test attributes
+// Define test attribute types
 type UserAttrs = {
   id: string;
   name: string;
@@ -12,12 +12,14 @@ type UserAttrs = {
   password: string;
   role: string;
 };
+
 type PostAttrs = {
   id: string;
   title: string;
   content: string;
   authorId: string;
 };
+
 type CommentAttrs = {
   id: string;
   content: string;
@@ -25,39 +27,37 @@ type CommentAttrs = {
   userId: string;
 };
 
-// Create test models
-const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
-const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
-
-// Create test model types
-type UserModel = typeof userModel;
-type PostModel = typeof postModel;
-
-// Define JSON types
-interface UserJSON {
+// Define JSON types for serialized output
+type UserJSON = {
   id: string;
   name: string;
   email: string;
-}
+};
 
-interface UserRootJSON {
+type UserRootJSON = {
   user: UserJSON;
-}
+};
 
-interface PostJSON {
+type PostJSON = {
   id: string;
   title: string;
-}
+};
 
-interface PostsJSON {
+type PostsJSON = {
   posts: PostJSON[];
-}
+};
+
+// Create base model templates (without .json() for default serialization)
+const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
+const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
+
+// Define model types
+type UserModel = typeof userModel;
 
 describe('Serializer', () => {
   describe('Constructor', () => {
     it('should serialize a model with default settings (no filtering)', () => {
       const serializer = new Serializer<UserModel>(userModel);
-
       const userCollection = collection().model(userModel).serializer(serializer).create();
       const testSchema = schema().collections({ users: userCollection }).setup();
 
@@ -79,11 +79,18 @@ describe('Serializer', () => {
     });
 
     it('should serialize a model with attribute filtering', () => {
-      const serializer = new Serializer<UserModel, UserJSON>(userModel, {
+      // Model with .json<UserJSON>() defines filtered serialization type
+      const customUserModel = model()
+        .name('user')
+        .collection('users')
+        .attrs<UserAttrs>()
+        .json<UserJSON>()
+        .create();
+
+      const serializer = new Serializer<typeof customUserModel>(customUserModel, {
         attrs: ['id', 'name', 'email'],
       });
-
-      const userCollection = collection().model(userModel).serializer(serializer).create();
+      const userCollection = collection().model(customUserModel).serializer(serializer).create();
       const testSchema = schema().collections({ users: userCollection }).setup();
 
       const user = testSchema.users.create({
@@ -104,12 +111,18 @@ describe('Serializer', () => {
     });
 
     it('should serialize a model with root wrapping (boolean)', () => {
-      const serializer = new Serializer<UserModel, UserRootJSON>(userModel, {
+      const customUserModel = model()
+        .name('user')
+        .collection('users')
+        .attrs<UserAttrs>()
+        .json<UserRootJSON>()
+        .create();
+
+      const serializer = new Serializer<typeof customUserModel>(customUserModel, {
         attrs: ['id', 'name', 'email'],
         root: true,
       });
-
-      const userCollection = collection().model(userModel).serializer(serializer).create();
+      const userCollection = collection().model(customUserModel).serializer(serializer).create();
       const testSchema = schema().collections({ users: userCollection }).setup();
 
       const user = testSchema.users.create({
@@ -130,12 +143,20 @@ describe('Serializer', () => {
     });
 
     it('should serialize a model with custom root key', () => {
-      const serializer = new Serializer<UserModel, { person: UserJSON }>(userModel, {
+      type PersonJSON = { person: UserJSON };
+
+      const customUserModel = model()
+        .name('user')
+        .collection('users')
+        .attrs<UserAttrs>()
+        .json<PersonJSON>()
+        .create();
+
+      const serializer = new Serializer<typeof customUserModel>(customUserModel, {
         attrs: ['id', 'name', 'email'],
         root: 'person',
       });
-
-      const userCollection = collection().model(userModel).serializer(serializer).create();
+      const userCollection = collection().model(customUserModel).serializer(serializer).create();
       const testSchema = schema().collections({ users: userCollection }).setup();
 
       const user = testSchema.users.create({
@@ -144,7 +165,7 @@ describe('Serializer', () => {
         password: 'secret123',
         role: 'admin',
       });
-      const json: { person: UserJSON } = user.toJSON();
+      const json: PersonJSON = user.toJSON();
 
       expect(json).toEqual({
         person: {
@@ -158,11 +179,17 @@ describe('Serializer', () => {
 
   describe('Collection serialization', () => {
     it('should serialize a collection without root wrapping', () => {
-      const serializer = new Serializer<PostModel, PostJSON, PostJSON[]>(postModel, {
+      const customPostModel = model()
+        .name('post')
+        .collection('posts')
+        .attrs<PostAttrs>()
+        .json<PostJSON, PostJSON[]>()
+        .create();
+
+      const serializer = new Serializer<typeof customPostModel>(customPostModel, {
         attrs: ['id', 'title'],
       });
-
-      const postCollection = collection().model(postModel).serializer(serializer).create();
+      const postCollection = collection().model(customPostModel).serializer(serializer).create();
       const testSchema = schema().collections({ posts: postCollection }).setup();
 
       testSchema.posts.create({
@@ -186,12 +213,18 @@ describe('Serializer', () => {
     });
 
     it('should serialize a collection with root wrapping', () => {
-      const serializer = new Serializer<PostModel, PostJSON, PostsJSON>(postModel, {
+      const customPostModel = model()
+        .name('post')
+        .collection('posts')
+        .attrs<PostAttrs>()
+        .json<PostJSON, PostsJSON>()
+        .create();
+
+      const serializer = new Serializer<typeof customPostModel>(customPostModel, {
         attrs: ['id', 'title'],
         root: true,
       });
-
-      const postCollection = collection().model(postModel).serializer(serializer).create();
+      const postCollection = collection().model(customPostModel).serializer(serializer).create();
       const testSchema = schema().collections({ posts: postCollection }).setup();
 
       testSchema.posts.create({
@@ -217,12 +250,18 @@ describe('Serializer', () => {
     });
 
     it('should serialize an empty collection', () => {
-      const serializer = new Serializer<PostModel, PostJSON, PostsJSON>(postModel, {
+      const customPostModel = model()
+        .name('post')
+        .collection('posts')
+        .attrs<PostAttrs>()
+        .json<PostJSON, PostsJSON>()
+        .create();
+
+      const serializer = new Serializer<typeof customPostModel>(customPostModel, {
         attrs: ['id', 'title'],
         root: true,
       });
-
-      const postCollection = collection().model(postModel).serializer(serializer).create();
+      const postCollection = collection().model(customPostModel).serializer(serializer).create();
       const testSchema = schema().collections({ posts: postCollection }).setup();
 
       const posts = testSchema.posts.all();
@@ -294,24 +333,32 @@ describe('Serializer', () => {
 
   describe('Custom serializer extension', () => {
     it('should allow extending Serializer for custom logic', () => {
-      class TimestampSerializer<T extends UserModel> extends Serializer<
-        T,
-        UserJSON & { timestamp: string }
-      > {
-        serialize(model: any): UserJSON & { timestamp: string } {
+      type UserWithTimestampJSON = UserJSON & { timestamp: string };
+
+      const customUserModel = model()
+        .name('user')
+        .collection('users')
+        .attrs<UserAttrs>()
+        .json<UserWithTimestampJSON>()
+        .create();
+
+      class TimestampSerializer extends Serializer<typeof customUserModel> {
+        serialize<TSchema extends SchemaCollections>(
+          model: ModelInstance<typeof customUserModel, TSchema>,
+        ) {
           const data = super.serialize(model);
           return {
             ...data,
             timestamp: new Date('2024-01-01').toISOString(),
-          } as UserJSON & { timestamp: string };
+          };
         }
       }
 
-      const serializer = new TimestampSerializer(userModel, {
+      const serializer = new TimestampSerializer(customUserModel, {
         attrs: ['id', 'name', 'email'],
       });
 
-      const userCollection = collection().model(userModel).serializer(serializer).create();
+      const userCollection = collection().model(customUserModel).serializer(serializer).create();
       const testSchema = schema().collections({ users: userCollection }).setup();
 
       const user = testSchema.users.create({
@@ -320,7 +367,7 @@ describe('Serializer', () => {
         password: 'secret123',
         role: 'admin',
       });
-      const json: UserJSON & { timestamp: string } = user.toJSON();
+      const json: UserWithTimestampJSON = user.toJSON();
 
       expect(json).toEqual({
         id: '1',
@@ -333,16 +380,38 @@ describe('Serializer', () => {
 
   describe('Multiple collections with different serializers', () => {
     it('should support different serializers for different collections', () => {
-      const userSerializer = new Serializer<UserModel, { user: UserJSON }>(userModel, {
+      type UserRootJSON = { user: UserJSON };
+
+      const customUserModel = model()
+        .name('user')
+        .collection('users')
+        .attrs<UserAttrs>()
+        .json<UserRootJSON>()
+        .create();
+
+      const customPostModel = model()
+        .name('post')
+        .collection('posts')
+        .attrs<PostAttrs>()
+        .json<PostJSON>()
+        .create();
+
+      const userSerializer = new Serializer<typeof customUserModel>(customUserModel, {
         attrs: ['id', 'name', 'email'],
         root: 'user',
       });
-      const postSerializer = new Serializer<PostModel, PostJSON>(postModel, {
+      const postSerializer = new Serializer<typeof customPostModel>(customPostModel, {
         attrs: ['id', 'title'],
       });
 
-      const userCollection = collection().model(userModel).serializer(userSerializer).create();
-      const postCollection = collection().model(postModel).serializer(postSerializer).create();
+      const userCollection = collection()
+        .model(customUserModel)
+        .serializer(userSerializer)
+        .create();
+      const postCollection = collection()
+        .model(customPostModel)
+        .serializer(postSerializer)
+        .create();
 
       const testSchema = schema()
         .collections({
@@ -363,7 +432,7 @@ describe('Serializer', () => {
         authorId: user.id,
       });
 
-      const userJson: { user: UserJSON } = user.toJSON();
+      const userJson: UserRootJSON = user.toJSON();
       const postJson: PostJSON = post.toJSON();
 
       // User should have root wrapping
