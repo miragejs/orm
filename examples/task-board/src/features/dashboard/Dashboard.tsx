@@ -1,110 +1,206 @@
-import { Box, Card, CardContent, Typography } from '@mui/material';
-import Grid from '@mui/material/Grid2';
+import { useState } from 'react';
+import { useLoaderData } from 'react-router';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Chip,
+  Stack,
+} from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
   Schedule as ScheduleIcon,
   RateReview as RateReviewIcon,
   Assignment as AssignmentIcon,
+  ExpandMore as ExpandMoreIcon,
 } from '@mui/icons-material';
+import { TaskStatus, TaskPriority, type Task } from '@shared/types';
+import { getTasks } from './api';
+/**
+ * Dashboard loader - fetches user tasks
+ */
+export async function loader() {
+  const data = await getTasks();
+  return data;
+}
+
+// Status configuration with icons and labels
+const statusConfig = {
+  [TaskStatus.IN_PROGRESS]: {
+    label: 'In Progress',
+    icon: ScheduleIcon,
+    color: 'info' as const,
+  },
+  [TaskStatus.REVIEW]: {
+    label: 'In Review',
+    icon: RateReviewIcon,
+    color: 'warning' as const,
+  },
+  [TaskStatus.TODO]: {
+    label: 'To Do',
+    icon: AssignmentIcon,
+    color: 'default' as const,
+  },
+  [TaskStatus.DONE]: {
+    label: 'Completed',
+    icon: CheckCircleIcon,
+    color: 'success' as const,
+  },
+};
+
+// Status order for display
+const statusOrder = [
+  TaskStatus.IN_PROGRESS,
+  TaskStatus.TODO,
+  TaskStatus.REVIEW,
+  TaskStatus.DONE,
+];
+
+// Priority configuration with colors
+const priorityConfig = {
+  [TaskPriority.LOW]: {
+    color: 'default' as const,
+  },
+  [TaskPriority.MEDIUM]: {
+    color: 'info' as const,
+  },
+  [TaskPriority.HIGH]: {
+    color: 'warning' as const,
+  },
+  [TaskPriority.URGENT]: {
+    color: 'error' as const,
+  },
+};
 
 /**
- * Dashboard Component - Overview of tasks and metrics
+ * Dashboard Component - Overview of tasks grouped by status
  */
 export default function Dashboard() {
+  const { tasks } = useLoaderData<typeof loader>();
+  const [expanded, setExpanded] = useState<string>(TaskStatus.IN_PROGRESS);
+
+  // Group tasks by status
+  const tasksByStatus = tasks.reduce(
+    (acc, task) => {
+      if (!acc[task.status]) {
+        acc[task.status] = [];
+      }
+      acc[task.status].push(task);
+      return acc;
+    },
+    {} as Record<TaskStatus, Task[]>,
+  );
+
+  const handleAccordionChange = (panel: string) => (_: unknown, isExpanded: boolean) => {
+    setExpanded(isExpanded ? panel : '');
+  };
+
   return (
     <Box>
       <Typography variant="h5" component="h2" gutterBottom sx={{ mb: 3 }}>
-        Dashboard Overview
+        My Tasks
       </Typography>
 
-      <Grid container spacing={3}>
-        {/* Task Status Cards */}
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <AssignmentIcon sx={{ fontSize: 40, color: 'text.secondary', mr: 2 }} />
-                <Box>
-                  <Typography variant="h4" component="div">
-                    10
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Total Tasks
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+      <Stack spacing={2}>
+        {statusOrder.map((status) => {
+          const config = statusConfig[status];
+          const statusTasks = tasksByStatus[status] || [];
+          const Icon = config.icon;
 
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <ScheduleIcon sx={{ fontSize: 40, color: 'info.main', mr: 2 }} />
-                <Box>
-                  <Typography variant="h4" component="div">
-                    4
-                  </Typography>
+          return (
+            <Accordion
+              key={status}
+              expanded={expanded === status}
+              onChange={handleAccordionChange(status)}
+              sx={{
+                '&:before': { display: 'none' },
+                boxShadow: 1,
+              }}
+            >
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                sx={{
+                  '& .MuiAccordionSummary-content': {
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                  },
+                }}
+              >
+                <Icon sx={{ color: `${config.color}.main` }} />
+                <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                  {config.label}
+                </Typography>
+                <Chip
+                  label={statusTasks.length}
+                  color={config.color}
+                  size="small"
+                  sx={{ mr: 1 }}
+                />
+              </AccordionSummary>
+              <AccordionDetails>
+                {statusTasks.length === 0 ? (
                   <Typography variant="body2" color="text.secondary">
-                    In Progress
+                    No tasks in this status
                   </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <RateReviewIcon sx={{ fontSize: 40, color: 'warning.main', mr: 2 }} />
-                <Box>
-                  <Typography variant="h4" component="div">
-                    2
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    In Review
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <CheckCircleIcon sx={{ fontSize: 40, color: 'success.main', mr: 2 }} />
-                <Box>
-                  <Typography variant="h4" component="div">
-                    2
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Completed
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Placeholder for future features */}
-        <Grid size={{ xs: 12 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Recent Activity
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Task list, activity feed, and team insights will be displayed here.
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+                ) : (
+                  <Stack spacing={2}>
+                    {statusTasks.map((task) => (
+                      <Card
+                        key={task.id}
+                        variant="outlined"
+                        sx={{
+                          borderLeft: 4,
+                          borderLeftColor: `${config.color}.main`,
+                        }}
+                      >
+                        <CardContent>
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'flex-start',
+                              mb: 1,
+                            }}
+                          >
+                            <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                              {task.title}
+                            </Typography>
+                            <Chip
+                              label={config.label}
+                              color={config.color}
+                              size="small"
+                            />
+                          </Box>
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            {task.description}
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+                            <Chip
+                              label={task.priority}
+                              color={priorityConfig[task.priority].color}
+                              size="small"
+                            />
+                            <Chip
+                              label={new Date(task.dueDate).toLocaleDateString()}
+                              size="small"
+                              variant="outlined"
+                            />
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </Stack>
+                )}
+              </AccordionDetails>
+            </Accordion>
+          );
+        })}
+      </Stack>
     </Box>
   );
 }

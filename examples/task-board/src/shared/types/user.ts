@@ -1,3 +1,5 @@
+import type { Team } from './team';
+
 /**
  * Shared User type
  */
@@ -8,5 +10,5 @@ export interface User {
   role: string;
   avatar: string;
   bio: string;
-  teamId: string;
+  team: Team;
 }

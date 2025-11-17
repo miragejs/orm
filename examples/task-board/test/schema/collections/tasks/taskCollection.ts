@@ -11,6 +11,7 @@ export const tasksCollection = collection<AppCollections>()
     team: associations.belongsTo(teamModel),
     comments: associations.hasMany(commentModel),
   })
+  .serializer({ include: ['assignee'] })
   .seeds({
     default: (schema) => {
       // Get regular user and DevX team

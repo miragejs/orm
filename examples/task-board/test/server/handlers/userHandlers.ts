@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import { devSchema } from '@test/schema/devSchema';
+import { User } from '@shared/types';
 
 /**
  * User handlers for /users endpoints
@@ -19,7 +20,8 @@ export const userHandlers = [
       return HttpResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    return HttpResponse.json(user.toJSON());
+    const json: { user: User } = user.toJSON();
+    return HttpResponse.json(json);
   }),
 
   // GET /api/users/:id - Get user by ID
@@ -30,6 +32,7 @@ export const userHandlers = [
       return HttpResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    return HttpResponse.json(user.toJSON());
+    const json: { user: User } = user.toJSON();
+    return HttpResponse.json(json);
   }),
 ];

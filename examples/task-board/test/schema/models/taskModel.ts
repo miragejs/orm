@@ -1,5 +1,5 @@
 import { model } from 'miragejs-orm';
-import { TaskStatus, TaskPriority } from '@shared/types';
+import { TaskStatus, TaskPriority, Task } from '@shared/types';
 
 export interface TaskAttrs {
   id: string;
@@ -12,12 +12,14 @@ export interface TaskAttrs {
   updatedAt: string;
   assigneeId: string;
   teamId: string;
+  commentIds: string[];
 }
 
 export const taskModel = model()
   .name('task')
   .collection('tasks')
   .attrs<TaskAttrs>()
+  .json<{ task: Task }, { tasks: Task[] }>()
   .create();
 
 export type TaskModel = typeof taskModel;

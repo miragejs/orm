@@ -1,5 +1,5 @@
 import { model } from 'miragejs-orm';
-import { UserRole } from '@shared/types';
+import { User, UserRole } from '@shared/types';
 
 export interface UserAttrs {
   id: string;
@@ -10,12 +10,15 @@ export interface UserAttrs {
   bio: string;
   createdAt: string;
   teamId: string;
+  taskIds: string[];
+  commentIds: string[];
 }
 
 export const userModel = model()
   .name('user')
   .collection('users')
   .attrs<UserAttrs>()
+  .json<{ user: User }, { users: User[] }>()
   .create();
 
 export type UserModel = typeof userModel;

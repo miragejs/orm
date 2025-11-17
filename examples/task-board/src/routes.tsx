@@ -2,7 +2,7 @@ import { Navigate } from 'react-router';
 import type { RouteObject } from 'react-router';
 import Login, { action as loginAction } from './features/auth/Login';
 import AppLayout, { loader as appLayoutLoader } from './features/app-layout/AppLayout';
-import Dashboard from './features/dashboard/Dashboard';
+import Dashboard, { loader as dashboardLoader } from './features/dashboard/Dashboard';
 import ErrorBoundary from './shared/components/ErrorBoundary';
 
 /**
@@ -31,6 +31,7 @@ export const routes: RouteObject[] = [
         id: 'dashboard',
         path: 'dashboard',
         element: <Dashboard />,
+        loader: dashboardLoader,
         handle: {
           title: 'Dashboard',
         },
