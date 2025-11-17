@@ -1,5 +1,6 @@
 import type { BelongsTo, HasMany, Relationships } from '@src/associations';
 import type { CollectionConfig, SchemaCollections, SchemaInstance } from '@src/schema';
+import type Serializer from '@src/serializer/Serializer';
 
 import type BaseModel from './BaseModel';
 import type Model from './Model';
@@ -490,7 +491,7 @@ export type ModelClass<
 export type NewModelInstance<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
-  TSerializer = undefined,
+  TSerializer = Serializer<TTemplate>,
 > = Model<TTemplate, TSchema, TSerializer> & {
   attrs: ModelAttrs<TTemplate, TSchema>;
   id: ModelAttrs<TTemplate, TSchema>['id'] | null;
@@ -502,12 +503,12 @@ export type NewModelInstance<
  * Type for model instance with accessors for the attributes (required ID)
  * @template TTemplate - The model template (most important for users)
  * @template TSchema - The schema collections type for enhanced type inference
- * @template TSerializer - The serializer type
+ * @template TSerializer - The serializer type (defaults to Serializer<TTemplate> | undefined for compatibility)
  */
 export type ModelInstance<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
-  TSerializer = undefined,
+  TSerializer = Serializer<TTemplate>,
 > = Model<TTemplate, TSchema, TSerializer> & {
   attrs: ModelAttrs<TTemplate, TSchema>;
   id: ModelAttrs<TTemplate, TSchema>['id'];

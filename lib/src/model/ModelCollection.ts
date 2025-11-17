@@ -1,4 +1,5 @@
 import type { SchemaCollections } from '@src/schema';
+import { Serializer } from '@src/serializer';
 
 import type { ModelAttrs, ModelInstance, ModelTemplate, ModelUpdateAttrs } from './types';
 
@@ -11,7 +12,7 @@ import type { ModelAttrs, ModelInstance, ModelTemplate, ModelUpdateAttrs } from 
 export default class ModelCollection<
   TTemplate extends ModelTemplate = ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
-  TSerializer = undefined,
+  TSerializer = Serializer<TTemplate>,
 > {
   private readonly _template: TTemplate;
   public readonly collectionName: string;

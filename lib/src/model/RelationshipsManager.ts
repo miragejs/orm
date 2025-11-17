@@ -110,7 +110,7 @@ export default class RelationshipsManager<
           const models = ids
             .map((id) => targetCollection.find(id))
             .filter((m): m is ModelInstance<ModelTemplate, TSchema> => isModelInstance<TSchema>(m));
-          processedValue = new ModelCollection(targetModel, models);
+          processedValue = new ModelCollection(targetModel, models, targetCollection.serializer);
         }
       }
 
@@ -432,8 +432,11 @@ export default class RelationshipsManager<
       const foreignKeyValues = this._getForeignKeyValue(foreignKey);
       const idsArray = this._extractIdsArray(foreignKeyValues);
 
+      // Get the serializer from the target collection to ensure proper serialization
+      const serializer = targetCollection.serializer;
+
       if (idsArray.length === 0) {
-        return new ModelCollection(targetModel, []) as RelationshipTargetModel<
+        return new ModelCollection(targetModel, [], serializer) as RelationshipTargetModel<
           TSchema,
           TRelationships,
           K
@@ -444,7 +447,7 @@ export default class RelationshipsManager<
         .map((id) => targetCollection.find(id))
         .filter((model): model is ModelInstance<ModelTemplate, TSchema> => model !== null);
 
-      return new ModelCollection(targetModel, relatedModels) as RelationshipTargetModel<
+      return new ModelCollection(targetModel, relatedModels, serializer) as RelationshipTargetModel<
         TSchema,
         TRelationships,
         K
