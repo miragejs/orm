@@ -1789,4 +1789,352 @@ describe('Serializer', () => {
       });
     });
   });
+
+  describe('Serialization through relationship accessors', () => {
+    describe('belongsTo relationships', () => {
+      it('should serialize related model using its collection serializer', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .serializer({ attrs: ['id', 'name', 'email'] }) // User serializer filters attributes
+              .create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+              })
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Alice',
+          email: 'alice@example.com',
+          password: 'secret',
+          role: 'admin',
+        });
+        const post = testSchema.posts.create({
+          title: 'My Post',
+          content: 'Content',
+          author: user,
+        });
+
+        // Serialize the author through the post relationship accessor
+        const json = post.author?.toJSON();
+
+        // Should use the user collection's serializer (filtered attributes)
+        expect(json).toEqual({
+          id: user.id,
+          name: 'Alice',
+          email: 'alice@example.com',
+        });
+        expect(json).not.toHaveProperty('password');
+        expect(json).not.toHaveProperty('role');
+      });
+
+      it('should serialize related model with root wrapping', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .serializer({ attrs: ['id', 'name'], root: true }) // User serializer with root
+              .create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+              })
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Bob',
+          email: 'bob@example.com',
+          password: 'secret',
+        });
+        const post = testSchema.posts.create({
+          title: 'Post',
+          content: 'Content',
+          author: user,
+        });
+
+        const json = post.author?.toJSON();
+
+        // Should use the user collection's serializer with root wrapping
+        expect(json).toEqual({
+          user: {
+            id: user.id,
+            name: 'Bob',
+          },
+        });
+      });
+
+      it('should return null when belongsTo relationship is null', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .serializer({ attrs: ['id', 'name'] })
+              .create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+              })
+              .create(),
+          })
+          .setup();
+
+        const post = testSchema.posts.create({
+          title: 'Orphan Post',
+          content: 'No author',
+        });
+
+        expect(post.author).toBeNull();
+      });
+    });
+
+    describe('hasMany relationships', () => {
+      it('should serialize related collection using its collection serializer', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .relationships({
+                posts: associations.hasMany(postModel),
+              })
+              .create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+              })
+              .serializer({ attrs: ['id', 'title'] }) // Post serializer filters attributes
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Charlie',
+          email: 'charlie@example.com',
+          password: 'secret',
+        });
+        const post1 = testSchema.posts.create({
+          title: 'First Post',
+          content: 'Content 1',
+          author: user,
+        });
+        const post2 = testSchema.posts.create({
+          title: 'Second Post',
+          content: 'Content 2',
+          author: user,
+        });
+
+        user.reload(); // Reload to get updated postIds
+
+        // Serialize the posts through the user relationship accessor
+        const json = user.posts.toJSON();
+
+        // Should use the post collection's serializer (filtered attributes)
+        expect(json).toEqual([
+          { id: post1.id, title: 'First Post' },
+          { id: post2.id, title: 'Second Post' },
+        ]);
+        expect(json[0]).not.toHaveProperty('content');
+        expect(json[0]).not.toHaveProperty('authorId');
+      });
+
+      it('should serialize related collection with root wrapping', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .relationships({
+                posts: associations.hasMany(postModel),
+              })
+              .create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+              })
+              .serializer({ attrs: ['id', 'title'], root: true }) // Post serializer with root
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Diana',
+          email: 'diana@example.com',
+          password: 'secret',
+        });
+        const post = testSchema.posts.create({
+          title: 'My Post',
+          content: 'Content',
+          author: user,
+        });
+
+        user.reload(); // Reload to get updated postIds
+
+        const json = user.posts.toJSON();
+
+        // Should use the post collection's serializer with root wrapping
+        expect(json).toEqual({
+          posts: [{ id: post.id, title: 'My Post' }],
+        });
+      });
+
+      it('should serialize empty hasMany collection', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .relationships({
+                posts: associations.hasMany(postModel),
+              })
+              .create(),
+            posts: collection()
+              .model(postModel)
+              .serializer({ attrs: ['id', 'title'], root: true })
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Eve',
+          email: 'eve@example.com',
+          password: 'secret',
+        });
+
+        const json = user.posts.toJSON();
+
+        // Should return empty array with root wrapping
+        expect(json).toEqual({ posts: [] });
+      });
+
+      it('should serialize related collection with relationships', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .relationships({
+                posts: associations.hasMany(postModel),
+              })
+              .create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+              })
+              .serializer({ include: ['author'], embed: true }) // Post serializer embeds author
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Frank',
+          email: 'frank@example.com',
+          password: 'secret',
+        });
+        const post = testSchema.posts.create({
+          title: 'My Post',
+          content: 'Content',
+          author: user,
+        });
+
+        user.reload(); // Reload to get updated postIds
+
+        const json = user.posts.toJSON();
+
+        // Should use the post collection's serializer with embedded relationships
+        expect(json).toEqual([
+          {
+            id: post.id,
+            title: 'My Post',
+            content: 'Content',
+            author: {
+              id: user.id,
+              name: 'Frank',
+              email: 'frank@example.com',
+              password: 'secret',
+              postIds: [post.id], // User has hasMany posts relationship
+            },
+          },
+        ]);
+      });
+    });
+
+    describe('Nested relationship accessors', () => {
+      it('should allow chaining relationship accessors', () => {
+        const commentModel = model()
+          .name('comment')
+          .collection('comments')
+          .attrs<CommentAttrs>()
+          .create();
+
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .relationships({
+                posts: associations.hasMany(postModel),
+              })
+              .serializer({ attrs: ['id', 'name'] })
+              .create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                comments: associations.hasMany(commentModel),
+              })
+              .serializer({ attrs: ['id', 'title'] })
+              .create(),
+            comments: collection()
+              .model(commentModel)
+              .relationships({
+                user: associations.belongsTo(userModel, { foreignKey: 'userId' }),
+              })
+              .serializer({ attrs: ['id', 'content'] })
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Grace',
+          email: 'grace@example.com',
+          password: 'secret',
+        });
+        const comment = testSchema.comments.create({
+          content: 'Nice post!',
+          userId: user.id,
+        });
+        const post = testSchema.posts.create({
+          title: 'Post',
+          content: 'Content',
+          author: user,
+          comments: [comment],
+        });
+
+        user.reload();
+
+        // Access user -> posts -> first post -> author
+        const authorJson = user.posts.models[0].author?.toJSON();
+        expect(authorJson).toEqual({
+          id: user.id,
+          name: 'Grace',
+        });
+
+        // Access post -> comments collection
+        const commentsJson = post.comments.toJSON();
+        expect(commentsJson).toEqual([
+          {
+            id: comment.id,
+            content: 'Nice post!',
+          },
+        ]);
+      });
+    });
+  });
 });
