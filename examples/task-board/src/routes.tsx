@@ -3,6 +3,9 @@ import type { RouteObject } from 'react-router';
 import Login, { action as loginAction } from './features/auth/Login';
 import AppLayout, { loader as appLayoutLoader } from './features/app-layout/AppLayout';
 import Dashboard, { loader as dashboardLoader } from './features/dashboard/Dashboard';
+import TaskDetails, {
+  loader as taskDetailsLoader,
+} from './features/task-details/TaskDetails';
 import ErrorBoundary from './shared/components/ErrorBoundary';
 
 /**
@@ -35,6 +38,17 @@ export const routes: RouteObject[] = [
         handle: {
           title: 'Dashboard',
         },
+        children: [
+          {
+            id: 'taskDetails',
+            path: ':id',
+            element: <TaskDetails />,
+            loader: taskDetailsLoader,
+            handle: {
+              title: 'Task Details',
+            },
+          },
+        ],
       },
       // Future routes will be added here:
       // {

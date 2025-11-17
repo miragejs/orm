@@ -12,6 +12,7 @@ export interface TaskAttrs {
   updatedAt: string;
   assigneeId: string;
   teamId: string;
+  creatorId: string;
   commentIds: string[];
 }
 

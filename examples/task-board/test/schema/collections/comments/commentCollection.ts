@@ -9,4 +9,8 @@ export const commentsCollection = collection()
     author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
     task: associations.belongsTo(taskModel),
   })
+  .serializer({
+    include: ['author'],
+    embed: true,
+  })
   .create();

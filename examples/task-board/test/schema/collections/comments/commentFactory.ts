@@ -5,10 +5,7 @@ import { commentModel } from '@test/schema/models';
 export const commentFactory = factory()
   .model(commentModel)
   .attrs({
-    content: () => faker.lorem.paragraph(),
+    content: () => faker.hacker.phrase(),
     createdAt: () => faker.date.recent().toISOString(),
-  })
-  .afterCreate((comment) => {
-    comment.update({});
   })
   .create();

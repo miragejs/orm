@@ -17,4 +17,26 @@ export const taskHandlers = [
 
     return HttpResponse.json(json);
   }),
+
+  // Get task details by ID
+  http.get<{ id: string }>('/api/tasks/:id', ({ params, cookies }) => {
+    const userId = cookies.userId;
+
+    if (!userId) {
+      return HttpResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    const task = devSchema.tasks.find(params.id);
+
+    if (!task) {
+      return HttpResponse.json({ error: 'Task not found' }, { status: 404 });
+    }
+
+    // Check if user has access to this task
+    if (task.assigneeId !== userId) {
+      return HttpResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    return HttpResponse.json(task.toJSON());
+  }),
 ];

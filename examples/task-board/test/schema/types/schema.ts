@@ -31,7 +31,7 @@ export type AppCollections = {
       manager: BelongsTo<UserModel, 'managerId'>;
     },
     Factory<TeamModel, 'withManager' | 'withMembers', AppCollections>,
-    undefined,
+    Serializer<TeamModel>,
     AppCollections
   >;
   tasks: CollectionConfig<
@@ -51,8 +51,9 @@ export type AppCollections = {
       | 'highPriority'
       | 'urgent'
       | 'overdue'
+      | 'withComments'
     >,
-    undefined,
+    Serializer<TaskModel>,
     AppCollections
   >;
   comments: CollectionConfig<

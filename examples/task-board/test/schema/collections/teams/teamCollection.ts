@@ -7,16 +7,20 @@ export const teamsCollection = collection<AppCollections>()
   .model(teamModel)
   .factory(teamFactory)
   .relationships({
-    members: associations.hasMany(userModel, { foreignKey: 'memberIds' }),
     manager: associations.belongsTo(userModel, { foreignKey: 'managerId' }),
+    members: associations.hasMany(userModel, { foreignKey: 'memberIds' }),
+  })
+  .serializer({
+    include: ['members', 'manager'],
+    embed: true,
   })
   .seeds({
     default: (schema) => {
       // Create testing team
       schema.teams.create({
-        name: 'DevX',
         department: 'Engineering',
         description: 'Cross-functional development team building innovative solutions',
+        name: 'DevX',
       });
     },
   })
