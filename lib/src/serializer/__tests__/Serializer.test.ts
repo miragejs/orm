@@ -18,6 +18,12 @@ type PostAttrs = {
   content: string;
   authorId: string;
 };
+type CommentAttrs = {
+  id: string;
+  content: string;
+  postId: string;
+  userId: string;
+};
 
 // Create test models
 const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
@@ -379,7 +385,7 @@ describe('Serializer', () => {
 
   describe('Relationships serialization', () => {
     describe('belongsTo relationships', () => {
-      it('should side-load belongsTo with embed:false (default)', () => {
+      it('should include foreign key only with include (default embed=undefined)', () => {
         const testSchema = schema()
           .collections({
             users: collection().model(userModel).create(),
@@ -391,7 +397,7 @@ describe('Serializer', () => {
                   collectionName: 'authors',
                 }),
               })
-              .serializer({ include: ['author'] }) // embed defaults to false, root auto-enabled
+              .serializer({ include: ['author'] }) // embed defaults to undefined
               .create(),
           })
           .setup();
@@ -404,28 +410,64 @@ describe('Serializer', () => {
         const post = testSchema.posts.create({
           title: 'Hello World',
           content: 'My first post',
-          authorId: user.id,
+          author: user,
         });
 
-        post.link('author', user);
+        // Default behavior: only include foreign key, no relationship data
         const json = post.toJSON();
+        expect(json).toEqual({
+          id: post.id,
+          title: 'Hello World',
+          content: 'My first post',
+          authorId: user.id,
+        });
+      });
 
-        // Side-loading: auto-enables root, keeps foreign key, adds relationship as array with custom collectionName
+      it('should side-load belongsTo with embed:false', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection().model(userModel).create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                  collectionName: 'authors',
+                }),
+              })
+              .serializer({ include: ['author'], embed: false }) // explicitly set embed=false
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Alice',
+          email: 'alice@example.com',
+          password: 'secret',
+        });
+        const post = testSchema.posts.create({
+          title: 'Hello World',
+          content: 'My first post',
+          author: user,
+        });
+
+        // Side-loading: auto-enables root, keeps foreign key, side-loads relationship at top level
+        const json = post.toJSON();
         expect(json).toEqual({
           post: {
             id: post.id,
             title: 'Hello World',
             content: 'My first post',
             authorId: user.id,
-            authors: [
-              {
-                id: user.id,
-                name: 'Alice',
-                email: 'alice@example.com',
-                password: 'secret',
-              },
-            ],
           },
+          authors: [
+            {
+              id: user.id,
+              name: 'Alice',
+              email: 'alice@example.com',
+              password: 'secret',
+            },
+          ],
         });
       });
 
@@ -452,13 +494,11 @@ describe('Serializer', () => {
         const post = testSchema.posts.create({
           title: 'Test Post',
           content: 'Content here',
-          authorId: user.id,
+          author: user,
         });
 
-        post.link('author', user);
-        const json = post.toJSON();
-
         // Embedding: remove foreign key, replace with full author model
+        const json = post.toJSON();
         expect(json).toEqual({
           id: post.id,
           title: 'Test Post',
@@ -507,7 +547,7 @@ describe('Serializer', () => {
     });
 
     describe('hasMany relationships', () => {
-      it('should side-load hasMany with embed:false (default)', () => {
+      it('should include foreign keys only with include (default embed=undefined)', () => {
         const testSchema = schema()
           .collections({
             users: collection()
@@ -515,7 +555,7 @@ describe('Serializer', () => {
               .relationships({
                 posts: associations.hasMany(postModel), // Uses default: postIds
               })
-              .serializer({ include: ['posts'] }) // embed defaults to false, root auto-enabled
+              .serializer({ include: ['posts'] }) // embed defaults to undefined
               .create(),
             posts: collection()
               .model(postModel)
@@ -542,10 +582,58 @@ describe('Serializer', () => {
           authorId: user.id,
         });
 
-        user.link('posts', [post1, post2]);
+        user.reload(); // Reload to get updated postIds
         const json = user.toJSON();
 
-        // Side-loading: auto-enables root, keeps foreign key, adds full posts array
+        // Default behavior: only include foreign keys, no relationship data
+        expect(json).toEqual({
+          id: user.id,
+          name: 'Charlie',
+          email: 'charlie@example.com',
+          password: 'secret',
+          postIds: [post1.id, post2.id],
+        });
+      });
+
+      it('should side-load hasMany with embed:false', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .relationships({
+                posts: associations.hasMany(postModel), // Uses default: postIds
+              })
+              .serializer({ include: ['posts'], embed: false }) // explicitly set embed=false
+              .create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+              })
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Charlie',
+          email: 'charlie@example.com',
+          password: 'secret',
+        });
+        const post1 = testSchema.posts.create({
+          title: 'Post 1',
+          content: 'Content 1',
+          authorId: user.id,
+        });
+        const post2 = testSchema.posts.create({
+          title: 'Post 2',
+          content: 'Content 2',
+          authorId: user.id,
+        });
+
+        user.reload(); // Reload to get updated postIds
+        const json = user.toJSON();
+
+        // Side-loading: auto-enables root, keeps foreign key, side-loads posts at top level
         expect(json).toEqual({
           user: {
             id: user.id,
@@ -553,21 +641,21 @@ describe('Serializer', () => {
             email: 'charlie@example.com',
             password: 'secret',
             postIds: [post1.id, post2.id],
-            posts: [
-              {
-                id: post1.id,
-                title: 'Post 1',
-                content: 'Content 1',
-                authorId: user.id,
-              },
-              {
-                id: post2.id,
-                title: 'Post 2',
-                content: 'Content 2',
-                authorId: user.id,
-              },
-            ],
           },
+          posts: [
+            {
+              id: post1.id,
+              title: 'Post 1',
+              content: 'Content 1',
+              authorId: user.id,
+            },
+            {
+              id: post2.id,
+              title: 'Post 2',
+              content: 'Content 2',
+              authorId: user.id,
+            },
+          ],
         });
       });
 
@@ -606,7 +694,7 @@ describe('Serializer', () => {
           authorId: user.id,
         });
 
-        user.link('posts', [post1, post2]);
+        user.reload(); // Reload to get updated postIds
         const json = user.toJSON();
 
         // Embedding: remove foreign key, replace with full posts array
@@ -704,7 +792,7 @@ describe('Serializer', () => {
           authorId: user.id,
         });
 
-        user.link('posts', [post]);
+        user.reload(); // Reload to get updated postIds
         const json = user.toJSON();
 
         // Only id and name attributes, but posts relationship is included
@@ -747,7 +835,6 @@ describe('Serializer', () => {
           authorId: user.id,
         });
 
-        post.link('author', user);
         const json = post.toJSON();
 
         // Root wrapping with embedding: remove foreign key, embed author
@@ -797,7 +884,7 @@ describe('Serializer', () => {
           authorId: user.id,
         });
 
-        user.link('posts', [post]);
+        user.reload(); // Reload to get updated postIds
         const json = user.toJSON();
 
         // Should embed because of global setting (remove foreign key)
@@ -849,7 +936,7 @@ describe('Serializer', () => {
           authorId: user.id,
         });
 
-        user.link('posts', [post]);
+        user.reload(); // Reload to get updated postIds
         const json = user.toJSON();
 
         // Should side-load with root because collection-level overrides global and embed=false auto-enables root
@@ -860,15 +947,15 @@ describe('Serializer', () => {
             email: 'ivy@example.com',
             password: 'secret',
             postIds: [post.id],
-            posts: [
-              {
-                id: post.id,
-                title: 'Override Test',
-                content: 'Content',
-                authorId: user.id,
-              },
-            ],
           },
+          posts: [
+            {
+              id: post.id,
+              title: 'Override Test',
+              content: 'Content',
+              authorId: user.id,
+            },
+          ],
         });
       });
     });
@@ -914,9 +1001,6 @@ describe('Serializer', () => {
           authorId: user2.id,
         });
 
-        user1.link('posts', [post1]);
-        user2.link('posts', [post2]);
-
         const allUsers = testSchema.users.all();
         const json = allUsers.toJSON();
 
@@ -957,7 +1041,7 @@ describe('Serializer', () => {
               .relationships({
                 posts: associations.hasMany(postModel),
               })
-              .serializer({ attrs: ['id', 'name'], include: ['posts'] }) // embed defaults to false
+              .serializer({ attrs: ['id', 'name'], include: ['posts'], embed: false }) // explicitly set embed=false
               .create(),
             posts: collection()
               .model(postModel)
@@ -979,12 +1063,10 @@ describe('Serializer', () => {
           authorId: user.id,
         });
 
-        user.link('posts', [post]);
-
         const allUsers = testSchema.users.all();
         const json = allUsers.toJSON();
 
-        // Side-loading with root: relationships are included within each model
+        // Side-loading with root: relationships are side-loaded within each model
         // Foreign keys are preserved when embed=false
         // Note: postIds is excluded because attrs only includes ['id', 'name']
         expect(json).toEqual({
@@ -1035,7 +1117,7 @@ describe('Serializer', () => {
       expect((json as any).user).toHaveProperty('id', user.id);
     });
 
-    it('should auto-enable root when include is specified without embed (defaults to false)', () => {
+    it('should NOT auto-enable root when include is specified without embed (defaults to undefined)', () => {
       const testSchema = schema()
         .collections({
           users: collection()
@@ -1043,7 +1125,7 @@ describe('Serializer', () => {
             .relationships({
               posts: associations.hasMany(postModel),
             })
-            .serializer({ include: ['posts'] }) // embed defaults to false, root auto-enabled
+            .serializer({ include: ['posts'] }) // embed defaults to undefined, root NOT auto-enabled
             .create(),
           posts: collection().model(postModel).create(),
         })
@@ -1057,9 +1139,10 @@ describe('Serializer', () => {
 
       const json = user.toJSON();
 
-      // Should have root wrapping enabled automatically
-      expect(json).toHaveProperty('user');
-      expect((json as any).user).toHaveProperty('id', user.id);
+      // Should NOT have root wrapping (only includes foreign keys)
+      expect(json).not.toHaveProperty('user');
+      expect(json).toHaveProperty('id', user.id);
+      expect(json).toHaveProperty('postIds');
     });
 
     it('should warn and ignore root=false when embed=false', () => {
@@ -1163,9 +1246,14 @@ describe('Serializer', () => {
               .relationships({
                 posts: associations.hasMany(postModel),
               })
-              .serializer({}) // No include specified - defaults to []
+              .serializer({ include: [] })
               .create(),
-            posts: collection().model(postModel).create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+              })
+              .create(),
           })
           .setup();
 
@@ -1174,13 +1262,12 @@ describe('Serializer', () => {
           email: 'alice@example.com',
           password: 'secret',
         });
-        const post = testSchema.posts.create({
+        const _post = testSchema.posts.create({
           title: 'Post 1',
           content: 'Content',
           authorId: user.id,
         });
 
-        user.link('posts', [post]);
         const json = user.toJSON();
 
         // Should only include attrs, no foreign keys, no relationships
@@ -1213,13 +1300,12 @@ describe('Serializer', () => {
           email: 'bob@example.com',
           password: 'secret',
         });
-        const post = testSchema.posts.create({
+        const _post = testSchema.posts.create({
           title: 'Post 1',
           content: 'Content',
           authorId: user.id,
         });
 
-        user.link('posts', [post]);
         const json = user.toJSON();
 
         // Should only include attrs, no foreign keys, no relationships
@@ -1270,10 +1356,10 @@ describe('Serializer', () => {
           authorId: user.id,
         });
 
-        user.link('posts', [post1, post2]);
+        user.reload(); // Reload to get updated postIds
         const json = user.toJSON();
 
-        // Should include attrs with foreign keys AND side-loaded relationships (with root)
+        // Should include attrs with foreign keys AND side-loaded relationships at top level (with root)
         expect(json).toMatchObject({
           user: {
             id: user.id,
@@ -1281,22 +1367,22 @@ describe('Serializer', () => {
             email: 'charlie@example.com',
             password: 'secret',
             postIds: [post1.id, post2.id], // Foreign keys preserved
-            posts: [
-              // Relationships side-loaded
-              {
-                id: post1.id,
-                title: 'Post 1',
-                content: 'Content 1',
-                authorId: user.id,
-              },
-              {
-                id: post2.id,
-                title: 'Post 2',
-                content: 'Content 2',
-                authorId: user.id,
-              },
-            ],
           },
+          posts: [
+            // Relationships side-loaded at top level
+            {
+              id: post1.id,
+              title: 'Post 1',
+              content: 'Content 1',
+              authorId: user.id,
+            },
+            {
+              id: post2.id,
+              title: 'Post 2',
+              content: 'Content 2',
+              authorId: user.id,
+            },
+          ],
         });
       });
 
@@ -1328,26 +1414,25 @@ describe('Serializer', () => {
           authorId: user.id,
         });
 
-        post.link('author', user);
         const json = post.toJSON();
 
-        // Should include attrs with foreign key AND side-loaded relationship as array with custom collectionName (with root)
+        // Should include attrs with foreign key AND side-loaded relationship as array at top level with custom collectionName (with root)
         expect(json).toEqual({
           post: {
             id: post.id,
             title: 'My Post',
             content: 'Content',
             authorId: user.id, // Foreign key preserved
-            authors: [
-              {
-                // Relationship side-loaded as array using custom collectionName
-                id: user.id,
-                name: 'Diana',
-                email: 'diana@example.com',
-                password: 'secret',
-              },
-            ],
           },
+          authors: [
+            {
+              // Relationship side-loaded at top level using custom collectionName
+              id: user.id,
+              name: 'Diana',
+              email: 'diana@example.com',
+              password: 'secret',
+            },
+          ],
         });
       });
     });
@@ -1388,7 +1473,7 @@ describe('Serializer', () => {
           authorId: user.id,
         });
 
-        user.link('posts', [post1, post2]);
+        user.reload(); // Reload to get updated postIds
         const json = user.toJSON();
 
         // Should include attrs with embedded relationships but NO foreign keys
@@ -1441,7 +1526,6 @@ describe('Serializer', () => {
           authorId: user.id,
         });
 
-        post.link('author', user);
         const json = post.toJSON();
 
         // Should include attrs with embedded relationship but NO foreign key
@@ -1458,6 +1542,179 @@ describe('Serializer', () => {
           },
         });
         expect(json).not.toHaveProperty('authorId'); // Foreign key removed
+      });
+    });
+
+    describe('Include option filtering', () => {
+      it('should only include specified relationships with embed=undefined (default)', () => {
+        const commentModel = model()
+          .name('comment')
+          .collection('comments')
+          .attrs<CommentAttrs>()
+          .create();
+
+        const testSchema = schema()
+          .collections({
+            users: collection().model(userModel).create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                comments: associations.hasMany(commentModel),
+              })
+              .serializer({ include: ['author'] }) // Only include author, not comments
+              .create(),
+            comments: collection().model(commentModel).create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Emily',
+          email: 'emily@example.com',
+          password: 'secret',
+        });
+        const comment = testSchema.comments.create({
+          content: 'Comment',
+          userId: user.id,
+        });
+        const post = testSchema.posts.create({
+          title: 'Post',
+          content: 'Content',
+          author: user,
+          comments: [comment],
+        });
+
+        const json = post.toJSON();
+
+        // Default mode (embed=undefined): Only foreign keys for included relationships
+        // Should include ONLY authorId (not commentIds, since comments is not in include array)
+        expect(json).toEqual({
+          id: post.id,
+          title: 'Post',
+          content: 'Content',
+          authorId: user.id,
+          // commentIds is NOT included because 'comments' is not in the include array
+        });
+        expect(json).not.toHaveProperty('commentIds'); // Foreign key excluded
+        expect(json).not.toHaveProperty('author'); // No relationship data
+        expect(json).not.toHaveProperty('authors'); // No relationship data
+        expect(json).not.toHaveProperty('comments'); // No relationship data
+      });
+
+      it('should only side-load specified relationships with embed=false', () => {
+        const commentModel = model()
+          .name('comment')
+          .collection('comments')
+          .attrs<CommentAttrs>()
+          .create();
+
+        const testSchema = schema()
+          .collections({
+            users: collection().model(userModel).create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                  collectionName: 'authors',
+                }),
+                comments: associations.hasMany(commentModel),
+              })
+              .serializer({ include: ['author'], embed: false }) // Only side-load author
+              .create(),
+            comments: collection().model(commentModel).create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Frank',
+          email: 'frank@example.com',
+          password: 'secret',
+        });
+        const comment = testSchema.comments.create({
+          content: 'Comment',
+          userId: user.id,
+        });
+        const post = testSchema.posts.create({
+          title: 'Post',
+          content: 'Content',
+          author: user,
+          comments: [comment],
+        });
+
+        const json = post.toJSON();
+
+        // Should side-load ONLY author at top level, not comments
+        expect(json).toMatchObject({
+          post: {
+            id: post.id,
+            title: 'Post',
+            content: 'Content',
+            authorId: user.id,
+            commentIds: [comment.id], // Foreign key preserved for non-included relationship
+          },
+          authors: [expect.objectContaining({ id: user.id })], // Side-loaded
+        });
+        expect(json).not.toHaveProperty('comments'); // NOT side-loaded (not in include)
+      });
+
+      it('should only embed specified relationships with embed=true', () => {
+        const commentModel = model()
+          .name('comment')
+          .collection('comments')
+          .attrs<CommentAttrs>()
+          .create();
+
+        const testSchema = schema()
+          .collections({
+            users: collection().model(userModel).create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                comments: associations.hasMany(commentModel),
+              })
+              .serializer({ include: ['comments'], embed: true }) // Only embed comments
+              .create(),
+            comments: collection().model(commentModel).create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Grace',
+          email: 'grace@example.com',
+          password: 'secret',
+        });
+        const comment = testSchema.comments.create({
+          content: 'Nice!',
+          userId: user.id,
+        });
+        const post = testSchema.posts.create({
+          title: 'Post',
+          content: 'Content',
+          author: user,
+          comments: [comment],
+        });
+
+        const json = post.toJSON();
+
+        // Should embed ONLY comments, not author
+        expect(json).toMatchObject({
+          id: post.id,
+          title: 'Post',
+          content: 'Content',
+          comments: [
+            // Embedded (in include)
+            {
+              id: comment.id,
+              content: 'Nice!',
+              userId: user.id,
+            },
+          ],
+        });
+        expect(json).not.toHaveProperty('authorId'); // FK removed (author not in include)
+        expect(json).not.toHaveProperty('commentIds'); // FK removed for embedded relationship
+        expect(json).not.toHaveProperty('author'); // NOT embedded (not in include)
       });
     });
 
@@ -1504,32 +1761,29 @@ describe('Serializer', () => {
           email: 'grace@example.com',
           password: 'secret',
         });
+        const comment = testSchema.comments.create({
+          content: 'Nice post!',
+          userId: user.id,
+        });
         const post = testSchema.posts.create({
           title: 'Post',
           content: 'Content',
-          authorId: user.id,
+          author: user,
+          comments: [comment],
         });
-        const comment = testSchema.comments.create({
-          content: 'Nice post!',
-          postId: post.id,
-          userId: user.id,
-        });
-
-        post.link('author', user);
-        post.link('comments', [comment]);
 
         const json = post.toJSON();
 
-        // Should include all foreign keys and all side-loaded relationships as arrays (with root)
+        // Should include all foreign keys and all side-loaded relationships at top level (with root)
         expect(json).toMatchObject({
           post: {
             id: post.id,
             title: 'Post',
             content: 'Content',
             authorId: user.id, // FK preserved
-            authors: [expect.objectContaining({ id: user.id })], // Side-loaded as array with custom collectionName
-            comments: [expect.objectContaining({ id: comment.id })], // Side-loaded as array with default collectionName
           },
+          authors: [expect.objectContaining({ id: user.id })], // Side-loaded at top level with custom collectionName
+          comments: [expect.objectContaining({ id: comment.id })], // Side-loaded at top level with default collectionName
         });
         expect((json as any).post).toHaveProperty('commentIds'); // FK array preserved
       });
