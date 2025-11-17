@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Example project using miragejs-orm",
   "scripts": {
+    "reinstall": "rm -rf node_modules && pnpm install",
     "start": "vite",
     "check:format": "prettier --check \"src/**/*.{ts,tsx}\" \"test/**/*.{ts,tsx}\"",
     "check:lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
