@@ -90,7 +90,7 @@ export type {
 // ----------------------------------------------------------------------------
 // Factory Builder
 // ----------------------------------------------------------------------------
-export { factory, resolveFactoryAttr } from './factory';
+export { factory } from './factory';
 export type {
   Factory,
   FactoryAfterCreateHook,
@@ -137,7 +137,6 @@ export type {
   Collection,
   CollectionConfig,
   CollectionCreateAttrs,
-  CollectionInstance,
   FixtureAttrs,
   FixtureConfig,
   FixtureLoadStrategy,
@@ -161,5 +160,5 @@ export type {
 // ----------------------------------------------------------------------------
 // Logger
 // ----------------------------------------------------------------------------
-export { Logger, LogLevel } from './utils';
+export { Logger, LogLevel, resolveFactoryAttr } from './utils';
 export type { LoggerConfig } from './utils';
