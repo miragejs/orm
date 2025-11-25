@@ -6,8 +6,8 @@
  */
 
 import { model, ModelInstance } from '@src/model';
-import type { CollectionConfig } from '@src/schema';
-import type { SchemaInstance } from '@src/schema/Schema';
+import type { CollectionConfig, SchemaInstance } from '@src/schema';
+import { resolveFactoryAttr } from '@src/utils';
 import { expectTypeOf, test } from 'vitest';
 
 import type {
@@ -18,7 +18,6 @@ import type {
   TraitDefinition,
   TraitName,
 } from '../types';
-import { resolveFactoryAttr } from '../utils';
 
 // Test model attributes
 interface UserAttrs {

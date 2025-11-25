@@ -159,7 +159,7 @@ describe('Schema with Logging', () => {
       );
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        '[Mirage] DEBUG: Created user with factory',
+        '[Mirage] DEBUG: Created user',
         expect.objectContaining({
           collection: 'users',
         }),

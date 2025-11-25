@@ -46,41 +46,6 @@ type PostModel = typeof postModel;
 type CommentModel = typeof commentModel;
 type TagModel = typeof tagModel;
 
-// Define test schema type
-type TestSchema = {
-  users: CollectionConfig<UserModel, {}, Factory<UserModel, 'admin' | 'verified'>>;
-  posts: CollectionConfig<
-    PostModel,
-    {
-      author: BelongsTo<UserModel, 'authorId'>;
-      comments: HasMany<CommentModel>;
-      tags: HasMany<TagModel>;
-    },
-    Factory<PostModel, 'published'>
-  >;
-  comments: CollectionConfig<
-    CommentModel,
-    {
-      post: BelongsTo<PostModel, 'postId'>;
-      user: BelongsTo<UserModel, 'userId'>;
-    },
-    Factory<CommentModel, 'approved'>
-  >;
-  tags: CollectionConfig<TagModel, {}, Factory<TagModel, 'active' | 'featured'>>;
-};
-
-// Setup test relationships
-const postRelationships = {
-  author: belongsTo(userModel, { foreignKey: 'authorId' }),
-  comments: hasMany(commentModel),
-  tags: hasMany(tagModel),
-};
-
-const commentRelationships = {
-  post: belongsTo(postModel),
-  user: belongsTo(userModel),
-};
-
 // Create test factories
 const userFactory = factory()
   .model(userModel)
@@ -115,6 +80,29 @@ const tagFactory = factory()
   })
   .create();
 
+// Define test schema type
+type TestSchema = {
+  users: CollectionConfig<UserModel, {}, Factory<UserModel, 'admin' | 'verified'>>;
+  posts: CollectionConfig<
+    PostModel,
+    {
+      author: BelongsTo<UserModel, 'authorId'>;
+      comments: HasMany<CommentModel>;
+      tags: HasMany<TagModel>;
+    },
+    Factory<PostModel, 'published'>
+  >;
+  comments: CollectionConfig<
+    CommentModel,
+    {
+      post: BelongsTo<PostModel, 'postId'>;
+      user: BelongsTo<UserModel, 'userId'>;
+    },
+    Factory<CommentModel, 'approved'>
+  >;
+  tags: CollectionConfig<TagModel, {}, Factory<TagModel, 'active' | 'featured'>>;
+};
+
 describe('Factory associations', () => {
   describe('create()', () => {
     it('should create one new related model', () => {
@@ -125,7 +113,7 @@ describe('Factory associations', () => {
           content: 'Content',
         })
         .associations({
-          author: associations.create(userModel, 'admin'),
+          author: associations.create(userModel),
         })
         .create();
 
@@ -135,14 +123,12 @@ describe('Factory associations', () => {
           posts: collection()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
+            .relationships({
+              author: associations.belongsTo(userModel, {
+                foreignKey: 'authorId',
+              }),
+            })
             .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
-            .create(),
-          tags: collection().model(tagModel).factory(tagFactory).create(),
         })
         .setup();
 
@@ -171,14 +157,12 @@ describe('Factory associations', () => {
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
+            .relationships({
+              author: associations.belongsTo(userModel, {
+                foreignKey: 'authorId',
+              }),
+            })
             .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
-            .create(),
-          tags: collection().model(tagModel).factory(tagFactory).create(),
         })
         .setup();
 
@@ -204,14 +188,12 @@ describe('Factory associations', () => {
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
+            .relationships({
+              author: associations.belongsTo(userModel, {
+                foreignKey: 'authorId',
+              }),
+            })
             .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
-            .create(),
-          tags: collection().model(tagModel).factory(tagFactory).create(),
         })
         .setup();
 
@@ -239,14 +221,12 @@ describe('Factory associations', () => {
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
+            .relationships({
+              author: associations.belongsTo(userModel, {
+                foreignKey: 'authorId',
+              }),
+            })
             .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
-            .create(),
-          tags: collection().model(tagModel).factory(tagFactory).create(),
         })
         .setup();
 
@@ -272,18 +252,14 @@ describe('Factory associations', () => {
 
       const testSchema = schema()
         .collections({
-          users: collection().model(userModel).factory(userFactory).create(),
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
+            .relationships({
+              comments: hasMany(commentModel),
+            })
             .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
-            .create(),
-          tags: collection().model(tagModel).factory(tagFactory).create(),
+          comments: collection().model(commentModel).factory(commentFactory).create(),
         })
         .setup();
 
@@ -309,18 +285,14 @@ describe('Factory associations', () => {
 
       const testSchema = schema()
         .collections({
-          users: collection().model(userModel).factory(userFactory).create(),
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
+            .relationships({
+              comments: hasMany(commentModel),
+            })
             .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
-            .create(),
-          tags: collection().model(tagModel).factory(tagFactory).create(),
+          comments: collection().model(commentModel).factory(commentFactory).create(),
         })
         .setup();
 
@@ -350,18 +322,14 @@ describe('Factory associations', () => {
 
       const testSchema = schema()
         .collections({
-          users: collection().model(userModel).factory(userFactory).create(),
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
+            .relationships({
+              comments: hasMany(commentModel),
+            })
             .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
-            .create(),
-          tags: collection().model(tagModel).factory(tagFactory).create(),
+          comments: collection().model(commentModel).factory(commentFactory).create(),
         })
         .setup();
 
@@ -397,14 +365,10 @@ describe('Factory associations', () => {
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
+            .relationships({
+              author: belongsTo(userModel, { foreignKey: 'authorId' }),
+            })
             .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
-            .create(),
-          tags: collection().model(tagModel).factory(tagFactory).create(),
         })
         .setup();
 
@@ -433,14 +397,10 @@ describe('Factory associations', () => {
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
+            .relationships({
+              author: belongsTo(userModel, { foreignKey: 'authorId' }),
+            })
             .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
-            .create(),
-          tags: collection().model(tagModel).factory(tagFactory).create(),
         })
         .setup();
 
@@ -468,14 +428,10 @@ describe('Factory associations', () => {
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
+            .relationships({
+              author: belongsTo(userModel, { foreignKey: 'authorId' }),
+            })
             .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
-            .create(),
-          tags: collection().model(tagModel).factory(tagFactory).create(),
         })
         .setup();
 
@@ -508,14 +464,10 @@ describe('Factory associations', () => {
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
+            .relationships({
+              author: belongsTo(userModel, { foreignKey: 'authorId' }),
+            })
             .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
-            .create(),
-          tags: collection().model(tagModel).factory(tagFactory).create(),
         })
         .setup();
 
@@ -550,14 +502,10 @@ describe('Factory associations', () => {
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
+            .relationships({
+              author: belongsTo(userModel, { foreignKey: 'authorId' }),
+            })
             .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
-            .create(),
-          tags: collection().model(tagModel).factory(tagFactory).create(),
         })
         .setup();
 
@@ -583,16 +531,12 @@ describe('Factory associations', () => {
 
       const testSchema = schema()
         .collections({
-          users: collection().model(userModel).factory(userFactory).create(),
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
-            .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
+            .relationships({
+              tags: hasMany(tagModel),
+            })
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
@@ -622,16 +566,12 @@ describe('Factory associations', () => {
 
       const testSchema = schema()
         .collections({
-          users: collection().model(userModel).factory(userFactory).create(),
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
-            .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
+            .relationships({
+              tags: hasMany(tagModel),
+            })
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
@@ -664,16 +604,12 @@ describe('Factory associations', () => {
 
       const testSchema = schema()
         .collections({
-          users: collection().model(userModel).factory(userFactory).create(),
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
-            .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
+            .relationships({
+              tags: hasMany(tagModel),
+            })
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
@@ -707,16 +643,12 @@ describe('Factory associations', () => {
 
       const testSchema = schema()
         .collections({
-          users: collection().model(userModel).factory(userFactory).create(),
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
-            .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
+            .relationships({
+              tags: hasMany(tagModel),
+            })
             .create(),
           tags: collection().model(tagModel).factory(tagFactory).create(),
         })
@@ -761,14 +693,10 @@ describe('Factory associations', () => {
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
+            .relationships({
+              author: belongsTo(userModel, { foreignKey: 'authorId' }),
+            })
             .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
-            .create(),
-          tags: collection().model(tagModel).factory(tagFactory).create(),
         })
         .setup();
 
@@ -802,14 +730,12 @@ describe('Factory associations', () => {
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
+            .relationships({
+              author: belongsTo(userModel, { foreignKey: 'authorId' }),
+              comments: hasMany(commentModel),
+            })
             .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
-            .create(),
-          tags: collection().model(tagModel).factory(tagFactory).create(),
+          comments: collection().model(commentModel).factory(commentFactory).create(),
         })
         .setup();
 
@@ -845,14 +771,12 @@ describe('Factory associations', () => {
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
+            .relationships({
+              author: belongsTo(userModel, { foreignKey: 'authorId' }),
+              comments: hasMany(commentModel),
+            })
             .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
-            .create(),
-          tags: collection().model(tagModel).factory(tagFactory).create(),
+          comments: collection().model(commentModel).factory(commentFactory).create(),
         })
         .setup();
 
@@ -884,18 +808,14 @@ describe('Factory associations', () => {
 
       const testSchema = schema()
         .collections({
-          users: collection().model(userModel).factory(userFactory).create(),
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
+            .relationships({
+              comments: hasMany(commentModel),
+            })
             .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
-            .create(),
-          tags: collection().model(tagModel).factory(tagFactory).create(),
+          comments: collection().model(commentModel).factory(commentFactory).create(),
         })
         .setup();
 
@@ -932,14 +852,12 @@ describe('Factory associations', () => {
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
+            .relationships({
+              author: belongsTo(userModel, { foreignKey: 'authorId' }),
+              comments: hasMany(commentModel),
+            })
             .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
-            .create(),
-          tags: collection().model(tagModel).factory(tagFactory).create(),
+          comments: collection().model(commentModel).factory(commentFactory).create(),
         })
         .setup();
 
@@ -972,14 +890,10 @@ describe('Factory associations', () => {
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
+            .relationships({
+              author: belongsTo(userModel, { foreignKey: 'authorId' }),
+            })
             .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
-            .create(),
-          tags: collection().model(tagModel).factory(tagFactory).create(),
         })
         .setup();
 
@@ -1021,14 +935,10 @@ describe('Factory associations', () => {
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
+            .relationships({
+              author: belongsTo(userModel, { foreignKey: 'authorId' }),
+            })
             .create(),
-          comments: collection()
-            .model(commentModel)
-            .factory(commentFactory)
-            .relationships(commentRelationships)
-            .create(),
-          tags: collection().model(tagModel).factory(tagFactory).create(),
         })
         .setup();
 
@@ -1077,14 +987,18 @@ describe('Factory associations', () => {
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
-            .relationships(postRelationships)
+            .relationships({
+              author: belongsTo(userModel, { foreignKey: 'authorId' }),
+              comments: hasMany(commentModel),
+            })
             .create(),
           comments: collection<TestSchema>()
             .model(commentModel)
             .factory(customCommentFactory)
-            .relationships(commentRelationships)
+            .relationships({
+              user: belongsTo(userModel),
+            })
             .create(),
-          tags: collection().model(tagModel).factory(tagFactory).create(),
         })
         .setup();
 

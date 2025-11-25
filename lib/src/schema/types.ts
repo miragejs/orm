@@ -103,7 +103,7 @@ export interface SchemaConfig<
 export interface CollectionConfig<
   TTemplate extends ModelTemplate,
   TRelationships extends ModelRelationships = {},
-  TFactory extends Factory<TTemplate, any, any> | undefined = undefined,
+  TFactory extends Factory<TTemplate, any, any> = Factory<TTemplate, string, SchemaCollections>,
   TSerializer = undefined,
   TSchema extends SchemaCollections = SchemaCollections,
 > {
@@ -151,7 +151,15 @@ export type SchemaCollectionAccessors<TCollections extends SchemaCollections> = 
     infer TSerializer,
     any
   >
-    ? Collection<TCollections, TTemplate, TRelationships, TFactory, TSerializer>
+    ? Collection<
+        TCollections,
+        TTemplate,
+        TRelationships,
+        TFactory extends Factory<TTemplate, any, any>
+          ? TFactory
+          : Factory<TTemplate, string, TCollections>,
+        TSerializer
+      >
     : never;
 };
 
@@ -189,35 +197,3 @@ export type CollectionCreateAttrs<
   (Record<string, never> extends TRelationships
     ? {}
     : Partial<RelatedModelAttrs<TSchema, TRelationships>>);
-
-// ----------------------------------------------------------------------------
-// Utility Types
-// ----------------------------------------------------------------------------
-
-/**
- * Simplified Collection instance type helper that only requires the template parameter.
- * Useful for typing collection references without verbose generic parameters.
- * @template TTemplate - The model template (required)
- * @template TRelationships - The model relationships (optional, defaults to {})
- * @template TFactory - The factory type (optional, defaults to undefined)
- * @template TSerializer - The serializer type (optional, defaults to undefined)
- * @example
- * ```typescript
- * import { CollectionInstance } from '@miragejs/orm';
- *
- * // Simple usage
- * const usersCollection: CollectionInstance<typeof userModel> = schema.users;
- *
- * // With relationships
- * const usersCollection: CollectionInstance<
- *   typeof userModel,
- *   { posts: HasMany<typeof postModel> }
- * > = schema.users;
- * ```
- */
-export type CollectionInstance<
-  TTemplate extends ModelTemplate,
-  TRelationships extends ModelRelationships = {},
-  TFactory extends Factory<TTemplate, any, SchemaCollections> | undefined = undefined,
-  TSerializer = undefined,
-> = Collection<SchemaCollections, TTemplate, TRelationships, TFactory, TSerializer>;

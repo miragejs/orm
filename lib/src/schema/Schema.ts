@@ -1,4 +1,5 @@
 import { createDatabase, type DbInstance } from '@src/db';
+import { Factory } from '@src/factory';
 import { StringIdentityManager } from '@src/id-manager';
 import type { ModelTemplate } from '@src/model';
 import {
@@ -64,7 +65,15 @@ export default class Schema<
     infer TSerializer,
     any
   >
-    ? Collection<TCollections, TTemplate, TRelationships, TFactory, TSerializer>
+    ? Collection<
+        TCollections,
+        TTemplate,
+        TRelationships,
+        TFactory extends Factory<TTemplate, any, any>
+          ? TFactory
+          : Factory<TTemplate, string, TCollections>,
+        TSerializer
+      >
     : never {
     const collection = this._collections.get(collectionName as string);
     if (!collection) {

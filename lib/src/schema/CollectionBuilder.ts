@@ -40,7 +40,7 @@ export default class CollectionBuilder<
   TTemplate extends ModelTemplate = ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
   TRelationships extends ModelRelationships = {},
-  TFactory extends Factory<any, any, any> | undefined = undefined,
+  TFactory extends Factory<TTemplate, any, any> = Factory<TTemplate, string, SchemaCollections>,
   TIdentityManager extends IdentityManager = StringIdentityManager,
   TSerializer = undefined,
 > {
@@ -516,12 +516,19 @@ export default class CollectionBuilder<
  */
 export function collection<
   TSchema extends SchemaCollections = SchemaCollections,
->(): CollectionBuilder<ModelTemplate, TSchema, {}, undefined, StringIdentityManager, undefined> {
+>(): CollectionBuilder<
+  ModelTemplate,
+  TSchema,
+  {},
+  Factory<ModelTemplate, string, SchemaCollections>,
+  StringIdentityManager,
+  undefined
+> {
   return new CollectionBuilder<
     ModelTemplate,
     TSchema,
     {},
-    undefined,
+    Factory<ModelTemplate, string, SchemaCollections>,
     StringIdentityManager,
     undefined
   >();
