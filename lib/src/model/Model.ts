@@ -53,7 +53,7 @@ export default class Model<
     ) as unknown as DbCollection<ModelAttrs<TTemplate, TSchema>>;
 
     // Process attributes to separate relationship model instances from regular attributes
-    const { modelAttrs, relationshipUpdates } = Model._processAttrs<TTemplate, TSchema>(
+    const { modelAttrs, relationshipUpdates } = Model.processAttrs<TTemplate, TSchema>(
       attrs,
       relationships,
     );
@@ -116,6 +116,70 @@ export default class Model<
     } as unknown as ModelClass<TTemplate, TSchema, TSerializer>;
   }
 
+  /**
+   * Process constructor/update attributes before model initialization
+   * Separates relationship model instances from regular attributes and extracts foreign keys
+   * @param attrs - The attributes to process (can include both regular attrs and relationship instances)
+   * @param relationships - The relationships configuration (optional)
+   * @returns Object containing:
+   *   - modelAttrs: Regular attributes and foreign keys ready for the database
+   *   - relationshipUpdates: Relationship model instances to be linked after save
+   * @example
+   * // Input: { title: 'Post', author: authorModelInstance }
+   * // Output: {
+   * //   modelAttrs: { title: 'Post', authorId: '1' },
+   * //   relationshipUpdates: { author: authorModelInstance }
+   * // }
+   */
+  static processAttrs<
+    TTemplate extends ModelTemplate,
+    TSchema extends SchemaCollections,
+    TRelationships extends ModelRelationships = RelationshipsByTemplate<TTemplate, TSchema>,
+  >(
+    attrs:
+      | ModelCreateAttrs<TTemplate, TSchema, TRelationships>
+      | ModelUpdateAttrs<TTemplate, TSchema, TRelationships>
+      | Partial<ModelCreateAttrs<TTemplate, TSchema, TRelationships>>
+      | Record<string, unknown>,
+    relationships?: TRelationships,
+  ): {
+    modelAttrs:
+      | NewModelAttrs<ModelAttrs<TTemplate, TSchema>>
+      | Partial<ModelAttrs<TTemplate, TSchema>>;
+    relationshipUpdates: Partial<RelatedModelAttrs<TSchema, TRelationships>>;
+  } {
+    // Early return if no relationships are defined
+    if (!relationships) {
+      return {
+        modelAttrs: attrs as
+          | NewModelAttrs<ModelAttrs<TTemplate, TSchema>>
+          | Partial<ModelAttrs<TTemplate, TSchema>>,
+        relationshipUpdates: {},
+      };
+    }
+
+    // Step 1: Separate regular attributes, relationship values, and extracted foreign keys
+    // (default FK values are also initialized here)
+    const { regularAttrs, relationshipValues, foreignKeys } = Model._separateAttrs<
+      TTemplate,
+      TSchema,
+      TRelationships
+    >(attrs as Record<string, unknown>, relationships);
+
+    // Step 2: Combine foreign keys (defaults) with regular attributes
+    // regularAttrs comes second to allow explicit FK values to override defaults
+    const modelAttrs = { ...foreignKeys, ...regularAttrs };
+
+    return {
+      modelAttrs: modelAttrs as
+        | NewModelAttrs<ModelAttrs<TTemplate, TSchema>>
+        | Partial<ModelAttrs<TTemplate, TSchema>>,
+      relationshipUpdates: relationshipValues as Partial<
+        RelatedModelAttrs<TSchema, TRelationships>
+      >,
+    };
+  }
+
   // -- CRUD METHODS --
 
   /**
@@ -123,7 +187,7 @@ export default class Model<
    * @returns The model with saved instance type
    */
   save(): this & ModelInstance<TTemplate, TSchema, TSerializer> {
-    // Save the model (FK changes are in _attrs from _processAttrs or link/unlink)
+    // Save the model (FK changes are in _attrs from processAttrs or link/unlink)
     super.save();
 
     // Update inverse relationships on other models (now that this model is saved)
@@ -143,7 +207,7 @@ export default class Model<
     attrs: ModelUpdateAttrs<TTemplate, TSchema>,
   ): this & ModelInstance<TTemplate, TSchema, TSerializer> {
     // Process attributes to separate relationship model instances from regular attributes
-    const { modelAttrs, relationshipUpdates } = Model._processAttrs<TTemplate, TSchema>(
+    const { modelAttrs, relationshipUpdates } = Model.processAttrs<TTemplate, TSchema>(
       attrs,
       this.relationships,
     );
@@ -153,8 +217,12 @@ export default class Model<
       this._relationshipsManager.setPendingRelationshipUpdates(relationshipUpdates);
     }
 
-    return super.update(modelAttrs as Partial<ModelAttrs<TTemplate, TSchema>>) as this &
+    const model = super.update(modelAttrs as Partial<ModelAttrs<TTemplate, TSchema>>) as this &
       ModelInstance<TTemplate, TSchema, TSerializer>;
+
+    this._initAttributeAccessors();
+
+    return model;
   }
 
   /**
@@ -338,70 +406,6 @@ export default class Model<
     }
 
     return { regularAttrs, relationshipValues, foreignKeys };
-  }
-
-  /**
-   * Process constructor/update attributes before model initialization
-   * Separates relationship model instances from regular attributes and extracts foreign keys
-   * @param attrs - The attributes to process (can include both regular attrs and relationship instances)
-   * @param relationships - The relationships configuration (optional)
-   * @returns Object containing:
-   *   - modelAttrs: Regular attributes and foreign keys ready for the database
-   *   - relationshipUpdates: Relationship model instances to be linked after save
-   * @example
-   * // Input: { title: 'Post', author: authorModelInstance }
-   * // Output: {
-   * //   modelAttrs: { title: 'Post', authorId: '1' },
-   * //   relationshipUpdates: { author: authorModelInstance }
-   * // }
-   */
-  static _processAttrs<
-    TTemplate extends ModelTemplate,
-    TSchema extends SchemaCollections,
-    TRelationships extends ModelRelationships = RelationshipsByTemplate<TTemplate, TSchema>,
-  >(
-    attrs:
-      | ModelCreateAttrs<TTemplate, TSchema, TRelationships>
-      | ModelUpdateAttrs<TTemplate, TSchema, TRelationships>
-      | Partial<ModelCreateAttrs<TTemplate, TSchema, TRelationships>>
-      | Record<string, unknown>,
-    relationships?: TRelationships,
-  ): {
-    modelAttrs:
-      | NewModelAttrs<ModelAttrs<TTemplate, TSchema>>
-      | Partial<ModelAttrs<TTemplate, TSchema>>;
-    relationshipUpdates: Partial<RelatedModelAttrs<TSchema, TRelationships>>;
-  } {
-    // Early return if no relationships are defined
-    if (!relationships) {
-      return {
-        modelAttrs: attrs as
-          | NewModelAttrs<ModelAttrs<TTemplate, TSchema>>
-          | Partial<ModelAttrs<TTemplate, TSchema>>,
-        relationshipUpdates: {},
-      };
-    }
-
-    // Step 1: Separate regular attributes, relationship values, and extracted foreign keys
-    // (default FK values are also initialized here)
-    const { regularAttrs, relationshipValues, foreignKeys } = Model._separateAttrs<
-      TTemplate,
-      TSchema,
-      TRelationships
-    >(attrs as Record<string, unknown>, relationships);
-
-    // Step 2: Combine foreign keys (defaults) with regular attributes
-    // regularAttrs comes second to allow explicit FK values to override defaults
-    const modelAttrs = { ...foreignKeys, ...regularAttrs };
-
-    return {
-      modelAttrs: modelAttrs as
-        | NewModelAttrs<ModelAttrs<TTemplate, TSchema>>
-        | Partial<ModelAttrs<TTemplate, TSchema>>,
-      relationshipUpdates: relationshipValues as Partial<
-        RelatedModelAttrs<TSchema, TRelationships>
-      >,
-    };
   }
 
   // -- ACCESSOR INITIALIZATION METHODS --

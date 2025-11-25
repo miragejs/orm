@@ -157,7 +157,7 @@ export default class RelationshipsManager<
   /**
    * Apply inverse relationship updates for pending operations
    * Should be called AFTER saving the model (when FK changes are in the database)
-   * Note: FK updates are already applied to the model by _processAttrs or link/unlink methods
+   * Note: FK updates are already applied to the model by processAttrs or link/unlink methods
    */
   applyPendingInverseUpdates(): void {
     if (this._pendingRelationshipOperations.length === 0) return;
