@@ -263,14 +263,32 @@ type HasManyForeignKeys<TRelationships extends ModelRelationships> = UnionToInte
 >;
 
 /**
+ * Omit foreign keys that are already defined in the template
+ * This ensures template definitions take precedence over relationship-generated foreign keys
+ * @template TTemplate - The model template
+ * @template TForeignKeys - The foreign keys object
+ */
+type OmitTemplateKeys<TTemplate extends ModelTemplate, TForeignKeys> = Omit<
+  TForeignKeys,
+  keyof InferModelAttrs<TTemplate>
+>;
+
+/**
  * Infer foreign key properties from relationships configuration
  * Creates properties like: authorId: string | null, postIds: string[]
+ * Excludes any foreign keys already defined in the template
  * @template TRelationships - The relationships configuration object
+ * @template TTemplate - Optional model template to exclude existing keys
  */
-export type ModelForeignKeys<TRelationships extends ModelRelationships> =
-  TRelationships extends never
-    ? {}
-    : BelongsToForeignKeys<TRelationships> & HasManyForeignKeys<TRelationships>;
+export type ModelForeignKeys<
+  TRelationships extends ModelRelationships,
+  TTemplate extends ModelTemplate = ModelTemplate,
+> = TRelationships extends never
+  ? {}
+  : OmitTemplateKeys<
+      TTemplate,
+      BelongsToForeignKeys<TRelationships> & HasManyForeignKeys<TRelationships>
+    >;
 
 // ============================================================================
 // RELATIONSHIP ACCESSOR TYPES
@@ -382,7 +400,7 @@ export type ModelAttrs<
   TSchema extends SchemaCollections = SchemaCollections,
   TRelationships extends ModelRelationships = RelationshipsByTemplate<TTemplate, TSchema>,
 > = Omit<InferModelAttrs<TTemplate>, 'id'> &
-  ModelForeignKeys<TRelationships> & {
+  ModelForeignKeys<TRelationships, TTemplate> & {
     id: ModelId<TTemplate>;
   };
 
@@ -482,7 +500,7 @@ export type NewModelInstance<
   attrs: ModelAttrs<TTemplate, TSchema>;
   id: ModelAttrs<TTemplate, TSchema>['id'] | null;
 } & ModelAttrAccessors<TTemplate> &
-  ModelForeignKeys<RelationshipsByTemplate<TTemplate, TSchema>> &
+  ModelForeignKeys<RelationshipsByTemplate<TTemplate, TSchema>, TTemplate> &
   ModelRelationshipAccessors<TSchema, RelationshipsByTemplate<TTemplate, TSchema>>;
 
 /**
@@ -498,7 +516,7 @@ export type ModelInstance<
   attrs: ModelAttrs<TTemplate, TSchema>;
   id: ModelAttrs<TTemplate, TSchema>['id'];
 } & ModelAttrAccessors<TTemplate> &
-  ModelForeignKeys<RelationshipsByTemplate<TTemplate, TSchema>> &
+  ModelForeignKeys<RelationshipsByTemplate<TTemplate, TSchema>, TTemplate> &
   ModelRelationshipAccessors<TSchema, RelationshipsByTemplate<TTemplate, TSchema>>;
 
 // ============================================================================

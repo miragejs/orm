@@ -57,7 +57,9 @@ export type FixtureAttrs<
   TTemplate extends ModelTemplate,
   TRelationships extends ModelRelationships = {},
 > = ModelAttrs<TTemplate> &
-  (Record<string, never> extends TRelationships ? {} : Partial<ModelForeignKeys<TRelationships>>);
+  (Record<string, never> extends TRelationships
+    ? {}
+    : Partial<ModelForeignKeys<TRelationships, TTemplate>>);
 
 /**
  * Fixture configuration for a collection
@@ -168,7 +170,9 @@ export type SchemaDbCollections<TCollections extends SchemaCollections> = {
   >
     ? DbCollection<
         ModelAttrs<TTemplate> &
-          (TRelationships extends ModelRelationships ? ModelForeignKeys<TRelationships> : {})
+          (TRelationships extends ModelRelationships
+            ? ModelForeignKeys<TRelationships, TTemplate>
+            : {})
       >
     : never;
 };
