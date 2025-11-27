@@ -8,7 +8,7 @@ import { isArray, isModelCollection, isModelInstance } from './typeGuards';
 import type {
   ForeignKeyValue,
   ModelAttrs,
-  ModelId,
+  ModelIdFor,
   ModelInstance,
   ModelRelationships,
   ModelTemplate,
@@ -495,7 +495,7 @@ export default class RelationshipsManager<
    * @param foreignKeyValue - The foreign key value
    * @returns A single ID or null
    */
-  private _extractSingleId(foreignKeyValue: ForeignKeyValue): ModelId<TTemplate> | null {
+  private _extractSingleId(foreignKeyValue: ForeignKeyValue): ModelIdFor<TTemplate> | null {
     if (foreignKeyValue === null || foreignKeyValue === undefined) {
       return null;
     }
@@ -503,7 +503,7 @@ export default class RelationshipsManager<
       // Arrays should not be used for belongsTo relationships
       return null;
     }
-    return foreignKeyValue as ModelId<TTemplate>;
+    return foreignKeyValue as ModelIdFor<TTemplate>;
   }
 
   /**
@@ -511,9 +511,9 @@ export default class RelationshipsManager<
    * @param foreignKeyValue - The foreign key value
    * @returns Array of IDs
    */
-  private _extractIdsArray(foreignKeyValue: ForeignKeyValue): ModelId<TTemplate>[] {
+  private _extractIdsArray(foreignKeyValue: ForeignKeyValue): ModelIdFor<TTemplate>[] {
     if (Array.isArray(foreignKeyValue)) {
-      return foreignKeyValue as ModelId<TTemplate>[];
+      return foreignKeyValue as ModelIdFor<TTemplate>[];
     }
     return [];
   }
@@ -653,7 +653,7 @@ export default class RelationshipsManager<
 
       if (action === 'link') {
         // Add this model's ID if not already present
-        if (!currentIds.includes(modelId as ModelId<TTemplate>)) {
+        if (!currentIds.includes(modelId as ModelIdFor<TTemplate>)) {
           updateAttrs[foreignKey] = [...currentIds, modelId as string];
         }
       } else {

@@ -74,11 +74,11 @@ export type { IdentityManager } from './id-manager';
 // ----------------------------------------------------------------------------
 export { model } from './model';
 export type {
-  InferCollectionName,
-  InferModelAttrs,
-  InferModelName,
-  InferSerializedCollection,
-  InferSerializedModel,
+  CollectionNameFor,
+  ModelAttrsFor,
+  ModelNameFor,
+  SerializedCollectionFor,
+  SerializedModelFor,
   ModelAttrs,
   ModelInstance,
   ModelTemplate,

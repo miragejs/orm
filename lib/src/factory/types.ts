@@ -1,5 +1,5 @@
 import type { FactoryAssociations } from '@src/associations';
-import type { InferModelAttrs, ModelInstance, ModelTemplate } from '@src/model';
+import type { ModelAttrsFor, ModelInstance, ModelTemplate } from '@src/model';
 import type { SchemaCollections, SchemaInstance } from '@src/schema';
 
 // Forbid any keys in U that are not in T
@@ -7,13 +7,13 @@ type Exact<T, U extends T> = T & { [K in Exclude<keyof U, keyof T>]: never };
 
 export type FactoryAttrs<
   TTemplate extends ModelTemplate,
-  TModelAttrs = Omit<InferModelAttrs<TTemplate>, 'id'>,
+  TModelAttrs = Omit<ModelAttrsFor<TTemplate>, 'id'>,
 > = {
   [K in keyof TModelAttrs]:
     | TModelAttrs[K]
     | ((
         this: FactoryAttrs<TTemplate, TModelAttrs>,
-        modelId: NonNullable<InferModelAttrs<TTemplate>['id']>,
+        modelId: NonNullable<ModelAttrsFor<TTemplate>['id']>,
       ) => TModelAttrs[K]);
 };
 

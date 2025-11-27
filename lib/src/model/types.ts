@@ -57,7 +57,7 @@ export interface ModelTemplate<
  * Uses conditional type to properly extract __attrs from intersection types
  * @template T - The model template
  */
-export type InferModelAttrs<T> = T extends { __attrs: infer TAttrs extends { id: any } }
+export type ModelAttrsFor<T> = T extends { __attrs: infer TAttrs extends { id: any } }
   ? TAttrs
   : never;
 
@@ -65,44 +65,42 @@ export type InferModelAttrs<T> = T extends { __attrs: infer TAttrs extends { id:
  * Infer model ID type from template
  * @template T - The model template
  */
-export type ModelId<T> = InferModelAttrs<T>['id'];
+export type ModelIdFor<T> = ModelAttrsFor<T>['id'];
 
 /**
  * Infer model name from template
  * @template T - The model template
  */
-export type InferModelName<T> = T extends ModelTemplate<infer Name, any> ? Name : never;
+export type ModelNameFor<T> = T extends ModelTemplate<infer Name, any> ? Name : never;
 
 /**
  * Infer collection name from template
  * @template T - The model template
  */
-export type InferCollectionName<T> = T extends ModelTemplate<any, infer Name> ? Name : never;
+export type CollectionNameFor<T> = T extends ModelTemplate<any, infer Name> ? Name : never;
 
 /**
  * Infer serialized model type from template
  * Uses conditional type to properly extract from intersection types
  * @template T - The model template
  */
-export type InferSerializedModel<T> = T extends { __json: { model: infer M } }
-  ? M
-  : InferModelAttrs<T>;
+export type SerializedModelFor<T> = T extends { __json: { model: infer M } } ? M : ModelAttrsFor<T>;
 
 /**
  * Infer serialized collection type from template
  * Uses conditional type to properly extract from intersection types
  * @template T - The model template
  */
-export type InferSerializedCollection<T> = T extends { __json: { collection: infer C } }
+export type SerializedCollectionFor<T> = T extends { __json: { collection: infer C } }
   ? C
-  : InferModelAttrs<T>[];
+  : ModelAttrsFor<T>[];
 
 /**
  * Check if template has custom JSON types (not default)
  * @template T - The model template
  */
 export type HasCustomJSON<T extends ModelTemplate> =
-  InferSerializedModel<T> extends InferModelAttrs<T> ? false : true;
+  SerializedModelFor<T> extends ModelAttrsFor<T> ? false : true;
 
 // ============================================================================
 // RELATIONSHIP TYPES
@@ -245,7 +243,7 @@ export type RelationshipsByTemplate<
 type BelongsToForeignKeys<TRelationships extends ModelRelationships> = UnionToIntersection<
   {
     [K in keyof TRelationships]: TRelationships[K] extends BelongsTo<infer TTarget, infer TForeign>
-      ? { [FK in NonNullable<TForeign>]: ModelId<TTarget> | null }
+      ? { [FK in NonNullable<TForeign>]: ModelIdFor<TTarget> | null }
       : never;
   }[keyof TRelationships]
 >;
@@ -257,7 +255,7 @@ type BelongsToForeignKeys<TRelationships extends ModelRelationships> = UnionToIn
 type HasManyForeignKeys<TRelationships extends ModelRelationships> = UnionToIntersection<
   {
     [K in keyof TRelationships]: TRelationships[K] extends HasMany<infer TTarget, infer TForeign>
-      ? { [FK in NonNullable<TForeign>]: ModelId<TTarget>[] }
+      ? { [FK in NonNullable<TForeign>]: ModelIdFor<TTarget>[] }
       : never;
   }[keyof TRelationships]
 >;
@@ -270,7 +268,7 @@ type HasManyForeignKeys<TRelationships extends ModelRelationships> = UnionToInte
  */
 type OmitTemplateKeys<TTemplate extends ModelTemplate, TForeignKeys> = Omit<
   TForeignKeys,
-  keyof InferModelAttrs<TTemplate>
+  keyof ModelAttrsFor<TTemplate>
 >;
 
 /**
@@ -386,7 +384,7 @@ export type BaseModelInstance<TAttrs extends { id: any }, TSerializer = undefine
  * @template TTemplate - The model template
  */
 export type ModelAttrAccessors<TTemplate extends ModelTemplate> = {
-  [K in keyof Omit<InferModelAttrs<TTemplate>, 'id'>]: InferModelAttrs<TTemplate>[K];
+  [K in keyof Omit<ModelAttrsFor<TTemplate>, 'id'>]: ModelAttrsFor<TTemplate>[K];
 };
 
 /**
@@ -399,9 +397,9 @@ export type ModelAttrs<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
   TRelationships extends ModelRelationships = RelationshipsByTemplate<TTemplate, TSchema>,
-> = Omit<InferModelAttrs<TTemplate>, 'id'> &
+> = Omit<ModelAttrsFor<TTemplate>, 'id'> &
   ModelForeignKeys<TRelationships, TTemplate> & {
-    id: ModelId<TTemplate>;
+    id: ModelIdFor<TTemplate>;
   };
 
 /**
@@ -423,8 +421,8 @@ export type ModelCreateAttrs<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
   TRelationships extends ModelRelationships = RelationshipsByTemplate<TTemplate, TSchema>,
-> = Omit<InferModelAttrs<TTemplate>, 'id'> & {
-  id?: ModelId<TTemplate> | null;
+> = Omit<ModelAttrsFor<TTemplate>, 'id'> & {
+  id?: ModelIdFor<TTemplate> | null;
 } & (Record<string, never> extends TRelationships
     ? {}
     : ForeignKeyAttrs<TRelationships> & Partial<RelatedModelAttrs<TSchema, TRelationships>>);

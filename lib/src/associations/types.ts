@@ -1,8 +1,8 @@
 import type { FactoryTraitNames } from '@src/factory';
 import type {
-  InferCollectionName,
-  InferModelAttrs,
-  InferModelName,
+  CollectionNameFor,
+  ModelAttrsFor,
+  ModelNameFor,
   ModelRelationships,
   ModelTemplate,
   RelationshipsByTemplate,
@@ -22,7 +22,7 @@ import type { CollectionConfig, SchemaCollections } from '@src/schema';
 type CollectionConfigFor<
   TSchema extends SchemaCollections,
   TModel extends ModelTemplate,
-> = TSchema[InferCollectionName<TModel>];
+> = TSchema[CollectionNameFor<TModel>];
 
 /**
  * Extract the factory from a model's collection in the schema
@@ -58,7 +58,7 @@ type TraitNamesFor<
  */
 export type BelongsTo<
   TTarget extends ModelTemplate,
-  TForeign extends string = `${InferModelName<TTarget>}Id`,
+  TForeign extends string = `${ModelNameFor<TTarget>}Id`,
 > = {
   foreignKey: TForeign;
   targetModel: TTarget;
@@ -85,7 +85,7 @@ export type BelongsTo<
  */
 export type HasMany<
   TTarget extends ModelTemplate,
-  TForeign extends string = `${InferModelName<TTarget>}Ids`,
+  TForeign extends string = `${ModelNameFor<TTarget>}Ids`,
 > = {
   foreignKey: TForeign;
   targetModel: TTarget;
@@ -146,7 +146,7 @@ export type AssociationTraitsAndDefaults = Array<string | Record<string, any>>;
 export type TypedAssociationTraitsAndDefaults<
   TSchema extends SchemaCollections,
   TModel extends ModelTemplate,
-> = Array<TraitNamesFor<TSchema, TModel> | Partial<InferModelAttrs<TModel>>>;
+> = Array<TraitNamesFor<TSchema, TModel> | Partial<ModelAttrsFor<TModel>>>;
 
 /**
  * Base interface for all factory associations

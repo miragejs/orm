@@ -1,4 +1,4 @@
-import type { InferModelAttrs, ModelTemplate } from '@src/model';
+import type { ModelAttrsFor, ModelTemplate } from '@src/model';
 import type { SchemaCollections } from '@src/schema';
 
 import type {
@@ -21,7 +21,7 @@ import type {
 export default function linkMany<TSchema extends SchemaCollections, TModel extends ModelTemplate>(
   model: TModel,
   count: number,
-  query?: AssociationQuery<InferModelAttrs<TModel>>,
+  query?: AssociationQuery<ModelAttrsFor<TModel>>,
   ...traitsAndDefaults: TypedAssociationTraitsAndDefaults<TSchema, TModel>
 ): LinkManyAssociation<TModel>;
 
@@ -37,7 +37,7 @@ export default function linkMany<TSchema extends SchemaCollections, TModel exten
 export default function linkMany<TModel extends ModelTemplate>(
   model: TModel,
   count: number,
-  query?: AssociationQuery<InferModelAttrs<TModel>>,
+  query?: AssociationQuery<ModelAttrsFor<TModel>>,
   ...traitsAndDefaults: AssociationTraitsAndDefaults
 ): LinkManyAssociation<TModel>;
 

@@ -1,6 +1,6 @@
 import type {
-  InferSerializedCollection,
-  InferSerializedModel,
+  SerializedCollectionFor,
+  SerializedModelFor,
   ModelInstance,
   ModelTemplate,
 } from '@src/model';
@@ -37,8 +37,8 @@ import type { SerializerOptions } from './types';
  */
 export default class Serializer<
   TTemplate extends ModelTemplate,
-  TSerializedModel = InferSerializedModel<TTemplate>,
-  TSerializedCollection = InferSerializedCollection<TTemplate>,
+  TSerializedModel = SerializedModelFor<TTemplate>,
+  TSerializedCollection = SerializedCollectionFor<TTemplate>,
   TOptions extends SerializerOptions<TTemplate> = SerializerOptions<TTemplate>,
 > {
   protected _template: TTemplate;

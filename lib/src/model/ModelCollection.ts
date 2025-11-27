@@ -2,8 +2,8 @@ import type { SchemaCollections } from '@src/schema';
 import { Serializer } from '@src/serializer';
 
 import type {
-  InferSerializedCollection,
-  InferSerializedModel,
+  SerializedCollectionFor,
+  SerializedModelFor,
   ModelInstance,
   ModelTemplate,
   ModelUpdateAttrs,
@@ -24,8 +24,8 @@ export default class ModelCollection<
   public models: Array<ModelInstance<TTemplate, TSchema>>;
   protected _serializer?: Serializer<
     TTemplate,
-    InferSerializedModel<TTemplate>,
-    InferSerializedCollection<TTemplate>
+    SerializedModelFor<TTemplate>,
+    SerializedCollectionFor<TTemplate>
   >;
 
   constructor(
@@ -33,8 +33,8 @@ export default class ModelCollection<
     models?: Array<ModelInstance<TTemplate, TSchema>>,
     serializer?: Serializer<
       TTemplate,
-      InferSerializedModel<TTemplate>,
-      InferSerializedCollection<TTemplate>
+      SerializedModelFor<TTemplate>,
+      SerializedCollectionFor<TTemplate>
     >,
   ) {
     this.collectionName = template.collectionName;
@@ -316,7 +316,7 @@ export default class ModelCollection<
    * Uses serializer if configured, otherwise returns array of raw attributes
    * @returns A serialized representation of the collection
    */
-  toJSON(): InferSerializedCollection<TTemplate> {
+  toJSON(): SerializedCollectionFor<TTemplate> {
     if (
       this._serializer &&
       typeof this._serializer === 'object' &&

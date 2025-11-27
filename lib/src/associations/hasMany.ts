@@ -1,4 +1,4 @@
-import type { InferModelName, ModelTemplate } from '@src/model';
+import type { ModelNameFor, ModelTemplate } from '@src/model';
 
 import type { HasMany } from './types';
 
@@ -35,11 +35,11 @@ export default function hasMany<
   opts?: TOpts,
 ): HasMany<
   TTarget,
-  TOpts extends { foreignKey: infer F extends string } ? F : `${InferModelName<TTarget>}Ids`
+  TOpts extends { foreignKey: infer F extends string } ? F : `${ModelNameFor<TTarget>}Ids`
 > {
   type ForeignKey = TOpts extends { foreignKey: infer F extends string }
     ? F
-    : `${InferModelName<TTarget>}Ids`;
+    : `${ModelNameFor<TTarget>}Ids`;
 
   const defaultForeignKey = `${targetModel.modelName}Ids` as const;
   const foreignKey = (opts?.foreignKey ?? defaultForeignKey) as ForeignKey;

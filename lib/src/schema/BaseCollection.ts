@@ -5,9 +5,9 @@ import {
   Model,
   ModelCollection,
   ModelCreateAttrs,
-  ModelId,
-  type InferSerializedCollection,
-  type InferSerializedModel,
+  ModelIdFor,
+  type SerializedCollectionFor,
+  type SerializedModelFor,
   type ModelAttrs,
   type ModelClass,
   type ModelConfig,
@@ -46,8 +46,8 @@ export abstract class BaseCollection<
   public readonly relationships?: TRelationships;
   public readonly serializer?: Serializer<
     TTemplate,
-    InferSerializedModel<TTemplate>,
-    InferSerializedCollection<TTemplate>
+    SerializedModelFor<TTemplate>,
+    SerializedCollectionFor<TTemplate>
   >;
 
   protected readonly _schema: SchemaInstance<TSchema>;
@@ -72,7 +72,7 @@ export abstract class BaseCollection<
       fixtures?: FixtureConfig<TTemplate, TRelationships>;
       seeds?: Seeds<TSchema>;
       serializer?: Serializer<TTemplate>;
-      identityManager?: IdentityManager<ModelId<TTemplate>>;
+      identityManager?: IdentityManager<ModelIdFor<TTemplate>>;
     },
   ) {
     const {
@@ -378,7 +378,7 @@ export abstract class BaseCollection<
    * @private
    */
   private _initializeDbCollection(
-    identityManager?: IdentityManager<ModelId<TTemplate>>,
+    identityManager?: IdentityManager<ModelIdFor<TTemplate>>,
   ): DbCollection<ModelAttrs<TTemplate, TSchema>> {
     if (!this._schema.db.hasCollection(this.collectionName)) {
       this._schema.db.createCollection(this.collectionName, {

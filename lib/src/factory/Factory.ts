@@ -3,7 +3,7 @@ import {
   Model,
   type ModelAttrs,
   type ModelCreateAttrs,
-  type ModelId,
+  type ModelIdFor,
   type ModelInstance,
   type ModelTemplate,
   type PartialModelAttrs,
@@ -195,7 +195,7 @@ export default class Factory<
   }
 
   private _evaluateAttributes(
-    modelId: ModelId<TTemplate>,
+    modelId: ModelIdFor<TTemplate>,
     attributes: FactoryAttrs<TTemplate>,
   ): FactoryAttrs<TTemplate> {
     const modelName = this.template.modelName;
@@ -253,7 +253,7 @@ export default class Factory<
    * @returns The evaluated model attributes
    */
   _processAttributes(
-    modelId: ModelId<TTemplate>,
+    modelId: ModelIdFor<TTemplate>,
     defaults: PartialModelAttrs<TTemplate, TSchema>,
     traitNames: TTraits[],
   ): ModelAttrs<TTemplate, TSchema> {

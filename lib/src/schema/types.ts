@@ -4,7 +4,7 @@ import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
 import type {
   ModelAttrs,
   ModelForeignKeys,
-  ModelId,
+  ModelIdFor,
   ModelTemplate,
   RelatedModelAttrs,
   RelationshipsByTemplate,
@@ -111,7 +111,7 @@ export interface CollectionConfig<
   model: TTemplate;
   factory?: TFactory;
   relationships?: TRelationships;
-  identityManager?: IdentityManager<ModelId<TTemplate>>;
+  identityManager?: IdentityManager<ModelIdFor<TTemplate>>;
   /**
    * Serializer configuration object (attrs, root, embed, include)
    * Used when collection().serializer({...config}) is called

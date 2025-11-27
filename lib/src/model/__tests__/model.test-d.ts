@@ -7,11 +7,11 @@
 
 import type { BelongsTo, HasMany } from '@src/associations';
 import type {
-  InferCollectionName,
-  InferModelAttrs,
-  InferModelName,
-  InferSerializedCollection,
-  InferSerializedModel,
+  CollectionNameFor,
+  ModelAttrsFor,
+  ModelNameFor,
+  SerializedCollectionFor,
+  SerializedModelFor,
   ModelAttrs,
   ModelForeignKeys,
   ModelInstance,
@@ -66,35 +66,35 @@ test('ModelTemplate should work for basic models', () => {
   expectTypeOf(model2.collectionName).toBeString();
 });
 
-test('InferModelName should extract model names correctly', () => {
-  type UserName = InferModelName<typeof userModel>;
+test('ModelNameFor should extract model names correctly', () => {
+  type UserName = ModelNameFor<typeof userModel>;
   const userName: UserName = 'user';
   expectTypeOf(userName).toEqualTypeOf<'user'>();
 
-  type PostName = InferModelName<typeof postModel>;
+  type PostName = ModelNameFor<typeof postModel>;
   const postName: PostName = 'post';
   expectTypeOf(postName).toEqualTypeOf<'post'>();
 });
 
-test('InferCollectionName should extract collection names correctly', () => {
-  type UsersCollection = InferCollectionName<typeof userModel>;
+test('CollectionNameFor should extract collection names correctly', () => {
+  type UsersCollection = CollectionNameFor<typeof userModel>;
   const collection: UsersCollection = 'users';
   expectTypeOf(collection).toEqualTypeOf<'users'>();
 
-  type PostsCollection = InferCollectionName<typeof postModel>;
+  type PostsCollection = CollectionNameFor<typeof postModel>;
   const posts: PostsCollection = 'posts';
   expectTypeOf(posts).toEqualTypeOf<'posts'>();
 });
 
-test('InferModelAttrs should infer attribute types correctly', () => {
-  const attrs: InferModelAttrs<typeof userModel> = {
+test('ModelAttrsFor should infer attribute types correctly', () => {
+  const attrs: ModelAttrsFor<typeof userModel> = {
     id: '1',
     name: 'John',
     email: 'john@example.com',
     age: 30,
   };
 
-  expectTypeOf(attrs).toEqualTypeOf<InferModelAttrs<typeof userModel>>();
+  expectTypeOf(attrs).toEqualTypeOf<ModelAttrsFor<typeof userModel>>();
 });
 
 test('ModelAttrs should work for basic attributes', () => {
@@ -217,8 +217,8 @@ test('ModelInstance serializer type is inferred from template', () => {
   // Serializer type should be inferred from the template
   type ExpectedSerializer = Serializer<
     typeof userModel,
-    InferSerializedModel<typeof userModel>,
-    InferSerializedCollection<typeof userModel>
+    SerializedModelFor<typeof userModel>,
+    SerializedCollectionFor<typeof userModel>
   >;
 
   expectTypeOf<UserInstance['_serializer']>().toEqualTypeOf<ExpectedSerializer | undefined>();
@@ -237,8 +237,8 @@ test('NewModelInstance serializer type is inferred from template', () => {
   // Serializer type should be inferred from the template
   type ExpectedSerializer = Serializer<
     typeof userModel,
-    InferSerializedModel<typeof userModel>,
-    InferSerializedCollection<typeof userModel>
+    SerializedModelFor<typeof userModel>,
+    SerializedCollectionFor<typeof userModel>
   >;
 
   expectTypeOf<NewUser['_serializer']>().toEqualTypeOf<ExpectedSerializer | undefined>();
@@ -254,18 +254,18 @@ test('ModelInstance toJSON should infer correct return type with default seriali
 test('ModelInstance toJSON infers correct return type from template', () => {
   type UserInstance = ModelInstance<typeof userModel, TestSchema>;
 
-  // toJSON should return InferSerializedModel<TTemplate>
+  // toJSON should return SerializedModelFor<TTemplate>
   expectTypeOf<ReturnType<UserInstance['toJSON']>>().toEqualTypeOf<
-    InferSerializedModel<typeof userModel>
+    SerializedModelFor<typeof userModel>
   >();
 });
 
-test('ModelInstance toJSON returns InferSerializedModel<TTemplate>', () => {
+test('ModelInstance toJSON returns SerializedModelFor<TTemplate>', () => {
   type UserInstance = ModelInstance<typeof userModel, TestSchema>;
 
-  // toJSON should return InferSerializedModel<TTemplate>
+  // toJSON should return SerializedModelFor<TTemplate>
   expectTypeOf<ReturnType<UserInstance['toJSON']>>().toEqualTypeOf<
-    InferSerializedModel<typeof userModel>
+    SerializedModelFor<typeof userModel>
   >();
 });
 
@@ -287,10 +287,10 @@ test('Serializer type is correctly inferred for different templates', () => {
 
   // Verify toJSON returns the correct inferred types from templates
   expectTypeOf<ReturnType<UserInstance['toJSON']>>().toEqualTypeOf<
-    InferSerializedModel<typeof userModel>
+    SerializedModelFor<typeof userModel>
   >();
   expectTypeOf<ReturnType<PostInstance['toJSON']>>().toEqualTypeOf<
-    InferSerializedModel<typeof postModel>
+    SerializedModelFor<typeof postModel>
   >();
 });
 
@@ -313,28 +313,28 @@ test('ModelCollection serializer type is inferred from template', () => {
   // Serializer type should be inferred from the template
   type ExpectedSerializer = Serializer<
     typeof userModel,
-    InferSerializedModel<typeof userModel>,
-    InferSerializedCollection<typeof userModel>
+    SerializedModelFor<typeof userModel>,
+    SerializedCollectionFor<typeof userModel>
   >;
 
   expectTypeOf<UsersCollection['_serializer']>().toEqualTypeOf<ExpectedSerializer | undefined>();
 });
 
-test('ModelCollection toJSON returns InferSerializedCollection<TTemplate>', () => {
+test('ModelCollection toJSON returns SerializedCollectionFor<TTemplate>', () => {
   type UsersCollection = ModelCollection<typeof userModel, TestSchema>;
 
-  // toJSON should return InferSerializedCollection<TTemplate>
+  // toJSON should return SerializedCollectionFor<TTemplate>
   expectTypeOf<ReturnType<UsersCollection['toJSON']>>().toEqualTypeOf<
-    InferSerializedCollection<typeof userModel>
+    SerializedCollectionFor<typeof userModel>
   >();
 });
 
 test('ModelCollection toJSON returns collection type inferred from template', () => {
   type PostsCollection = ModelCollection<typeof postModel, TestSchema>;
 
-  // Collection toJSON should return InferSerializedCollection<TTemplate>
+  // Collection toJSON should return SerializedCollectionFor<TTemplate>
   expectTypeOf<ReturnType<PostsCollection['toJSON']>>().toEqualTypeOf<
-    InferSerializedCollection<typeof postModel>
+    SerializedCollectionFor<typeof postModel>
   >();
 });
 
@@ -342,8 +342,8 @@ test('ModelCollection from relationship accessor uses target collection serializ
   // When accessing user.posts, the collection should use the post template's serializer
   type PostsCollection = ModelCollection<typeof postModel, TestSchema>;
 
-  // toJSON should return InferSerializedCollection<postModel>
+  // toJSON should return SerializedCollectionFor<postModel>
   expectTypeOf<ReturnType<PostsCollection['toJSON']>>().toEqualTypeOf<
-    InferSerializedCollection<typeof postModel>
+    SerializedCollectionFor<typeof postModel>
   >();
 });

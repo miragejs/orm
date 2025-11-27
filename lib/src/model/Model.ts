@@ -7,8 +7,8 @@ import BaseModel from './BaseModel';
 import RelationshipsManager from './RelationshipsManager';
 import { isModelCollection, isModelInstance, isModelInstanceArray } from './typeGuards';
 import type {
-  InferSerializedCollection,
-  InferSerializedModel,
+  SerializedCollectionFor,
+  SerializedModelFor,
   ModelAttrs,
   ModelClass,
   ModelConfig,
@@ -35,7 +35,7 @@ export default class Model<
   TSchema extends SchemaCollections = SchemaCollections,
 > extends BaseModel<
   ModelAttrs<TTemplate, TSchema>,
-  Serializer<TTemplate, InferSerializedModel<TTemplate>, InferSerializedCollection<TTemplate>>
+  Serializer<TTemplate, SerializedModelFor<TTemplate>, SerializedCollectionFor<TTemplate>>
 > {
   public readonly relationships?: RelationshipsByTemplate<TTemplate, TSchema>;
   protected _relationshipsManager?: RelationshipsManager<TTemplate, TSchema>;

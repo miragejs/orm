@@ -1,4 +1,4 @@
-import type { InferModelAttrs, ModelTemplate } from '@src/model';
+import type { ModelAttrsFor, ModelTemplate } from '@src/model';
 
 /**
  * Structural serializer options (schema-level or collection-level)
@@ -32,7 +32,7 @@ export interface DataSerializerOptions<TTemplate extends ModelTemplate> {
    * If not provided, all attributes are included
    * Note: This is model-specific and not available at schema level
    */
-  attrs?: (keyof InferModelAttrs<TTemplate>)[];
+  attrs?: (keyof ModelAttrsFor<TTemplate>)[];
 
   /**
    * Relationship names to include in serialization
