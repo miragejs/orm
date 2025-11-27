@@ -10,7 +10,7 @@ import type {
   RelationshipsByTemplate,
 } from '@src/model';
 import type { ModelRelationships } from '@src/model';
-import type { SerializerOptions, StructuralSerializerOptions } from '@src/serializer';
+import type { Serializer, SerializerOptions, StructuralSerializerOptions } from '@src/serializer';
 import type { LoggerConfig } from '@src/utils';
 
 import type Collection from './Collection';
@@ -97,15 +97,14 @@ export interface SchemaConfig<
  * @template TTemplate - The model template
  * @template TRelationships - The model relationships
  * @template TFactory - The factory type
- * @template TSerializer - The serializer instance type
  * @template TSchema - The schema collections type for seeds typing
  */
 export interface CollectionConfig<
   TTemplate extends ModelTemplate,
   TRelationships extends ModelRelationships = {},
   TFactory extends Factory<TTemplate, any, any> = Factory<TTemplate, string, SchemaCollections>,
-  TSerializer = undefined,
   TSchema extends SchemaCollections = SchemaCollections,
+  TSerializer extends Serializer<TTemplate> = Serializer<TTemplate>,
 > {
   model: TTemplate;
   factory?: TFactory;
@@ -117,7 +116,7 @@ export interface CollectionConfig<
    */
   serializerConfig?: SerializerOptions<TTemplate>;
   /**
-   * Serializer instance (custom serializer class)
+   * Serializer instance (custom serializer class) - must extend Serializer for the template
    * Used when collection().serializer(instance) is called
    */
   serializerInstance?: TSerializer;
@@ -137,7 +136,7 @@ export interface CollectionConfig<
  * Type for schema collections - provides both string-based property access and symbol-based relationship resolution
  * @template TCollections - The string-keyed schema collections config
  */
-export type SchemaCollections = Record<string, CollectionConfig<any, any, any, any, any>>;
+export type SchemaCollections = Record<string, CollectionConfig<any, any, any, any>>;
 
 /**
  * Type for schema collections - provides string-based property access
@@ -148,18 +147,10 @@ export type SchemaCollectionAccessors<TCollections extends SchemaCollections> = 
     infer TTemplate,
     infer TRelationships,
     infer TFactory,
-    infer TSerializer,
+    any,
     any
   >
-    ? Collection<
-        TCollections,
-        TTemplate,
-        TRelationships,
-        TFactory extends Factory<TTemplate, any, any>
-          ? TFactory
-          : Factory<TTemplate, string, TCollections>,
-        TSerializer
-      >
+    ? Collection<TCollections, TTemplate, TRelationships, TFactory>
     : never;
 };
 
@@ -193,7 +184,4 @@ export type CollectionCreateAttrs<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
   TRelationships extends ModelRelationships = RelationshipsByTemplate<TTemplate, TSchema>,
-> = Partial<ModelAttrs<TTemplate, TSchema>> &
-  (Record<string, never> extends TRelationships
-    ? {}
-    : Partial<RelatedModelAttrs<TSchema, TRelationships>>);
+> = Partial<ModelAttrs<TTemplate, TSchema>> & Partial<RelatedModelAttrs<TSchema, TRelationships>>;

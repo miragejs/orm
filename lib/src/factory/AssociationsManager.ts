@@ -4,7 +4,13 @@ import type {
   AssociationTraitsAndDefaults,
   FactoryAssociations,
 } from '@src/associations';
-import { ModelCollection, type ModelInstance, type ModelTemplate } from '@src/model';
+import {
+  ModelCollection,
+  RelatedModelAttrs,
+  RelationshipsByTemplate,
+  type ModelInstance,
+  type ModelTemplate,
+} from '@src/model';
 import type {
   SchemaInstance,
   Collection,
@@ -13,6 +19,7 @@ import type {
 } from '@src/schema';
 import { MirageError } from '@src/utils';
 
+// TODO: Need to improve type system to make this more type safe and cleaner
 /**
  * Manages factory associations - creates and links related models
  */
@@ -31,7 +38,7 @@ export default class AssociationsManager<
     schema: SchemaInstance<TSchema>,
     associations: FactoryAssociations<TTemplate, TSchema>,
     skipKeys?: string[],
-  ): Record<string, ModelInstance<any, TSchema> | ModelCollection<any, TSchema>> {
+  ): Partial<RelatedModelAttrs<TSchema, RelationshipsByTemplate<TTemplate, TSchema>>> {
     const relationshipValues: Record<string, any> = {};
     const keysToSkip = new Set(skipKeys || []);
 
@@ -89,24 +96,24 @@ export default class AssociationsManager<
       }
     }
 
-    return relationshipValues;
+    return relationshipValues as Partial<
+      RelatedModelAttrs<TSchema, RelationshipsByTemplate<TTemplate, TSchema>>
+    >;
   }
 
   private _processCreate(
-    collection: Collection<TSchema, any, any, any, any>,
-    traitsAndDefaults?: AssociationTraitsAndDefaults,
-  ): ModelInstance<any, TSchema, any> {
-    return collection.create(
-      ...((traitsAndDefaults ?? []) as CollectionCreateAttrs<TTemplate, TSchema>[]),
-    );
+    collection: Collection<TSchema, any, any, any>,
+    traitsAndDefaults: AssociationTraitsAndDefaults = [],
+  ): ModelInstance<any, TSchema> {
+    return collection.create(...(traitsAndDefaults as CollectionCreateAttrs<TTemplate, TSchema>[]));
   }
 
   private _processCreateMany(
-    collection: Collection<TSchema, any, any, any, any>,
+    collection: Collection<TSchema, any, any, any>,
     count: number | undefined,
     traitsAndDefaults: AssociationTraitsAndDefaults | undefined,
     models: AssociationTraitsAndDefaults[] | undefined,
-  ): ModelCollection<any, TSchema, any> {
+  ): ModelCollection<any, TSchema> {
     if (models) {
       // Array mode: create different models
       return collection.createMany(models as CollectionCreateAttrs<TTemplate, TSchema>[][]);
@@ -120,12 +127,12 @@ export default class AssociationsManager<
   }
 
   private _processLink(
-    collection: Collection<TSchema, any, any, any, any>,
+    collection: Collection<TSchema, any, any, any>,
     query?: AssociationQuery,
     traitsAndDefaults?: AssociationTraitsAndDefaults,
-  ): ModelInstance<any, TSchema, any> {
+  ): ModelInstance<any, TSchema> {
     // Try to find existing
-    let model: ModelInstance<any, TSchema, any> | null = null;
+    let model: ModelInstance<any, TSchema> | null = null;
 
     if (query) {
       // Use findMany to get matches, then shuffle and pick first
@@ -135,14 +142,14 @@ export default class AssociationsManager<
           : collection.findMany(query as any);
       if (matches.length > 0) {
         const shuffled = this._shuffle(matches.models);
-        model = shuffled[0];
+        model = shuffled[0] as ModelInstance<any, TSchema> | null;
       }
     } else {
       // Get all and shuffle, then pick first
       const all = collection.all();
       if (all.length > 0) {
         const shuffled = this._shuffle(all.models);
-        model = shuffled[0];
+        model = shuffled[0] as ModelInstance<any, TSchema> | null;
       }
     }
 
@@ -157,14 +164,14 @@ export default class AssociationsManager<
   }
 
   private _processLinkMany(
-    collection: Collection<TSchema, any, any, any, any>,
+    collection: Collection<TSchema, any, any, any>,
     template: ModelTemplate,
     count: number,
     query?: AssociationQuery,
     traitsAndDefaults?: AssociationTraitsAndDefaults,
-  ): ModelCollection<any, TSchema, any> {
+  ): ModelCollection<any, TSchema> {
     // Try to find existing
-    let models: ModelCollection<any, TSchema, any>;
+    let models: ModelCollection<any, TSchema>;
 
     if (query) {
       models =

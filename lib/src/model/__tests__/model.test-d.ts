@@ -10,6 +10,8 @@ import type {
   InferCollectionName,
   InferModelAttrs,
   InferModelName,
+  InferSerializedCollection,
+  InferSerializedModel,
   ModelAttrs,
   ModelForeignKeys,
   ModelInstance,
@@ -209,27 +211,17 @@ test('ModelInstance should default to Serializer<TTemplate>', () => {
   >();
 });
 
-test('ModelInstance should accept custom serializer type', () => {
-  interface UserJSON {
-    id: string;
-    name: string;
-    email: string;
-  }
+test('ModelInstance serializer type is inferred from template', () => {
+  type UserInstance = ModelInstance<typeof userModel, TestSchema>;
 
-  type CustomSerializer = Serializer<typeof userModel, UserJSON>;
-  type UserInstanceWithSerializer = ModelInstance<typeof userModel, TestSchema, CustomSerializer>;
+  // Serializer type should be inferred from the template
+  type ExpectedSerializer = Serializer<
+    typeof userModel,
+    InferSerializedModel<typeof userModel>,
+    InferSerializedCollection<typeof userModel>
+  >;
 
-  // Should use the custom serializer type
-  expectTypeOf<UserInstanceWithSerializer['_serializer']>().toEqualTypeOf<
-    CustomSerializer | undefined
-  >();
-});
-
-test('ModelInstance should work with undefined serializer explicitly', () => {
-  type UserInstanceNoSerializer = ModelInstance<typeof userModel, TestSchema, undefined>;
-
-  // Should be undefined
-  expectTypeOf<UserInstanceNoSerializer['_serializer']>().toEqualTypeOf<undefined>();
+  expectTypeOf<UserInstance['_serializer']>().toEqualTypeOf<ExpectedSerializer | undefined>();
 });
 
 test('NewModelInstance should default to Serializer<TTemplate>', () => {
@@ -239,19 +231,17 @@ test('NewModelInstance should default to Serializer<TTemplate>', () => {
   expectTypeOf<NewUser['_serializer']>().toEqualTypeOf<Serializer<typeof userModel> | undefined>();
 });
 
-test('NewModelInstance should accept custom serializer type', () => {
-  interface UserJSON {
-    id: string;
-    name: string;
-  }
+test('NewModelInstance serializer type is inferred from template', () => {
+  type NewUser = NewModelInstance<typeof userModel, TestSchema>;
 
-  type CustomSerializer = Serializer<typeof userModel, UserJSON>;
-  type NewUserWithSerializer = NewModelInstance<typeof userModel, TestSchema, CustomSerializer>;
+  // Serializer type should be inferred from the template
+  type ExpectedSerializer = Serializer<
+    typeof userModel,
+    InferSerializedModel<typeof userModel>,
+    InferSerializedCollection<typeof userModel>
+  >;
 
-  // Should use the custom serializer type
-  expectTypeOf<NewUserWithSerializer['_serializer']>().toEqualTypeOf<
-    CustomSerializer | undefined
-  >();
+  expectTypeOf<NewUser['_serializer']>().toEqualTypeOf<ExpectedSerializer | undefined>();
 });
 
 test('ModelInstance toJSON should infer correct return type with default serializer', () => {
@@ -261,91 +251,47 @@ test('ModelInstance toJSON should infer correct return type with default seriali
   expectTypeOf<ReturnType<UserInstance['toJSON']>>().toEqualTypeOf<UserAttrs>();
 });
 
-test('ModelInstance toJSON should infer correct return type with custom serializer', () => {
-  interface UserJSON {
-    id: string;
-    name: string;
-    email: string;
-  }
+test('ModelInstance toJSON infers correct return type from template', () => {
+  type UserInstance = ModelInstance<typeof userModel, TestSchema>;
 
-  type CustomSerializer = Serializer<typeof userModel, UserJSON>;
-  type UserInstanceWithSerializer = ModelInstance<typeof userModel, TestSchema, CustomSerializer>;
-
-  // toJSON should return UserJSON with custom serializer
-  expectTypeOf<ReturnType<UserInstanceWithSerializer['toJSON']>>().toEqualTypeOf<UserJSON>();
+  // toJSON should return InferSerializedModel<TTemplate>
+  expectTypeOf<ReturnType<UserInstance['toJSON']>>().toEqualTypeOf<
+    InferSerializedModel<typeof userModel>
+  >();
 });
 
-test('ModelInstance toJSON should work with root-wrapped custom serializer', () => {
-  interface UserJSON {
-    id: string;
-    name: string;
-  }
+test('ModelInstance toJSON returns InferSerializedModel<TTemplate>', () => {
+  type UserInstance = ModelInstance<typeof userModel, TestSchema>;
 
-  interface UserRootJSON {
-    user: UserJSON;
-  }
-
-  type CustomSerializer = Serializer<typeof userModel, UserRootJSON>;
-  type UserInstanceWithSerializer = ModelInstance<typeof userModel, TestSchema, CustomSerializer>;
-
-  // toJSON should return UserRootJSON with root wrapping
-  expectTypeOf<ReturnType<UserInstanceWithSerializer['toJSON']>>().toEqualTypeOf<UserRootJSON>();
+  // toJSON should return InferSerializedModel<TTemplate>
+  expectTypeOf<ReturnType<UserInstance['toJSON']>>().toEqualTypeOf<
+    InferSerializedModel<typeof userModel>
+  >();
 });
 
-test('Serializer generic should not conflict with default when undefined', () => {
-  // These should all be compatible
+test('ModelInstance with same template have same serializer type', () => {
+  // These should all be compatible - serializer type is inferred from template
   type Instance1 = ModelInstance<typeof userModel>;
   type Instance2 = ModelInstance<typeof userModel, TestSchema>;
-  type Instance3 = ModelInstance<typeof userModel, TestSchema, Serializer<typeof userModel>>;
-  type Instance4 = ModelInstance<typeof userModel, TestSchema, undefined>;
 
-  // Both use default serializer, so they have the same serializer type
+  // Both use the same template, so they have the same serializer type
   expectTypeOf<Instance1['_serializer']>().toEqualTypeOf<Instance2['_serializer']>();
 
-  // Instance3 should have compatible attrs with Instance1 (both have same attrs)
-  expectTypeOf<Instance3['attrs']>().toMatchTypeOf<Instance1['attrs']>();
-
-  // Instance4 is explicitly undefined, different from default
-  expectTypeOf<Instance4['_serializer']>().toEqualTypeOf<undefined>();
+  // Both should have the same attrs
+  expectTypeOf<Instance1['attrs']>().toMatchTypeOf<Instance2['attrs']>();
 });
 
-test('Custom serializer should work through relationship accessors', () => {
-  interface UserJSON {
-    id: string;
-    name: string;
-  }
+test('Serializer type is correctly inferred for different templates', () => {
+  type UserInstance = ModelInstance<typeof userModel, TestSchema>;
+  type PostInstance = ModelInstance<typeof postModel, TestSchema>;
 
-  interface PostJSON {
-    id: number;
-    title: string;
-  }
-
-  type UserSerializer = Serializer<typeof userModel, UserJSON>;
-  type PostSerializer = Serializer<typeof postModel, PostJSON>;
-
-  type UserInstance = ModelInstance<typeof userModel, TestSchema, UserSerializer>;
-  type PostInstance = ModelInstance<typeof postModel, TestSchema, PostSerializer>;
-
-  // Verify toJSON returns the correct custom types
-  expectTypeOf<ReturnType<UserInstance['toJSON']>>().toEqualTypeOf<UserJSON>();
-  expectTypeOf<ReturnType<PostInstance['toJSON']>>().toEqualTypeOf<PostJSON>();
-});
-
-test('ModelInstance should preserve serializer type through schema collections', () => {
-  interface UserJSON {
-    id: string;
-    name: string;
-    email: string;
-  }
-
-  type UserSerializer = Serializer<typeof userModel, UserJSON>;
-  type UserInstance = ModelInstance<typeof userModel, TestSchema, UserSerializer>;
-
-  // The serializer type should be preserved
-  expectTypeOf<UserInstance['_serializer']>().toEqualTypeOf<UserSerializer | undefined>();
-
-  // And toJSON should return the custom type
-  expectTypeOf<ReturnType<UserInstance['toJSON']>>().toEqualTypeOf<UserJSON>();
+  // Verify toJSON returns the correct inferred types from templates
+  expectTypeOf<ReturnType<UserInstance['toJSON']>>().toEqualTypeOf<
+    InferSerializedModel<typeof userModel>
+  >();
+  expectTypeOf<ReturnType<PostInstance['toJSON']>>().toEqualTypeOf<
+    InferSerializedModel<typeof postModel>
+  >();
 });
 
 // ============================================================================
@@ -361,87 +307,43 @@ test('ModelCollection should default to Serializer<TTemplate>', () => {
   >();
 });
 
-test('ModelCollection should accept custom serializer type', () => {
-  interface UserJSON {
-    id: string;
-    name: string;
-    email: string;
-  }
+test('ModelCollection serializer type is inferred from template', () => {
+  type UsersCollection = ModelCollection<typeof userModel, TestSchema>;
 
-  interface UsersJSON {
-    users: UserJSON[];
-  }
-
-  type CustomSerializer = Serializer<typeof userModel, UserJSON, UsersJSON>;
-  type UsersCollectionWithSerializer = ModelCollection<
+  // Serializer type should be inferred from the template
+  type ExpectedSerializer = Serializer<
     typeof userModel,
-    TestSchema,
-    CustomSerializer
+    InferSerializedModel<typeof userModel>,
+    InferSerializedCollection<typeof userModel>
   >;
 
-  // Should use the custom serializer type
-  expectTypeOf<UsersCollectionWithSerializer['_serializer']>().toEqualTypeOf<
-    CustomSerializer | undefined
+  expectTypeOf<UsersCollection['_serializer']>().toEqualTypeOf<ExpectedSerializer | undefined>();
+});
+
+test('ModelCollection toJSON returns InferSerializedCollection<TTemplate>', () => {
+  type UsersCollection = ModelCollection<typeof userModel, TestSchema>;
+
+  // toJSON should return InferSerializedCollection<TTemplate>
+  expectTypeOf<ReturnType<UsersCollection['toJSON']>>().toEqualTypeOf<
+    InferSerializedCollection<typeof userModel>
   >();
 });
 
-test('ModelCollection toJSON should infer correct return type with default serializer', () => {
-  type UsersCollection = ModelCollection<typeof userModel, TestSchema>;
+test('ModelCollection toJSON returns collection type inferred from template', () => {
+  type PostsCollection = ModelCollection<typeof postModel, TestSchema>;
 
-  // toJSON should return UserAttrs[] by default
-  expectTypeOf<ReturnType<UsersCollection['toJSON']>>().toEqualTypeOf<UserAttrs[]>();
+  // Collection toJSON should return InferSerializedCollection<TTemplate>
+  expectTypeOf<ReturnType<PostsCollection['toJSON']>>().toEqualTypeOf<
+    InferSerializedCollection<typeof postModel>
+  >();
 });
 
-test('ModelCollection toJSON should infer correct return type with custom serializer', () => {
-  interface UserJSON {
-    id: string;
-    name: string;
-    email: string;
-  }
+test('ModelCollection from relationship accessor uses target collection serializer', () => {
+  // When accessing user.posts, the collection should use the post template's serializer
+  type PostsCollection = ModelCollection<typeof postModel, TestSchema>;
 
-  interface UsersJSON {
-    users: UserJSON[];
-  }
-
-  type CustomSerializer = Serializer<typeof userModel, UserJSON, UsersJSON>;
-  type UsersCollectionWithSerializer = ModelCollection<
-    typeof userModel,
-    TestSchema,
-    CustomSerializer
-  >;
-
-  // toJSON should return UsersJSON with custom collection serializer
-  expectTypeOf<ReturnType<UsersCollectionWithSerializer['toJSON']>>().toEqualTypeOf<UsersJSON>();
-});
-
-test('ModelCollection should work with different model and collection serialized types', () => {
-  interface PostJSON {
-    id: number;
-    title: string;
-  }
-
-  interface PostsJSON {
-    posts: PostJSON[];
-  }
-
-  type PostSerializer = Serializer<typeof postModel, PostJSON, PostsJSON>;
-  type PostsCollection = ModelCollection<typeof postModel, TestSchema, PostSerializer>;
-
-  // Collection toJSON should return PostsJSON (collection type)
-  expectTypeOf<ReturnType<PostsCollection['toJSON']>>().toEqualTypeOf<PostsJSON>();
-});
-
-test('ModelCollection from relationship accessor should use target collection serializer', () => {
-  interface PostJSON {
-    id: number;
-    title: string;
-  }
-
-  type PostSerializer = Serializer<typeof postModel, PostJSON, PostJSON[]>;
-
-  // When accessing user.posts, the collection should have the post serializer
-  type PostsCollection = ModelCollection<typeof postModel, TestSchema, PostSerializer>;
-
-  // toJSON should return PostJSON[]
-  expectTypeOf<ReturnType<PostsCollection['toJSON']>>().toEqualTypeOf<PostJSON[]>();
+  // toJSON should return InferSerializedCollection<postModel>
+  expectTypeOf<ReturnType<PostsCollection['toJSON']>>().toEqualTypeOf<
+    InferSerializedCollection<typeof postModel>
+  >();
 });

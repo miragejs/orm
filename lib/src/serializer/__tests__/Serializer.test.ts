@@ -359,7 +359,9 @@ describe('Serializer', () => {
       });
 
       const userCollection = collection().model(customUserModel).serializer(serializer).create();
-      const testSchema = schema().collections({ users: userCollection }).setup();
+      const testSchema = schema()
+        .collections({ users: userCollection as any })
+        .setup();
 
       const user = testSchema.users.create({
         name: 'John Doe',
@@ -367,7 +369,7 @@ describe('Serializer', () => {
         password: 'secret123',
         role: 'admin',
       });
-      const json: UserWithTimestampJSON = user.toJSON();
+      const json = user.toJSON() as UserWithTimestampJSON;
 
       expect(json).toEqual({
         id: '1',

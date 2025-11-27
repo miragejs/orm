@@ -31,7 +31,7 @@ type CollectionConfigFor<
  * @internal
  */
 type FactoryFor<TSchema extends SchemaCollections, TModel extends ModelTemplate> =
-  CollectionConfigFor<TSchema, TModel> extends CollectionConfig<any, any, infer TFactory, any, any>
+  CollectionConfigFor<TSchema, TModel> extends CollectionConfig<any, any, infer TFactory, any>
     ? TFactory
     : undefined;
 
@@ -110,7 +110,7 @@ export type HasMany<
 export type Relationships = BelongsTo<any, any> | HasMany<any, any>;
 
 // ============================================================================
-// ASSOCIATION TYPES
+// FACTORY ASSOCIATION TYPES
 // ============================================================================
 
 /**
@@ -118,6 +118,7 @@ export type Relationships = BelongsTo<any, any> | HasMany<any, any>;
  */
 export type AssociationType = 'create' | 'createMany' | 'link' | 'linkMany';
 
+// TODO: Need to replace these custom query types with DbRecordInput or QueryOptions
 /**
  * Predicate function for filtering models in link/linkMany associations
  * @template TModel - The model type to filter

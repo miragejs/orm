@@ -9,7 +9,7 @@ import {
   type PartialModelAttrs,
   type RelationshipsByTemplate,
 } from '@src/model';
-import type { ModelCollection, RelatedModelAttrs } from '@src/model';
+import type { RelatedModelAttrs } from '@src/model';
 import type { Collection, SchemaCollections, SchemaInstance } from '@src/schema';
 import { MirageError } from '@src/utils';
 
@@ -116,7 +116,7 @@ export default class Factory<
    */
   runAfterCreateHooks(
     schema: SchemaInstance<TSchema>,
-    model: ModelInstance<TTemplate, TSchema, any>,
+    model: ModelInstance<TTemplate, TSchema>,
     ...traitsAndDefaults: (TTraits | PartialModelAttrs<TTemplate, TSchema>)[]
   ): ModelInstance<TTemplate, TSchema> {
     const traitNames: TTraits[] = traitsAndDefaults.filter(
@@ -282,7 +282,7 @@ export default class Factory<
       RelatedModelAttrs<TSchema, RelationshipsByTemplate<TTemplate, TSchema>>
     >,
     traitNames: TTraits[],
-  ): Record<string, ModelInstance<any, TSchema> | ModelCollection<any, TSchema>> {
+  ): Partial<RelatedModelAttrs<TSchema, RelationshipsByTemplate<TTemplate, TSchema>>> {
     // Get keys to skip
     const skipKeys = Object.keys(relationshipUpdates);
 

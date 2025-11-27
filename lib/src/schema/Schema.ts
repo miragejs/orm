@@ -1,5 +1,4 @@
 import { createDatabase, type DbInstance } from '@src/db';
-import { Factory } from '@src/factory';
 import { StringIdentityManager } from '@src/id-manager';
 import type { ModelTemplate } from '@src/model';
 import {
@@ -33,7 +32,7 @@ export default class Schema<
     : StringIdentityManager;
   public readonly logger?: Logger;
 
-  private _collections: Map<string, Collection<any, any, any, any, any>> = new Map();
+  private _collections: Map<string, Collection<any, any, any, any>> = new Map();
   private _globalSerializerConfig?: StructuralSerializerOptions;
 
   constructor(collections: TCollections, config?: TConfig) {
@@ -62,18 +61,9 @@ export default class Schema<
     infer TTemplate,
     infer TRelationships,
     infer TFactory,
-    infer TSerializer,
     any
   >
-    ? Collection<
-        TCollections,
-        TTemplate,
-        TRelationships,
-        TFactory extends Factory<TTemplate, any, any>
-          ? TFactory
-          : Factory<TTemplate, string, TCollections>,
-        TSerializer
-      >
+    ? Collection<TCollections, TTemplate, TRelationships, TFactory>
     : never {
     const collection = this._collections.get(collectionName as string);
     if (!collection) {

@@ -105,7 +105,7 @@ export default class Serializer<
    * @returns The serialized model data without root wrapping
    */
   private serializeData<TSchema extends SchemaCollections>(
-    model: ModelInstance<TTemplate, TSchema, Serializer<TTemplate>>,
+    model: ModelInstance<TTemplate, TSchema>,
   ): Record<string, any> {
     const attrs = this._getAttributes(model);
 
@@ -171,7 +171,7 @@ export default class Serializer<
    * @returns The serialized model with structural formatting applied
    */
   serialize<TSchema extends SchemaCollections>(
-    model: ModelInstance<TTemplate, TSchema, Serializer<TTemplate>>,
+    model: ModelInstance<TTemplate, TSchema>,
   ): TSerializedModel {
     const data = this.serializeData(model);
 
@@ -254,8 +254,8 @@ export default class Serializer<
    * @param model - The model instance
    * @returns Object with attributes
    */
-  private _getAttributes<TSchema extends SchemaCollections, TSerializer = any>(
-    model: ModelInstance<TTemplate, TSchema, TSerializer>,
+  private _getAttributes<TSchema extends SchemaCollections>(
+    model: ModelInstance<TTemplate, TSchema>,
   ): Record<string, any> {
     // If specific attributes are configured, only include those
     if (this._attrs && this._attrs.length > 0) {
@@ -278,8 +278,8 @@ export default class Serializer<
    * @param model - The model instance
    * @returns Object with embedded, sideLoaded, and foreignKeys
    */
-  private _getRelationships<TSchema extends SchemaCollections, TSerializer = any>(
-    model: ModelInstance<TTemplate, TSchema, TSerializer>,
+  private _getRelationships<TSchema extends SchemaCollections>(
+    model: ModelInstance<TTemplate, TSchema>,
   ): { embedded: Record<string, any>; sideLoaded: Record<string, any>; foreignKeys: string[] } {
     const embedded: Record<string, any> = {};
     const sideLoaded: Record<string, any> = {};
@@ -369,9 +369,9 @@ export default class Serializer<
    * @param model - The model instance
    * @returns Attributes without foreign keys
    */
-  private _removeForeignKeys<TSchema extends SchemaCollections, TSerializer = any>(
+  private _removeForeignKeys<TSchema extends SchemaCollections>(
     attrs: Record<string, any>,
-    model: ModelInstance<TTemplate, TSchema, TSerializer>,
+    model: ModelInstance<TTemplate, TSchema>,
   ): Record<string, any> {
     const result = { ...attrs };
     const relationships = model.relationships as Record<string, any> | undefined;

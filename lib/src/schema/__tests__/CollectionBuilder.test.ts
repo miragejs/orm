@@ -2,7 +2,7 @@ import { associations, hasMany, belongsTo } from '@src/associations';
 import { factory } from '@src/factory';
 import { NumberIdentityManager, StringIdentityManager } from '@src/id-manager';
 import { model } from '@src/model';
-import { Serializer } from '@src/serializer';
+import { Serializer, type SerializerOptions } from '@src/serializer';
 import { MirageError } from '@src/utils';
 
 import CollectionBuilder, { collection } from '../CollectionBuilder';
@@ -452,7 +452,10 @@ describe('CollectionBuilder', () => {
       const relationships = {
         posts: associations.hasMany(postModel),
       };
-      const serializerConfig = { root: true, attrs: ['id', 'name'] as const };
+      const serializerConfig: SerializerOptions<typeof userModel> = {
+        root: true,
+        attrs: ['id', 'name'],
+      };
 
       // Order 1: relationships -> factory -> identityManager -> serializer
       const collection1 = collection()

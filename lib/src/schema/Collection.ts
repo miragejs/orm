@@ -31,27 +31,19 @@ export default class Collection<
   TTemplate extends ModelTemplate = ModelTemplate,
   TRelationships extends ModelRelationships = {},
   TFactory extends Factory<TTemplate, string, TSchema> = Factory<TTemplate, string, TSchema>,
-  TSerializer = undefined,
-> extends BaseCollection<TSchema, TTemplate, TRelationships, TFactory, TSerializer> {
+> extends BaseCollection<TSchema, TTemplate, TRelationships, TFactory> {
   /**
    * Creates a new model instance (not persisted in the database).
    * @param attrs - The attributes to create the model with. All required attributes must be provided.
    * @returns The new model instance.
    */
-  new(
-    attrs: ModelCreateAttrs<TTemplate, TSchema>,
-  ): NewModelInstance<TTemplate, TSchema, TSerializer> {
+  new(attrs: ModelCreateAttrs<TTemplate, TSchema>): NewModelInstance<TTemplate, TSchema> {
     return new this.Model({
       attrs: attrs,
       relationships: this.relationships,
       schema: this._schema,
       serializer: this.serializer,
-    } as unknown as ModelConfig<
-      TTemplate,
-      TSchema,
-      RelationshipsByTemplate<TTemplate, TSchema>,
-      TSerializer
-    >);
+    } as unknown as ModelConfig<TTemplate, TSchema, RelationshipsByTemplate<TTemplate, TSchema>>);
   }
 
   /**
@@ -64,7 +56,7 @@ export default class Collection<
       | FactoryTraitNames<TFactory>
       | CollectionCreateAttrs<TTemplate, TSchema>
     )[]
-  ): ModelInstance<TTemplate, TSchema, TSerializer> {
+  ): ModelInstance<TTemplate, TSchema> {
     this._logger?.debug(`Creating ${this.modelName}`, {
       collection: this.collectionName,
       traitsAndDefaults,
@@ -109,7 +101,7 @@ export default class Collection<
       | FactoryTraitNames<TFactory>
       | CollectionCreateAttrs<TTemplate, TSchema>
     )[]
-  ): ModelCollection<TTemplate, TSchema, TSerializer>;
+  ): ModelCollection<TTemplate, TSchema>;
 
   /**
    * Create multiple models with different attributes.
@@ -118,7 +110,7 @@ export default class Collection<
    */
   createMany(
     models: (FactoryTraitNames<TFactory> | CollectionCreateAttrs<TTemplate, TSchema>)[][],
-  ): ModelCollection<TTemplate, TSchema, TSerializer>;
+  ): ModelCollection<TTemplate, TSchema>;
 
   /**
    * Implementation signature for createMany overloads.
@@ -135,8 +127,8 @@ export default class Collection<
       | FactoryTraitNames<TFactory>
       | CollectionCreateAttrs<TTemplate, TSchema>
     )[]
-  ): ModelCollection<TTemplate, TSchema, TSerializer> {
-    let models: ModelInstance<TTemplate, TSchema, TSerializer>[];
+  ): ModelCollection<TTemplate, TSchema> {
+    let models: ModelInstance<TTemplate, TSchema>[];
 
     if (typeof countOrModels === 'number') {
       // Original behavior: create N models with same traits
@@ -163,7 +155,7 @@ export default class Collection<
       | FactoryTraitNames<TFactory>
       | CollectionCreateAttrs<TTemplate, TSchema>
     )[]
-  ): ModelInstance<TTemplate, TSchema, TSerializer> {
+  ): ModelInstance<TTemplate, TSchema> {
     const existingModel = this.find(query);
     if (existingModel) {
       return existingModel;
@@ -187,12 +179,12 @@ export default class Collection<
     count: number,
     query:
       | DbRecordInput<ModelAttrs<TTemplate, TSchema>>
-      | ((model: ModelInstance<TTemplate, TSchema, TSerializer>) => boolean),
+      | ((model: ModelInstance<TTemplate, TSchema>) => boolean),
     ...traitsAndDefaults: (
       | FactoryTraitNames<TFactory>
       | CollectionCreateAttrs<TTemplate, TSchema>
     )[]
-  ): ModelCollection<TTemplate, TSchema, TSerializer> {
+  ): ModelCollection<TTemplate, TSchema> {
     // Find existing models matching the query
     const existingModels =
       typeof query === 'function'
@@ -213,11 +205,10 @@ export default class Collection<
 
     // Create the remaining models
     // If query is an object, include it in the creation attributes
-    const queryAttrs =
-      typeof query === 'function' ? {} : (query as CollectionCreateAttrs<TTemplate, TSchema>);
+    const queryAttrs = typeof query === 'function' ? {} : query;
 
     const newModels = Array.from({ length: needed }, () =>
-      this.create(...traitsAndDefaults, queryAttrs),
+      this.create(...traitsAndDefaults, queryAttrs as CollectionCreateAttrs<TTemplate, TSchema>),
     );
 
     // Combine existing and new models
@@ -386,21 +377,12 @@ export function createCollection<
 >(
   schema: SchemaInstance<TSchema>,
   config: TConfig,
-): TConfig extends CollectionConfig<
-  infer TTemplate,
-  infer TRelationships,
-  infer TFactory,
-  infer TSerializer,
-  any
->
+): TConfig extends CollectionConfig<infer TTemplate, infer TRelationships, infer TFactory, any, any>
   ? Collection<
       TSchema,
       TTemplate,
       TRelationships extends ModelRelationships ? TRelationships : {},
-      TFactory extends Factory<TTemplate, any, any>
-        ? TFactory
-        : Factory<TTemplate, string, TSchema>,
-      TSerializer
+      TFactory extends Factory<TTemplate, any, any> ? TFactory : Factory<TTemplate, string, TSchema>
     >
   : never {
   // Type assertion needed: Factory function with complex conditional return type

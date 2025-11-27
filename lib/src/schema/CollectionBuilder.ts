@@ -1,6 +1,6 @@
 import type { Factory } from '@src/factory';
 import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
-import type { ModelTemplate, ModelRelationships } from '@src/model';
+import type { ModelRelationships, ModelTemplate } from '@src/model';
 import { Serializer, type SerializerOptions } from '@src/serializer';
 import { MirageError } from '@src/utils';
 
@@ -42,7 +42,7 @@ export default class CollectionBuilder<
   TRelationships extends ModelRelationships = {},
   TFactory extends Factory<TTemplate, any, any> = Factory<TTemplate, string, SchemaCollections>,
   TIdentityManager extends IdentityManager = StringIdentityManager,
-  TSerializer = undefined,
+  TSerializer extends Serializer<any, any, any> = Serializer<ModelTemplate>,
 > {
   private _template?: TTemplate;
   private _factory?: TFactory;
@@ -78,9 +78,9 @@ export default class CollectionBuilder<
     T,
     TSchema,
     TRelationships,
-    TFactory extends undefined ? undefined : Factory<T, any, TSchema>,
+    Factory<T, any, any>,
     TIdentityManager,
-    TSerializer
+    Serializer<T>
   > {
     // Validate model template structure
     if (!template || typeof template !== 'object') {
@@ -103,9 +103,9 @@ export default class CollectionBuilder<
       T,
       TSchema,
       TRelationships,
-      TFactory extends undefined ? undefined : Factory<T, any, TSchema>,
+      Factory<T, any, any>,
       TIdentityManager,
-      TSerializer
+      Serializer<T>
     >();
     builder._template = template;
     // Preserve factory if it exists, casting it to the new template type
@@ -114,7 +114,8 @@ export default class CollectionBuilder<
     builder._relationships = this._relationships;
     builder._serializerConfig = this
       ._serializerConfig as unknown as typeof builder._serializerConfig;
-    builder._serializerInstance = this._serializerInstance;
+    builder._serializerInstance = this
+      ._serializerInstance as unknown as typeof builder._serializerInstance;
     builder._identityManager = this._identityManager;
     builder._seeds = this._seeds;
     builder._fixtures = this._fixtures as unknown as typeof builder._fixtures;
@@ -255,23 +256,16 @@ export default class CollectionBuilder<
    *   .serializer(new CustomUserSerializer(userModel));
    * ```
    */
-  serializer<S>(
+  serializer<S extends Serializer<TTemplate> = Serializer<TTemplate>>(
     configOrSerializer: SerializerOptions<TTemplate> | S,
-  ): CollectionBuilder<
-    TTemplate,
-    TSchema,
-    TRelationships,
-    TFactory,
-    TIdentityManager,
-    S extends SerializerOptions<TTemplate> ? Serializer<TTemplate> : S
-  > {
+  ): CollectionBuilder<TTemplate, TSchema, TRelationships, TFactory, TIdentityManager, S> {
     const builder = new CollectionBuilder<
       TTemplate,
       TSchema,
       TRelationships,
       TFactory,
       TIdentityManager,
-      S extends SerializerOptions<TTemplate> ? Serializer<TTemplate> : S
+      S
     >();
     builder._template = this._template;
     builder._factory = this._factory;
@@ -476,7 +470,7 @@ export default class CollectionBuilder<
    * Creates the final schema collection configuration.
    * @returns The schema collection configuration
    */
-  create(): CollectionConfig<TTemplate, TRelationships, TFactory, TSerializer, TSchema> {
+  create(): CollectionConfig<TTemplate, TRelationships, TFactory, TSchema, TSerializer> {
     if (!this._template) {
       throw new MirageError(
         'Model template must be set before creating collection. Call .model() first.',
@@ -522,7 +516,7 @@ export function collection<
   {},
   Factory<ModelTemplate, string, SchemaCollections>,
   StringIdentityManager,
-  undefined
+  Serializer<ModelTemplate>
 > {
   return new CollectionBuilder<
     ModelTemplate,
@@ -530,6 +524,6 @@ export function collection<
     {},
     Factory<ModelTemplate, string, SchemaCollections>,
     StringIdentityManager,
-    undefined
+    Serializer<ModelTemplate>
   >();
 }

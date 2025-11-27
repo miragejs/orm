@@ -207,7 +207,7 @@ export type CollectionByTemplate<
   TSchema extends SchemaCollections,
   TTemplate extends ModelTemplate,
 > = {
-  [K in keyof TSchema]: TSchema[K] extends CollectionConfig<infer TModel, any, any, any, any>
+  [K in keyof TSchema]: TSchema[K] extends CollectionConfig<infer TModel, any, any, any>
     ? TModel extends TTemplate
       ? K
       : never
@@ -226,7 +226,6 @@ export type RelationshipsByTemplate<
   TSchema[CollectionByTemplate<TSchema, TTemplate>] extends CollectionConfig<
     any,
     infer TRelationships,
-    any,
     any,
     any
   >
@@ -373,14 +372,6 @@ export type ModelAttrAccessors<TTemplate extends ModelTemplate> = {
 };
 
 /**
- * Type for model only attributes without ID
- */
-export type ModelOnlyAttrs<TTemplate extends ModelTemplate> = Omit<
-  InferModelAttrs<TTemplate>,
-  'id'
->;
-
-/**
  * Type for model attributes that includes regular attributes, foreign keys, and relationship model instances
  * Only relationship-related properties are optional
  * @template TTemplate - The model template
@@ -450,13 +441,11 @@ export type ModelConfig<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
   TRelationships extends ModelRelationships = RelationshipsByTemplate<TTemplate, TSchema>,
-  TSerializer = undefined,
+  TSerializer extends Serializer<TTemplate> = Serializer<TTemplate>,
 > = {
   attrs: ModelCreateAttrs<TTemplate, TSchema, TRelationships>;
+  serializer?: TSerializer;
   schema: SchemaInstance<TSchema>;
-  // Accept any serializer type at construction time, not just TSerializer
-  // This allows passing serializers even when TSerializer defaults to undefined
-  serializer?: TSerializer extends undefined ? any : TSerializer;
 } & (Record<string, never> extends TRelationships
   ? { relationships?: undefined }
   : { relationships: TRelationships });
@@ -465,21 +454,19 @@ export type ModelConfig<
  * Type for model class with attribute accessors (direct Model constructor)
  * @template TTemplate - The model template (most important for users)
  * @template TSchema - The schema collections type for enhanced type inference
- * @template TSerializer - The serializer type
  */
 export type ModelClass<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
-  TSerializer = undefined,
 > = {
-  new (
+  new <TSerializer extends Serializer<TTemplate> = Serializer<TTemplate>>(
     config: ModelConfig<
       TTemplate,
       TSchema,
       RelationshipsByTemplate<TTemplate, TSchema>,
       TSerializer
     >,
-  ): NewModelInstance<TTemplate, TSchema, TSerializer>;
+  ): NewModelInstance<TTemplate, TSchema>;
 };
 
 /**
@@ -491,8 +478,7 @@ export type ModelClass<
 export type NewModelInstance<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
-  TSerializer = Serializer<TTemplate>,
-> = Model<TTemplate, TSchema, TSerializer> & {
+> = Model<TTemplate, TSchema> & {
   attrs: ModelAttrs<TTemplate, TSchema>;
   id: ModelAttrs<TTemplate, TSchema>['id'] | null;
 } & ModelAttrAccessors<TTemplate> &
@@ -508,8 +494,7 @@ export type NewModelInstance<
 export type ModelInstance<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
-  TSerializer = Serializer<TTemplate>,
-> = Model<TTemplate, TSchema, TSerializer> & {
+> = Model<TTemplate, TSchema> & {
   attrs: ModelAttrs<TTemplate, TSchema>;
   id: ModelAttrs<TTemplate, TSchema>['id'];
 } & ModelAttrAccessors<TTemplate> &
