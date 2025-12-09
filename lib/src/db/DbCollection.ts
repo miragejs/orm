@@ -251,7 +251,7 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
   insert(data: NewDbRecord<TRecord>): TRecord {
     const record = this._prepareRecord(data);
     this._records.set(record.id, record);
-    this._logger?.debug(`[${this.name}] INSERT`, record);
+    this._logger?.debug(`Inserted ${record.id} into ${this.name} collection`, record);
     return record;
   }
 
@@ -276,8 +276,13 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
       return null;
     }
     const updatedRecord = { ...existingRecord, ...patch } as TRecord;
+
     this._records.set(id, updatedRecord);
-    this._logger?.debug(`[${this.name}] UPDATE`, { id, patch, record: updatedRecord });
+    this._logger?.debug(`Updated ${id} in ${this.name} collection`, {
+      patch,
+      record: updatedRecord,
+    });
+
     return updatedRecord;
   }
 
@@ -297,11 +302,13 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
       this._records.set(record.id, updated);
       return updated;
     });
-    this._logger?.debug(`[${this.name}] UPDATE_MANY`, {
-      count: updatedRecords.length,
+    const updatedIds = updatedRecords.map((r) => r.id);
+
+    this._logger?.debug(`Updated ${updatedIds.length} records in ${this.name} collection`, {
+      ids: updatedIds,
       patch,
-      ids: updatedRecords.map((r) => r.id),
     });
+
     return updatedRecords;
   }
 
@@ -313,7 +320,7 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
   delete(id: TRecord['id']): boolean {
     const deleted = this._records.delete(id);
     if (deleted) {
-      this._logger?.debug(`[${this.name}] DELETE`, { id });
+      this._logger?.debug(`Deleted ${id} from ${this.name} collection`, { id });
     }
     return deleted;
   }
@@ -326,8 +333,10 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
   deleteMany(input: TRecord['id'][] | DbRecordInput<TRecord> | QueryOptions<TRecord>): number {
     const recordsToDelete = this.findMany(input);
     const ids = recordsToDelete.map((r) => r.id);
+
     recordsToDelete.forEach((record) => this._records.delete(record.id));
-    this._logger?.debug(`[${this.name}] DELETE_MANY`, { count: ids.length, ids });
+    this._logger?.debug(`Deleted ${ids.length} records from ${this.name} collection`, { ids });
+
     return recordsToDelete.length;
   }
 
