@@ -159,7 +159,7 @@ describe('Schema with Logging', () => {
       );
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        '[Mirage] DEBUG: Initializing new user model',
+        '[Mirage] DEBUG: Initializing new user',
         expect.objectContaining({
           attrs: expect.objectContaining({
             name: 'Alice',

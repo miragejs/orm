@@ -38,7 +38,7 @@ export default class Collection<
    * @returns The new model instance.
    */
   new(attrs: ModelCreateAttrs<TTemplate, TSchema>): NewModelInstance<TTemplate, TSchema> {
-    this._logger?.debug(`Initializing new ${this.modelName} model`, { id: attrs.id, attrs });
+    this._logger?.debug(`Initializing new ${this.modelName}`, { id: attrs.id, attrs });
     return new this.Model({
       attrs: attrs,
       relationships: this.relationships,
