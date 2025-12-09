@@ -110,10 +110,13 @@ export type HasCustomJSON<T extends ModelTemplate> =
  * Pending relationship operation type
  */
 export interface PendingRelationshipOperation {
-  relationshipName: string; // The relationship name
-  unlink: boolean; // Should we unlink the old relationship?
-  link: boolean; // Should we link the new relationship?
-  value?: unknown; // The relationship value (for linking or unlinking)
+  relationshipName: string; // Name of the relationship on this model being updated (e.g., 'author', 'posts')
+  type: 'link' | 'unlink'; // Whether this is linking new targets or unlinking old ones
+  foreignKeyValue: ForeignKeyValue; // The FK value to link/unlink (string for belongsTo, string[] for hasMany, null for unlink all)
+  targetCollectionName: string; // Collection name of the related models (e.g., 'users', 'posts')
+  inverseForeignKey?: string; // The FK field on the target model for inverse sync (e.g., 'postIds', 'authorId')
+  inverseRelationshipName?: string; // The relationship name on the target model (e.g., 'posts', 'author')
+  inverseType?: 'belongsTo' | 'hasMany'; // Type of the inverse relationship for proper FK update logic
 }
 
 /**
@@ -225,6 +228,7 @@ export type RelationshipsByTemplate<
     any,
     infer TRelationships,
     any,
+    any,
     any
   >
     ? TRelationships extends ModelRelationships
@@ -317,9 +321,10 @@ export type RelatedModelAttrs<
     }
   : {};
 
-export type ForeignKeyAttrs<TRelationships extends ModelRelationships> = Partial<
-  ModelForeignKeys<TRelationships>
->;
+export type ForeignKeyAttrs<
+  TRelationships extends ModelRelationships,
+  TTemplate extends ModelTemplate = ModelTemplate,
+> = Partial<ModelForeignKeys<TRelationships, TTemplate>>;
 
 /**
  * Infer relationship accessor properties that can be updated
@@ -425,7 +430,8 @@ export type ModelCreateAttrs<
   id?: ModelIdFor<TTemplate> | null;
 } & (Record<string, never> extends TRelationships
     ? {}
-    : ForeignKeyAttrs<TRelationships> & Partial<RelatedModelAttrs<TSchema, TRelationships>>);
+    : ForeignKeyAttrs<TRelationships, TTemplate> &
+        Partial<RelatedModelAttrs<TSchema, TRelationships>>);
 
 /**
  * Type for update method that includes attributes, foreign keys, and relationship model instances
@@ -457,11 +463,10 @@ export type ModelConfig<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
   TRelationships extends ModelRelationships = RelationshipsByTemplate<TTemplate, TSchema>,
-  TSerializer extends Serializer<TTemplate> = Serializer<TTemplate>,
 > = {
   attrs: ModelCreateAttrs<TTemplate, TSchema, TRelationships>;
-  serializer?: TSerializer;
   schema: SchemaInstance<TSchema>;
+  serializer?: Serializer<TTemplate>;
 } & (Record<string, never> extends TRelationships
   ? { relationships?: undefined }
   : { relationships: TRelationships });
@@ -475,13 +480,8 @@ export type ModelClass<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
 > = {
-  new <TSerializer extends Serializer<TTemplate> = Serializer<TTemplate>>(
-    config: ModelConfig<
-      TTemplate,
-      TSchema,
-      RelationshipsByTemplate<TTemplate, TSchema>,
-      TSerializer
-    >,
+  new (
+    config: ModelConfig<TTemplate, TSchema, RelationshipsByTemplate<TTemplate, TSchema>>,
   ): NewModelInstance<TTemplate, TSchema>;
 };
 

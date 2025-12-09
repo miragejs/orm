@@ -30,24 +30,18 @@ export default class AssociationsManager<
   /**
    * Process all associations and return relationship values
    * @param schema - The schema instance
-   * @param associations - The associations to process
-   * @param skipKeys - Optional list of relationship keys to skip (e.g., if user provided them)
+   * @param associations - The associations to process (already filtered by Factory)
    * @returns A record of relationship values
    */
   processAssociations(
     schema: SchemaInstance<TSchema>,
     associations: FactoryAssociations<TTemplate, TSchema>,
-    skipKeys?: string[],
   ): Partial<RelatedModelAttrs<TSchema, RelationshipsByTemplate<TTemplate, TSchema>>> {
     const relationshipValues: Record<string, any> = {};
-    const keysToSkip = new Set(skipKeys || []);
 
     for (const relationshipName in associations) {
       const association = associations[relationshipName] as Association<ModelTemplate>;
       if (!association) continue;
-
-      // Skip if user provided this relationship
-      if (keysToSkip.has(relationshipName)) continue;
 
       // Get the collection directly from the model's collectionName
       const collectionName = association.model.collectionName;

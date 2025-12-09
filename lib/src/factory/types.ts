@@ -1,9 +1,34 @@
 import type { FactoryAssociations } from '@src/associations';
 import type { ModelAttrsFor, ModelInstance, ModelTemplate } from '@src/model';
-import type { SchemaCollections, SchemaInstance } from '@src/schema';
+import type { CollectionConfig, SchemaCollections, SchemaInstance } from '@src/schema';
+
+import type Factory from './Factory';
 
 // Forbid any keys in U that are not in T
 type Exact<T, U extends T> = T & { [K in Exclude<keyof U, keyof T>]: never };
+
+/**
+ * Extract the factory's trait names from a schema for a given template
+ * Looks up the collection in the schema that matches the template and extracts its factory's trait names.
+ * Falls back to 'string' if no matching collection is found.
+ * @template TSchema - The schema collections type
+ * @template TTemplate - The model template to look up
+ */
+export type ExtractTraitsFromSchema<
+  TSchema extends SchemaCollections,
+  TTemplate extends ModelTemplate,
+> =
+  TSchema[TTemplate['collectionName'] & keyof TSchema] extends CollectionConfig<
+    any,
+    any,
+    infer TFactory,
+    any,
+    any
+  >
+    ? TFactory extends Factory<any, infer TTraits, any>
+      ? TTraits
+      : string
+    : string;
 
 export type FactoryAttrs<
   TTemplate extends ModelTemplate,

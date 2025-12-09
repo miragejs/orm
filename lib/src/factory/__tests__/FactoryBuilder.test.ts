@@ -32,7 +32,7 @@ const testSchema = schema()
 
 // Define test schema type
 type TestSchema = {
-  users: CollectionConfig<UserModel>;
+  users: CollectionConfig<UserModel, {}, Factory<UserModel, 'admin' | 'premium'>>;
 };
 
 describe('FactoryBuilder', () => {
@@ -168,7 +168,10 @@ describe('FactoryBuilder', () => {
         .model(userModel)
         .attrs({ name: 'John', email: 'john@example.com', role: 'user' })
         .traits({
-          admin: { role: 'admin', email: (id) => `admin${id}@example.com` },
+          admin: {
+            role: 'admin',
+            email: (id) => `admin${id}@example.com`,
+          },
         });
 
       const builder2 = builder1.traits({

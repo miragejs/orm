@@ -9,13 +9,13 @@ import {
   type PartialModelAttrs,
   type RelationshipsByTemplate,
 } from '@src/model';
-import type { RelatedModelAttrs } from '@src/model';
 import type { Collection, SchemaCollections, SchemaInstance } from '@src/schema';
 import { MirageError } from '@src/utils';
 
 import AssociationsManager from './AssociationsManager';
 import type { FactoryAttrs, FactoryAfterCreateHook, ModelTraits, TraitDefinition } from './types';
 
+// TODO: Review types to make them more precise
 /**
  * Factory that builds model attributes with optional schema support.
  * @template TTemplate - The model template (inferred from constructor)
@@ -95,15 +95,19 @@ export default class Factory<
       traitNames,
     );
 
-    // 7. Process associations (skip if no associations defined or all user-provided)
-    const associationValues = this._processAssociations(schema, relationshipUpdates, traitNames);
+    // 7. Get associations that need processing (merge traits + factory, filter user-provided)
+    const associations = this._getAssociations(traitNames, relationshipUpdates);
 
-    // 8. Merge: user defaults override associations, associations override factory attrs
-    return {
+    // 8. Process the filtered associations
+    const relationshipValues = this._associationsManager.processAssociations(schema, associations);
+
+    // 10. Merge: associations override factory attrs, but user-provided relationship values take precedence
+    const mergedAttrs = {
       ...evaluatedAttrs,
-      ...associationValues,
-      ...relationshipUpdates,
+      ...relationshipValues,
     } as ModelCreateAttrs<TTemplate, TSchema>;
+
+    return mergedAttrs;
   }
 
   /**
@@ -211,7 +215,7 @@ export default class Factory<
     const createContext = (attrs: Record<string, unknown>) =>
       new Proxy(attrs, {
         get(target, targetKey: string) {
-          const targetValue = target[targetKey];
+          let targetValue = target[targetKey];
 
           if (processing.has(targetKey)) {
             throw new MirageError(
@@ -221,17 +225,20 @@ export default class Factory<
 
           if (targetKey in target && typeof targetValue === 'function') {
             processing.add(targetKey);
-            return targetValue.call(createContext(attrs), modelId);
+            targetValue = targetValue.call(createContext(attrs), modelId);
           }
 
           attrs[targetKey] = targetValue;
           return targetValue;
         },
+        set(target, targetKey: string, value) {
+          target[targetKey] = value;
+          return true;
+        },
       });
 
-    for (const key in attributes) {
-      const prop = key as keyof FactoryAttrs<TTemplate>;
-      const value = attributes[prop];
+    for (const key in result) {
+      const value = result[key];
 
       if (typeof value === 'function') {
         processing.add(key);
@@ -269,47 +276,6 @@ export default class Factory<
   }
 
   /**
-   * Process associations and return relationships
-   * This runs with schema context and creates/links related models
-   * @param schema - The schema instance
-   * @param relationshipUpdates - Relationship updates to skip
-   * @param traitNames - Trait names to include trait associations
-   * @returns A record of relationship values
-   */
-  _processAssociations(
-    schema: SchemaInstance<TSchema>,
-    relationshipUpdates: Partial<
-      RelatedModelAttrs<TSchema, RelationshipsByTemplate<TTemplate, TSchema>>
-    >,
-    traitNames: TTraits[],
-  ): Partial<RelatedModelAttrs<TSchema, RelationshipsByTemplate<TTemplate, TSchema>>> {
-    // Get keys to skip
-    const skipKeys = Object.keys(relationshipUpdates);
-
-    // Get trait associations
-    const traitAssociations = this._getTraitAssociations(traitNames);
-
-    // Merge factory associations with trait associations (factory associations take precedence)
-    const mergedAssociations = {
-      ...traitAssociations,
-      ...(this.associations || {}),
-    };
-
-    // If no associations defined, return empty
-    if (Object.keys(mergedAssociations).length === 0) {
-      return {};
-    }
-
-    // If all associations are user-provided (skipped), return empty
-    if (skipKeys && Object.keys(mergedAssociations).every((key) => skipKeys.includes(key))) {
-      return {};
-    }
-
-    // Use the manager instance to process merged associations
-    return this._associationsManager.processAssociations(schema, mergedAssociations, skipKeys);
-  }
-
-  /**
    * Check if a value is an association object
    * @param value - The value to check
    * @returns True if the value is an association
@@ -325,17 +291,21 @@ export default class Factory<
   }
 
   /**
-   * Extract associations from traits
+   * Get associations that need processing by:
+   * 1. Extracting associations from traits
+   * 2. Merging with factory associations (factory takes precedence)
+   * 3. Filtering out associations where user provided values
    * @param traitNames - The trait names to extract associations from
-   * @returns The merged associations from all traits
+   * @param relationshipUpdates - Relationship updates from user (contains FK values for relationships that were provided)
+   * @returns Filtered associations ready to be processed
    */
-  private _getTraitAssociations(traitNames: TTraits[]): FactoryAssociations<TTemplate, TSchema> {
-    if (traitNames.length === 0) {
-      return {};
-    }
-
+  private _getAssociations(
+    traitNames: TTraits[],
+    relationshipUpdates: Record<string, any>,
+  ): FactoryAssociations<TTemplate, TSchema> {
     const associations: Record<string, any> = {};
 
+    // 1. Extract associations from traits
     for (const name of traitNames) {
       const trait = this.traits?.[name as TTraits];
 
@@ -352,6 +322,21 @@ export default class Factory<
       }
     }
 
-    return associations as FactoryAssociations<TTemplate, TSchema>;
+    // 2. Merge with factory associations (factory takes precedence)
+    Object.assign(associations, this.associations || {});
+
+    // 3. Filter out associations where user provided values
+    const filtered: FactoryAssociations<TTemplate, TSchema> = {};
+
+    for (const relationshipName in associations) {
+      // Skip if user provided a value for this relationship (model instance or FK)
+      // relationshipUpdates contains entries like { author: '123' } or { posts: ['1', '2'] }
+      if (!(relationshipName in relationshipUpdates)) {
+        filtered[relationshipName as keyof FactoryAssociations<TTemplate, TSchema>] =
+          associations[relationshipName];
+      }
+    }
+
+    return filtered;
   }
 }

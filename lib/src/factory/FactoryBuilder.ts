@@ -4,7 +4,13 @@ import type { SchemaCollections } from '@src/schema';
 import { MirageError } from '@src/utils';
 
 import Factory from './Factory';
-import type { FactoryAttrs, FactoryAfterCreateHook, ModelTraits } from './types';
+import type {
+  FactoryAttrs,
+  FactoryAfterCreateHook,
+  ModelTraits,
+  ExtractTraitsFromSchema,
+  TraitDefinition,
+} from './types';
 
 /**
  * Builder class for creating factories with fluent API
@@ -33,10 +39,12 @@ export default class FactoryBuilder<
    * Set the model template for the factory
    * @template T - The model template type
    * @param template - The model template
-   * @returns A new builder instance with the specified template
+   * @returns A new builder instance with the specified template and traits extracted from schema
    */
-  model<T extends ModelTemplate>(template: T): FactoryBuilder<T, string, TSchema> {
-    const builder = new FactoryBuilder<T, string, TSchema>();
+  model<T extends ModelTemplate>(
+    template: T,
+  ): FactoryBuilder<T, ExtractTraitsFromSchema<TSchema, T>, TSchema> {
+    const builder = new FactoryBuilder<T, ExtractTraitsFromSchema<TSchema, T>, TSchema>();
     builder._template = template;
     return builder;
   }
@@ -53,11 +61,14 @@ export default class FactoryBuilder<
 
   /**
    * Add traits to the factory
-   * @param traits - The traits to add
+   * @param traits - The traits to add (supports schema-defined traits and custom traits)
    * @returns A new builder instance with the merged traits
    */
-  traits<TNewTraits extends string>(
-    traits: ModelTraits<TNewTraits, TTemplate, TSchema>,
+  traits<TNewTraits extends string = never>(
+    traits: string extends TTraits
+      ? ModelTraits<TNewTraits, TTemplate, TSchema>
+      : Partial<Record<TTraits, TraitDefinition<TTemplate, TSchema>>> &
+          ModelTraits<TNewTraits, TTemplate, TSchema>,
   ): FactoryBuilder<
     TTemplate,
     string extends TTraits ? TNewTraits : TTraits | TNewTraits,

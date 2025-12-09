@@ -234,6 +234,40 @@ describe('Model', () => {
 
       expect(post.authorId).toBeNull();
     });
+
+    it('should include foreign key in attrs when creating with belongsTo foreign key', () => {
+      const post = new PostModelClass({
+        attrs: {
+          title: 'Test Post',
+          content: 'Test content',
+          authorId: 'user-123',
+        },
+        relationships: {
+          author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+        },
+        schema: testSchema,
+      });
+
+      expect(post.authorId).toBe('user-123');
+      expect(post.attrs.authorId).toBe('user-123');
+    });
+
+    it('should include foreign keys in attrs when creating with hasMany foreign key array', () => {
+      const user = new UserModelClass({
+        attrs: {
+          name: 'John Doe',
+          email: 'john@example.com',
+          postIds: ['post-1', 'post-2', 'post-3'],
+        },
+        relationships: {
+          posts: associations.hasMany(postModel),
+        },
+        schema: testSchema,
+      });
+
+      expect(user.postIds).toEqual(['post-1', 'post-2', 'post-3']);
+      expect(user.attrs.postIds).toEqual(['post-1', 'post-2', 'post-3']);
+    });
   });
 
   describe('CRUD operations', () => {
@@ -838,6 +872,306 @@ describe('Model', () => {
         });
         expect(json).not.toHaveProperty('content');
         expect(json).not.toHaveProperty('authorId');
+      });
+    });
+  });
+
+  describe('processAttrs (static method)', () => {
+    describe('without relationships', () => {
+      it('should return attrs as modelAttrs when no relationships are defined', () => {
+        const attrs = { name: 'John Doe', email: 'john@example.com' };
+        const result = Model.processAttrs<UserModel, TestSchema>(attrs);
+
+        expect(result.modelAttrs).toEqual(attrs);
+        expect(result.relationshipUpdates).toEqual({});
+      });
+
+      it('should pass through id attribute', () => {
+        const attrs = { id: 'custom-id', name: 'John Doe', email: 'john@example.com' };
+        const result = Model.processAttrs<UserModel, TestSchema>(attrs);
+
+        expect(result.modelAttrs).toEqual(attrs);
+        expect(result.relationshipUpdates).toEqual({});
+      });
+    });
+
+    describe('with model instances', () => {
+      it('should extract foreign key from belongsTo model instance', () => {
+        const author = new UserModelClass({
+          attrs: { name: 'Author', email: 'author@example.com' },
+          relationships: {
+            posts: associations.hasMany(postModel),
+          },
+          schema: testSchema,
+        }).save();
+
+        const attrs = {
+          title: 'Test Post',
+          content: 'Content here',
+          author,
+        };
+
+        const relationships = {
+          author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+        };
+
+        const result = Model.processAttrs<PostModel, TestSchema>(attrs, relationships);
+
+        expect(result.modelAttrs).toEqual({
+          authorId: author.id,
+          title: 'Test Post',
+          content: 'Content here',
+        });
+        expect(result.relationshipUpdates).toEqual({ author: author.id });
+      });
+
+      it('should extract foreign keys from hasMany model instances array', () => {
+        const post1 = new PostModelClass({
+          attrs: { title: 'Post 1', content: 'Content 1' },
+          relationships: {
+            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+          },
+          schema: testSchema,
+        }).save();
+
+        const post2 = new PostModelClass({
+          attrs: { title: 'Post 2', content: 'Content 2' },
+          relationships: {
+            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+          },
+          schema: testSchema,
+        }).save();
+
+        const attrs = {
+          name: 'John Doe',
+          email: 'john@example.com',
+          posts: [post1, post2],
+        };
+
+        const relationships = {
+          posts: associations.hasMany(postModel),
+        };
+
+        const result = Model.processAttrs<UserModel, TestSchema>(attrs, relationships);
+
+        expect(result.modelAttrs).toEqual({
+          postIds: [post1.id, post2.id],
+          name: 'John Doe',
+          email: 'john@example.com',
+        });
+        expect(result.relationshipUpdates).toEqual({ posts: [post1.id, post2.id] });
+      });
+
+      it('should handle null belongsTo model instance', () => {
+        const attrs = {
+          title: 'Test Post',
+          content: 'Content here',
+          author: null,
+        };
+        const relationships = {
+          author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+        };
+
+        const result = Model.processAttrs<PostModel, TestSchema>(attrs, relationships);
+
+        expect(result.modelAttrs).toEqual({
+          authorId: null,
+          title: 'Test Post',
+          content: 'Content here',
+        });
+        // null is treated as a raw FK value
+        expect(result.relationshipUpdates).toEqual({ author: null });
+      });
+
+      it('should handle empty hasMany model instances array', () => {
+        const attrs = {
+          name: 'John Doe',
+          email: 'john@example.com',
+          posts: [],
+        };
+        const relationships = {
+          posts: associations.hasMany(postModel),
+        };
+
+        const result = Model.processAttrs<UserModel, TestSchema>(attrs, relationships);
+
+        expect(result.modelAttrs).toEqual({
+          postIds: [],
+          name: 'John Doe',
+          email: 'john@example.com',
+        });
+        // Empty array is treated as a raw FK value
+        expect(result.relationshipUpdates).toEqual({ posts: [] });
+      });
+    });
+
+    describe('with raw foreign key values', () => {
+      it('should handle belongsTo foreign key', () => {
+        const attrs = {
+          title: 'Test Post',
+          content: 'Content here',
+          authorId: 'user-123',
+        };
+        const relationships = {
+          author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+        };
+
+        const result = Model.processAttrs<PostModel, TestSchema>(attrs, relationships);
+
+        expect(result.modelAttrs).toEqual({
+          authorId: 'user-123',
+          title: 'Test Post',
+          content: 'Content here',
+        });
+        expect(result.relationshipUpdates).toEqual({ author: 'user-123' });
+      });
+
+      it('should handle hasMany foreign key array', () => {
+        const attrs = {
+          name: 'John Doe',
+          email: 'john@example.com',
+          postIds: ['post-1', 'post-2'],
+        };
+        const relationships = {
+          posts: associations.hasMany(postModel),
+        };
+
+        const result = Model.processAttrs<UserModel, TestSchema>(attrs, relationships);
+
+        expect(result.modelAttrs).toEqual({
+          postIds: ['post-1', 'post-2'],
+          name: 'John Doe',
+          email: 'john@example.com',
+        });
+        expect(result.relationshipUpdates).toEqual({ posts: ['post-1', 'post-2'] });
+      });
+
+      it('should handle empty hasMany foreign key array', () => {
+        const attrs = {
+          name: 'John Doe',
+          email: 'john@example.com',
+          postIds: [],
+        };
+        const relationships = {
+          posts: associations.hasMany(postModel),
+        };
+
+        const result = Model.processAttrs<UserModel, TestSchema>(attrs, relationships);
+
+        expect(result.modelAttrs).toEqual({
+          postIds: [],
+          name: 'John Doe',
+          email: 'john@example.com',
+        });
+        expect(result.relationshipUpdates).toEqual({ posts: [] });
+      });
+
+      it('should handle null belongsTo foreign key', () => {
+        const attrs = {
+          title: 'Test Post',
+          content: 'Content here',
+          authorId: null,
+        };
+        const relationships = {
+          author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+        };
+
+        const result = Model.processAttrs<PostModel, TestSchema>(attrs, relationships);
+
+        expect(result.modelAttrs).toEqual({
+          authorId: null,
+          title: 'Test Post',
+          content: 'Content here',
+        });
+        expect(result.relationshipUpdates).toEqual({ author: null });
+      });
+    });
+
+    describe('with default foreign key values', () => {
+      it('should initialize belongsTo foreign key with null', () => {
+        const attrs = {
+          title: 'Test Post',
+          content: 'Content here',
+        };
+        const relationships = {
+          author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+        };
+
+        const result = Model.processAttrs<PostModel, TestSchema>(attrs, relationships, true);
+
+        expect(result.modelAttrs).toEqual({
+          authorId: null,
+          title: 'Test Post',
+          content: 'Content here',
+        });
+        expect(result.relationshipUpdates).toEqual({});
+      });
+
+      it('should initialize hasMany foreign key with empty array', () => {
+        const attrs = {
+          name: 'John Doe',
+          email: 'john@example.com',
+        };
+        const relationships = {
+          posts: associations.hasMany(postModel),
+        };
+
+        const result = Model.processAttrs<UserModel, TestSchema>(attrs, relationships, true);
+
+        expect(result.modelAttrs).toEqual({
+          postIds: [],
+          name: 'John Doe',
+          email: 'john@example.com',
+        });
+        expect(result.relationshipUpdates).toEqual({});
+      });
+    });
+
+    describe('mixed scenarios', () => {
+      it('should handle mix of regular attributes and relationships', () => {
+        const author = new UserModelClass({
+          attrs: { name: 'Author', email: 'author@example.com' },
+          relationships: { posts: associations.hasMany(postModel) },
+          schema: testSchema,
+        }).save();
+
+        const attrs = {
+          id: 'custom-post-id',
+          title: 'Test Post',
+          content: 'Content here',
+          author,
+        };
+        const relationships = {
+          author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+        };
+
+        const result = Model.processAttrs<PostModel, TestSchema>(attrs, relationships);
+
+        expect(result.modelAttrs).toEqual({
+          id: 'custom-post-id',
+          authorId: author.id,
+          title: 'Test Post',
+          content: 'Content here',
+        });
+        expect(result.relationshipUpdates).toEqual({ author: author.id });
+      });
+
+      it('should handle partial attributes with relationships', () => {
+        const attrs = {
+          title: 'Updated Title',
+          authorId: 'new-author-id',
+        };
+        const relationships = {
+          author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+        };
+
+        const result = Model.processAttrs<PostModel, TestSchema>(attrs, relationships);
+
+        expect(result.modelAttrs).toEqual({
+          authorId: 'new-author-id',
+          title: 'Updated Title',
+        });
+        expect(result.relationshipUpdates).toEqual({ author: 'new-author-id' });
       });
     });
   });

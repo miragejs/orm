@@ -10,7 +10,10 @@ import type { CollectionConfig, SchemaInstance } from '@src/schema';
 import { resolveFactoryAttr } from '@src/utils';
 import { expectTypeOf, test } from 'vitest';
 
+import type Factory from '../Factory';
+import { factory } from '../FactoryBuilder';
 import type {
+  ExtractTraitsFromSchema,
   FactoryAfterCreateHook,
   FactoryAttrFunc,
   FactoryAttrs,
@@ -370,4 +373,173 @@ test('resolveFactoryAttr should work with required attributes only', () => {
   };
 
   expectTypeOf(attrs).toEqualTypeOf<FactoryAttrs<UserModel>>();
+});
+
+// ============================================================================
+// ExtractTraitsFromSchema Tests
+// ============================================================================
+
+test('ExtractTraitsFromSchema should extract trait names from schema', () => {
+  type SchemaWithTraits = {
+    users: CollectionConfig<UserModel, {}, Factory<UserModel, 'admin' | 'moderator' | 'guest'>>;
+  };
+
+  type ExtractedTraits = ExtractTraitsFromSchema<SchemaWithTraits, UserModel>;
+
+  expectTypeOf<ExtractedTraits>().toEqualTypeOf<'admin' | 'moderator' | 'guest'>();
+});
+
+test('ExtractTraitsFromSchema should fallback to string when no traits defined', () => {
+  type SchemaWithoutTraits = {
+    users: CollectionConfig<UserModel>;
+  };
+
+  type ExtractedTraits = ExtractTraitsFromSchema<SchemaWithoutTraits, UserModel>;
+
+  // Should be assignable to string (fallback type)
+  expectTypeOf<ExtractedTraits>().toMatchTypeOf<string>();
+  expectTypeOf<'custom'>().toMatchTypeOf<ExtractedTraits>();
+});
+
+test('ExtractTraitsFromSchema should fallback to string when model not in schema', () => {
+  type SchemaWithoutModel = {
+    posts: CollectionConfig<PostModel, {}, Factory<PostModel, 'published' | 'draft'>>;
+  };
+
+  type ExtractedTraits = ExtractTraitsFromSchema<SchemaWithoutModel, UserModel>;
+
+  // Should be assignable to string (fallback type)
+  expectTypeOf<ExtractedTraits>().toMatchTypeOf<string>();
+  expectTypeOf<'anyTrait'>().toMatchTypeOf<ExtractedTraits>();
+});
+
+// ============================================================================
+// Factory Builder Trait Autocomplete Tests
+// ============================================================================
+
+test('FactoryBuilder.traits() should accept schema-defined traits', () => {
+  type SchemaWithTraits = {
+    users: CollectionConfig<UserModel, {}, Factory<UserModel, 'admin' | 'premium'>>;
+  };
+
+  const builder = factory<SchemaWithTraits>().model(userModel);
+
+  // Should accept schema-defined trait 'admin'
+  const builderWithAdmin = builder.traits({
+    admin: { role: 'admin' },
+  });
+
+  // Verify it returns a builder
+  expectTypeOf(builderWithAdmin).toBeObject();
+  expectTypeOf(builderWithAdmin.create).toBeFunction();
+
+  // Should accept schema-defined trait 'premium'
+  const builderWithPremium = builder.traits({
+    premium: { role: 'premium' },
+  });
+
+  expectTypeOf(builderWithPremium).toBeObject();
+
+  // Should accept multiple schema-defined traits
+  const builderWithBoth = builder.traits({
+    admin: { role: 'admin' },
+    premium: { role: 'premium' },
+  });
+
+  expectTypeOf(builderWithBoth).toBeObject();
+});
+
+test('FactoryBuilder.traits() should allow custom traits alongside schema traits', () => {
+  type SchemaWithTraits = {
+    users: CollectionConfig<UserModel, {}, Factory<UserModel, 'admin' | 'premium'>>;
+  };
+
+  const builder = factory<SchemaWithTraits>().model(userModel);
+
+  // Should allow custom traits not in schema
+  const builderWithCustom = builder.traits({
+    verified: { email: () => 'verified@example.com' },
+    suspended: { role: 'suspended' },
+  });
+
+  expectTypeOf(builderWithCustom).toBeObject();
+  expectTypeOf(builderWithCustom.create).toBeFunction();
+
+  // Should allow mixing schema and custom traits
+  const builderWithMixed = builder.traits({
+    admin: { role: 'admin' },
+    verified: { email: () => 'verified@example.com' },
+  });
+
+  expectTypeOf(builderWithMixed).toBeObject();
+});
+
+test('FactoryBuilder.traits() should work without schema-defined traits', () => {
+  type SchemaWithoutTraits = {
+    users: CollectionConfig<UserModel>;
+  };
+
+  const builder = factory<SchemaWithoutTraits>().model(userModel);
+
+  // Should accept any trait names when schema doesn't define traits
+  const builderWithAnyTraits = builder.traits({
+    customTrait1: { role: 'custom1' },
+    customTrait2: { role: 'custom2' },
+  });
+
+  expectTypeOf(builderWithAnyTraits).toBeObject();
+  expectTypeOf(builderWithAnyTraits.create).toBeFunction();
+});
+
+test('FactoryBuilder.traits() should preserve trait names through chaining', () => {
+  type SchemaWithTraits = {
+    users: CollectionConfig<UserModel, {}, Factory<UserModel, 'admin' | 'premium'>>;
+  };
+
+  const builder1 = factory<SchemaWithTraits>()
+    .model(userModel)
+    .traits({
+      admin: { role: 'admin' },
+    });
+
+  // Verify builder has correct methods
+  expectTypeOf(builder1).toBeObject();
+  expectTypeOf(builder1.traits).toBeFunction();
+  expectTypeOf(builder1.create).toBeFunction();
+
+  const builder2 = builder1.traits({
+    premium: { role: 'premium' },
+  });
+
+  // Verify chained builder also has correct methods
+  expectTypeOf(builder2).toBeObject();
+  expectTypeOf(builder2.create).toBeFunction();
+});
+
+test('FactoryBuilder.create() should return Factory with correct trait types', () => {
+  type SchemaWithTraits = {
+    users: CollectionConfig<UserModel, {}, Factory<UserModel, 'admin' | 'premium'>>;
+  };
+
+  const userFactory = factory<SchemaWithTraits>()
+    .model(userModel)
+    .attrs({
+      name: 'John Doe',
+      email: 'john@example.com',
+    })
+    .traits({
+      admin: { role: 'admin' },
+      premium: { role: 'premium' },
+    })
+    .create();
+
+  // Factory should have the correct trait types
+  expectTypeOf(userFactory).toMatchTypeOf<
+    Factory<UserModel, 'admin' | 'premium', SchemaWithTraits>
+  >();
+
+  // Verify traits property has correct type
+  expectTypeOf(userFactory.traits).toMatchTypeOf<
+    ModelTraits<'admin' | 'premium', UserModel, SchemaWithTraits>
+  >();
 });

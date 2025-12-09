@@ -949,6 +949,75 @@ describe('Factory associations', () => {
       expect(testSchema.users.all().length).toBe(1);
     });
 
+    it('should not execute factory association when user provides foreign key or model instance', () => {
+      const postFactory = factory<TestSchema>()
+        .model(postModel)
+        .attrs({
+          title: 'My Post',
+          content: 'Content',
+        })
+        .associations({
+          author: associations.create(userModel),
+        })
+        .create();
+
+      const testSchema = schema()
+        .collections({
+          users: collection().model(userModel).factory(userFactory).create(),
+          posts: collection<TestSchema>()
+            .model(postModel)
+            .factory(postFactory)
+            .relationships({
+              author: belongsTo(userModel, { foreignKey: 'authorId' }),
+            })
+            .create(),
+        })
+        .setup();
+
+      // Case 1: User provides foreign key directly
+      const existingUser = testSchema.users.create({ name: 'Existing User' });
+      const post1 = testSchema.posts.create({ authorId: existingUser.id });
+
+      expect(post1.authorId).toBe(existingUser.id);
+      expect(post1.author?.id).toBe(existingUser.id);
+      expect(post1.author?.name).toBe('Existing User');
+
+      // Only 1 user should exist (the one we created explicitly)
+      // Factory association should NOT have created a second user
+      expect(testSchema.users.all().length).toBe(1);
+
+      // Case 2: User provides model instance directly
+      const anotherUser = testSchema.users.create({ name: 'Another User' });
+      const post2 = testSchema.posts.create({ author: anotherUser });
+
+      expect(post2.authorId).toBe(anotherUser.id);
+      expect(post2.author?.id).toBe(anotherUser.id);
+      expect(post2.author?.name).toBe('Another User');
+
+      // Only 2 users should exist (the two we created explicitly)
+      // Factory association should NOT have created any additional users
+      expect(testSchema.users.all().length).toBe(2);
+
+      // Case 3: User provides null for optional relationship
+      const post3 = testSchema.posts.create({ author: null });
+
+      expect(post3.authorId).toBeNull();
+      expect(post3.author).toBeNull();
+
+      // Still only 2 users - factory association should NOT have run
+      expect(testSchema.users.all().length).toBe(2);
+
+      // Case 4: User provides nothing - factory association should execute
+      const post4 = testSchema.posts.create();
+
+      expect(post4.authorId).toBeDefined();
+      expect(post4.author).toBeDefined();
+      expect(post4.author?.name).toBe('John Doe'); // Default from userFactory
+
+      // Now we should have 3 users (factory association created one)
+      expect(testSchema.users.all().length).toBe(3);
+    });
+
     it('should handle nested associations', () => {
       const customUserFactory = factory()
         .model(userModel)

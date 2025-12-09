@@ -209,15 +209,15 @@ describe('Factory', () => {
       const called = new Map<string, number>();
 
       const dynamicFactory = new Factory<UserModel, never, TestSchema>(userModel, {
-        name(id) {
-          called.set('name', (called.get('name') ?? 0) + 1);
-          return `User ${id}`;
-        },
         email(id) {
           called.set('email', (called.get('email') ?? 0) + 1);
 
           const name = resolveFactoryAttr(this.name, id).split(' ').join('.').toLowerCase();
           return `${name}-${id}@example.com`;
+        },
+        name(id) {
+          called.set('name', (called.get('name') ?? 0) + 1);
+          return `User ${id}`;
         },
         bio(id) {
           called.set('bio', (called.get('bio') ?? 0) + 1);
