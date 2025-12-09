@@ -1,4 +1,5 @@
 import type { IdentityManager, IdType } from '@src/id-manager';
+import type { Logger } from '@src/utils';
 
 import type DbCollection from './DbCollection';
 
@@ -75,6 +76,7 @@ export type DbCollectionData<T> = T extends DbCollection<infer TAttrs> ? TAttrs[
 export interface DbCollectionConfig<TRecord extends DbRecord> {
   identityManager?: IdentityManager<TRecord['id']>;
   initialData?: TRecord[];
+  logger?: Logger;
 }
 
 /**
@@ -91,6 +93,7 @@ export type DbData<TCollections extends Record<string, DbCollection<any>>> = {
  */
 export type DbConfig<TCollections extends Record<string, DbCollection<any>>> = {
   initialData?: DbData<TCollections>;
+  logger?: Logger;
 };
 
 // -- QUERY API TYPES --

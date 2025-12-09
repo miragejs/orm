@@ -36,14 +36,16 @@ export default class Schema<
   private _globalSerializerConfig?: StructuralSerializerOptions;
 
   constructor(collections: TCollections, config?: TConfig) {
-    this.db = createDatabase<SchemaDbCollections<TCollections>>();
-    this.identityManager = config?.identityManager ?? new StringIdentityManager();
-    this._globalSerializerConfig = config?.globalSerializerConfig;
-
     // Create logger if logging is enabled
     if (config?.logging?.enabled) {
       this.logger = new Logger(config.logging);
     }
+
+    this.db = createDatabase<SchemaDbCollections<TCollections>>({
+      logger: this.logger,
+    });
+    this.identityManager = config?.identityManager ?? new StringIdentityManager();
+    this._globalSerializerConfig = config?.globalSerializerConfig;
 
     this._registerCollections(collections);
 

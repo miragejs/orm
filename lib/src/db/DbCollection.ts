@@ -1,4 +1,5 @@
 import { IdentityManager, StringIdentityManager } from '@src/id-manager';
+import type { Logger } from '@src/utils';
 
 import QueryManager from './QueryManager';
 import type {
@@ -26,11 +27,13 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
 
   private _records: Map<TRecord['id'], TRecord> = new Map();
   private _queryManager: QueryManager<TRecord> = new QueryManager<TRecord>();
+  private _logger?: Logger;
 
   constructor(name: string, config?: DbCollectionConfig<TRecord>) {
     this.name = name;
     this.identityManager =
       config?.identityManager ?? (new StringIdentityManager() as IdentityManager<TRecord['id']>);
+    this._logger = config?.logger;
 
     if (config?.initialData) {
       this.insertMany(config.initialData);
@@ -248,6 +251,7 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
   insert(data: NewDbRecord<TRecord>): TRecord {
     const record = this._prepareRecord(data);
     this._records.set(record.id, record);
+    this._logger?.debug(`[${this.name}] INSERT`, record);
     return record;
   }
 
@@ -273,6 +277,7 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
     }
     const updatedRecord = { ...existingRecord, ...patch } as TRecord;
     this._records.set(id, updatedRecord);
+    this._logger?.debug(`[${this.name}] UPDATE`, { id, patch, record: updatedRecord });
     return updatedRecord;
   }
 
@@ -292,6 +297,11 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
       this._records.set(record.id, updated);
       return updated;
     });
+    this._logger?.debug(`[${this.name}] UPDATE_MANY`, {
+      count: updatedRecords.length,
+      patch,
+      ids: updatedRecords.map((r) => r.id),
+    });
     return updatedRecords;
   }
 
@@ -301,7 +311,11 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
    * @returns `true` if the record was deleted, `false` if it was not found.
    */
   delete(id: TRecord['id']): boolean {
-    return this._records.delete(id);
+    const deleted = this._records.delete(id);
+    if (deleted) {
+      this._logger?.debug(`[${this.name}] DELETE`, { id });
+    }
+    return deleted;
   }
 
   /**
@@ -311,7 +325,9 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
    */
   deleteMany(input: TRecord['id'][] | DbRecordInput<TRecord> | QueryOptions<TRecord>): number {
     const recordsToDelete = this.findMany(input);
-    recordsToDelete.forEach((record) => this.delete(record.id));
+    const ids = recordsToDelete.map((r) => r.id);
+    recordsToDelete.forEach((record) => this._records.delete(record.id));
+    this._logger?.debug(`[${this.name}] DELETE_MANY`, { count: ids.length, ids });
     return recordsToDelete.length;
   }
 

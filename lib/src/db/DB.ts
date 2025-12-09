@@ -1,5 +1,5 @@
 import { IdentityManager, type IdType } from '@src/id-manager';
-import { MirageError } from '@src/utils';
+import { MirageError, type Logger } from '@src/utils';
 
 import DbCollection from './DbCollection';
 import type {
@@ -24,9 +24,11 @@ import type {
  */
 export default class DB<TCollections extends DbCollections> {
   private _collections: Map<keyof TCollections, DbCollection<any>> = new Map();
+  private _logger?: Logger;
 
   constructor(config: DbConfig<TCollections> = {}) {
-    const { initialData } = config;
+    const { initialData, logger } = config;
+    this._logger = logger;
 
     if (initialData) {
       this.loadData(initialData);
@@ -67,6 +69,7 @@ export default class DB<TCollections extends DbCollections> {
     const collection = new DbCollection<TAttrs>(collectionName, {
       identityManager: config?.identityManager,
       initialData: config?.initialData,
+      logger: this._logger,
     });
     this._collections.set(collectionName, collection);
     this.initCollectionAccessors();

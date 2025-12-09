@@ -38,6 +38,7 @@ export default class Collection<
    * @returns The new model instance.
    */
   new(attrs: ModelCreateAttrs<TTemplate, TSchema>): NewModelInstance<TTemplate, TSchema> {
+    this._logger?.debug(`Initializing new ${this.modelName} model`, { id: attrs.id, attrs });
     return new this.Model({
       attrs: attrs,
       relationships: this.relationships,
@@ -70,11 +71,7 @@ export default class Collection<
 
     // Create and save model
     const model = this.new(attrs).save();
-
-    this._logger?.debug(`Created ${this.modelName}`, {
-      id: model.id,
-      collection: this.collectionName,
-    });
+    this._logger?.debug(`Created ${this.modelName}`, { id: model.id, attrs });
 
     // Run afterCreate hooks
     this._factory.runAfterCreateHooks(
