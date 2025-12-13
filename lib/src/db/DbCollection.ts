@@ -135,7 +135,12 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
   find(input: TRecord['id'] | DbRecordInput<TRecord> | QueryOptions<TRecord>): TRecord | null {
     // 1. Handle ID-based lookup
     if (typeof input === 'string' || typeof input === 'number') {
-      return this._records.get(input as TRecord['id']) ?? null;
+      const record = this._records.get(input as TRecord['id']) ?? null;
+      this._logger?.debug(`Found ${record ? 1 : 0} records in '${this.name}'`, {
+        query: input,
+        operation: 'find',
+      });
+      return record;
     }
 
     // 2. Check if it's QueryOptions (has where, orderBy, cursor, offset, or limit)
@@ -148,16 +153,25 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
         'limit' in input);
 
     if (hasQueryKeys) {
-      const results = this._queryManager.query(this.all(), { ...input, limit: 1 });
+      const query = { ...input, limit: 1 };
+      const results = this._queryManager.query(this.all(), query);
+      this._logger?.debug(`Found ${results.length} records in '${this.name}'`, {
+        query,
+        operation: 'find',
+      });
       return results[0] ?? null;
     }
 
     // 3. Handle predicate object (simple equality matching)
     const predicate = input as DbRecordInput<TRecord>;
-    return (
+    const record =
       this.all().find((record) => this._queryManager.matchesPredicateObject(record, predicate)) ??
-      null
-    );
+      null;
+    this._logger?.debug(`Found ${record ? 1 : 0} records in '${this.name}'`, {
+      query: predicate,
+      operation: 'find',
+    });
+    return record;
   }
 
   /**
@@ -183,7 +197,12 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
   findMany(input: TRecord['id'][] | DbRecordInput<TRecord> | QueryOptions<TRecord>): TRecord[] {
     // 1. Handle array of IDs
     if (Array.isArray(input)) {
-      return input.map((id) => this._records.get(id)).filter(Boolean) as TRecord[];
+      const records = input.map((id) => this._records.get(id)).filter(Boolean) as TRecord[];
+      this._logger?.debug(`Found ${records.length} records in '${this.name}'`, {
+        query: input,
+        operation: 'findMany',
+      });
+      return records;
     }
 
     // 2. Check if it's QueryOptions (has where, orderBy, cursor, offset, or limit)
@@ -197,14 +216,24 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
 
     if (hasQueryKeys) {
       const query = input as QueryOptions<TRecord>;
-      return this._queryManager.query(this.all(), query);
+      const records = this._queryManager.query(this.all(), query);
+      this._logger?.debug(`Found ${records.length} records in '${this.name}'`, {
+        query,
+        operation: 'findMany',
+      });
+      return records;
     }
 
     // 3. Handle predicate object (simple equality matching)
     const predicate = input as DbRecordInput<TRecord>;
-    return this.all().filter((record) =>
+    const records = this.all().filter((record) =>
       this._queryManager.matchesPredicateObject(record, predicate),
     );
+    this._logger?.debug(`Found ${records.length} records in '${this.name}'`, {
+      query: predicate,
+      operation: 'findMany',
+    });
+    return records;
   }
 
   /**
@@ -250,8 +279,13 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
    */
   insert(data: NewDbRecord<TRecord>): TRecord {
     const record = this._prepareRecord(data);
+
     this._records.set(record.id, record);
-    this._logger?.debug(`Inserted ${record.id} into ${this.name} collection`, record);
+    this._logger?.debug(`Inserted record into '${this.name}'`, {
+      id: record.id,
+      record,
+    });
+
     return record;
   }
 
@@ -261,7 +295,15 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
    * @returns An array of the inserted records.
    */
   insertMany(data: NewDbRecord<TRecord>[]): TRecord[] {
-    return data.map((record) => this.insert(record));
+    const records = data.map((record) => this.insert(record));
+    const ids = records.map((r) => r.id);
+
+    this._logger?.debug(`Inserted ${records.length} records into '${this.name}'`, {
+      ids,
+      operation: 'insertMany',
+    });
+
+    return records;
   }
 
   /**
@@ -275,12 +317,13 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
     if (!existingRecord) {
       return null;
     }
+
     const updatedRecord = { ...existingRecord, ...patch } as TRecord;
 
     this._records.set(id, updatedRecord);
-    this._logger?.debug(`Updated ${id} in ${this.name} collection`, {
+    this._logger?.debug(`Updated record in '${this.name}'`, {
+      id,
       patch,
-      record: updatedRecord,
     });
 
     return updatedRecord;
@@ -304,7 +347,7 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
     });
     const updatedIds = updatedRecords.map((r) => r.id);
 
-    this._logger?.debug(`Updated ${updatedIds.length} records in ${this.name} collection`, {
+    this._logger?.debug(`${updatedIds.length} records updated in '${this.name}'`, {
       ids: updatedIds,
       patch,
     });
@@ -320,7 +363,7 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
   delete(id: TRecord['id']): boolean {
     const deleted = this._records.delete(id);
     if (deleted) {
-      this._logger?.debug(`Deleted ${id} from ${this.name} collection`, { id });
+      this._logger?.debug(`Deleted record from '${this.name}'`, { id });
     }
     return deleted;
   }
@@ -335,7 +378,7 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
     const ids = recordsToDelete.map((r) => r.id);
 
     recordsToDelete.forEach((record) => this._records.delete(record.id));
-    this._logger?.debug(`Deleted ${ids.length} records from ${this.name} collection`, { ids });
+    this._logger?.debug(`${ids.length} records deleted from '${this.name}'`, { ids });
 
     return recordsToDelete.length;
   }

@@ -152,15 +152,16 @@ describe('Schema with Logging', () => {
       testSchema.users.create({ name: 'Alice' });
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        '[Mirage] DEBUG: Creating user',
+        "[Mirage] DEBUG: Creating model for 'users'",
         expect.objectContaining({
           collection: 'users',
         }),
       );
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        '[Mirage] DEBUG: Initializing new user',
+        "[Mirage] INFO: Created model for 'users'",
         expect.objectContaining({
+          id: expect.any(String),
           attrs: expect.objectContaining({
             name: 'Alice',
           }),
@@ -168,7 +169,7 @@ describe('Schema with Logging', () => {
       );
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        '[Mirage] DEBUG: Created user',
+        "[Mirage] DEBUG: Saved model for 'users'",
         expect.objectContaining({
           id: expect.any(String),
           attrs: expect.objectContaining({
@@ -214,7 +215,7 @@ describe('Schema with Logging', () => {
       testSchema.users.find(user.id);
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] DEBUG: Find in 'users'",
+        "[Mirage] DEBUG: Found 1 records in 'users'",
         expect.objectContaining({
           query: user.id,
         }),
@@ -236,13 +237,17 @@ describe('Schema with Logging', () => {
       testSchema.users.findMany({ name: 'Alice' });
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] DEBUG: Query 'users': findMany",
-        expect.anything(),
+        "[Mirage] DEBUG: Found 1 records in 'users'",
+        expect.objectContaining({
+          query: { name: 'Alice' },
+        }),
       );
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] DEBUG: Query 'users' returned 1 records",
-        '',
+        "[Mirage] DEBUG: Found 1 records in 'users'",
+        expect.objectContaining({
+          query: { name: 'Alice' },
+        }),
       );
     });
 
@@ -261,15 +266,17 @@ describe('Schema with Logging', () => {
       testSchema.users.all();
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] DEBUG: Query 'users': all()",
+        "[Mirage] DEBUG: Found 1 records in 'users'",
         expect.objectContaining({
-          operation: 'all',
+          query: '1',
         }),
       );
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] DEBUG: Query 'users' returned 2 records",
-        '',
+        "[Mirage] DEBUG: Found 1 records in 'users'",
+        expect.objectContaining({
+          query: '2',
+        }),
       );
     });
 
@@ -286,11 +293,16 @@ describe('Schema with Logging', () => {
 
       testSchema.users.first();
 
-      expect(consoleLogSpy).toHaveBeenCalledWith("[Mirage] DEBUG: Query 'users': first()", '');
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] DEBUG: Query 'users' found record",
+        "[Mirage] DEBUG: Found 1 records in 'users'",
         expect.objectContaining({
-          id: expect.anything(),
+          query: '1',
+        }),
+      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        "[Mirage] DEBUG: Found 1 records in 'users'",
+        expect.objectContaining({
+          query: '1',
         }),
       );
     });
@@ -309,7 +321,7 @@ describe('Schema with Logging', () => {
       testSchema.users.delete(user.id);
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] DEBUG: Delete from 'users'",
+        "[Mirage] DEBUG: Deleted record from 'users'",
         expect.objectContaining({
           id: user.id,
         }),
@@ -331,13 +343,10 @@ describe('Schema with Logging', () => {
       const count = testSchema.users.deleteMany({ name: 'Alice' });
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] DEBUG: Delete many from 'users'",
-        expect.anything(),
-      );
-
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] DEBUG: Deleted 1 records from 'users'",
-        '',
+        "[Mirage] DEBUG: 1 records deleted from 'users'",
+        expect.objectContaining({
+          ids: expect.any(Array),
+        }),
       );
       expect(count).toBe(1);
     });
@@ -364,12 +373,12 @@ describe('Schema with Logging', () => {
       await testSchema.users.loadFixtures();
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] INFO: Loading fixtures for collection 'users'",
+        "[Mirage] INFO: Loading fixtures for 'users'",
         expect.objectContaining({ count: 2 }),
       );
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] INFO: Fixtures loaded successfully for 'users'",
+        "[Mirage] INFO: Fixtures loaded for 'users'",
         expect.objectContaining({ count: 2 }),
       );
     });
@@ -448,16 +457,13 @@ describe('Schema with Logging', () => {
       await testSchema.users.loadSeeds();
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] INFO: Loading all seeds for collection 'users'",
+        "[Mirage] INFO: Loading seeds for 'users'",
         expect.objectContaining({
           scenarios: ['default'],
         }),
       );
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] INFO: Seeds loaded successfully for 'users'",
-        '',
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith("[Mirage] INFO: Seeds loaded for 'users'", '');
     });
 
     it('should log seed scenario loading', async () => {
@@ -490,7 +496,7 @@ describe('Schema with Logging', () => {
       );
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] INFO: Seed scenario 'development' loaded successfully",
+        "[Mirage] INFO: Seed scenario 'development' loaded for 'users'",
         '',
       );
     });
@@ -556,14 +562,14 @@ describe('Schema with Logging', () => {
       await testSchema.loadSeeds();
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        '[Mirage] INFO: Loading seeds for all collections',
+        '[Mirage] INFO: Loading all seeds',
         expect.objectContaining({
           collections: ['users', 'posts'],
         }),
       );
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        '[Mirage] INFO: All seeds loaded successfully',
+        '[Mirage] INFO: All seeds loaded',
         expect.objectContaining({
           users: expect.any(Array),
           posts: expect.any(Array),
@@ -592,14 +598,14 @@ describe('Schema with Logging', () => {
       await testSchema.loadFixtures();
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        '[Mirage] INFO: Loading fixtures for all collections',
+        '[Mirage] INFO: Loading all fixtures',
         expect.objectContaining({
           collections: ['users', 'posts'],
         }),
       );
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        '[Mirage] INFO: All fixtures loaded successfully',
+        '[Mirage] INFO: All fixtures loaded',
         expect.objectContaining({
           users: expect.any(Array),
           posts: expect.any(Array),

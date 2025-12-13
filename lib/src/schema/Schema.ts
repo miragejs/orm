@@ -138,29 +138,23 @@ export default class Schema<
 
     if (collectionName) {
       this.logger?.info(
-        `Loading seeds for collection '${String(collectionName)}'${onlyDefault ? ' (default only)' : ''}`,
+        `Loading seeds for '${String(collectionName)}'${onlyDefault ? ' (default only)' : ''}`,
       );
 
       const collection = this.getCollection(collectionName);
       await collection.loadSeeds(onlyDefault ? 'default' : undefined);
 
-      this.logger?.info(
-        `Seeds loaded successfully for '${String(collectionName)}'`,
-        this.db.dump(),
-      );
+      this.logger?.info(`Seeds loaded for '${String(collectionName)}'`, this.db.dump());
     } else {
-      this.logger?.info(
-        `Loading seeds for all collections${onlyDefault ? ' (default only)' : ''}`,
-        {
-          collections: Array.from(this._collections.keys()),
-        },
-      );
+      this.logger?.info(`Loading all seeds${onlyDefault ? ' (default only)' : ''}`, {
+        collections: Array.from(this._collections.keys()),
+      });
 
       for (const [_, collection] of this._collections) {
         await collection.loadSeeds(onlyDefault ? 'default' : undefined);
       }
 
-      this.logger?.info('All seeds loaded successfully', this.db.dump());
+      this.logger?.info('All seeds loaded', this.db.dump());
     }
   }
 
@@ -179,17 +173,14 @@ export default class Schema<
    */
   async loadFixtures(collectionName?: keyof TCollections): Promise<void> {
     if (collectionName) {
-      this.logger?.info(`Loading fixtures for collection '${String(collectionName)}'`);
+      this.logger?.info(`Loading fixtures for '${String(collectionName)}'`);
 
       const collection = this.getCollection(collectionName);
       await collection.loadFixtures();
 
-      this.logger?.info(
-        `Fixtures loaded successfully for '${String(collectionName)}'`,
-        this.db.dump(),
-      );
+      this.logger?.info(`Fixtures loaded for '${String(collectionName)}'`, this.db.dump());
     } else {
-      this.logger?.info('Loading fixtures for all collections', {
+      this.logger?.info('Loading all fixtures', {
         collections: Array.from(this._collections.keys()),
       });
 
@@ -197,7 +188,7 @@ export default class Schema<
         await collection.loadFixtures();
       }
 
-      this.logger?.info('All fixtures loaded successfully', this.db.dump());
+      this.logger?.info('All fixtures loaded', this.db.dump());
     }
   }
 
@@ -266,7 +257,7 @@ export default class Schema<
       }
     }
 
-    this.logger?.debug('Collections registered successfully', {
+    this.logger?.debug('All collections registered', {
       count: this._collections.size,
     });
 

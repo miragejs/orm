@@ -125,13 +125,7 @@ export abstract class BaseCollection<
    * @returns All model instances in the collection.
    */
   all(): ModelCollection<TTemplate, TSchema> {
-    this._logger?.debug(`Query '${this.collectionName}': all()`, {
-      operation: 'all',
-    });
-
     const records = this.dbCollection.all();
-    this._logger?.debug(`Query '${this.collectionName}' returned ${records.length} records`);
-
     const models = records.map((record) => this._createModelFromRecord(record));
     return new ModelCollection(this.template, models, this.serializer);
   }
@@ -141,12 +135,7 @@ export abstract class BaseCollection<
    * @returns The first model in the collection or null if the collection is empty.
    */
   first(): ModelInstance<TTemplate, TSchema> | null {
-    this._logger?.debug(`Query '${this.collectionName}': first()`);
-
     const record = this.dbCollection.first();
-    if (record) {
-      this._logger?.debug(`Query '${this.collectionName}' found record`, { id: record.id });
-    }
     return record ? this._createModelFromRecord(record) : null;
   }
 
@@ -155,12 +144,7 @@ export abstract class BaseCollection<
    * @returns The last model in the collection or null if the collection is empty.
    */
   last(): ModelInstance<TTemplate, TSchema> | null {
-    this._logger?.debug(`Query '${this.collectionName}': last()`);
-
     const record = this.dbCollection.last();
-    if (record) {
-      this._logger?.debug(`Query '${this.collectionName}' found record`, { id: record.id });
-    }
     return record ? this._createModelFromRecord(record) : null;
   }
 
@@ -186,24 +170,14 @@ export abstract class BaseCollection<
       | DbRecordInput<ModelAttrs<TTemplate, TSchema>>
       | QueryOptions<ModelAttrs<TTemplate, TSchema>>,
   ): ModelInstance<TTemplate, TSchema> | null {
-    this._logger?.debug(`Find in '${this.collectionName}'`, {
-      query: typeof input === 'object' && 'where' in input ? 'QueryOptions' : input,
-    });
-
     // Handle QueryOptions with callback where clause
     if (typeof input === 'object' && 'where' in input && typeof input.where === 'function') {
       const queryOptions = this._convertQueryOptionsCallback(input);
       const record = this.dbCollection.find(queryOptions);
-      if (record) {
-        this._logger?.debug(`Find in '${this.collectionName}' found record`, { id: record.id });
-      }
       return record ? this._createModelFromRecord(record) : null;
     }
 
     const record = this.dbCollection.find(input);
-    if (record) {
-      this._logger?.debug(`Find in '${this.collectionName}' found record`, { id: record.id });
-    }
     return record ? this._createModelFromRecord(record) : null;
   }
 
@@ -238,28 +212,15 @@ export abstract class BaseCollection<
       | DbRecordInput<ModelAttrs<TTemplate, TSchema>>
       | QueryOptions<ModelAttrs<TTemplate, TSchema>>,
   ): ModelCollection<TTemplate, TSchema> {
-    this._logger?.debug(`Query '${this.collectionName}': findMany`, {
-      query: Array.isArray(input)
-        ? `${input.length} IDs`
-        : typeof input === 'object' && 'where' in input
-          ? 'QueryOptions'
-          : input,
-    });
-
     // Handle QueryOptions with callback where clause
     if (typeof input === 'object' && 'where' in input && typeof input.where === 'function') {
       const queryOptions = this._convertQueryOptionsCallback(input);
       const records = this.dbCollection.findMany(queryOptions);
-
-      this._logger?.debug(`Query '${this.collectionName}' returned ${records.length} records`);
-
       const models = records.map((record) => this._createModelFromRecord(record));
       return new ModelCollection(this.template, models, this.serializer);
     }
 
     const records = this.dbCollection.findMany(input);
-    this._logger?.debug(`Query '${this.collectionName}' returned ${records.length} records`);
-
     const models = records.map((record) => this._createModelFromRecord(record));
     return new ModelCollection(this.template, models, this.serializer);
   }
@@ -269,7 +230,6 @@ export abstract class BaseCollection<
    * @param id - The id of the model to delete.
    */
   delete(id: ModelAttrs<TTemplate, TSchema>['id']): void {
-    this._logger?.debug(`Delete from '${this.collectionName}'`, { id });
     this.dbCollection.delete(id);
   }
 
@@ -298,23 +258,13 @@ export abstract class BaseCollection<
       | DbRecordInput<ModelAttrs<TTemplate, TSchema>>
       | QueryOptions<ModelAttrs<TTemplate, TSchema>>,
   ): number {
-    this._logger?.debug(`Delete many from '${this.collectionName}'`, {
-      query: Array.isArray(input) ? `${input.length} IDs` : input,
-    });
-
     // Handle QueryOptions with callback where clause
     if (typeof input === 'object' && 'where' in input && typeof input.where === 'function') {
       const queryOptions = this._convertQueryOptionsCallback(input);
-      const count = this.dbCollection.deleteMany(queryOptions);
-
-      this._logger?.debug(`Deleted ${count} records from '${this.collectionName}'`);
-
-      return count;
+      return this.dbCollection.deleteMany(queryOptions);
     }
 
-    const count = this.dbCollection.deleteMany(input);
-    this._logger?.debug(`Deleted ${count} records from '${this.collectionName}'`);
-    return count;
+    return this.dbCollection.deleteMany(input);
   }
 
   // -- PRIVATE METHODS --
