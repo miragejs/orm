@@ -357,11 +357,8 @@ describe('Serializer', () => {
       const serializer = new TimestampSerializer(customUserModel, {
         attrs: ['id', 'name', 'email'],
       });
-
       const userCollection = collection().model(customUserModel).serializer(serializer).create();
-      const testSchema = schema()
-        .collections({ users: userCollection as any })
-        .setup();
+      const testSchema = schema().collections({ users: userCollection }).setup();
 
       const user = testSchema.users.create({
         name: 'John Doe',
@@ -369,7 +366,7 @@ describe('Serializer', () => {
         password: 'secret123',
         role: 'admin',
       });
-      const json = user.toJSON() as UserWithTimestampJSON;
+      const json: UserWithTimestampJSON = user.toJSON();
 
       expect(json).toEqual({
         id: '1',
@@ -924,16 +921,15 @@ describe('Serializer', () => {
         });
       });
 
-      it('should work with global embed setting', () => {
+      it('should work with collection-level embed setting', () => {
         const testSchema = schema()
-          .serializer({ embed: true }) // Global embed
           .collections({
             users: collection()
               .model(userModel)
               .relationships({
                 posts: associations.hasMany(postModel),
               })
-              .serializer({ include: ['posts'] }) // Uses global embed
+              .serializer({ include: ['posts'], embed: true }) // Collection-level embed
               .create(),
             posts: collection()
               .model(postModel)
@@ -950,7 +946,7 @@ describe('Serializer', () => {
           password: 'secret',
         });
         const post = testSchema.posts.create({
-          title: 'Global Embed Test',
+          title: 'Embed Test',
           content: 'Content',
           authorId: user.id,
         });
@@ -958,7 +954,7 @@ describe('Serializer', () => {
         user.reload(); // Reload to get updated postIds
         const json = user.toJSON();
 
-        // Should embed because of global setting (remove foreign key)
+        // Should embed because of collection-level setting (remove foreign key)
         expect(json).toEqual({
           id: user.id,
           name: 'Henry',
@@ -967,67 +963,13 @@ describe('Serializer', () => {
           posts: [
             {
               id: post.id,
-              title: 'Global Embed Test',
+              title: 'Embed Test',
               content: 'Content',
               authorId: user.id,
             },
           ],
         });
         expect(json).not.toHaveProperty('postIds');
-      });
-
-      it('should override global embed with collection-level setting', () => {
-        const testSchema = schema()
-          .serializer({ embed: true }) // Global embed
-          .collections({
-            users: collection()
-              .model(userModel)
-              .relationships({
-                posts: associations.hasMany(postModel),
-              })
-              .serializer({ include: ['posts'], embed: false }) // Override to side-load (root auto-enabled)
-              .create(),
-            posts: collection()
-              .model(postModel)
-              .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
-              })
-              .create(),
-          })
-          .setup();
-
-        const user = testSchema.users.create({
-          name: 'Ivy',
-          email: 'ivy@example.com',
-          password: 'secret',
-        });
-        const post = testSchema.posts.create({
-          title: 'Override Test',
-          content: 'Content',
-          authorId: user.id,
-        });
-
-        user.reload(); // Reload to get updated postIds
-        const json = user.toJSON();
-
-        // Should side-load with root because collection-level overrides global and embed=false auto-enables root
-        expect(json).toEqual({
-          user: {
-            id: user.id,
-            name: 'Ivy',
-            email: 'ivy@example.com',
-            password: 'secret',
-            postIds: [post.id],
-          },
-          posts: [
-            {
-              id: post.id,
-              title: 'Override Test',
-              content: 'Content',
-              authorId: user.id,
-            },
-          ],
-        });
       });
     });
 
@@ -1105,14 +1047,13 @@ describe('Serializer', () => {
 
       it('should serialize collection with root and side-loaded relationships', () => {
         const testSchema = schema()
-          .serializer({ root: true })
           .collections({
             users: collection()
               .model(userModel)
               .relationships({
                 posts: associations.hasMany(postModel),
               })
-              .serializer({ attrs: ['id', 'name'], include: ['posts'], embed: false }) // explicitly set embed=false
+              .serializer({ attrs: ['id', 'name'], include: ['posts'], embed: false, root: true }) // collection-level config with root
               .create(),
             posts: collection()
               .model(postModel)

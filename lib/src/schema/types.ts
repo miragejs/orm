@@ -10,7 +10,7 @@ import type {
   RelationshipsByTemplate,
 } from '@src/model';
 import type { ModelRelationships } from '@src/model';
-import type { Serializer, SerializerOptions, StructuralSerializerOptions } from '@src/serializer';
+import type { Serializer, SerializerOptions } from '@src/serializer';
 import type { LoggerConfig } from '@src/utils';
 
 import type Collection from './Collection';
@@ -83,14 +83,9 @@ export interface FixtureConfig<
 /**
  * Global schema configuration
  * @template TIdentityManager - The identity manager type
- * @template TGlobalConfig - The global serializer configuration type
  */
-export interface SchemaConfig<
-  TIdentityManager extends IdentityManager = StringIdentityManager,
-  TGlobalConfig extends StructuralSerializerOptions | undefined = undefined,
-> {
+export interface SchemaConfig<TIdentityManager extends IdentityManager = StringIdentityManager> {
   identityManager?: TIdentityManager;
-  globalSerializerConfig?: TGlobalConfig;
   logging?: LoggerConfig;
 }
 
@@ -138,7 +133,7 @@ export interface CollectionConfig<
  * Type for schema collections - provides both string-based property access and symbol-based relationship resolution
  * @template TCollections - The string-keyed schema collections config
  */
-export type SchemaCollections = Record<string, CollectionConfig<any, any, any, any>>;
+export type SchemaCollections = Record<string, CollectionConfig<any, any, any, any, any>>;
 
 /**
  * Type for schema collections - provides string-based property access

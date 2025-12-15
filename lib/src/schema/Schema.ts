@@ -1,11 +1,6 @@
 import { createDatabase, type DbInstance } from '@src/db';
 import { StringIdentityManager } from '@src/id-manager';
-import type { ModelTemplate } from '@src/model';
-import {
-  Serializer,
-  type SerializerOptions,
-  type StructuralSerializerOptions,
-} from '@src/serializer';
+import { Serializer } from '@src/serializer';
 import { Logger, MirageError } from '@src/utils';
 
 import Collection, { createCollection } from './Collection';
@@ -20,20 +15,19 @@ import type {
 /**
  * Schema class that manages database and collections
  * @template TCollections - The type map of collection names to their configurations
- * @template TConfig - The schema configuration type with identity manager and global serializer config
+ * @template TConfig - The schema configuration type with identity manager
  */
 export default class Schema<
   TCollections extends SchemaCollections,
-  TConfig extends SchemaConfig<any, any> = SchemaConfig<StringIdentityManager, undefined>,
+  TConfig extends SchemaConfig<any> = SchemaConfig<StringIdentityManager>,
 > {
   public readonly db: DbInstance<SchemaDbCollections<TCollections>>;
-  public readonly identityManager: TConfig extends SchemaConfig<infer TIdentityManager, any>
+  public readonly identityManager: TConfig extends SchemaConfig<infer TIdentityManager>
     ? TIdentityManager
     : StringIdentityManager;
   public readonly logger?: Logger;
 
   private _collections: Map<string, Collection<any, any, any, any>> = new Map();
-  private _globalSerializerConfig?: StructuralSerializerOptions;
 
   constructor(collections: TCollections, config?: TConfig) {
     // Create logger if logging is enabled
@@ -41,15 +35,16 @@ export default class Schema<
       this.logger = new Logger(config.logging);
     }
 
+    this.identityManager = config?.identityManager ?? new StringIdentityManager();
     this.db = createDatabase<SchemaDbCollections<TCollections>>({
       logger: this.logger,
     });
-    this.identityManager = config?.identityManager ?? new StringIdentityManager();
-    this._globalSerializerConfig = config?.globalSerializerConfig;
 
     this._registerCollections(collections);
 
-    this.logger?.debug('Schema initialized', this.db.dump());
+    if (this.logger) {
+      this.logger.debug('Schema initialized', this.db.dump());
+    }
   }
 
   /**
@@ -222,16 +217,11 @@ export default class Schema<
       let finalSerializer: any;
 
       if (serializerInstance) {
-        // 1. Collection-level instance has highest priority (no merging)
+        // Collection-level serializer instance has priority
         finalSerializer = serializerInstance;
-      } else {
-        // 2. Merge global config with collection config
-        const mergedConfig = this._mergeConfigs(model, serializerConfig);
-
-        // Only create serializer if there's a config
-        if (mergedConfig) {
-          finalSerializer = new Serializer(model, mergedConfig);
-        }
+      } else if (serializerConfig) {
+        // Create serializer from collection config
+        finalSerializer = new Serializer(model, serializerConfig);
       }
 
       const collection = createCollection(this as SchemaInstance<TCollections, TConfig>, {
@@ -348,33 +338,6 @@ export default class Schema<
       }
     }
   }
-
-  /**
-   * Merge global serializer config with collection-specific config
-   * Collection config values override global config values
-   * @param _template - The model template (used for type inference only)
-   * @param collectionConfig - Collection-specific serializer config
-   * @returns Merged serializer config or undefined if both are undefined
-   */
-  private _mergeConfigs<TTemplate extends ModelTemplate>(
-    _template: TTemplate,
-    collectionConfig?: SerializerOptions<TTemplate>,
-  ): SerializerOptions<TTemplate> | undefined {
-    const global = this._globalSerializerConfig;
-
-    if (!global && !collectionConfig) {
-      return undefined;
-    }
-
-    return {
-      // Structural options: collection overrides global
-      root: collectionConfig?.root ?? global?.root,
-      embed: collectionConfig?.embed ?? global?.embed,
-      // Model-specific options: only from collection level
-      attrs: collectionConfig?.attrs,
-      include: collectionConfig?.include,
-    };
-  }
 }
 
 /**
@@ -383,5 +346,5 @@ export default class Schema<
  */
 export type SchemaInstance<
   TCollections extends SchemaCollections,
-  TConfig extends SchemaConfig<any, any> = SchemaConfig<StringIdentityManager, undefined>,
+  TConfig extends SchemaConfig<any> = SchemaConfig<StringIdentityManager>,
 > = Schema<TCollections, TConfig> & SchemaCollectionAccessors<TCollections>;
