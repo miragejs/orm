@@ -1173,11 +1173,6 @@ describe('Serializer', () => {
         })
         .setup();
 
-      // Verify warning was logged
-      expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('root'));
-      expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('embed'));
-      expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('ignored'));
-
       const user = testSchema.users.create({
         name: 'Test User',
         email: 'test@example.com',
@@ -1185,6 +1180,11 @@ describe('Serializer', () => {
       });
 
       const json = user.toJSON();
+
+      // Verify warning was logged (happens at serialize time when options are resolved)
+      expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('root'));
+      expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('embed'));
+      expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('ignored'));
 
       // Should have root wrapping despite root=false setting
       expect(json).toHaveProperty('user');
