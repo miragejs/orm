@@ -1,5 +1,6 @@
 import type { SchemaCollections } from '@src/schema';
 import { Serializer } from '@src/serializer';
+import type { SerializerOptions } from '@src/serializer';
 
 import type {
   SerializedCollectionFor,
@@ -296,6 +297,26 @@ export default class ModelCollection<
   // -- SERIALIZATION --
 
   /**
+   * Serialize the collection with optional runtime options
+   * @param options - Optional serializer options to override class-level settings
+   * @returns A serialized representation of the collection
+   */
+  serialize(
+    options?: Partial<SerializerOptions<ModelTemplate>>,
+  ): SerializedCollectionFor<TTemplate> {
+    if (
+      this._serializer &&
+      typeof this._serializer === 'object' &&
+      'serializeCollection' in this._serializer &&
+      typeof this._serializer.serializeCollection === 'function'
+    ) {
+      return this._serializer.serializeCollection(this, options);
+    }
+    // Type assertion needed: Array of attrs may not exactly match conditional return type
+    return this.models.map((model) => model.attrs) as any;
+  }
+
+  /**
    * Convert the collection to a plain array
    * @returns An array of the models
    */
@@ -317,15 +338,6 @@ export default class ModelCollection<
    * @returns A serialized representation of the collection
    */
   toJSON(): SerializedCollectionFor<TTemplate> {
-    if (
-      this._serializer &&
-      typeof this._serializer === 'object' &&
-      'serializeCollection' in this._serializer &&
-      typeof this._serializer.serializeCollection === 'function'
-    ) {
-      return this._serializer.serializeCollection(this);
-    }
-    // Type assertion needed: Array of attrs may not exactly match conditional return type
-    return this.models.map((model) => model.attrs) as any;
+    return this.serialize();
   }
 }

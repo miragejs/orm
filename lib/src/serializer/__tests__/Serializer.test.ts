@@ -2149,4 +2149,458 @@ describe('Serializer', () => {
       });
     });
   });
+
+  describe('Model-level serialize() method', () => {
+    describe('Basic usage', () => {
+      it('should serialize using class-level options when no method options provided', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .serializer({ attrs: ['id', 'name', 'email'] })
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Alice',
+          email: 'alice@example.com',
+          password: 'secret123',
+          role: 'admin',
+        });
+
+        // serialize() without options should use class-level settings
+        const json = user.serialize();
+
+        expect(json).toEqual({
+          id: '1',
+          name: 'Alice',
+          email: 'alice@example.com',
+        });
+        expect(json).not.toHaveProperty('password');
+        expect(json).not.toHaveProperty('role');
+      });
+
+      it('should behave the same as toJSON() when no options provided', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .serializer({ attrs: ['id', 'name', 'email'] })
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Bob',
+          email: 'bob@example.com',
+          password: 'secret',
+          role: 'user',
+        });
+
+        // serialize() and toJSON() should produce identical results
+        expect(user.serialize()).toEqual(user.toJSON());
+      });
+    });
+
+    describe('Method-level option overrides', () => {
+      it('should override attrs at method level', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .serializer({ attrs: ['id', 'name', 'email'] })
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Charlie',
+          email: 'charlie@example.com',
+          password: 'secret',
+          role: 'admin',
+        });
+
+        // Override attrs to only include id and name
+        const json = user.serialize({ attrs: ['id', 'name'] });
+
+        expect(json).toEqual({
+          id: '1',
+          name: 'Charlie',
+        });
+        expect(json).not.toHaveProperty('email');
+        expect(json).not.toHaveProperty('password');
+        expect(json).not.toHaveProperty('role');
+      });
+
+      it('should override root at method level', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .serializer({ attrs: ['id', 'name', 'email'], root: false })
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Diana',
+          email: 'diana@example.com',
+          password: 'secret',
+          role: 'user',
+        });
+
+        // Override to enable root wrapping at method level
+        const json = user.serialize({ root: true });
+
+        expect(json).toEqual({
+          user: {
+            id: '1',
+            name: 'Diana',
+            email: 'diana@example.com',
+          },
+        });
+      });
+
+      it('should override custom root key at method level', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .serializer({ attrs: ['id', 'name'], root: 'user' })
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Eve',
+          email: 'eve@example.com',
+          password: 'secret',
+          role: 'admin',
+        });
+
+        // Override root key at method level
+        const json = user.serialize({ root: 'person' });
+
+        expect(json).toEqual({
+          person: {
+            id: '1',
+            name: 'Eve',
+          },
+        });
+      });
+
+      it('should override embed at method level', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection().model(userModel).create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+              })
+              .serializer({ include: ['author'], embed: false }) // Class-level: side-load
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Frank',
+          email: 'frank@example.com',
+          password: 'secret',
+        });
+        const post = testSchema.posts.create({
+          title: 'Test Post',
+          content: 'Content',
+          author: user,
+        });
+
+        // Override to embed at method level
+        const json = post.serialize({ embed: true });
+
+        // Should embed relationship, remove foreign key
+        expect(json).toHaveProperty('author');
+        expect((json as any).author).toEqual({
+          id: user.id,
+          name: 'Frank',
+          email: 'frank@example.com',
+          password: 'secret',
+        });
+        expect(json).not.toHaveProperty('authorId');
+        expect(json).not.toHaveProperty('users'); // No side-loading
+      });
+
+      it('should merge multiple option overrides at method level', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection().model(userModel).serializer({ root: false }).create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Grace',
+          email: 'grace@example.com',
+          password: 'secret',
+          role: 'admin',
+        });
+
+        // Override both attrs and root at method level
+        const json = user.serialize({
+          attrs: ['id', 'name'],
+          root: 'person',
+        });
+
+        expect(json).toEqual({
+          person: {
+            id: '1',
+            name: 'Grace',
+          },
+        });
+      });
+    });
+
+    describe('Fallback behavior', () => {
+      it('should return raw attributes when no serializer is configured', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection().model(userModel).create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Henry',
+          email: 'henry@example.com',
+          password: 'secret',
+          role: 'user',
+        });
+
+        // serialize() without serializer should return raw attributes
+        const json = user.serialize();
+
+        expect(json).toEqual({
+          id: '1',
+          name: 'Henry',
+          email: 'henry@example.com',
+          password: 'secret',
+          role: 'user',
+        });
+      });
+
+      it('should ignore options when no serializer is configured', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection().model(userModel).create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Ivy',
+          email: 'ivy@example.com',
+          password: 'secret',
+          role: 'admin',
+        });
+
+        // Options are ignored without a serializer
+        const json = user.serialize({ attrs: ['id', 'name'], root: true });
+
+        // Should still return raw attributes (options ignored)
+        expect(json).toEqual({
+          id: '1',
+          name: 'Ivy',
+          email: 'ivy@example.com',
+          password: 'secret',
+          role: 'admin',
+        });
+      });
+    });
+  });
+
+  describe('Collection-level serialize() method', () => {
+    describe('Basic usage', () => {
+      it('should serialize using class-level options when no method options provided', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .serializer({ attrs: ['id', 'name', 'email'] })
+              .create(),
+          })
+          .setup();
+
+        testSchema.users.create({ name: 'Alice', email: 'alice@example.com', password: 'secret' });
+        testSchema.users.create({ name: 'Bob', email: 'bob@example.com', password: 'secret' });
+
+        const users = testSchema.users.all();
+        const json = users.serialize();
+
+        expect(json).toEqual([
+          { id: '1', name: 'Alice', email: 'alice@example.com' },
+          { id: '2', name: 'Bob', email: 'bob@example.com' },
+        ]);
+      });
+
+      it('should behave the same as toJSON() when no options provided', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .serializer({ attrs: ['id', 'name'] })
+              .create(),
+          })
+          .setup();
+
+        testSchema.users.create({ name: 'Alice', email: 'alice@example.com', password: 'secret' });
+        testSchema.users.create({ name: 'Bob', email: 'bob@example.com', password: 'secret' });
+
+        const users = testSchema.users.all();
+
+        expect(users.serialize()).toEqual(users.toJSON());
+      });
+    });
+
+    describe('Method-level option overrides', () => {
+      it('should override attrs at method level', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .serializer({ attrs: ['id', 'name', 'email'] })
+              .create(),
+          })
+          .setup();
+
+        testSchema.users.create({ name: 'Alice', email: 'alice@example.com', password: 'secret' });
+        testSchema.users.create({ name: 'Bob', email: 'bob@example.com', password: 'secret' });
+
+        const users = testSchema.users.all();
+        const json = users.serialize({ attrs: ['id', 'name'] });
+
+        expect(json).toEqual([
+          { id: '1', name: 'Alice' },
+          { id: '2', name: 'Bob' },
+        ]);
+      });
+
+      it('should override root at method level', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .serializer({ attrs: ['id', 'name'], root: false })
+              .create(),
+          })
+          .setup();
+
+        testSchema.users.create({ name: 'Alice', email: 'alice@example.com', password: 'secret' });
+        testSchema.users.create({ name: 'Bob', email: 'bob@example.com', password: 'secret' });
+
+        const users = testSchema.users.all();
+        const json = users.serialize({ root: true });
+
+        expect(json).toEqual({
+          users: [
+            { id: '1', name: 'Alice' },
+            { id: '2', name: 'Bob' },
+          ],
+        });
+      });
+
+      it('should override custom root key at method level', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .serializer({ attrs: ['id', 'name'], root: 'users' })
+              .create(),
+          })
+          .setup();
+
+        testSchema.users.create({ name: 'Alice', email: 'alice@example.com', password: 'secret' });
+
+        const users = testSchema.users.all();
+        const json = users.serialize({ root: 'people' });
+
+        expect(json).toEqual({
+          people: [{ id: '1', name: 'Alice' }],
+        });
+      });
+
+      it('should merge multiple option overrides at method level', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection().model(userModel).serializer({ root: false }).create(),
+          })
+          .setup();
+
+        testSchema.users.create({
+          name: 'Alice',
+          email: 'alice@example.com',
+          password: 'secret',
+          role: 'admin',
+        });
+
+        const users = testSchema.users.all();
+        const json = users.serialize({ attrs: ['id', 'name'], root: 'people' });
+
+        expect(json).toEqual({
+          people: [{ id: '1', name: 'Alice' }],
+        });
+      });
+    });
+
+    describe('Fallback behavior', () => {
+      it('should return raw attributes when no serializer is configured', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection().model(userModel).create(),
+          })
+          .setup();
+
+        testSchema.users.create({ name: 'Alice', email: 'alice@example.com', password: 'secret' });
+        testSchema.users.create({ name: 'Bob', email: 'bob@example.com', password: 'secret' });
+
+        const users = testSchema.users.all();
+        const json = users.serialize();
+
+        expect(json).toEqual([
+          { id: '1', name: 'Alice', email: 'alice@example.com', password: 'secret' },
+          { id: '2', name: 'Bob', email: 'bob@example.com', password: 'secret' },
+        ]);
+      });
+
+      it('should ignore options when no serializer is configured', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection().model(userModel).create(),
+          })
+          .setup();
+
+        testSchema.users.create({ name: 'Alice', email: 'alice@example.com', password: 'secret' });
+
+        const users = testSchema.users.all();
+        const json = users.serialize({ attrs: ['id', 'name'], root: true });
+
+        // Should still return raw attributes (options ignored)
+        expect(json).toEqual([
+          { id: '1', name: 'Alice', email: 'alice@example.com', password: 'secret' },
+        ]);
+      });
+
+      it('should serialize empty collection', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .serializer({ attrs: ['id', 'name'], root: true })
+              .create(),
+          })
+          .setup();
+
+        const users = testSchema.users.all();
+        const json = users.serialize();
+
+        expect(json).toEqual({ users: [] });
+      });
+    });
+  });
 });

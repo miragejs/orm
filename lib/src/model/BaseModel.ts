@@ -1,6 +1,13 @@
 import { DbCollection } from '@src/db';
+import type { SerializerOptions } from '@src/serializer';
 
-import type { BaseModelInstance, ModelStatus, NewBaseModelInstance, NewModelAttrs } from './types';
+import type {
+  BaseModelInstance,
+  ModelStatus,
+  ModelTemplate,
+  NewBaseModelInstance,
+  NewModelAttrs,
+} from './types';
 
 /**
  * BaseModel class for managing basic model operations without schema dependencies
@@ -134,10 +141,13 @@ export default class BaseModel<TAttrs extends { id: any }, TSerializer = undefin
   // -- SERIALIZATION --
 
   /**
-   * Serialize the model to a JSON object
+   * Serialize the model with optional runtime options
+   * @param options - Optional serializer options to override class-level settings
    * @returns The serialized model using the configured serializer or raw attributes
    */
-  toJSON(): TSerializer extends { serialize(model: any): infer TSerializedModel }
+  serialize(
+    options?: Partial<SerializerOptions<ModelTemplate>>,
+  ): TSerializer extends { serialize(model: any, options?: any): infer TSerializedModel }
     ? TSerializedModel
     : TAttrs {
     if (
@@ -146,11 +156,21 @@ export default class BaseModel<TAttrs extends { id: any }, TSerializer = undefin
       'serialize' in this._serializer &&
       typeof this._serializer.serialize === 'function'
     ) {
-      return this._serializer.serialize(this);
+      return this._serializer.serialize(this, options);
     }
     // Type assertion needed due to conditional return type complexity
     // TypeScript can't verify TAttrs matches the conditional type in all cases
     return { ...this._attrs } as any;
+  }
+
+  /**
+   * Serialize the model to a JSON object
+   * @returns The serialized model using the configured serializer or raw attributes
+   */
+  toJSON(): TSerializer extends { serialize(model: any, options?: any): infer TSerializedModel }
+    ? TSerializedModel
+    : TAttrs {
+    return this.serialize();
   }
 
   /**
