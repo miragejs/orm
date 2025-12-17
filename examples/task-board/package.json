@@ -7,6 +7,7 @@
   "scripts": {
     "reinstall": "rm -rf node_modules && pnpm install",
     "start": "vite",
+    "restart": "pnpm reinstall && pnpm start",
     "check:format": "prettier --check \"src/**/*.{ts,tsx}\" \"test/**/*.{ts,tsx}\"",
     "check:lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "check:types": "tsc --noEmit",
@@ -18,19 +19,21 @@
     "build:checks": "pnpm check:all && pnpm build"
   },
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router": "^7.0.2",
-    "@mui/material": "^6.1.7",
-    "@mui/icons-material": "^6.1.7",
     "@emotion/react": "^11.13.5",
     "@emotion/styled": "^11.13.5",
     "@faker-js/faker": "^9.2.0",
+    "@mui/icons-material": "^6.1.7",
+    "@mui/material": "^6.1.7",
+    "lodash.upperfirst": "^4.3.1",
     "miragejs-orm": "file:../../lib",
-    "msw": "^2.6.5"
+    "msw": "^2.6.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router": "^7.0.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "@types/lodash.upperfirst": "^4.3.9",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",

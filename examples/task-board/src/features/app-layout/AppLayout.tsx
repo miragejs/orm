@@ -1,10 +1,9 @@
+import { useLoaderData, redirect } from 'react-router';
 import { Box } from '@mui/material';
-import { useLoaderData } from 'react-router';
-import type { LoaderFunctionArgs } from 'react-router';
-import { redirect } from 'react-router';
 import { getUser } from './api';
-import type { User } from '@shared/types';
 import { Sidebar, Header, MainContent } from './components';
+import type { LoaderFunctionArgs } from 'react-router';
+import type { User } from '@shared/types';
 
 /**
  * Loader for app layout - fetches current user and protects route
@@ -20,7 +19,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 }
 
-interface LoaderData {
+export interface AppLoaderData {
   user: User;
 }
 
@@ -28,7 +27,7 @@ interface LoaderData {
  * App Layout Component - composes Sidebar, Header, and MainContent
  */
 export default function AppLayout() {
-  const { user } = useLoaderData() as LoaderData;
+  const { user } = useLoaderData<AppLoaderData>();
 
   return (
     <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>

@@ -1,19 +1,20 @@
 import { associations, collection } from 'miragejs-orm';
 import { commentModel, taskModel, teamModel, userModel } from '@test/schema/models';
-import type { AppCollections } from '@test/schema/types';
+import type { TestCollections } from '@test/schema/types';
 import { userFactory } from './userFactory';
 
-export const usersCollection = collection<AppCollections>()
+export const usersCollection = collection<TestCollections>()
   .model(userModel)
   .factory(userFactory)
   .relationships({
     comments: associations.hasMany(commentModel),
     tasks: associations.hasMany(taskModel),
-    team: associations.belongsTo(teamModel),
+    team: associations.belongsTo(teamModel, { inverse: 'members' }),
   })
   .serializer({
-    include: ['team'],
-    embed: true,
+    with: ['team'],
+    relationsMode: 'embedded',
+    root: true,
   })
   .seeds({
     default(schema) {
@@ -29,12 +30,14 @@ export const usersCollection = collection<AppCollections>()
       });
 
       // Create manager user
-      schema.users.create('manager', {
+      const managerUser = schema.users.create('manager', {
         email: 'jane.smith@example.com',
         name: 'Jane Smith',
         bio: 'Engineering Team Lead with focus on team growth and delivery',
         team: devXTeam,
       });
+
+      devXTeam?.update({ manager: managerUser });
     },
   })
   .create();

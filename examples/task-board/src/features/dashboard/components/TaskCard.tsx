@@ -1,6 +1,8 @@
 import { memo } from 'react';
 import { Box, Card, CardContent, Chip, Typography } from '@mui/material';
-import { TaskPriority, type Task } from '@shared/types';
+import { formatTaskTitle } from '@shared/utils';
+import { TaskPriority } from '@shared/types';
+import type { Task } from '@shared/types';
 
 interface TaskCardProps {
   task: Task;
@@ -47,13 +49,10 @@ function TaskCard({ task, statusColor, onTaskClick }: TaskCardProps) {
           }}
         >
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            {task.title}
+            {formatTaskTitle(task)}
           </Typography>
           <Chip label={task.status} color={statusColor} size="small" />
         </Box>
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          {task.description}
-        </Typography>
         <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
           <Chip
             label={task.priority}

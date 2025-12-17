@@ -3,17 +3,19 @@ import { TaskStatus, TaskPriority, Task } from '@shared/types';
 
 export interface TaskAttrs {
   id: string;
-  title: string;
-  description: string;
-  status: TaskStatus;
-  priority: TaskPriority;
-  dueDate: string;
-  createdAt: string;
-  updatedAt: string;
   assigneeId: string;
-  teamId: string;
-  creatorId: string;
   commentIds: string[];
+  createdAt: string;
+  creatorId: string;
+  description: string;
+  dueDate: string;
+  number: number;
+  prefix: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  teamId: string;
+  title: string;
+  updatedAt: string;
 }
 
 export const taskModel = model()

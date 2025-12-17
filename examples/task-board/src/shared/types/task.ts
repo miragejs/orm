@@ -1,5 +1,5 @@
 import { TaskStatus, TaskPriority } from './enums';
-import type { Comment } from './comment';
+import { Team } from './team';
 import type { User } from './user';
 
 /**
@@ -7,23 +7,22 @@ import type { User } from './user';
  */
 export interface Task {
   id: string;
-  title: string;
-  description: string;
-  status: TaskStatus;
-  priority: TaskPriority;
-  dueDate: string;
-  createdAt: string;
-  updatedAt: string;
   assigneeId: string;
-  teamId?: string;
+  createdAt: string;
   creatorId: string;
+  description: string;
+  dueDate: string;
+  number: number;
+  prefix: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  teamId: string;
+  title: string;
+  updatedAt: string;
 }
 
-/**
- * Task with full details including relationships
- */
-export interface TaskDetails extends Task {
-  assignee?: User;
-  creator?: User;
-  comments?: Comment[];
-}
+export type DetailedTask = Task & {
+  assignee: User;
+  creator: User;
+  team: Team;
+};

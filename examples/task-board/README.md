@@ -156,7 +156,7 @@ test/                     # Test infrastructure (MSW + ORM)
     ├── types/            # Schema type definitions
     │   ├── schema.ts
     │   └── index.ts
-    ├── devSchema.ts      # Development schema (logging enabled)
+    ├── testSchema.ts      # Development schema (logging enabled)
     └── testSchema.ts     # Test schema (logging disabled)
 ```
 
@@ -219,7 +219,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 // test/server/handlers/authHandlers.ts
 http.post('/api/auth/login', async ({ request }) => {
   const { email } = await request.json();
-  const user = appSchema.users.find({ email }); // ORM query
+  const user = testSchema.users.find({ email }); // ORM query
   
   if (!user) {
     return HttpResponse.json({ error: 'User not found' }, { status: 404 });

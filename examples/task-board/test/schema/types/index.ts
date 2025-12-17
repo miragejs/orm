@@ -1,1 +1,1 @@
-export type { AppCollections, AppSchema } from './schema';
+export type { TestCollections, TestSchema } from './schema';

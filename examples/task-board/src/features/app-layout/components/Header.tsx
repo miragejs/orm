@@ -8,6 +8,7 @@ import {
   Typography,
   Box,
 } from '@mui/material';
+import { Logo } from '@shared/components';
 import type { User } from '@shared/types';
 
 interface HeaderProps {
@@ -35,7 +36,10 @@ export default function Header({ user }: HeaderProps) {
       elevation={1}
       sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
     >
-      <Toolbar sx={{ justifyContent: 'flex-end' }}>
+      <Toolbar sx={{ justifyContent: 'space-between' }}>
+        {/* Brand Logo */}
+        <Logo size="small" textOnly />
+
         {/* User Avatar and Menu */}
         <IconButton onClick={handleMenuOpen}>
           <Avatar src={user.avatar} alt={user.name}>

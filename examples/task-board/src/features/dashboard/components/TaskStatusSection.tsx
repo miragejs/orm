@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import {
   Accordion,
   AccordionSummary,
@@ -7,9 +8,8 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
-import type { Task } from '@shared/types';
 import TaskCard from './TaskCard';
+import type { Task } from '@shared/types';
 
 interface TaskStatusSectionProps {
   statusLabel: string;

@@ -22,7 +22,6 @@ async function startApp() {
   // Initialize mock server with seeds in development mode
   if (import.meta.env.DEV) {
     await initMockServer();
-    console.log('✅ Mock server initialized with seed data');
   }
 
   ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(

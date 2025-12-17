@@ -2,24 +2,39 @@ import { factory, resolveFactoryAttr } from 'miragejs-orm';
 import { faker } from '@faker-js/faker';
 import { TaskStatus, TaskPriority } from '@shared/types';
 import { taskModel } from '@test/schema/models';
-import type { AppCollections } from '@test/schema/types';
+import type { TestCollections } from '@test/schema/types';
 
-export const taskFactory = factory<AppCollections>()
+const getTeamPrefix = (teamName: string) => {
+  return teamName
+    .split(/\s+/)
+    .map((word) => word.charAt(0).toUpperCase())
+    .join('');
+};
+
+export const taskFactory = factory<TestCollections>()
   .model(taskModel)
   .attrs({
-    createdAt: () => faker.date.recent({ days: 14 }).toISOString(),
-    description: () => faker.hacker.phrase(),
-    dueDate(id) {
-      const createdAt = resolveFactoryAttr(this.createdAt, id);
-      return faker.date.between({ from: createdAt, to: new Date() }).toISOString();
-    },
-    priority: () => faker.helpers.enumValue(TaskPriority),
-    status: () => faker.helpers.enumValue(TaskStatus),
+    prefix: () => faker.hacker.abbreviation(),
+    number: () => faker.number.int({ min: 1, max: 100 }),
     title: () =>
       `${faker.hacker.verb()} ${faker.hacker.adjective()} ${faker.hacker.noun()}`,
+    description: () => faker.hacker.phrase(),
+    priority: () => faker.helpers.enumValue(TaskPriority),
+    status: () => faker.helpers.enumValue(TaskStatus),
+    dueDate(id) {
+      const createdAt = resolveFactoryAttr(this.createdAt, id);
+      const dueDate = faker.date
+        .between({ from: createdAt, to: new Date() })
+        .toISOString();
+      return dueDate;
+    },
+    createdAt() {
+      return faker.date.recent({ days: 14 }).toISOString();
+    },
     updatedAt(id) {
       const createdAt = resolveFactoryAttr(this.createdAt, id);
-      return faker.date.between({ from: createdAt, to: new Date() }).toISOString();
+      const dueDate = resolveFactoryAttr(this.dueDate, id);
+      return faker.date.between({ from: createdAt, to: dueDate }).toISOString();
     },
   })
   .traits({
@@ -64,5 +79,10 @@ export const taskFactory = factory<AppCollections>()
         }
       },
     },
+  })
+  .afterCreate((task) => {
+    if (task.team) {
+      task.update({ prefix: getTeamPrefix(task.team.name) });
+    }
   })
   .create();

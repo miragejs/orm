@@ -4,42 +4,40 @@ import type {
   Factory,
   HasMany,
   SchemaInstance,
-  Serializer,
 } from 'miragejs-orm';
-import type { UserModel, TeamModel, TaskModel, CommentModel } from '../models';
+import type { CommentModel, TaskModel, TeamModel, UserModel } from '../models';
 
 /**
- * Application collections configuration
+ * Test schema collections configuration
  * Maps collection names to their CollectionConfig types
  */
-export type AppCollections = {
+export type TestCollections = {
   users: CollectionConfig<
     UserModel,
     {
-      team: BelongsTo<TeamModel>;
-      tasks: HasMany<TaskModel>;
       comments: HasMany<CommentModel>;
+      tasks: HasMany<TaskModel>;
+      team: BelongsTo<TeamModel>;
     },
-    Factory<UserModel, 'manager' | 'withTasks', AppCollections>,
-    Serializer<UserModel>,
-    AppCollections
+    Factory<UserModel, 'manager' | 'withTasks', TestCollections>,
+    TestCollections
   >;
   teams: CollectionConfig<
     TeamModel,
     {
-      members: HasMany<UserModel, 'memberIds'>;
       manager: BelongsTo<UserModel, 'managerId'>;
+      members: HasMany<UserModel, 'memberIds'>;
     },
-    Factory<TeamModel, 'withManager' | 'withMembers', AppCollections>,
-    Serializer<TeamModel>,
-    AppCollections
+    Factory<TeamModel, 'withManager' | 'withMembers', TestCollections>,
+    TestCollections
   >;
   tasks: CollectionConfig<
     TaskModel,
     {
       assignee: BelongsTo<UserModel, 'assigneeId'>;
-      team: BelongsTo<TeamModel>;
       comments: HasMany<CommentModel>;
+      creator: BelongsTo<UserModel, 'creatorId'>;
+      team: BelongsTo<TeamModel>;
     },
     Factory<
       TaskModel,
@@ -51,10 +49,10 @@ export type AppCollections = {
       | 'highPriority'
       | 'urgent'
       | 'overdue'
-      | 'withComments'
+      | 'withComments',
+      TestCollections
     >,
-    Serializer<TaskModel>,
-    AppCollections
+    TestCollections
   >;
   comments: CollectionConfig<
     CommentModel,
@@ -67,6 +65,6 @@ export type AppCollections = {
 };
 
 /**
- * Application schema instance type
+ * Test schema instance type
  */
-export type AppSchema = SchemaInstance<AppCollections>;
+export type TestSchema = SchemaInstance<TestCollections>;

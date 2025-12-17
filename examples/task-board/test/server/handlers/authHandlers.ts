@@ -1,5 +1,5 @@
 import { http, HttpResponse, PathParams } from 'msw';
-import { devSchema } from '@test/schema/devSchema';
+import { testSchema } from '@test/schema/testSchema';
 
 /**
  * Auth handlers for login and logout endpoints
@@ -10,7 +10,7 @@ export const authHandlers = [
     const { email } = await request.json();
 
     // Find user by email
-    const user = devSchema.users.find({ email });
+    const user = testSchema.users.find({ email });
 
     if (!user) {
       return HttpResponse.json({ error: 'User not found' }, { status: 404 });

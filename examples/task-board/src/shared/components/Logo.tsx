@@ -1,15 +1,20 @@
 import { Box, Typography } from '@mui/material';
-import { Dashboard as DashboardIcon } from '@mui/icons-material';
+import { SpaceDashboard as SpaceDashboardIcon } from '@mui/icons-material';
 
 interface LogoProps {
   variant?: 'full' | 'icon';
   size?: 'small' | 'medium' | 'large';
+  textOnly?: boolean;
 }
 
 /**
  * TaskBoard Brand Logo Component
  */
-export default function Logo({ variant = 'full', size = 'medium' }: LogoProps) {
+export default function Logo({
+  variant = 'full',
+  size = 'medium',
+  textOnly = false,
+}: LogoProps) {
   const iconSizes = {
     small: 24,
     medium: 32,
@@ -28,7 +33,7 @@ export default function Logo({ variant = 'full', size = 'medium' }: LogoProps) {
   if (variant === 'icon') {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <DashboardIcon
+        <SpaceDashboardIcon
           sx={{
             fontSize: iconSize,
             color: 'secondary.main',
@@ -47,15 +52,17 @@ export default function Logo({ variant = 'full', size = 'medium' }: LogoProps) {
         userSelect: 'none',
       }}
     >
-      <DashboardIcon
-        sx={{
-          fontSize: iconSize,
-          color: 'secondary.main',
-        }}
-      />
+      {!textOnly && (
+        <SpaceDashboardIcon
+          sx={{
+            fontSize: iconSize,
+            color: 'secondary.main',
+          }}
+        />
+      )}
       <Typography
+        component="h1"
         variant={textVariant}
-        component="span"
         sx={{
           fontWeight: 700,
           background: (theme) =>

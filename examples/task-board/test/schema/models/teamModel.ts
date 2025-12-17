@@ -2,11 +2,11 @@ import { model } from 'miragejs-orm';
 
 export interface TeamAttrs {
   id: string;
-  name: string;
+  createdAt: string;
   department: string;
   description: string;
-  createdAt: string;
   managerId: string;
+  name: string;
 }
 
 export const teamModel = model()

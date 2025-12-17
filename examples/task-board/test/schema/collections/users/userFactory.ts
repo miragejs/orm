@@ -2,9 +2,9 @@ import { associations, factory } from 'miragejs-orm';
 import { faker } from '@faker-js/faker';
 import { UserRole } from '@shared/types';
 import { taskModel, teamModel, userModel } from '@test/schema/models';
-import type { AppCollections } from '@test/schema/types';
+import type { TestCollections } from '@test/schema/types';
 
-export const userFactory = factory<AppCollections>()
+export const userFactory = factory<TestCollections>()
   .model(userModel)
   .attrs({
     avatar: () => faker.image.avatar(),

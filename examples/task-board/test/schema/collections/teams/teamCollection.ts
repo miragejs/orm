@@ -1,18 +1,25 @@
 import { collection, associations } from 'miragejs-orm';
 import { teamModel, userModel } from '@test/schema/models';
-import type { AppCollections } from '@test/schema/types';
+import type { TestCollections } from '@test/schema/types';
 import { teamFactory } from './teamFactory';
 
-export const teamsCollection = collection<AppCollections>()
+export const teamsCollection = collection<TestCollections>()
   .model(teamModel)
   .factory(teamFactory)
   .relationships({
-    manager: associations.belongsTo(userModel, { foreignKey: 'managerId' }),
-    members: associations.hasMany(userModel, { foreignKey: 'memberIds' }),
+    manager: associations.belongsTo(userModel, {
+      foreignKey: 'managerId',
+      inverse: null,
+    }),
+    members: associations.hasMany(userModel, {
+      foreignKey: 'memberIds',
+      inverse: 'team',
+    }),
   })
   .serializer({
-    include: ['members', 'manager'],
-    embed: true,
+    with: ['members', 'manager'],
+    relationsMode: 'embedded',
+    root: true,
   })
   .seeds({
     default: (schema) => {

@@ -10,7 +10,8 @@ export const commentsCollection = collection()
     task: associations.belongsTo(taskModel),
   })
   .serializer({
-    include: ['author'],
-    embed: true,
+    with: ['author'],
+    relationsMode: 'embedded',
+    root: true,
   })
   .create();

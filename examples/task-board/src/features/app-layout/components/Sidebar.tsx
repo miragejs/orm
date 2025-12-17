@@ -1,3 +1,9 @@
+import { useNavigate, useLocation } from 'react-router';
+import {
+  Assignment as AssignmentIcon,
+  Groups as GroupsIcon,
+  Logout as LogoutIcon,
+} from '@mui/icons-material';
 import {
   Box,
   Drawer,
@@ -5,19 +11,13 @@ import {
   ListItem,
   ListItemButton,
   ListItemIcon,
-  ListItemText,
-  Button,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
-import {
-  Dashboard as DashboardIcon,
-  Groups as GroupsIcon,
-  Logout as LogoutIcon,
-} from '@mui/icons-material';
-import { useNavigate, useLocation } from 'react-router';
 import { logout } from '@features/auth/api';
 import { Logo } from '@shared/components';
 
-const DRAWER_WIDTH = 220;
+const DRAWER_WIDTH = 72;
 
 interface NavItem {
   label: string;
@@ -29,7 +29,7 @@ const navItems: NavItem[] = [
   {
     label: 'Dashboard',
     path: '/dashboard',
-    icon: <DashboardIcon />,
+    icon: <AssignmentIcon />,
   },
   {
     label: 'Team',
@@ -73,16 +73,16 @@ export default function Sidebar() {
         },
       }}
     >
-      {/* Logo */}
+      {/* Logo Icon */}
       <Box
         sx={{
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          py: 3,
+          py: 2,
         }}
       >
-        <Logo size="medium" />
+        <Logo variant="icon" size="medium" />
       </Box>
 
       {/* Navigation Menu - Centered */}
@@ -94,50 +94,50 @@ export default function Sidebar() {
           justifyContent: 'center',
         }}
       >
-        <List sx={{ px: 2 }}>
+        <List sx={{ px: 1.5 }}>
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
 
             return (
               <ListItem key={item.path} disablePadding sx={{ mb: 1 }}>
-                <ListItemButton
-                  selected={isActive}
-                  onClick={() => handleNavigate(item.path)}
-                  sx={{
-                    borderRadius: 2,
-                    color: isActive ? 'primary.main' : 'rgba(255, 255, 255, 0.9)',
-                    backgroundColor: isActive
-                      ? 'rgba(255, 255, 255, 0.95)'
-                      : 'transparent',
-                    '&:hover': {
-                      backgroundColor: isActive
-                        ? 'rgba(255, 255, 255, 1)'
-                        : 'rgba(255, 255, 255, 0.1)',
-                    },
-                    '&.Mui-selected': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                      color: 'primary.main',
-                      '&:hover': {
-                        backgroundColor: 'rgba(255, 255, 255, 1)',
-                      },
-                    },
-                  }}
-                >
-                  <ListItemIcon
+                <Tooltip title={item.label} placement="right" arrow>
+                  <ListItemButton
+                    selected={isActive}
+                    onClick={() => handleNavigate(item.path)}
                     sx={{
-                      color: isActive ? 'primary.main' : 'rgba(255, 255, 255, 0.7)',
-                      minWidth: 40,
+                      borderRadius: 2,
+                      minHeight: 48,
+                      justifyContent: 'center',
+                      px: 0,
+                      color: isActive ? 'primary.main' : 'rgba(255, 255, 255, 0.9)',
+                      backgroundColor: isActive
+                        ? 'rgba(255, 255, 255, 0.95)'
+                        : 'transparent',
+                      '&:hover': {
+                        backgroundColor: isActive
+                          ? 'rgba(255, 255, 255, 1)'
+                          : 'rgba(255, 255, 255, 0.1)',
+                      },
+                      '&.Mui-selected': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        color: 'primary.main',
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 1)',
+                        },
+                      },
                     }}
                   >
-                    {item.icon}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={item.label}
-                    primaryTypographyProps={{
-                      fontWeight: isActive ? 600 : 400,
-                    }}
-                  />
-                </ListItemButton>
+                    <ListItemIcon
+                      sx={{
+                        color: isActive ? 'primary.main' : 'rgba(255, 255, 255, 0.7)',
+                        minWidth: 'auto',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                  </ListItemButton>
+                </Tooltip>
               </ListItem>
             );
           })}
@@ -145,21 +145,22 @@ export default function Sidebar() {
       </Box>
 
       {/* Logout Button */}
-      <Box sx={{ p: 2 }}>
-        <Button
-          fullWidth
-          variant="contained"
-          color="error"
-          startIcon={<LogoutIcon />}
-          onClick={handleLogout}
-          sx={{
-            borderRadius: 2,
-            textTransform: 'none',
-            fontWeight: 600,
-          }}
-        >
-          Logout
-        </Button>
+      <Box sx={{ p: 1.5, display: 'flex', justifyContent: 'center' }}>
+        <Tooltip title="Logout" placement="right" arrow>
+          <IconButton
+            onClick={handleLogout}
+            sx={{
+              color: 'error.main',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              '&:hover': {
+                backgroundColor: 'error.main',
+                color: 'white',
+              },
+            }}
+          >
+            <LogoutIcon />
+          </IconButton>
+        </Tooltip>
       </Box>
     </Drawer>
   );

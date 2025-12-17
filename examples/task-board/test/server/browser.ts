@@ -1,6 +1,6 @@
 import { setupWorker } from 'msw/browser';
 import { handlers } from './handlers';
-import { devSchema } from '@test/schema/devSchema';
+import { testSchema } from '@test/schema/testSchema';
 
 /**
  * MSW browser worker for intercepting API requests in development
@@ -12,7 +12,9 @@ export const worker = setupWorker(...handlers);
  */
 export async function initMockServer() {
   // Load dev mock data
-  await devSchema.loadSeeds({ onlyDefault: true });
+  await testSchema.loadSeeds({ onlyDefault: true });
   // Start MSW worker
   await worker.start({ onUnhandledRequest: 'bypass' });
+
+  console.log('✅ Mock server initialized!');
 }

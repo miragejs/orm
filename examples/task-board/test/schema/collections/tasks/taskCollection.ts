@@ -1,9 +1,9 @@
 import { collection, associations } from 'miragejs-orm';
 import { taskModel, userModel, teamModel, commentModel } from '@test/schema/models';
-import type { AppCollections } from '@test/schema/types';
+import type { TestCollections } from '@test/schema/types';
 import { taskFactory } from './taskFactory';
 
-export const tasksCollection = collection<AppCollections>()
+export const tasksCollection = collection<TestCollections>()
   .model(taskModel)
   .factory(taskFactory)
   .relationships({
@@ -13,7 +13,8 @@ export const tasksCollection = collection<AppCollections>()
     team: associations.belongsTo(teamModel),
   })
   .serializer({
-    include: ['assignee', 'creator', 'comments'],
+    root: true,
+    with: ['assignee', 'creator', 'team'],
   })
   .seeds({
     default(schema) {

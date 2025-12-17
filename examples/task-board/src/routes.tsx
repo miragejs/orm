@@ -6,6 +6,7 @@ import Dashboard, { loader as dashboardLoader } from './features/dashboard/Dashb
 import TaskDetails, {
   loader as taskDetailsLoader,
 } from './features/task-details/TaskDetails';
+import TaskComments from './features/task-comments/TaskComments';
 import ErrorBoundary from './shared/components/ErrorBoundary';
 
 /**
@@ -47,6 +48,12 @@ export const routes: RouteObject[] = [
             handle: {
               title: 'Task Details',
             },
+            children: [
+              {
+                index: true,
+                element: <TaskComments />,
+              },
+            ],
           },
         ],
       },

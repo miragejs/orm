@@ -70,7 +70,6 @@ export default function LoginForm() {
             onChange={(e) => setEmail(e.target.value)}
             disabled={isSubmitting}
             autoComplete="email"
-            autoFocus
             sx={{ mb: 3 }}
             placeholder="email@example.com"
           />

@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react';
 import { useLoaderData, useNavigate, Outlet } from 'react-router';
 import { Box, Typography, Stack } from '@mui/material';
-import { TaskStatus, type Task } from '@shared/types';
+import { TaskStatus } from '@shared/types';
 import { getTasks } from './api';
 import { TaskStatusSection } from './components';
-import { statusConfig, statusOrder } from './config/statusConfig';
+import { statusConfig, statusOrder } from './config';
+import type { Task } from '@shared/types';
+
 /**
  * Dashboard loader - fetches user tasks
  */
@@ -17,9 +19,8 @@ export async function loader() {
  * Dashboard Component - Overview of tasks grouped by status
  */
 export default function Dashboard() {
-  const { tasks } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
-
+  const { tasks } = useLoaderData<typeof loader>();
   const [expanded, setExpanded] = useState<string>(TaskStatus.IN_PROGRESS);
 
   // Group tasks by status - memoized to avoid recalculation
@@ -60,19 +61,18 @@ export default function Dashboard() {
           return (
             <TaskStatusSection
               key={status}
-              statusLabel={config.label}
-              statusIcon={config.icon}
-              statusColor={config.color}
-              tasks={statusTasks}
               expanded={expanded === status}
               onExpandChange={(isExpanded) => handleAccordionChange(status, isExpanded)}
               onTaskClick={handleTaskClick}
+              statusColor={config.color}
+              statusIcon={config.icon}
+              statusLabel={config.label}
+              tasks={statusTasks}
             />
           );
         })}
       </Stack>
 
-      {/* Outlet for nested routes (TaskDetails dialog) */}
       <Outlet />
     </Box>
   );

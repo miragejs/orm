@@ -1,9 +1,9 @@
 import { associations, factory } from 'miragejs-orm';
 import { faker } from '@faker-js/faker';
 import { teamModel, userModel } from '@test/schema/models';
-import type { AppCollections } from '@test/schema/types';
+import type { TestCollections } from '@test/schema/types';
 
-export const teamFactory = factory<AppCollections>()
+export const teamFactory = factory<TestCollections>()
   .model(teamModel)
   .attrs({
     createdAt: () => faker.date.past().toISOString(),

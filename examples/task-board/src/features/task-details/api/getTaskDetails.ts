@@ -1,7 +1,7 @@
-import type { TaskDetails } from '@shared/types';
+import type { DetailedTask } from '@shared/types';
 
 export interface GetTaskDetailsResponse {
-  task: TaskDetails;
+  task: DetailedTask;
 }
 
 /**
@@ -9,7 +9,7 @@ export interface GetTaskDetailsResponse {
  * @param taskId - The ID of the task to fetch
  * @returns A promise that resolves to the task details
  */
-export async function getTaskDetails(taskId: string): Promise<TaskDetails> {
+export async function getTaskDetails(taskId: string): Promise<DetailedTask> {
   const response = await fetch(`/api/tasks/${taskId}`);
 
   if (!response.ok) {
