@@ -42,13 +42,13 @@ export default class CollectionBuilder<
   TRelationships extends ModelRelationships = {},
   TFactory extends Factory<TTemplate, any, any> = Factory<TTemplate, string, SchemaCollections>,
   TIdentityManager extends IdentityManager = StringIdentityManager,
-  TSerializer extends Serializer<any, any, any> = Serializer<ModelTemplate>,
+  TSerializer extends Serializer<any, any, any, any> = Serializer<ModelTemplate, TSchema>,
 > {
   private _template?: TTemplate;
   private _factory?: TFactory;
   private _relationships?: TRelationships;
   private _identityManager?: TIdentityManager;
-  private _serializerConfig?: SerializerOptions<TTemplate>;
+  private _serializerConfig?: SerializerOptions<TTemplate, TSchema>;
   private _serializerInstance?: TSerializer;
   private _seeds?: Seeds<TSchema>;
   private _fixtures?: FixtureConfig<TTemplate, TRelationships>;
@@ -80,7 +80,7 @@ export default class CollectionBuilder<
     TRelationships,
     Factory<T, any, any>,
     TIdentityManager,
-    Serializer<T>
+    Serializer<T, TSchema>
   > {
     // Validate model template structure
     if (!template || typeof template !== 'object') {
@@ -105,7 +105,7 @@ export default class CollectionBuilder<
       TRelationships,
       Factory<T, any, any>,
       TIdentityManager,
-      Serializer<T>
+      Serializer<T, TSchema>
     >();
     builder._template = template;
     // Preserve factory if it exists, casting it to the new template type
@@ -231,7 +231,7 @@ export default class CollectionBuilder<
     builder._serializerConfig = this._serializerConfig;
     builder._serializerInstance = this._serializerInstance;
     builder._seeds = this._seeds;
-    builder._fixtures = this._fixtures as unknown as typeof builder._fixtures;
+    builder._fixtures = this._fixtures as typeof builder._fixtures;
     return builder;
   }
 
@@ -256,8 +256,8 @@ export default class CollectionBuilder<
    *   .serializer(new CustomUserSerializer(userModel));
    * ```
    */
-  serializer<S extends Serializer<TTemplate> = Serializer<TTemplate>>(
-    configOrSerializer: SerializerOptions<TTemplate> | S,
+  serializer<S extends Serializer<TTemplate, TSchema> = Serializer<TTemplate, TSchema>>(
+    configOrSerializer: SerializerOptions<TTemplate, TSchema> | S,
   ): CollectionBuilder<TTemplate, TSchema, TRelationships, TFactory, TIdentityManager, S> {
     const builder = new CollectionBuilder<
       TTemplate,
@@ -276,9 +276,9 @@ export default class CollectionBuilder<
 
     // Determine if it's a config object or a serializer instance
     if (configOrSerializer instanceof Serializer) {
-      builder._serializerInstance = configOrSerializer as any;
+      builder._serializerInstance = configOrSerializer;
     } else {
-      builder._serializerConfig = configOrSerializer as any;
+      builder._serializerConfig = configOrSerializer;
     }
 
     return builder;
@@ -516,7 +516,7 @@ export function collection<
   {},
   Factory<ModelTemplate, string, SchemaCollections>,
   StringIdentityManager,
-  Serializer<ModelTemplate>
+  Serializer<ModelTemplate, TSchema>
 > {
   return new CollectionBuilder<
     ModelTemplate,
@@ -524,6 +524,6 @@ export function collection<
     {},
     Factory<ModelTemplate, string, SchemaCollections>,
     StringIdentityManager,
-    Serializer<ModelTemplate>
+    Serializer<ModelTemplate, TSchema>
   >();
 }

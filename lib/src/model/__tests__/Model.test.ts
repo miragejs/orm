@@ -787,8 +787,7 @@ describe('Model', () => {
         schema: testSchema,
       }).save();
 
-      const json = user.toJSON();
-
+      const json: UserJSON = user.toJSON();
       expect(json).toEqual({
         id: user.id,
         name: 'John Doe',
@@ -814,7 +813,7 @@ describe('Model', () => {
         schema: testSchema,
       }).save();
 
-      const json = post.toJSON();
+      const json: PostJSON = post.toJSON();
       expect(json).toEqual({
         id: post.id,
         title: 'Test Post',
@@ -825,8 +824,8 @@ describe('Model', () => {
 
     describe('with custom Serializer', () => {
       it('should use provided serializer when serializing model', () => {
-        const userSerializer = new Serializer<UserModel, UserJSON>(userModel, {
-          attrs: ['id', 'name'],
+        const userSerializer = new Serializer<UserModel, TestSchema, UserJSON>(userModel, {
+          select: ['id', 'name'],
         });
 
         const user = new UserModelClass({
@@ -838,8 +837,7 @@ describe('Model', () => {
           serializer: userSerializer,
         }).save();
 
-        const json = user.toJSON();
-
+        const json: UserJSON = user.toJSON();
         expect(json).toEqual({
           id: user.id,
           name: 'John Doe',
@@ -848,8 +846,8 @@ describe('Model', () => {
       });
 
       it('should use provided serializer with root wrapping for post model', () => {
-        const postSerializer = new Serializer<PostModel, PostJSON>(postModel, {
-          attrs: ['id', 'title'],
+        const postSerializer = new Serializer<PostModel, TestSchema, PostJSON>(postModel, {
+          select: ['id', 'title'],
           root: true,
         });
 
@@ -862,8 +860,7 @@ describe('Model', () => {
           serializer: postSerializer,
         }).save();
 
-        const json = post.toJSON();
-
+        const json: PostJSON = post.toJSON();
         expect(json).toEqual({
           post: {
             id: post.id,

@@ -357,11 +357,11 @@ export type NewModelAttrs<TAttrs extends { id: any }> =
 /**
  * Type for new base model instance with nullable ID
  * @template TAttrs - The model attributes type
- * @template TSerializer - The serializer type
+ * @template TSerialized - The serialized output type
  */
-export type NewBaseModelInstance<TAttrs extends { id: any }, TSerializer = undefined> = BaseModel<
+export type NewBaseModelInstance<TAttrs extends { id: any }, TSerialized = TAttrs> = BaseModel<
   TAttrs,
-  TSerializer
+  TSerialized
 > & {
   attrs: NewModelAttrs<TAttrs>;
   id: TAttrs['id'] | null;
@@ -370,11 +370,11 @@ export type NewBaseModelInstance<TAttrs extends { id: any }, TSerializer = undef
 /**
  * Type for base model instance with required ID
  * @template TAttrs - The model attributes type
- * @template TSerializer - The serializer type
+ * @template TSerialized - The serialized output type
  */
-export type BaseModelInstance<TAttrs extends { id: any }, TSerializer = undefined> = BaseModel<
+export type BaseModelInstance<TAttrs extends { id: any }, TSerialized = TAttrs> = BaseModel<
   TAttrs,
-  TSerializer
+  TSerialized
 > & {
   attrs: TAttrs;
   id: TAttrs['id'];
@@ -466,7 +466,7 @@ export type ModelConfig<
 > = {
   attrs: ModelCreateAttrs<TTemplate, TSchema, TRelationships>;
   schema: SchemaInstance<TSchema>;
-  serializer?: Serializer<TTemplate>;
+  serializer?: Serializer<TTemplate, TSchema>;
 } & (Record<string, never> extends TRelationships
   ? { relationships?: undefined }
   : { relationships: TRelationships });

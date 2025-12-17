@@ -92,7 +92,9 @@ describe('BaseModel', () => {
   describe('Serialization', () => {
     it('should serialize to JSON', () => {
       user.save();
-      expect(user.toJSON()).toEqual({
+
+      const json: UserAttrs = user.toJSON();
+      expect(json).toEqual({
         id: '1',
         name: 'John',
         email: 'john@example.com',

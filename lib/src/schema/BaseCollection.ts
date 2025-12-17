@@ -46,6 +46,7 @@ export abstract class BaseCollection<
   public readonly relationships?: TRelationships;
   public readonly serializer?: Serializer<
     TTemplate,
+    TSchema,
     SerializedModelFor<TTemplate>,
     SerializedCollectionFor<TTemplate>
   >;
@@ -71,7 +72,7 @@ export abstract class BaseCollection<
       relationships?: TRelationships;
       fixtures?: FixtureConfig<TTemplate, TRelationships>;
       seeds?: Seeds<TSchema>;
-      serializer?: Serializer<TTemplate>;
+      serializer?: Serializer<TTemplate, TSchema>;
       identityManager?: IdentityManager<ModelIdFor<TTemplate>>;
     },
   ) {

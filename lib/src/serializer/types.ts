@@ -1,4 +1,88 @@
-import type { ModelAttrsFor, ModelTemplate } from '@src/model';
+import type {
+  ModelAttrsFor,
+  ModelRelationships,
+  ModelTemplate,
+  RelationshipsByTemplate,
+} from '@src/model';
+import type { SchemaCollections } from '@src/schema';
+
+/**
+ * Relations mode for serialization
+ * - 'embedded': relationships are nested within the model
+ * - 'sideLoaded': relationships are placed at the same level (requires root)
+ */
+export type RelationsMode = 'embedded' | 'sideLoaded';
+
+// -- Select Option Types --
+
+/**
+ * Array format for select option - include only these attributes
+ * @example select: ['id', 'name', 'email']
+ */
+export type SelectArray<T extends ModelTemplate> = (keyof ModelAttrsFor<T>)[];
+
+/**
+ * Object format for select option - include/exclude attributes
+ * - All false values: include all except false keys
+ * - All true or mixed: include only true keys
+ * @example select: { password: false } // exclude password
+ * @example select: { id: true, name: true } // include only id and name
+ */
+export type SelectObject<T extends ModelTemplate> = Partial<
+  Record<keyof ModelAttrsFor<T>, boolean>
+>;
+
+/**
+ * Select option - array or object format
+ */
+export type SelectOption<T extends ModelTemplate> = SelectArray<T> | SelectObject<T>;
+
+// -- With Option Types --
+
+/**
+ * Nested serializer options for relationships (data-focused only)
+ * - No root or relationsMode (always root=false, embedded inline)
+ * - Only select and with (boolean only) are available
+ * @template T - The model template
+ */
+export interface NestedSerializerOptions<T extends ModelTemplate = ModelTemplate> {
+  /**
+   * Attribute selection for the related model
+   * Uses string[] for flexibility with nested relationships
+   */
+  select?: SelectOption<T> | string[] | Record<string, boolean>;
+  /**
+   * Nested relationships to include (boolean only at nested level)
+   */
+  with?: Record<string, boolean>;
+  /**
+   * Override the default relationsMode for this specific relation
+   */
+  mode?: RelationsMode;
+}
+
+/**
+ * Value for a relationship in the with object
+ * - boolean: include/exclude the relationship
+ * - NestedSerializerOptions: customize how the relationship is serialized
+ */
+export type WithValue<T extends ModelTemplate = ModelTemplate> =
+  | boolean
+  | NestedSerializerOptions<T>;
+
+/**
+ * With option - array or object format for relationship inclusion
+ * When TRelationships is provided, suggests available relationship names
+ * @template TRelationships - The model relationships for IntelliSense suggestions
+ * @example with: ['posts', 'comments'] // include posts and comments
+ * @example with: { posts: true, comments: false } // include posts, exclude comments
+ * @example with: { posts: { select: ['id', 'title'] } } // include posts with only id and title
+ */
+export type WithOption<TRelationships extends ModelRelationships = ModelRelationships> =
+  | (keyof TRelationships)[]
+  | Partial<Record<keyof TRelationships, WithValue<any>>>;
+
+// -- Serializer Options --
 
 /**
  * Structural serializer options (schema-level or collection-level)
@@ -14,41 +98,51 @@ export interface StructuralSerializerOptions {
   root?: boolean | string;
 
   /**
-   * Whether to embed related models in the serialized output
-   * - false: exclude relationships (default)
-   * - true: include embedded relationships
+   * Default mode for serializing relationships
+   * - 'embedded': relationships are nested within the model (default when with is specified)
+   * - 'sideLoaded': relationships are placed at top level (requires root)
    */
-  embed?: boolean;
+  relationsMode?: RelationsMode;
 }
 
 /**
  * Data selection serializer options (collection-level only)
  * Controls what data to include in serialization
  * @template TTemplate - The model template
+ * @template TSchema - The schema collections for relationship suggestions
  */
-export interface DataSerializerOptions<TTemplate extends ModelTemplate> {
+export interface DataSerializerOptions<
+  TTemplate extends ModelTemplate,
+  TSchema extends SchemaCollections = SchemaCollections,
+> {
   /**
-   * Specific attributes to include in serialization
-   * If not provided, all attributes are included
-   * Note: This is model-specific and not available at schema level
+   * Specific attributes to include/exclude in serialization
+   * - Array: include only these attributes
+   * - Object with all false: include all except false keys
+   * - Object with true/mixed: include only true keys
    */
-  attrs?: (keyof ModelAttrsFor<TTemplate>)[];
+  select?: SelectOption<TTemplate>;
 
   /**
-   * Relationship names to include in serialization
-   * Note: This is model-specific and not available at schema level
+   * Relationships to include in serialization
+   * - Array: include these relationships
+   * - Object with boolean: include (true) or exclude (false) relationships
+   * - Object with options: customize how relationships are serialized
    */
-  include?: string[];
+  with?: WithOption<RelationshipsByTemplate<TTemplate, TSchema>>;
 }
 
 /**
  * Complete serializer options (collection-level)
  * Combines structural and data selection options
  * @template TTemplate - The model template
+ * @template TSchema - The schema collections for relationship suggestions
  */
-export interface SerializerOptions<TTemplate extends ModelTemplate>
-  extends StructuralSerializerOptions,
-    DataSerializerOptions<TTemplate> {}
+export interface SerializerOptions<
+  TTemplate extends ModelTemplate,
+  TSchema extends SchemaCollections = SchemaCollections,
+> extends StructuralSerializerOptions,
+    DataSerializerOptions<TTemplate, TSchema> {}
 
 /**
  * @deprecated Use StructuralSerializerOptions instead
@@ -58,4 +152,7 @@ export type GlobalSerializerConfig = StructuralSerializerOptions;
 /**
  * @deprecated Use SerializerOptions instead
  */
-export type SerializerConfig<TTemplate extends ModelTemplate> = SerializerOptions<TTemplate>;
+export type SerializerConfig<
+  TTemplate extends ModelTemplate,
+  TSchema extends SchemaCollections = SchemaCollections,
+> = SerializerOptions<TTemplate, TSchema>;

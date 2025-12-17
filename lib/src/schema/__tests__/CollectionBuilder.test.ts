@@ -248,12 +248,12 @@ describe('CollectionBuilder', () => {
       const testCollection = collection()
         .model(userModel)
         .factory(userFactory)
-        .serializer({ attrs: ['id', 'name'] })
+        .serializer({ select: ['id', 'name'] })
         .create();
 
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.factory).toBe(userFactory);
-      expect(testCollection.serializerConfig).toEqual({ attrs: ['id', 'name'] });
+      expect(testCollection.serializerConfig).toEqual({ select: ['id', 'name'] });
     });
 
     it('should preserve other configurations when setting serializer instance', () => {
@@ -269,13 +269,13 @@ describe('CollectionBuilder', () => {
       expect(testCollection.serializerInstance).toBe(customSerializer);
     });
 
-    it('should support attrs filtering config', () => {
+    it('should support select filtering config', () => {
       const testCollection = collection()
         .model(userModel)
-        .serializer({ attrs: ['id', 'name', 'email'] })
+        .serializer({ select: ['id', 'name', 'email'] })
         .create();
 
-      expect(testCollection.serializerConfig).toEqual({ attrs: ['id', 'name', 'email'] });
+      expect(testCollection.serializerConfig).toEqual({ select: ['id', 'name', 'email'] });
     });
 
     it('should support root wrapping config', () => {
@@ -298,15 +298,15 @@ describe('CollectionBuilder', () => {
         .model(userModel)
         .serializer({
           root: 'userData',
-          attrs: ['id', 'name'],
-          embed: true,
+          select: ['id', 'name'],
+          relationsMode: 'embedded',
         })
         .create();
 
       expect(testCollection.serializerConfig).toEqual({
         root: 'userData',
-        attrs: ['id', 'name'],
-        embed: true,
+        select: ['id', 'name'],
+        relationsMode: 'embedded',
       });
     });
 
@@ -314,10 +314,10 @@ describe('CollectionBuilder', () => {
       const testCollection = collection()
         .model(userModel)
         .serializer({ root: true })
-        .serializer({ root: false, attrs: ['id'] })
+        .serializer({ root: false, select: ['id'] })
         .create();
 
-      expect(testCollection.serializerConfig).toEqual({ root: false, attrs: ['id'] });
+      expect(testCollection.serializerConfig).toEqual({ root: false, select: ['id'] });
     });
 
     it('should allow switching from config to instance', () => {
@@ -337,10 +337,10 @@ describe('CollectionBuilder', () => {
       const testCollection = collection()
         .model(userModel)
         .serializer(customSerializer)
-        .serializer({ attrs: ['id', 'name'] })
+        .serializer({ select: ['id', 'name'] })
         .create();
 
-      expect(testCollection.serializerConfig).toEqual({ attrs: ['id', 'name'] });
+      expect(testCollection.serializerConfig).toEqual({ select: ['id', 'name'] });
       expect(testCollection.serializerInstance).toBeUndefined();
     });
 
@@ -351,11 +351,11 @@ describe('CollectionBuilder', () => {
       const testCollection = collection()
         .model(userModel)
         .relationships(relationships)
-        .serializer({ root: true, include: ['posts'] })
+        .serializer({ root: true, with: ['posts'] })
         .create();
 
       expect(testCollection.relationships).toBe(relationships);
-      expect(testCollection.serializerConfig).toEqual({ root: true, include: ['posts'] });
+      expect(testCollection.serializerConfig).toEqual({ root: true, with: ['posts'] });
     });
   });
 
@@ -431,11 +431,11 @@ describe('CollectionBuilder', () => {
     it('should support serializer() method for specifying serialization config', () => {
       const testCollection = collection()
         .model(userModel)
-        .serializer({ root: true, attrs: ['id', 'name'] })
+        .serializer({ root: true, select: ['id', 'name'] })
         .create();
 
       expect(testCollection.model).toBe(userModel);
-      expect(testCollection.serializerConfig).toEqual({ root: true, attrs: ['id', 'name'] });
+      expect(testCollection.serializerConfig).toEqual({ root: true, select: ['id', 'name'] });
     });
 
     it('should support serializer() method for specifying serializer instance', () => {
@@ -454,7 +454,7 @@ describe('CollectionBuilder', () => {
       };
       const serializerConfig: SerializerOptions<typeof userModel> = {
         root: true,
-        attrs: ['id', 'name'],
+        select: ['id', 'name'],
       };
 
       // Order 1: relationships -> factory -> identityManager -> serializer

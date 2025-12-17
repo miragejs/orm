@@ -2,6 +2,7 @@ import { Relationships } from '@src/associations';
 import type { DbCollection } from '@src/db';
 import type { SchemaCollections } from '@src/schema';
 import { Serializer } from '@src/serializer';
+import type { SerializerOptions } from '@src/serializer';
 
 import BaseModel from './BaseModel';
 import RelationshipsManager from './RelationshipsManager';
@@ -33,12 +34,15 @@ import type {
 export default class Model<
   TTemplate extends ModelTemplate = ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
-> extends BaseModel<
-  ModelAttrs<TTemplate, TSchema>,
-  Serializer<TTemplate, SerializedModelFor<TTemplate>, SerializedCollectionFor<TTemplate>>
-> {
+> extends BaseModel<ModelAttrs<TTemplate, TSchema>, SerializedModelFor<TTemplate>> {
   public readonly relationships?: RelationshipsByTemplate<TTemplate, TSchema>;
   protected _relationshipsManager?: RelationshipsManager<TTemplate, TSchema>;
+  declare protected _serializer?: Serializer<
+    TTemplate,
+    TSchema,
+    SerializedModelFor<TTemplate>,
+    SerializedCollectionFor<TTemplate>
+  >;
 
   constructor(
     template: TTemplate,
@@ -376,6 +380,26 @@ export default class Model<
       }
     }
     return this as this & ModelInstance<TTemplate, TSchema>;
+  }
+
+  // -- SERIALIZATION --
+
+  /**
+   * Serialize the model with optional runtime options
+   * @template TSerialized - Custom return type for manual serialization (defaults to model's JSON type)
+   * @param options - Optional serializer options to override class-level settings
+   * @returns A serialized representation of the model
+   */
+  serialize<TSerialized = SerializedModelFor<TTemplate>>(
+    options?: Partial<SerializerOptions<TTemplate, TSchema>>,
+  ): TSerialized {
+    if (this._serializer instanceof Serializer) {
+      return this._serializer.serialize(
+        this as unknown as ModelInstance<TTemplate, TSchema>,
+        options,
+      ) as TSerialized;
+    }
+    return { ...this._attrs } as TSerialized;
   }
 
   // -- ACCESSOR INITIALIZATION METHODS --

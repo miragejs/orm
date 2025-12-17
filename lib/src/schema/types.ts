@@ -101,7 +101,7 @@ export interface CollectionConfig<
   TRelationships extends ModelRelationships = {},
   TFactory extends Factory<TTemplate, any, any> = Factory<TTemplate, string, SchemaCollections>,
   TSchema extends SchemaCollections = SchemaCollections,
-  TSerializer extends Serializer<TTemplate> = Serializer<TTemplate>,
+  TSerializer extends Serializer<TTemplate, TSchema> = Serializer<TTemplate, TSchema>,
 > {
   model: TTemplate;
   factory?: TFactory;
@@ -111,7 +111,7 @@ export interface CollectionConfig<
    * Serializer configuration object (attrs, root, embed, include)
    * Used when collection().serializer({...config}) is called
    */
-  serializerConfig?: SerializerOptions<TTemplate>;
+  serializerConfig?: SerializerOptions<TTemplate, TSchema>;
   /**
    * Serializer instance (custom serializer class) - must extend Serializer for the template
    * Used when collection().serializer(instance) is called

@@ -80,7 +80,7 @@ test('CollectionConfig should work with serializer config', () => {
   const config: CollectionConfig<typeof userModel> = {
     model: userModel,
     serializerConfig: {
-      attrs: ['id', 'name', 'email'],
+      select: ['id', 'name', 'email'],
     },
   };
 

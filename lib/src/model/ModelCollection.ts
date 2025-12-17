@@ -25,6 +25,7 @@ export default class ModelCollection<
   public models: Array<ModelInstance<TTemplate, TSchema>>;
   protected _serializer?: Serializer<
     TTemplate,
+    TSchema,
     SerializedModelFor<TTemplate>,
     SerializedCollectionFor<TTemplate>
   >;
@@ -34,6 +35,7 @@ export default class ModelCollection<
     models?: Array<ModelInstance<TTemplate, TSchema>>,
     serializer?: Serializer<
       TTemplate,
+      TSchema,
       SerializedModelFor<TTemplate>,
       SerializedCollectionFor<TTemplate>
     >,
@@ -298,22 +300,18 @@ export default class ModelCollection<
 
   /**
    * Serialize the collection with optional runtime options
+   * @template TSerialized - Custom return type for manual serialization (defaults to collection's JSON type)
    * @param options - Optional serializer options to override class-level settings
    * @returns A serialized representation of the collection
    */
-  serialize(
-    options?: Partial<SerializerOptions<ModelTemplate>>,
-  ): SerializedCollectionFor<TTemplate> {
-    if (
-      this._serializer &&
-      typeof this._serializer === 'object' &&
-      'serializeCollection' in this._serializer &&
-      typeof this._serializer.serializeCollection === 'function'
-    ) {
-      return this._serializer.serializeCollection(this, options);
+  serialize<TSerialized = SerializedCollectionFor<TTemplate>>(
+    options?: Partial<SerializerOptions<TTemplate, TSchema>>,
+  ): TSerialized {
+    if (this._serializer instanceof Serializer) {
+      return this._serializer.serializeCollection(this, options) as TSerialized;
     }
     // Type assertion needed: Array of attrs may not exactly match conditional return type
-    return this.models.map((model) => model.attrs) as any;
+    return this.models.map((model) => model.attrs) as TSerialized;
   }
 
   /**

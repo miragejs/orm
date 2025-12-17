@@ -345,12 +345,12 @@ describe('Schema', () => {
       });
     });
 
-    it('should apply collection attrs filter to collection serialization', () => {
+    it('should apply collection select filter to collection serialization', () => {
       const testSchema = schema()
         .collections({
           users: collection()
             .model(userModel)
-            .serializer({ attrs: ['id', 'name'] })
+            .serializer({ select: ['id', 'name'] })
             .create(),
         })
         .setup();
@@ -366,16 +366,16 @@ describe('Schema', () => {
       ]);
     });
 
-    it('should handle empty attrs array', () => {
+    it('should handle empty select array', () => {
       const testSchema = schema()
         .collections({
-          users: collection().model(userModel).serializer({ attrs: [] }).create(),
+          users: collection().model(userModel).serializer({ select: [] }).create(),
         })
         .setup();
 
       const user = testSchema.users.create({ name: 'Paul', email: 'paul@example.com' });
 
-      // Empty attrs should return all attributes (fallback behavior)
+      // Empty select should return all attributes (fallback behavior)
       expect(user.toJSON()).toEqual({
         id: user.id,
         name: 'Paul',
@@ -383,12 +383,12 @@ describe('Schema', () => {
       });
     });
 
-    it('should handle both root and attrs at collection level', () => {
+    it('should handle both root and select at collection level', () => {
       const testSchema = schema()
         .collections({
           users: collection()
             .model(userModel)
-            .serializer({ root: 'userRecord', attrs: ['id', 'name'] })
+            .serializer({ root: 'userRecord', select: ['id', 'name'] })
             .create(),
         })
         .setup();
