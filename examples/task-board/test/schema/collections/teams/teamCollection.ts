@@ -17,18 +17,21 @@ export const teamsCollection = collection<TestCollections>()
     }),
   })
   .serializer({
+    root: true,
     with: ['members', 'manager'],
     relationsMode: 'embedded',
-    root: true,
   })
   .seeds({
     default: (schema) => {
       // Create testing team
-      schema.teams.create({
-        department: 'Engineering',
-        description: 'Cross-functional development team building innovative solutions',
-        name: 'DevX',
-      });
+      schema.teams.create(
+        {
+          department: 'Engineering',
+          description: 'Cross-functional development team building innovative solutions',
+          name: 'DevX',
+        },
+        'withMembers',
+      );
     },
   })
   .create();

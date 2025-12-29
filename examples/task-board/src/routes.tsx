@@ -7,6 +7,7 @@ import TaskDetails, {
   loader as taskDetailsLoader,
 } from './features/task-details/TaskDetails';
 import TaskComments from './features/task-comments/TaskComments';
+import Team, { loader as teamLoader } from './features/team/Team';
 import ErrorBoundary from './shared/components/ErrorBoundary';
 
 /**
@@ -57,12 +58,15 @@ export const routes: RouteObject[] = [
           },
         ],
       },
-      // Future routes will be added here:
-      // {
-      //   id: 'team',
-      //   path: 'team',
-      //   lazy: () => import('./features/team/Team'),
-      // },
+      {
+        id: 'team',
+        path: 'team',
+        element: <Team />,
+        loader: teamLoader,
+        handle: {
+          title: 'Team',
+        },
+      },
     ],
   },
   {

@@ -9,7 +9,6 @@ export const taskHandlers = [
   // Get all tasks for the current user
   http.get('/api/tasks', ({ cookies }) => {
     const userId = cookies.userId;
-
     if (!userId) {
       return HttpResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
@@ -24,13 +23,11 @@ export const taskHandlers = [
   // Get task details by ID
   http.get<{ id: string }>('/api/tasks/:id', ({ params, cookies }) => {
     const userId = cookies.userId;
-
     if (!userId) {
       return HttpResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     const task = testSchema.tasks.find(params.id);
-
     if (!task) {
       return HttpResponse.json({ error: 'Task not found' }, { status: 404 });
     }
@@ -50,13 +47,11 @@ export const taskHandlers = [
   // Get comments for a specific task
   http.get<{ id: string }>('/api/tasks/:id/comments', async ({ params, cookies }) => {
     const userId = cookies.userId;
-
     if (!userId) {
       return HttpResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     const task = testSchema.tasks.find(params.id);
-
     if (!task) {
       return HttpResponse.json({ error: 'Task not found' }, { status: 404 });
     }

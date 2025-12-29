@@ -16,7 +16,7 @@ export const teamFactory = factory<TestCollections>()
       manager: associations.create(userModel, 'manager'),
     },
     withMembers: {
-      members: associations.createMany(userModel, 3),
+      members: associations.createMany(userModel, 10),
     },
   })
   .create();
