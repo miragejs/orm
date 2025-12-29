@@ -1219,10 +1219,24 @@ describe('Serializer options', () => {
 
     describe('embedded+foreignKey mode', () => {
       it('should include embedded relationships AND foreign keys', () => {
+        interface EmbeddedUserJSON {
+          id: string;
+          name: string;
+          postIds: string[];
+          posts: PostAttrs[];
+        }
+
+        const embeddedUserModel = model()
+          .name('user')
+          .collection('users')
+          .attrs<UserAttrs>()
+          .json<EmbeddedUserJSON>()
+          .create();
+
         const testSchema = schema()
           .collections({
             users: collection()
-              .model(userModel)
+              .model(embeddedUserModel)
               .relationships({
                 posts: associations.hasMany(postModel),
               })
@@ -1234,7 +1248,7 @@ describe('Serializer options', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, {
+                author: associations.belongsTo(embeddedUserModel, {
                   foreignKey: 'authorId',
                 }),
               })
@@ -1269,11 +1283,25 @@ describe('Serializer options', () => {
       });
 
       it('should include embedded belongsTo AND foreign key', () => {
+        interface EmbeddedPostJSON {
+          id: string;
+          title: string;
+          authorId: string;
+          author: UserAttrs;
+        }
+
+        const embeddedPostModel = model()
+          .name('post')
+          .collection('posts')
+          .attrs<PostAttrs>()
+          .json<EmbeddedPostJSON>()
+          .create();
+
         const testSchema = schema()
           .collections({
             users: collection().model(userModel).create(),
             posts: collection()
-              .model(postModel)
+              .model(embeddedPostModel)
               .relationships({
                 author: associations.belongsTo(userModel, {
                   foreignKey: 'authorId',
@@ -1371,11 +1399,23 @@ describe('Serializer options', () => {
 
     describe('sideLoaded+foreignKey mode', () => {
       it('should include side-loaded relationships AND foreign keys', () => {
+        interface SideLoadedPostJSON {
+          post: PostAttrs;
+          users: UserAttrs[];
+        }
+
+        const sideLoadedPostModel = model()
+          .name('post')
+          .collection('posts')
+          .attrs<PostAttrs>()
+          .json<SideLoadedPostJSON>()
+          .create();
+
         const testSchema = schema()
           .collections({
             users: collection().model(userModel).create(),
             posts: collection()
-              .model(postModel)
+              .model(sideLoadedPostModel)
               .relationships({
                 author: associations.belongsTo(userModel, {
                   foreignKey: 'authorId',
@@ -1415,10 +1455,22 @@ describe('Serializer options', () => {
       });
 
       it('should work the same as sideLoaded (explicit foreignKey mode)', () => {
+        interface SideLoadedUserJSON {
+          user: UserAttrs & { postIds: string[] };
+          posts: PostAttrs[];
+        }
+
+        const sideLoadedUserModel = model()
+          .name('user')
+          .collection('users')
+          .attrs<UserAttrs>()
+          .json<SideLoadedUserJSON>()
+          .create();
+
         const testSchema = schema()
           .collections({
             users: collection()
-              .model(userModel)
+              .model(sideLoadedUserModel)
               .relationships({
                 posts: associations.hasMany(postModel),
               })
@@ -1431,7 +1483,7 @@ describe('Serializer options', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, {
+                author: associations.belongsTo(sideLoadedUserModel, {
                   foreignKey: 'authorId',
                 }),
               })
