@@ -66,7 +66,12 @@ describe('Serializer', () => {
   describe('Serializer options via collection builder', () => {
     it('should serialize a model with default settings (no filtering)', () => {
       // Using model without .json() to test raw attributes serialization
-      const rawUserModel = model().name('user').collection('users').attrs<UserAttrs>().create();
+      const rawUserModel = model()
+        .name('user')
+        .collection('users')
+        .attrs<UserAttrs>()
+        .json<UserJSON>()
+        .create();
 
       const testSchema = schema()
         .collections({
@@ -80,7 +85,7 @@ describe('Serializer', () => {
         role: 'admin',
         password: 'secret123',
       });
-      const json: UserAttrs = user.toJSON();
+      const json: UserJSON = user.toJSON();
 
       expect(json).toEqual({
         id: '1',
@@ -546,7 +551,7 @@ describe('Serializer', () => {
 
   describe('Relationships serialization', () => {
     describe('belongsTo relationships', () => {
-      it('should include foreign key only with with (default relationsMode=undefined)', () => {
+      it('should include foreign key only with with (default relationsMode=foreignKey)', () => {
         const testSchema = schema()
           .collections({
             users: collection().model(userModel).create(),
@@ -558,7 +563,7 @@ describe('Serializer', () => {
                   collectionName: 'authors',
                 }),
               })
-              .serializer({ with: ['author'] }) // relationsMode defaults to undefined
+              .serializer({ with: ['author'] }) // relationsMode defaults to 'foreignKey'
               .create(),
           })
           .setup();
@@ -708,7 +713,7 @@ describe('Serializer', () => {
     });
 
     describe('hasMany relationships', () => {
-      it('should include foreign keys only with with (default relationsMode=undefined)', () => {
+      it('should include foreign keys only with with (default relationsMode=foreignKey)', () => {
         const testSchema = schema()
           .collections({
             users: collection()
@@ -716,7 +721,7 @@ describe('Serializer', () => {
               .relationships({
                 posts: associations.hasMany(postModel), // Uses default: postIds
               })
-              .serializer({ with: ['posts'] }) // relationsMode defaults to undefined
+              .serializer({ with: ['posts'] }) // relationsMode defaults to 'foreignKey'
               .create(),
             posts: collection()
               .model(postModel)
@@ -1201,14 +1206,32 @@ describe('Serializer', () => {
 
   describe('Auto-enable root for side-load mode', () => {
     it('should auto-enable root when relationsMode=sideLoaded', () => {
+      interface UserJSON {
+        id: string;
+        name: string;
+        email: string;
+        password: string;
+        posts: PostJSON[];
+      }
+
+      const testUserModel = model()
+        .name('user')
+        .collection('users')
+        .attrs<UserAttrs>()
+        .json<{ user: UserJSON }>()
+        .create();
+
       const testSchema = schema()
         .collections({
           users: collection()
-            .model(userModel)
+            .model(testUserModel)
             .relationships({
               posts: associations.hasMany(postModel),
             })
-            .serializer({ with: ['posts'], relationsMode: 'sideLoaded' }) // root auto-enabled
+            .serializer({
+              with: ['posts'],
+              relationsMode: 'sideLoaded',
+            }) // root auto-enabled
             .create(),
           posts: collection().model(postModel).create(),
         })
@@ -1224,10 +1247,10 @@ describe('Serializer', () => {
 
       // Should have root wrapping enabled automatically
       expect(json).toHaveProperty('user');
-      expect((json as any).user).toHaveProperty('id', user.id);
+      expect(json.user).toHaveProperty('id', user.id);
     });
 
-    it('should NOT auto-enable root when with is specified without relationsMode (defaults to undefined)', () => {
+    it('should NOT auto-enable root when with is specified without relationsMode (defaults to foreignKey)', () => {
       const testSchema = schema()
         .collections({
           users: collection()
@@ -1235,7 +1258,7 @@ describe('Serializer', () => {
             .relationships({
               posts: associations.hasMany(postModel),
             })
-            .serializer({ with: ['posts'] }) // relationsMode defaults to undefined, root NOT auto-enabled
+            .serializer({ with: ['posts'] }) // relationsMode defaults to 'foreignKey', root NOT auto-enabled
             .create(),
           posts: collection().model(postModel).create(),
         })
@@ -1508,7 +1531,10 @@ describe('Serializer', () => {
                   collectionName: 'authors',
                 }),
               })
-              .serializer({ with: ['author'], relationsMode: 'sideLoaded' }) // root auto-enabled
+              .serializer({
+                with: ['author'],
+                relationsMode: 'sideLoaded',
+              }) // root auto-enabled
               .create(),
           })
           .setup();
@@ -1556,7 +1582,10 @@ describe('Serializer', () => {
               .relationships({
                 posts: associations.hasMany(postModel),
               })
-              .serializer({ with: ['posts'], relationsMode: 'embedded' })
+              .serializer({
+                with: ['posts'],
+                relationsMode: 'embedded',
+              })
               .create(),
             posts: collection()
               .model(postModel)
@@ -1620,7 +1649,10 @@ describe('Serializer', () => {
               .relationships({
                 author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
               })
-              .serializer({ with: ['author'], relationsMode: 'embedded' })
+              .serializer({
+                with: ['author'],
+                relationsMode: 'embedded',
+              })
               .create(),
           })
           .setup();
@@ -1656,7 +1688,7 @@ describe('Serializer', () => {
     });
 
     describe('With option filtering', () => {
-      it('should only include specified relationships with relationsMode=undefined (default)', () => {
+      it('should only include specified relationships with relationsMode=foreignKey (default)', () => {
         const commentModel = model()
           .name('comment')
           .collection('comments')
@@ -1696,7 +1728,7 @@ describe('Serializer', () => {
 
         const json = post.toJSON();
 
-        // Default mode (relationsMode=undefined): Only foreign keys for included relationships
+        // Default mode (relationsMode='foreignKey'): Only foreign keys for included relationships
         // Should include ONLY authorId (not commentIds, since comments is not in with array)
         expect(json).toEqual({
           id: post.id,
@@ -1730,7 +1762,10 @@ describe('Serializer', () => {
                 }),
                 comments: associations.hasMany(commentModel),
               })
-              .serializer({ with: ['author'], relationsMode: 'sideLoaded' }) // Only side-load author
+              .serializer({
+                with: ['author'],
+                relationsMode: 'sideLoaded',
+              }) // Only side-load author
               .create(),
             comments: collection().model(commentModel).create(),
           })
@@ -1784,7 +1819,10 @@ describe('Serializer', () => {
                 author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
                 comments: associations.hasMany(commentModel),
               })
-              .serializer({ with: ['comments'], relationsMode: 'embedded' }) // Only embed comments
+              .serializer({
+                with: ['comments'],
+                relationsMode: 'embedded',
+              }) // Only embed comments
               .create(),
             comments: collection().model(commentModel).create(),
           })
@@ -1828,6 +1866,213 @@ describe('Serializer', () => {
       });
     });
 
+    describe('Embed+ForeignKey mode (relationsMode=embedded+foreignKey)', () => {
+      it('should include embedded relationships AND foreign keys', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .relationships({
+                posts: associations.hasMany(postModel),
+              })
+              .serializer({
+                with: ['posts'],
+                relationsMode: 'embedded+foreignKey',
+              })
+              .create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+              })
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({ name: 'Alice', email: 'alice@example.com', password: 'secret' });
+        const post = testSchema.posts.create({ title: 'Post 1', content: 'Content', author: user });
+        user.reload();
+
+        const json = user.toJSON();
+
+        // Should have BOTH embedded posts AND postIds
+        expect(json).toHaveProperty('posts');
+        expect(json).toHaveProperty('postIds');
+        expect(json.postIds).toEqual([post.id]);
+        expect(json.posts).toEqual([
+          expect.objectContaining({
+            id: post.id,
+            title: 'Post 1',
+            content: 'Content',
+          }),
+        ]);
+      });
+
+      it('should include embedded belongsTo AND foreign key', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection().model(userModel).create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+              })
+              .serializer({
+                with: ['author'],
+                relationsMode: 'embedded+foreignKey',
+              })
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({ name: 'Bob', email: 'bob@example.com', password: 'secret' });
+        const post = testSchema.posts.create({ title: 'My Post', content: 'Content', author: user });
+
+        const json = post.toJSON();
+
+        // Should have BOTH embedded author AND authorId
+        expect(json).toHaveProperty('author');
+        expect(json).toHaveProperty('authorId');
+        expect(json.authorId).toBe(user.id);
+        expect(json.author).toEqual(
+          expect.objectContaining({
+            id: user.id,
+            name: 'Bob',
+          }),
+        );
+      });
+
+      it('should remove foreign keys for relationships NOT in with array', () => {
+        interface CommentAttrs {
+          id: string;
+          content: string;
+          postId: string;
+        }
+
+        const commentModel = model()
+          .name('comment')
+          .collection('comments')
+          .attrs<CommentAttrs>()
+          .create();
+
+        const testSchema = schema()
+          .collections({
+            users: collection().model(userModel).create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                comments: associations.hasMany(commentModel),
+              })
+              .serializer({
+                with: ['author'], // Only author in with, not comments
+                relationsMode: 'embedded+foreignKey',
+              })
+              .create(),
+            comments: collection().model(commentModel).create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({ name: 'Charlie', email: 'charlie@example.com', password: 'secret' });
+        const comment = testSchema.comments.create({ content: 'Nice!', postId: '1' });
+        const post = testSchema.posts.create({ title: 'Post', content: 'Content', author: user, comments: [comment] });
+
+        const json = post.toJSON();
+
+        // Should have author embedded AND authorId
+        expect(json).toHaveProperty('author');
+        expect(json).toHaveProperty('authorId');
+        // Should NOT have commentIds (comments not in with)
+        expect(json).not.toHaveProperty('commentIds');
+        expect(json).not.toHaveProperty('comments');
+      });
+    });
+
+    describe('SideLoaded+ForeignKey mode (relationsMode=sideLoaded+foreignKey)', () => {
+      it('should include side-loaded relationships AND foreign keys', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection().model(userModel).create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+              })
+              .serializer({
+                root: true,
+                with: ['author'],
+                relationsMode: 'sideLoaded+foreignKey',
+              })
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({ name: 'Dave', email: 'dave@example.com', password: 'secret' });
+        const post = testSchema.posts.create({ title: 'Side Load Post', content: 'Content', author: user });
+
+        const json = post.toJSON();
+
+        // Should have root wrapping
+        expect(json).toHaveProperty('post');
+        // Should have side-loaded users
+        expect(json).toHaveProperty('users');
+        // The post should have authorId (foreign key kept)
+        expect(json.post).toHaveProperty('authorId', user.id);
+        // Side-loaded users array
+        expect(json.users).toEqual([
+          expect.objectContaining({
+            id: user.id,
+            name: 'Dave',
+          }),
+        ]);
+      });
+
+      it('should work the same as sideLoaded (explicit foreignKey mode)', () => {
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .relationships({
+                posts: associations.hasMany(postModel),
+              })
+              .serializer({
+                root: true,
+                with: ['posts'],
+                relationsMode: 'sideLoaded+foreignKey',
+              })
+              .create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+              })
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({ name: 'Eve', email: 'eve@example.com', password: 'secret' });
+        const post = testSchema.posts.create({ title: 'Eve Post', content: 'Content', author: user });
+        user.reload();
+
+        const json = user.toJSON();
+
+        // Should have root wrapping
+        expect(json).toHaveProperty('user');
+        // Should have side-loaded posts
+        expect(json).toHaveProperty('posts');
+        // The user should have postIds (foreign key kept)
+        expect(json.user).toHaveProperty('postIds');
+        expect(json.user.postIds).toEqual([post.id]);
+        // Side-loaded posts array
+        expect(json.posts).toEqual([
+          expect.objectContaining({
+            id: post.id,
+            title: 'Eve Post',
+          }),
+        ]);
+      });
+    });
+
     describe('Multiple relationships with mixed modes', () => {
       it('should handle multiple includes correctly in side-load mode', () => {
         interface CommentAttrs {
@@ -1843,6 +2088,17 @@ describe('Serializer', () => {
           .attrs<CommentAttrs>()
           .create();
 
+        const testPostModel = model()
+          .name('post')
+          .collection('posts')
+          .attrs<PostAttrs>()
+          .json<{
+            post: PostAttrs;
+            comments: CommentAttrs[];
+            authors: UserAttrs[];
+          }>()
+          .create();
+
         const testSchema = schema()
           .collections({
             users: collection()
@@ -1852,7 +2108,7 @@ describe('Serializer', () => {
               })
               .create(),
             posts: collection()
-              .model(postModel)
+              .model(testPostModel)
               .relationships({
                 author: associations.belongsTo(userModel, {
                   foreignKey: 'authorId',
@@ -1860,7 +2116,10 @@ describe('Serializer', () => {
                 }),
                 comments: associations.hasMany(commentModel),
               })
-              .serializer({ with: ['author', 'comments'], relationsMode: 'sideLoaded' }) // root auto-enabled
+              .serializer({
+                with: ['author', 'comments'],
+                relationsMode: 'sideLoaded',
+              }) // root auto-enabled
               .create(),
             comments: collection().model(commentModel).create(),
           })
@@ -1895,7 +2154,7 @@ describe('Serializer', () => {
           authors: [expect.objectContaining({ id: user.id })], // Side-loaded at top level with custom collectionName
           comments: [expect.objectContaining({ id: comment.id })], // Side-loaded at top level with default collectionName
         });
-        expect((json as any).post).toHaveProperty('commentIds'); // FK array preserved
+        expect(json.post).toHaveProperty('commentIds'); // FK array preserved
       });
     });
   });
@@ -2388,7 +2647,7 @@ describe('Serializer', () => {
         });
       });
 
-      it('should override relationsMode at method level', () => {
+      it('should override relationsMode at method level (sideLoaded -> embedded)', () => {
         const testSchema = schema()
           .collections({
             users: collection().model(userModel).create(),
@@ -2414,11 +2673,11 @@ describe('Serializer', () => {
         });
 
         // Override to embed at method level
-        const json = post.serialize({ relationsMode: 'embedded' });
+        const json = post.serialize<{ author: UserAttrs }>({ relationsMode: 'embedded' });
 
         // Should embed relationship, remove foreign key
         expect(json).toHaveProperty('author');
-        expect((json as any).author).toEqual({
+        expect(json.author).toEqual({
           id: user.id,
           name: 'Frank',
           email: 'frank@example.com',
@@ -2426,6 +2685,62 @@ describe('Serializer', () => {
         });
         expect(json).not.toHaveProperty('authorId');
         expect(json).not.toHaveProperty('users'); // No side-loading
+      });
+
+      it('should override relationsMode at method level (embedded -> foreignKey)', () => {
+        const postModel = model()
+          .name('post')
+          .collection('posts')
+          .attrs<{ id: string; title: string; userId: string }>()
+          .create();
+
+        const testUserModel = model()
+          .name('user')
+          .collection('users')
+          .attrs<{ id: string; name: string; postIds: string[] }>()
+          .json<{ id: string; name: string; postIds: string[] }>()
+          .create();
+
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(testUserModel)
+              .relationships({
+                posts: associations.hasMany(postModel),
+              })
+              .serializer({
+                with: ['posts'],
+                relationsMode: 'embedded',
+              }) // Class-level: embedded
+              .create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                user: associations.belongsTo(testUserModel, { foreignKey: 'userId' }),
+              })
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({ id: '1', name: 'John' });
+        testSchema.posts.create({ id: '1', title: 'Post 1', userId: user.id });
+
+        user.reload();
+
+        // Override to foreignKey at method level
+        const json = user.serialize({
+          with: {
+            posts: { mode: 'foreignKey' },
+          },
+        });
+
+        // Should use foreignKey mode (include postIds, no embedded posts)
+        expect(json).not.toHaveProperty('posts');
+        expect(json).toEqual({
+          id: '1',
+          name: 'John',
+          postIds: ['1'],
+        });
       });
 
       it('should merge multiple option overrides at method level', () => {
@@ -2680,7 +2995,12 @@ describe('Serializer', () => {
 
         // Should still return raw attributes (options ignored)
         expect(json).toEqual([
-          { id: '1', name: 'Alice', email: 'alice@example.com', password: 'secret' },
+          {
+            id: '1',
+            name: 'Alice',
+            email: 'alice@example.com',
+            password: 'secret',
+          },
         ]);
       });
 
@@ -2705,19 +3025,38 @@ describe('Serializer', () => {
   describe('With option object format', () => {
     describe('Boolean values', () => {
       it('should include relationships with true values', () => {
+        interface UserJSON {
+          id: string;
+          name: string;
+          email: string;
+          posts: PostJSON[];
+        }
+
+        const testUserModel = model()
+          .name('user')
+          .collection('users')
+          .attrs<UserAttrs>()
+          .json<UserJSON>()
+          .create();
+
         const testSchema = schema()
           .collections({
             users: collection()
-              .model(userModel)
+              .model(testUserModel)
               .relationships({
                 posts: associations.hasMany(postModel),
               })
-              .serializer({ with: { posts: true }, relationsMode: 'embedded' })
+              .serializer({
+                with: { posts: true },
+                relationsMode: 'embedded',
+              })
               .create(),
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(testUserModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .create(),
           })
@@ -2738,8 +3077,8 @@ describe('Serializer', () => {
         const json = user.toJSON();
 
         expect(json).toHaveProperty('posts');
-        expect((json as any).posts).toHaveLength(1);
-        expect((json as any).posts[0]).toHaveProperty('id', post.id);
+        expect(json.posts).toHaveLength(1);
+        expect(json.posts[0]).toHaveProperty('id', post.id);
       });
 
       it('should exclude relationships with false values', () => {
@@ -2782,22 +3121,40 @@ describe('Serializer', () => {
 
     describe('Nested options', () => {
       it('should apply select option to nested relationships', () => {
+        interface UserJSON {
+          id: string;
+          name: string;
+          email: string;
+          posts: PostJSON[];
+        }
+
+        const testUserModel = model()
+          .name('user')
+          .collection('users')
+          .attrs<UserAttrs>()
+          .json<UserJSON>()
+          .create();
+
         const testSchema = schema()
           .collections({
             users: collection()
-              .model(userModel)
+              .model(testUserModel)
               .relationships({
                 posts: associations.hasMany(postModel),
               })
               .serializer({
-                with: { posts: { select: ['id', 'title'] } },
+                with: {
+                  posts: { select: ['id', 'title'] },
+                },
                 relationsMode: 'embedded',
               })
               .create(),
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(testUserModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .create(),
           })
@@ -2818,28 +3175,46 @@ describe('Serializer', () => {
         const json = user.toJSON();
 
         expect(json).toHaveProperty('posts');
-        expect((json as any).posts[0]).toEqual({ id: '2', title: 'Post 1' });
-        expect((json as any).posts[0]).not.toHaveProperty('content');
-        expect((json as any).posts[0]).not.toHaveProperty('authorId');
+        expect(json.posts[0]).toEqual({ id: '2', title: 'Post 1' });
+        expect(json.posts[0]).not.toHaveProperty('content');
+        expect(json.posts[0]).not.toHaveProperty('authorId');
       });
 
       it('should apply select object format to nested relationships', () => {
+        interface UserJSON {
+          id: string;
+          name: string;
+          email: string;
+          posts: PostJSON[];
+        }
+
+        const testUserModel = model()
+          .name('user')
+          .collection('users')
+          .attrs<UserAttrs>()
+          .json<UserJSON>()
+          .create();
+
         const testSchema = schema()
           .collections({
             users: collection()
-              .model(userModel)
+              .model(testUserModel)
               .relationships({
                 posts: associations.hasMany(postModel),
               })
               .serializer({
-                with: { posts: { select: { authorId: false } } },
+                with: {
+                  posts: { select: { authorId: false } },
+                },
                 relationsMode: 'embedded',
               })
               .create(),
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(testUserModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .create(),
           })
@@ -2860,10 +3235,10 @@ describe('Serializer', () => {
         const json = user.toJSON();
 
         expect(json).toHaveProperty('posts');
-        expect((json as any).posts[0]).toHaveProperty('id');
-        expect((json as any).posts[0]).toHaveProperty('title');
-        expect((json as any).posts[0]).toHaveProperty('content');
-        expect((json as any).posts[0]).not.toHaveProperty('authorId');
+        expect(json.posts[0]).toHaveProperty('id');
+        expect(json.posts[0]).toHaveProperty('title');
+        expect(json.posts[0]).toHaveProperty('content');
+        expect(json.posts[0]).not.toHaveProperty('authorId');
       });
 
       it('should apply mode override to specific relationships', () => {
@@ -2875,14 +3250,18 @@ describe('Serializer', () => {
                 posts: associations.hasMany(postModel),
               })
               .serializer({
-                with: { posts: { mode: 'sideLoaded' } },
+                with: {
+                  posts: { mode: 'sideLoaded' },
+                },
                 relationsMode: 'embedded', // default is embedded, but posts overrides to sideLoaded
               })
               .create(),
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .create(),
           })
@@ -2908,6 +3287,33 @@ describe('Serializer', () => {
       });
 
       it('should support nested with option (boolean only)', () => {
+        interface UserJSON {
+          id: string;
+          name: string;
+          email: string;
+          posts: PostJSON[];
+        }
+
+        interface PostJSON {
+          id: string;
+          title: string;
+          author: UserJSON;
+        }
+
+        const testUserModel = model()
+          .name('user')
+          .collection('users')
+          .attrs<UserAttrs>()
+          .json<UserJSON>()
+          .create();
+
+        const testPostModel = model()
+          .name('post')
+          .collection('posts')
+          .attrs<PostAttrs>()
+          .json<PostJSON>()
+          .create();
+
         const commentModel = model()
           .name('comment')
           .collection('comments')
@@ -2917,9 +3323,9 @@ describe('Serializer', () => {
         const testSchema = schema()
           .collections({
             users: collection()
-              .model(userModel)
+              .model(testUserModel)
               .relationships({
-                posts: associations.hasMany(postModel),
+                posts: associations.hasMany(testPostModel),
               })
               .serializer({
                 with: {
@@ -2932,9 +3338,11 @@ describe('Serializer', () => {
               })
               .create(),
             posts: collection()
-              .model(postModel)
+              .model(testPostModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(testUserModel, {
+                  foreignKey: 'authorId',
+                }),
                 comments: associations.hasMany(commentModel),
               })
               .create(),
@@ -2954,10 +3362,11 @@ describe('Serializer', () => {
         });
 
         user.reload();
-        const json = user.toJSON();
 
+        const json = user.toJSON();
         expect(json).toHaveProperty('posts');
-        const posts = (json as any).posts;
+
+        const posts = json.posts;
         expect(posts[0]).toHaveProperty('id');
         expect(posts[0]).toHaveProperty('title');
         expect(posts[0]).toHaveProperty('author'); // nested relationship included

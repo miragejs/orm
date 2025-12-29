@@ -8,10 +8,18 @@ import type { SchemaCollections } from '@src/schema';
 
 /**
  * Relations mode for serialization
- * - 'embedded': relationships are nested within the model
+ * - 'foreignKey': only foreign key IDs are included (no relationship data)
+ * - 'embedded': relationships are nested within the model (foreign keys removed)
  * - 'sideLoaded': relationships are placed at the same level (requires root)
+ * - 'embedded+foreignKey': relationships nested AND foreign keys kept
+ * - 'sideLoaded+foreignKey': relationships side-loaded AND foreign keys kept (explicit)
  */
-export type RelationsMode = 'embedded' | 'sideLoaded';
+export type RelationsMode =
+  | 'foreignKey'
+  | 'embedded'
+  | 'sideLoaded'
+  | 'embedded+foreignKey'
+  | 'sideLoaded+foreignKey';
 
 // -- Select Option Types --
 
@@ -99,8 +107,11 @@ export interface StructuralSerializerOptions {
 
   /**
    * Default mode for serializing relationships
-   * - 'embedded': relationships are nested within the model (default when with is specified)
+   * - 'foreignKey': only foreign keys for relationships in with array (default)
+   * - 'embedded': relationships are nested within the model (foreign keys removed)
    * - 'sideLoaded': relationships are placed at top level (requires root)
+   * - 'embedded+foreignKey': relationships nested AND foreign keys kept
+   * - 'sideLoaded+foreignKey': relationships side-loaded AND foreign keys kept
    */
   relationsMode?: RelationsMode;
 }
