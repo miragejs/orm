@@ -55,7 +55,10 @@ export default class Serializer<
   TSchema extends SchemaCollections = SchemaCollections,
   TSerializedModel = SerializedModelFor<TTemplate>,
   TSerializedCollection = SerializedCollectionFor<TTemplate>,
-  TOptions extends SerializerOptions<TTemplate, TSchema> = SerializerOptions<TTemplate, TSchema>,
+  TOptions extends SerializerOptions<TTemplate, TSchema> = SerializerOptions<
+    TTemplate,
+    TSchema
+  >,
 > {
   public readonly modelName: string;
   public readonly collectionName: string;
@@ -86,7 +89,8 @@ export default class Serializer<
     // Side-load mode: extract side-loaded relationships and place them at top level
     const withNames = this._getWithNames(opts.with);
     if (
-      (opts.relationsMode === 'sideLoaded' || opts.relationsMode === 'sideLoaded+foreignKey') &&
+      (opts.relationsMode === 'sideLoaded' ||
+        opts.relationsMode === 'sideLoaded+foreignKey') &&
       withNames.length > 0
     ) {
       const { sideLoaded } = this._getRelationships(model, opts);
@@ -95,7 +99,8 @@ export default class Serializer<
       const attrs = this._getAttributes(model, opts);
 
       if (opts.root) {
-        const rootKey = typeof opts.root === 'string' ? opts.root : this.modelName;
+        const rootKey =
+          typeof opts.root === 'string' ? opts.root : this.modelName;
         // With root wrapping: wrap attributes in root key, side-load relationships at top level
         return { [rootKey]: attrs, ...sideLoaded } as TSerializedModel;
       }
@@ -106,7 +111,8 @@ export default class Serializer<
 
     // Embed mode or no includes: use the combined data
     if (opts.root) {
-      const rootKey = typeof opts.root === 'string' ? opts.root : this.modelName;
+      const rootKey =
+        typeof opts.root === 'string' ? opts.root : this.modelName;
       // With root wrapping: wrap data in root key
       return { [rootKey]: data } as TSerializedModel;
     }
@@ -131,7 +137,8 @@ export default class Serializer<
     const data = this._serializeCollectionData(collection, opts);
 
     if (opts.root) {
-      const rootKey = typeof opts.root === 'string' ? opts.root : this.collectionName;
+      const rootKey =
+        typeof opts.root === 'string' ? opts.root : this.collectionName;
       // With root wrapping: wrap data in root key
       return { [rootKey]: data } as TSerializedCollection;
     }
@@ -155,12 +162,17 @@ export default class Serializer<
     const merged: SerializerOptions<TTemplate, TSchema> = {
       select: methodOptions?.select ?? this._options.select,
       with: methodOptions?.with ?? this._options.with,
-      relationsMode: methodOptions?.relationsMode ?? this._options.relationsMode,
+      relationsMode:
+        methodOptions?.relationsMode ?? this._options.relationsMode,
       root: methodOptions?.root ?? this._options.root,
     };
 
     // Set default relationsMode if not specified
-    if (!merged.relationsMode && merged.with && this._getWithNames(merged.with).length > 0) {
+    if (
+      !merged.relationsMode &&
+      merged.with &&
+      this._getWithNames(merged.with).length > 0
+    ) {
       merged.relationsMode = 'foreignKey';
     }
 
@@ -188,7 +200,9 @@ export default class Serializer<
    * @returns Array of relationship names to include
    */
   private _getWithNames(
-    withOption: WithOption<RelationshipsByTemplate<TTemplate, TSchema>> | undefined,
+    withOption:
+      | WithOption<RelationshipsByTemplate<TTemplate, TSchema>>
+      | undefined,
   ): string[] {
     if (!withOption) {
       return [];
@@ -211,7 +225,9 @@ export default class Serializer<
    * @returns Nested options or undefined
    */
   private _getNestedOptions(
-    withOption: WithOption<RelationshipsByTemplate<TTemplate, TSchema>> | undefined,
+    withOption:
+      | WithOption<RelationshipsByTemplate<TTemplate, TSchema>>
+      | undefined,
     relName: string,
   ): NestedSerializerOptions<ModelTemplate> | undefined {
     if (!withOption || Array.isArray(withOption)) {
@@ -259,12 +275,16 @@ export default class Serializer<
       // Example: with=['posts'] -> { id: 1, name: 'John', posts: [...] } (no postIds, no other FKs)
       // Example with override: with={posts: {mode: 'foreignKey'}} -> { id: 1, name: 'John', postIds: [...] } (no posts)
       const filteredAttrs = { ...attrs };
-      const relationships = model.relationships as Record<string, unknown> | undefined;
+      const relationships = model.relationships as
+        | Record<string, unknown>
+        | undefined;
 
       if (relationships) {
         // Remove ALL foreign keys except those with nested mode override to 'foreignKey'
         for (const relName in relationships) {
-          const relationship = relationships[relName] as { foreignKey: string } | undefined;
+          const relationship = relationships[relName] as
+            | { foreignKey: string }
+            | undefined;
           if (relationship?.foreignKey) {
             // Check if this relationship has a nested mode override to 'foreignKey'
             const nestedOpts = this._getNestedOptions(opts.with, relName);
@@ -287,14 +307,22 @@ export default class Serializer<
       // - Remove foreign keys for relationships NOT in the with array
       // Example: with=['posts'] -> { id: 1, name: 'John', postIds: [...], posts: [...] }
       const filteredAttrs = { ...attrs };
-      const relationships = model.relationships as Record<string, unknown> | undefined;
+      const relationships = model.relationships as
+        | Record<string, unknown>
+        | undefined;
 
       if (relationships) {
         // Remove foreign keys for relationships NOT in the with array
         for (const relName in relationships) {
           if (!withNames.includes(relName)) {
-            const relationship = relationships[relName] as { type: string; foreignKey: string };
-            if (relationship.type === 'hasMany' || relationship.type === 'belongsTo') {
+            const relationship = relationships[relName] as {
+              type: string;
+              foreignKey: string;
+            };
+            if (
+              relationship.type === 'hasMany' ||
+              relationship.type === 'belongsTo'
+            ) {
               delete filteredAttrs[relationship.foreignKey];
             }
           }
@@ -303,7 +331,10 @@ export default class Serializer<
       return { ...filteredAttrs, ...embedded, ...sideLoaded };
     }
 
-    if (opts.relationsMode === 'sideLoaded' || opts.relationsMode === 'sideLoaded+foreignKey') {
+    if (
+      opts.relationsMode === 'sideLoaded' ||
+      opts.relationsMode === 'sideLoaded+foreignKey'
+    ) {
       // Side-load mode (relationsMode='sideLoaded' or 'sideLoaded+foreignKey'):
       // - Keep foreign keys in attributes
       // - Side-loaded relationships will be handled in serialize() at top level
@@ -317,15 +348,23 @@ export default class Serializer<
       // - No relationship data
       // Example: with=['author'] -> { id: 1, title: '...', authorId: 1 } (no commentIds)
       const filteredAttrs = { ...attrs };
-      const relationships = model.relationships as Record<string, unknown> | undefined;
+      const relationships = model.relationships as
+        | Record<string, unknown>
+        | undefined;
 
       if (relationships) {
         // Remove foreign keys for relationships NOT in the with array
         for (const relName in relationships) {
           if (!withNames.includes(relName)) {
-            const relationship = relationships[relName] as { type: string; foreignKey: string };
+            const relationship = relationships[relName] as {
+              type: string;
+              foreignKey: string;
+            };
 
-            if (relationship.type === 'hasMany' || relationship.type === 'belongsTo') {
+            if (
+              relationship.type === 'hasMany' ||
+              relationship.type === 'belongsTo'
+            ) {
               // Remove foreign key using configured foreignKey from relationship definition
               delete filteredAttrs[relationship.foreignKey];
             }
@@ -360,7 +399,8 @@ export default class Serializer<
     // For collections with side-load mode (relationsMode='sideLoaded' or 'sideLoaded+foreignKey'), we include relationships
     // within each model object in the array (not extracted to top level like single models)
     if (
-      (opts.relationsMode === 'sideLoaded' || opts.relationsMode === 'sideLoaded+foreignKey') &&
+      (opts.relationsMode === 'sideLoaded' ||
+        opts.relationsMode === 'sideLoaded+foreignKey') &&
       withNames.length > 0
     ) {
       return collection.models.map((model) => {
@@ -415,7 +455,9 @@ export default class Serializer<
 
     // All false values: exclusion mode - include all except false keys
     if (hasFalse && !hasTrue) {
-      const excludeKeys = entries.filter(([, value]) => value === false).map(([key]) => key);
+      const excludeKeys = entries
+        .filter(([, value]) => value === false)
+        .map(([key]) => key);
       return Object.entries(model.attrs).reduce(
         (acc, [key, value]) => {
           if (!excludeKeys.includes(key)) {
@@ -428,7 +470,9 @@ export default class Serializer<
     }
 
     // Has true values (all true or mixed): inclusion mode - include only true keys
-    const includeKeys = entries.filter(([, value]) => value === true).map(([key]) => key);
+    const includeKeys = entries
+      .filter(([, value]) => value === true)
+      .map(([key]) => key);
     return includeKeys.reduce(
       (acc, key) => {
         acc[key] = model.attrs[key as keyof typeof model.attrs];
@@ -476,35 +520,53 @@ export default class Serializer<
 
       // Determine mode for this relationship: nested mode overrides default relationsMode
       // Default to 'foreignKey' when with relationships but no mode specified
-      const relationMode: RelationsMode = nestedOpts?.mode ?? opts.relationsMode ?? 'foreignKey';
+      const relationMode: RelationsMode =
+        nestedOpts?.mode ?? opts.relationsMode ?? 'foreignKey';
 
       // Check if it's a ModelCollection (hasMany)
       const isCollection =
-        relatedData !== null && typeof relatedData === 'object' && 'models' in relatedData;
+        relatedData !== null &&
+        typeof relatedData === 'object' &&
+        'models' in relatedData;
 
       // Handle null relationships (belongsTo with no related model)
       if (relatedData === null) {
-        if (relationMode === 'embedded' || relationMode === 'embedded+foreignKey') {
+        if (
+          relationMode === 'embedded' ||
+          relationMode === 'embedded+foreignKey'
+        ) {
           // Embed mode: set relationship to null
           // Foreign key removal is handled in _serializeData based on collection-level relationsMode
           embedded[relName] = null;
-        } else if (relationMode === 'sideLoaded' || relationMode === 'sideLoaded+foreignKey') {
+        } else if (
+          relationMode === 'sideLoaded' ||
+          relationMode === 'sideLoaded+foreignKey'
+        ) {
           // Side-load mode: set relationship to empty array using collectionName
-          const relationships = model.relationships as Record<string, unknown> | undefined;
-          const relationship = relationships?.[relName] as { collectionName?: string } | undefined;
+          const relationships = model.relationships as
+            | Record<string, unknown>
+            | undefined;
+          const relationship = relationships?.[relName] as
+            | { collectionName?: string }
+            | undefined;
           const collectionName = relationship?.collectionName || relName;
           sideLoaded[collectionName] = [];
         }
         continue;
       }
 
-      if (relationMode === 'embedded' || relationMode === 'embedded+foreignKey') {
+      if (
+        relationMode === 'embedded' ||
+        relationMode === 'embedded+foreignKey'
+      ) {
         // Embed mode:
         // - Embed relationships directly in the result
         // - Foreign key removal is handled in _serializeData based on collection-level relationsMode
         if (isCollection) {
           // HasMany: embed array of models
-          const collection = relatedData as { models: Array<{ attrs: Record<string, unknown> }> };
+          const collection = relatedData as {
+            models: Array<{ attrs: Record<string, unknown> }>;
+          };
           embedded[relName] = collection.models.map((relModel) => {
             return this._serializeRelatedModel(relModel, nestedOpts);
           });
@@ -513,27 +575,42 @@ export default class Serializer<
           const relModel = relatedData as { attrs: Record<string, unknown> };
           embedded[relName] = this._serializeRelatedModel(relModel, nestedOpts);
         }
-      } else if (relationMode === 'sideLoaded' || relationMode === 'sideLoaded+foreignKey') {
+      } else if (
+        relationMode === 'sideLoaded' ||
+        relationMode === 'sideLoaded+foreignKey'
+      ) {
         // Side-load mode:
         // - Add relationships as arrays (even belongsTo) at the same level
         // - Use collectionName from relationship definition for all relationship names
         // - Foreign keys remain in attributes (not tracked for removal)
         if (isCollection) {
           // HasMany: side-load array of models using collectionName
-          const relationships = model.relationships as Record<string, unknown> | undefined;
-          const relationship = relationships?.[relName] as { collectionName?: string } | undefined;
+          const relationships = model.relationships as
+            | Record<string, unknown>
+            | undefined;
+          const relationship = relationships?.[relName] as
+            | { collectionName?: string }
+            | undefined;
           const collectionName = relationship?.collectionName || relName;
-          const collection = relatedData as { models: Array<{ attrs: Record<string, unknown> }> };
+          const collection = relatedData as {
+            models: Array<{ attrs: Record<string, unknown> }>;
+          };
           sideLoaded[collectionName] = collection.models.map((relModel) => {
             return this._serializeRelatedModel(relModel, nestedOpts);
           });
         } else {
           // BelongsTo: side-load as array using collectionName from relationship
-          const relationships = model.relationships as Record<string, unknown> | undefined;
-          const relationship = relationships?.[relName] as { collectionName?: string } | undefined;
+          const relationships = model.relationships as
+            | Record<string, unknown>
+            | undefined;
+          const relationship = relationships?.[relName] as
+            | { collectionName?: string }
+            | undefined;
           const collectionName = relationship?.collectionName || relName;
           const relModel = relatedData as { attrs: Record<string, unknown> };
-          sideLoaded[collectionName] = [this._serializeRelatedModel(relModel, nestedOpts)];
+          sideLoaded[collectionName] = [
+            this._serializeRelatedModel(relModel, nestedOpts),
+          ];
         }
       }
       // else: foreignKey mode - do nothing here
@@ -571,12 +648,15 @@ export default class Serializer<
           if (nestedRelData !== undefined && nestedRelData !== null) {
             // Check if it's a collection or single model
             const isNestedCollection =
-              typeof nestedRelData === 'object' && 'models' in (nestedRelData as object);
+              typeof nestedRelData === 'object' &&
+              'models' in (nestedRelData as object);
             if (isNestedCollection) {
               const collection = nestedRelData as {
                 models: Array<{ attrs: Record<string, unknown> }>;
               };
-              attrs[nestedRelName] = collection.models.map((m) => ({ ...m.attrs }));
+              attrs[nestedRelName] = collection.models.map((m) => ({
+                ...m.attrs,
+              }));
             } else {
               const model = nestedRelData as { attrs: Record<string, unknown> };
               attrs[nestedRelName] = { ...model.attrs };
@@ -628,7 +708,9 @@ export default class Serializer<
 
     // All false values: exclusion mode - include all except false keys
     if (hasFalse && !hasTrue) {
-      const excludeKeys = entries.filter(([, value]) => value === false).map(([key]) => key);
+      const excludeKeys = entries
+        .filter(([, value]) => value === false)
+        .map(([key]) => key);
       return Object.entries(attrs).reduce(
         (acc, [key, value]) => {
           if (!excludeKeys.includes(key)) {
@@ -641,7 +723,9 @@ export default class Serializer<
     }
 
     // Has true values (all true or mixed): inclusion mode - include only true keys
-    const includeKeys = entries.filter(([, value]) => value === true).map(([key]) => key);
+    const includeKeys = entries
+      .filter(([, value]) => value === true)
+      .map(([key]) => key);
     return includeKeys.reduce(
       (acc, key) => {
         if (key in attrs) {
@@ -665,7 +749,9 @@ export default class Serializer<
     model: ModelInstance<TTemplate, TSchema>,
   ): Record<string, unknown> {
     const result = { ...attrs };
-    const relationships = model.relationships as Record<string, unknown> | undefined;
+    const relationships = model.relationships as
+      | Record<string, unknown>
+      | undefined;
 
     if (!relationships) {
       return result;
@@ -673,8 +759,14 @@ export default class Serializer<
 
     // Remove foreign keys based on relationship definitions
     for (const relName in relationships) {
-      const relationship = relationships[relName] as { type: string; foreignKey: string };
-      if (relationship.type === 'hasMany' || relationship.type === 'belongsTo') {
+      const relationship = relationships[relName] as {
+        type: string;
+        foreignKey: string;
+      };
+      if (
+        relationship.type === 'hasMany' ||
+        relationship.type === 'belongsTo'
+      ) {
         // Remove foreign key using configured foreignKey from relationship definition
         delete result[relationship.foreignKey];
       }

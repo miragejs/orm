@@ -54,7 +54,9 @@ export default class SchemaBuilder<
    * });
    * ```
    */
-  collections<C extends SchemaCollections>(collections: C): SchemaBuilder<C, TIdentityManager> {
+  collections<C extends SchemaCollections>(
+    collections: C,
+  ): SchemaBuilder<C, TIdentityManager> {
     // Validate collections is not empty
     if (Object.keys(collections).length === 0) {
       throw new MirageError(
@@ -145,7 +147,9 @@ export default class SchemaBuilder<
    *   .collections({ users: userCollection });
    * ```
    */
-  logging(config: LoggerConfig | undefined): SchemaBuilder<TCollections, TIdentityManager> {
+  logging(
+    config: LoggerConfig | undefined,
+  ): SchemaBuilder<TCollections, TIdentityManager> {
     const builder = new SchemaBuilder<TCollections, TIdentityManager>();
     builder._collections = this._collections;
     builder._identityManager = this._identityManager;

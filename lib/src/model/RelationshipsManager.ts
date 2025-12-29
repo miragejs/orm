@@ -32,7 +32,10 @@ import type {
 export default class RelationshipsManager<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections,
-  TRelationships extends ModelRelationships = RelationshipsByTemplate<TTemplate, TSchema>,
+  TRelationships extends ModelRelationships = RelationshipsByTemplate<
+    TTemplate,
+    TSchema
+  >,
 > {
   public isApplyingPendingUpdates: boolean = false;
 
@@ -77,7 +80,9 @@ export default class RelationshipsManager<
    * Should be called BEFORE updating model attributes so we can access old FKs
    * @param relationshipUpdates - Map of relationship names to foreign key values
    */
-  setPendingRelationshipUpdates(relationshipUpdates: Record<string, ForeignKeyValue>): void {
+  setPendingRelationshipUpdates(
+    relationshipUpdates: Record<string, ForeignKeyValue>,
+  ): void {
     // Process all relationships
     for (const relationshipName in relationshipUpdates) {
       const relationshipDef = this._relationshipDefs?.[relationshipName];
@@ -96,7 +101,10 @@ export default class RelationshipsManager<
       const currentForeignKey = this._getForeignKeyValue(foreignKey);
 
       // Check if the relationship is actually changing
-      const hasChanged = this._hasForeignKeyChanged(currentForeignKey, newForeignKey);
+      const hasChanged = this._hasForeignKeyChanged(
+        currentForeignKey,
+        newForeignKey,
+      );
 
       // For saved models with changed relationships:
       if (this._model.isSaved()) {
@@ -124,7 +132,10 @@ export default class RelationshipsManager<
             inverseType: inverse.type,
           });
         }
-      } else if (this._model.isNew() && this._hasForeignKeyValue(newForeignKey)) {
+      } else if (
+        this._model.isNew() &&
+        this._hasForeignKeyValue(newForeignKey)
+      ) {
         // For new models: only link (no unlink needed)
         this._pendingRelationshipOperations.push({
           relationshipName,
@@ -152,7 +163,10 @@ export default class RelationshipsManager<
     try {
       for (const operation of this._pendingRelationshipOperations) {
         // Skip if no inverse relationship metadata
-        if (!operation.inverseForeignKey || !operation.inverseRelationshipName) {
+        if (
+          !operation.inverseForeignKey ||
+          !operation.inverseRelationshipName
+        ) {
           continue;
         }
 
@@ -313,7 +327,9 @@ export default class RelationshipsManager<
 
     if (type === 'belongsTo') {
       // Get current ID
-      const currentId = this._extractSingleId(this._getForeignKeyValue(foreignKey));
+      const currentId = this._extractSingleId(
+        this._getForeignKeyValue(foreignKey),
+      );
 
       // Unlink if current exists and inverse exists
       if (inverse && currentId) {
@@ -330,7 +346,9 @@ export default class RelationshipsManager<
       // Set FK to null
       foreignKeyUpdates[foreignKey] = null;
     } else if (type === 'hasMany') {
-      const currentIds = this._extractIdsArray(this._getForeignKeyValue(foreignKey));
+      const currentIds = this._extractIdsArray(
+        this._getForeignKeyValue(foreignKey),
+      );
 
       if (targetModel) {
         // Unlink specific IDs
@@ -386,9 +404,13 @@ export default class RelationshipsManager<
     const relationship = relationshipDef.relationship;
     const { type, foreignKey, targetModel } = relationship;
 
-    const targetCollection = this._schema.getCollection(targetModel.collectionName);
+    const targetCollection = this._schema.getCollection(
+      targetModel.collectionName,
+    );
     if (!targetCollection) {
-      throw new MirageError(`Collection for model ${targetModel.modelName} not found in schema`);
+      throw new MirageError(
+        `Collection for model ${targetModel.modelName} not found in schema`,
+      );
     }
 
     if (type === 'belongsTo') {
@@ -399,7 +421,11 @@ export default class RelationshipsManager<
         return null;
       }
 
-      return targetCollection.find(singleId) as RelationshipTargetModel<TSchema, TRelationships, K>;
+      return targetCollection.find(singleId) as RelationshipTargetModel<
+        TSchema,
+        TRelationships,
+        K
+      >;
     }
 
     if (type === 'hasMany') {
@@ -410,22 +436,25 @@ export default class RelationshipsManager<
       const serializer = targetCollection.serializer;
 
       if (idsArray.length === 0) {
-        return new ModelCollection(targetModel, [], serializer) as RelationshipTargetModel<
-          TSchema,
-          TRelationships,
-          K
-        >;
+        return new ModelCollection(
+          targetModel,
+          [],
+          serializer,
+        ) as RelationshipTargetModel<TSchema, TRelationships, K>;
       }
 
       const relatedModels = idsArray
         .map((id) => targetCollection.find(id))
-        .filter((model): model is ModelInstance<ModelTemplate, TSchema> => model !== null);
+        .filter(
+          (model): model is ModelInstance<ModelTemplate, TSchema> =>
+            model !== null,
+        );
 
-      return new ModelCollection(targetModel, relatedModels, serializer) as RelationshipTargetModel<
-        TSchema,
-        TRelationships,
-        K
-      >;
+      return new ModelCollection(
+        targetModel,
+        relatedModels,
+        serializer,
+      ) as RelationshipTargetModel<TSchema, TRelationships, K>;
     }
 
     return null;
@@ -469,7 +498,9 @@ export default class RelationshipsManager<
    * @param foreignKeyValue - The foreign key value
    * @returns A single ID or null
    */
-  private _extractSingleId(foreignKeyValue: ForeignKeyValue): ModelIdFor<TTemplate> | null {
+  private _extractSingleId(
+    foreignKeyValue: ForeignKeyValue,
+  ): ModelIdFor<TTemplate> | null {
     if (foreignKeyValue === null || foreignKeyValue === undefined) {
       return null;
     }
@@ -485,7 +516,9 @@ export default class RelationshipsManager<
    * @param foreignKeyValue - The foreign key value
    * @returns Array of IDs
    */
-  private _extractIdsArray(foreignKeyValue: ForeignKeyValue): ModelIdFor<TTemplate>[] {
+  private _extractIdsArray(
+    foreignKeyValue: ForeignKeyValue,
+  ): ModelIdFor<TTemplate>[] {
     if (Array.isArray(foreignKeyValue)) {
       return foreignKeyValue as ModelIdFor<TTemplate>[];
     }
@@ -519,7 +552,8 @@ export default class RelationshipsManager<
       }
 
       // Handle inverse relationship based on the inverse option
-      const inverseOption = 'inverse' in relationship ? relationship.inverse : undefined;
+      const inverseOption =
+        'inverse' in relationship ? relationship.inverse : undefined;
 
       if (inverseOption === null) {
         // Explicitly disabled inverse - don't set inverse relationship
@@ -527,10 +561,15 @@ export default class RelationshipsManager<
       } else if (typeof inverseOption === 'string') {
         // Explicit inverse relationship name provided
         const targetCollectionName = relationship.targetModel.collectionName;
-        const targetCollection = this._schema.getCollection(targetCollectionName);
+        const targetCollection =
+          this._schema.getCollection(targetCollectionName);
 
-        if (targetCollection.relationships && targetCollection.relationships[inverseOption]) {
-          const inverseRelationship = targetCollection.relationships[inverseOption];
+        if (
+          targetCollection.relationships &&
+          targetCollection.relationships[inverseOption]
+        ) {
+          const inverseRelationship =
+            targetCollection.relationships[inverseOption];
           relationshipDef.inverse = {
             foreignKey: inverseRelationship.foreignKey,
             relationshipName: inverseOption,
@@ -541,12 +580,17 @@ export default class RelationshipsManager<
       } else {
         // Auto-detect inverse relationship (undefined or not specified)
         const targetCollectionName = relationship.targetModel.collectionName;
-        const targetCollection = this._schema.getCollection(targetCollectionName);
+        const targetCollection =
+          this._schema.getCollection(targetCollectionName);
 
         if (targetCollection.relationships) {
           for (const inverseRelationshipName in targetCollection.relationships) {
-            const inverseRelationship = targetCollection.relationships[inverseRelationshipName];
-            if (inverseRelationship.targetModel.modelName === this._model.modelName) {
+            const inverseRelationship =
+              targetCollection.relationships[inverseRelationshipName];
+            if (
+              inverseRelationship.targetModel.modelName ===
+              this._model.modelName
+            ) {
               relationshipDef.inverse = {
                 foreignKey: inverseRelationship.foreignKey,
                 relationshipName: inverseRelationshipName,
@@ -599,7 +643,8 @@ export default class RelationshipsManager<
     // Check if the target relationship has explicitly disabled inverse sync
     if (inverseRelationshipName) {
       const targetCollection = this._schema.getCollection(targetCollectionName);
-      const targetRelationship = targetCollection.relationships?.[inverseRelationshipName];
+      const targetRelationship =
+        targetCollection.relationships?.[inverseRelationshipName];
 
       // Check if inverse is explicitly null (disabled)
       if (
@@ -613,9 +658,9 @@ export default class RelationshipsManager<
     }
 
     // Get the target collection from database - works with any collection/template
-    const targetDbCollection = this._schema.db.getCollection(targetCollectionName) as DbCollection<
-      ModelAttrs<ModelTemplate, SchemaCollections>
-    >;
+    const targetDbCollection = this._schema.db.getCollection(
+      targetCollectionName,
+    ) as DbCollection<ModelAttrs<ModelTemplate, SchemaCollections>>;
 
     // Update each target model's foreign key
     for (const key of targetIds) {
@@ -639,7 +684,9 @@ export default class RelationshipsManager<
           }
         } else {
           // Remove this model's ID
-          updateAttrs[inverseForeignKey] = currentIds.filter((id) => id !== sourceModelId);
+          updateAttrs[inverseForeignKey] = currentIds.filter(
+            (id) => id !== sourceModelId,
+          );
         }
       } else if (inverseType === 'belongsTo') {
         // Update belongsTo relationship - set/unset this model's ID
@@ -673,14 +720,23 @@ export default class RelationshipsManager<
    * @param newFk - The new foreign key value
    * @returns True if the foreign keys are different
    */
-  private _hasForeignKeyChanged(currentFk: ForeignKeyValue, newFk: ForeignKeyValue): boolean {
+  private _hasForeignKeyChanged(
+    currentFk: ForeignKeyValue,
+    newFk: ForeignKeyValue,
+  ): boolean {
     // Both null/undefined
-    if (!this._hasForeignKeyValue(currentFk) && !this._hasForeignKeyValue(newFk)) {
+    if (
+      !this._hasForeignKeyValue(currentFk) &&
+      !this._hasForeignKeyValue(newFk)
+    ) {
       return false;
     }
 
     // One is null, other isn't
-    if (!this._hasForeignKeyValue(currentFk) || !this._hasForeignKeyValue(newFk)) {
+    if (
+      !this._hasForeignKeyValue(currentFk) ||
+      !this._hasForeignKeyValue(newFk)
+    ) {
       return true;
     }
 
@@ -699,7 +755,10 @@ export default class RelationshipsManager<
    * @param arr2 - Second array
    * @returns True if arrays are equal
    */
-  private _arraysEqual(arr1: (string | number)[], arr2: (string | number)[]): boolean {
+  private _arraysEqual(
+    arr1: (string | number)[],
+    arr2: (string | number)[],
+  ): boolean {
     if (arr1.length !== arr2.length) return false;
     return arr1.every((val, index) => val === arr2[index]);
   }
@@ -709,7 +768,9 @@ export default class RelationshipsManager<
    * @param foreignKeyValue - The foreign key value to extract IDs from
    * @returns Array of IDs
    */
-  private _extractTargetIds(foreignKeyValue: ForeignKeyValue): (string | number)[] {
+  private _extractTargetIds(
+    foreignKeyValue: ForeignKeyValue,
+  ): (string | number)[] {
     if (foreignKeyValue === null || foreignKeyValue === undefined) return [];
     if (Array.isArray(foreignKeyValue)) return foreignKeyValue;
     return [foreignKeyValue];

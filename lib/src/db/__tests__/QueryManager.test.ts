@@ -322,7 +322,8 @@ describe('QueryManager', () => {
 
     it('should provide helper functions in callback', () => {
       const results = queryManager.query(records, {
-        where: (record, { and, gte, eq }) => and(gte(record.age, 30), eq(record.status, 'active')),
+        where: (record, { and, gte, eq }) =>
+          and(gte(record.age, 30), eq(record.status, 'active')),
       });
       expect(results).toHaveLength(2);
       expect(results.map((r) => r.name)).toEqual(['Bob', 'Eve']);
@@ -406,9 +407,12 @@ describe('QueryManager', () => {
         { id: '2', name: 'Bob', age: 30, status: 'inactive' },
         { id: '3', name: 'Charlie', age: 25, status: 'active' },
       ];
-      const results = queryManager.query(recordsWithDuplicates as UserRecord[], {
-        orderBy: { age: 'desc', name: 'asc' },
-      });
+      const results = queryManager.query(
+        recordsWithDuplicates as UserRecord[],
+        {
+          orderBy: { age: 'desc', name: 'asc' },
+        },
+      );
       expect(results.map((r) => r.name)).toEqual(['Alice', 'Bob', 'Charlie']);
     });
 
@@ -418,12 +422,15 @@ describe('QueryManager', () => {
         { id: '2', name: 'Bob', age: 30, status: 'inactive' },
         { id: '3', name: 'Charlie', age: 25, status: 'active' },
       ];
-      const results = queryManager.query(recordsWithDuplicates as UserRecord[], {
-        orderBy: [
-          ['age', 'desc'],
-          ['name', 'asc'],
-        ],
-      });
+      const results = queryManager.query(
+        recordsWithDuplicates as UserRecord[],
+        {
+          orderBy: [
+            ['age', 'desc'],
+            ['name', 'asc'],
+          ],
+        },
+      );
       expect(results.map((r) => r.name)).toEqual(['Alice', 'Bob', 'Charlie']);
     });
 
@@ -510,18 +517,36 @@ describe('QueryManager', () => {
 
       it('should apply cursor with multiple fields', () => {
         const recordsWithDuplicates: Partial<UserRecord>[] = [
-          { id: '1', name: 'Alice', age: 30, createdAt: new Date('2025-01-01') },
+          {
+            id: '1',
+            name: 'Alice',
+            age: 30,
+            createdAt: new Date('2025-01-01'),
+          },
           { id: '2', name: 'Bob', age: 30, createdAt: new Date('2025-01-02') },
-          { id: '3', name: 'Charlie', age: 30, createdAt: new Date('2025-01-03') },
-          { id: '4', name: 'David', age: 25, createdAt: new Date('2025-01-04') },
+          {
+            id: '3',
+            name: 'Charlie',
+            age: 30,
+            createdAt: new Date('2025-01-03'),
+          },
+          {
+            id: '4',
+            name: 'David',
+            age: 25,
+            createdAt: new Date('2025-01-04'),
+          },
         ];
-        const results = queryManager.query(recordsWithDuplicates as UserRecord[], {
-          orderBy: [
-            ['age', 'desc'],
-            ['createdAt', 'asc'],
-          ],
-          cursor: { age: 30, createdAt: new Date('2025-01-02') },
-        });
+        const results = queryManager.query(
+          recordsWithDuplicates as UserRecord[],
+          {
+            orderBy: [
+              ['age', 'desc'],
+              ['createdAt', 'asc'],
+            ],
+            cursor: { age: 30, createdAt: new Date('2025-01-02') },
+          },
+        );
         expect(results.map((r) => r.name)).toEqual(['Charlie', 'David']);
       });
 

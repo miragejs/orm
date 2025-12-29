@@ -15,7 +15,10 @@ import type {
  * @template TAttrs - The model attributes type (e.g., { id: string, name: string })
  * @template TSerialized - The serialized output type (defaults to TAttrs if no serializer)
  */
-export default class BaseModel<TAttrs extends { id: any }, TSerialized = TAttrs> {
+export default class BaseModel<
+  TAttrs extends { id: any },
+  TSerialized = TAttrs,
+> {
   public readonly modelName: string;
   public readonly collectionName: string;
 
@@ -35,7 +38,8 @@ export default class BaseModel<TAttrs extends { id: any }, TSerialized = TAttrs>
     this.collectionName = collectionName;
 
     this._attrs = { ...attrs, id: attrs.id ?? null } as NewModelAttrs<TAttrs>;
-    this._dbCollection = dbCollection ?? new DbCollection<TAttrs>(collectionName);
+    this._dbCollection =
+      dbCollection ?? new DbCollection<TAttrs>(collectionName);
     this._serializer = serializer;
     this._status = this._checkStatus();
   }
@@ -82,7 +86,9 @@ export default class BaseModel<TAttrs extends { id: any }, TSerialized = TAttrs>
    * @param attrs - The attributes to update
    * @returns The model instance for chaining
    */
-  update(attrs: Partial<TAttrs>): this & BaseModelInstance<TAttrs, TSerialized> {
+  update(
+    attrs: Partial<TAttrs>,
+  ): this & BaseModelInstance<TAttrs, TSerialized> {
     Object.assign(this._attrs, attrs);
     return this.save();
   }
@@ -146,7 +152,9 @@ export default class BaseModel<TAttrs extends { id: any }, TSerialized = TAttrs>
    */
   toJSON(): TSerialized {
     if (this._serializer) {
-      return this._serializer.serialize(this as unknown as ModelInstance<any, any>) as TSerialized;
+      return this._serializer.serialize(
+        this as unknown as ModelInstance<any, any>,
+      ) as TSerialized;
     }
     return { ...this._attrs } as TSerialized;
   }

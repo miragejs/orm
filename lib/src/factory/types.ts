@@ -1,6 +1,10 @@
 import type { FactoryAssociations } from '@src/associations';
 import type { ModelAttrsFor, ModelInstance, ModelTemplate } from '@src/model';
-import type { CollectionConfig, SchemaCollections, SchemaInstance } from '@src/schema';
+import type {
+  CollectionConfig,
+  SchemaCollections,
+  SchemaInstance,
+} from '@src/schema';
 
 import type Factory from './Factory';
 
@@ -45,7 +49,10 @@ export type FactoryAttrs<
 export type FactoryAfterCreateHook<
   TSchema extends SchemaCollections = SchemaCollections,
   TTemplate extends ModelTemplate = ModelTemplate,
-> = (model: ModelInstance<TTemplate, TSchema>, schema: SchemaInstance<TSchema>) => void;
+> = (
+  model: ModelInstance<TTemplate, TSchema>,
+  schema: SchemaInstance<TSchema>,
+) => void;
 
 export type TraitDefinition<
   TTemplate extends ModelTemplate = ModelTemplate,
@@ -60,13 +67,16 @@ export type ModelTraits<
   TTraits extends string = never,
   TTemplate extends ModelTemplate = ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
-  TExpectedTraits extends Record<TTraits, TraitDefinition<TTemplate, TSchema>> = Record<
+  TExpectedTraits extends Record<
     TTraits,
     TraitDefinition<TTemplate, TSchema>
-  >,
+  > = Record<TTraits, TraitDefinition<TTemplate, TSchema>>,
 > = [TTraits] extends [never]
   ? Record<string, TraitDefinition<TTemplate, TSchema>>
-  : Exact<{ [K in TTraits]: TraitDefinition<TTemplate, TSchema> }, TExpectedTraits>;
+  : Exact<
+      { [K in TTraits]: TraitDefinition<TTemplate, TSchema> },
+      TExpectedTraits
+    >;
 
 export type TraitName<TTraits> =
   TTraits extends Record<string, any> ? Extract<keyof TTraits, string> : never;

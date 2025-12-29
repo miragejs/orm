@@ -31,8 +31,16 @@ interface PostAttrs {
 }
 
 // Test models
-const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
-const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
+const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<UserAttrs>()
+  .create();
+const postModel = model()
+  .name('post')
+  .collection('posts')
+  .attrs<PostAttrs>()
+  .create();
 
 // Test serializer
 const userSerializer = new Serializer(userModel);

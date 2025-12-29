@@ -20,18 +20,17 @@ import type { SchemaInstance } from './Schema';
  * Seed function that accepts a schema instance
  * @template TSchema - The schema collections type
  */
-export type SeedFunction<TSchema extends SchemaCollections = SchemaCollections> = (
-  schema: SchemaInstance<TSchema>,
-) => void | Promise<void>;
+export type SeedFunction<
+  TSchema extends SchemaCollections = SchemaCollections,
+> = (schema: SchemaInstance<TSchema>) => void | Promise<void>;
 
 /**
  * Named seed scenarios - object with named seed methods
  * @template TSchema - The schema collections type
  */
-export type SeedScenarios<TSchema extends SchemaCollections = SchemaCollections> = Record<
-  string,
-  SeedFunction<TSchema>
->;
+export type SeedScenarios<
+  TSchema extends SchemaCollections = SchemaCollections,
+> = Record<string, SeedFunction<TSchema>>;
 
 /**
  * Seeds configuration - can be a function or object with named scenarios
@@ -84,7 +83,9 @@ export interface FixtureConfig<
  * Global schema configuration
  * @template TIdentityManager - The identity manager type
  */
-export interface SchemaConfig<TIdentityManager extends IdentityManager = StringIdentityManager> {
+export interface SchemaConfig<
+  TIdentityManager extends IdentityManager = StringIdentityManager,
+> {
   identityManager?: TIdentityManager;
   logging?: LoggerConfig;
 }
@@ -99,9 +100,16 @@ export interface SchemaConfig<TIdentityManager extends IdentityManager = StringI
 export interface CollectionConfig<
   TTemplate extends ModelTemplate,
   TRelationships extends ModelRelationships = {},
-  TFactory extends Factory<TTemplate, any, any> = Factory<TTemplate, string, SchemaCollections>,
+  TFactory extends Factory<TTemplate, any, any> = Factory<
+    TTemplate,
+    string,
+    SchemaCollections
+  >,
   TSchema extends SchemaCollections = SchemaCollections,
-  TSerializer extends Serializer<TTemplate, TSchema> = Serializer<TTemplate, TSchema>,
+  TSerializer extends Serializer<TTemplate, TSchema> = Serializer<
+    TTemplate,
+    TSchema
+  >,
 > {
   model: TTemplate;
   factory?: TFactory;
@@ -133,23 +141,27 @@ export interface CollectionConfig<
  * Type for schema collections - provides both string-based property access and symbol-based relationship resolution
  * @template TCollections - The string-keyed schema collections config
  */
-export type SchemaCollections = Record<string, CollectionConfig<any, any, any, any, any>>;
+export type SchemaCollections = Record<
+  string,
+  CollectionConfig<any, any, any, any, any>
+>;
 
 /**
  * Type for schema collections - provides string-based property access
  * @template TCollections - The string-keyed schema collections config
  */
-export type SchemaCollectionAccessors<TCollections extends SchemaCollections> = {
-  [K in keyof TCollections]: TCollections[K] extends CollectionConfig<
-    infer TTemplate,
-    infer TRelationships,
-    infer TFactory,
-    any,
-    any
-  >
-    ? Collection<TCollections, TTemplate, TRelationships, TFactory>
-    : never;
-};
+export type SchemaCollectionAccessors<TCollections extends SchemaCollections> =
+  {
+    [K in keyof TCollections]: TCollections[K] extends CollectionConfig<
+      infer TTemplate,
+      infer TRelationships,
+      infer TFactory,
+      any,
+      any
+    >
+      ? Collection<TCollections, TTemplate, TRelationships, TFactory>
+      : never;
+  };
 
 /**
  * Maps schema collection configs to database collections with inferred foreign keys
@@ -182,5 +194,9 @@ export type SchemaDbCollections<TCollections extends SchemaCollections> = {
 export type CollectionCreateAttrs<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
-  TRelationships extends ModelRelationships = RelationshipsByTemplate<TTemplate, TSchema>,
-> = Partial<ModelAttrs<TTemplate, TSchema>> & Partial<RelatedModelAttrs<TSchema, TRelationships>>;
+  TRelationships extends ModelRelationships = RelationshipsByTemplate<
+    TTemplate,
+    TSchema
+  >,
+> = Partial<ModelAttrs<TTemplate, TSchema>> &
+  Partial<RelatedModelAttrs<TSchema, TRelationships>>;

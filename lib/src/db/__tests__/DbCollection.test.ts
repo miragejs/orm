@@ -121,11 +121,16 @@ describe('DbCollection', () => {
       });
 
       it('should find first matching record by query object', () => {
-        expect(collection.find({ name: 'John' })).toEqual({ id: '1', name: 'John' });
+        expect(collection.find({ name: 'John' })).toEqual({
+          id: '1',
+          name: 'John',
+        });
       });
 
       it('should find first matching record by predicate function', () => {
-        const result = collection.find({ where: (record) => record.name === 'Jane' });
+        const result = collection.find({
+          where: (record) => record.name === 'Jane',
+        });
         expect(result).toEqual({ id: '2', name: 'Jane' });
       });
 
@@ -161,7 +166,9 @@ describe('DbCollection', () => {
       });
 
       it('should find records using predicate function', () => {
-        const results = collection.findMany({ where: (record) => (record.age ?? 0) > 25 });
+        const results = collection.findMany({
+          where: (record) => (record.age ?? 0) > 25,
+        });
         expect(results).toHaveLength(2);
         expect(results).toEqual(
           expect.arrayContaining([
@@ -201,7 +208,10 @@ describe('DbCollection', () => {
     describe('insertMany', () => {
       it('should insert multiple records', () => {
         const collection = new DbCollection<UserRecord>('users');
-        const records = collection.insertMany([{ name: 'John' }, { name: 'Jane' }]);
+        const records = collection.insertMany([
+          { name: 'John' },
+          { name: 'Jane' },
+        ]);
         expect(records).toHaveLength(2);
         expect(collection.size).toBe(2);
       });
@@ -284,12 +294,18 @@ describe('DbCollection', () => {
       });
 
       it('should return empty array when no records match', () => {
-        const updated = collection.updateMany({ name: 'NonExistent' }, { active: true });
+        const updated = collection.updateMany(
+          { name: 'NonExistent' },
+          { active: true },
+        );
         expect(updated).toEqual([]);
       });
 
       it('should update records with where clause field operations', () => {
-        const updated = collection.updateMany({ where: { age: { gte: 30 } } }, { active: true });
+        const updated = collection.updateMany(
+          { where: { age: { gte: 30 } } },
+          { active: true },
+        );
         expect(updated).toHaveLength(2);
         expect(updated.every((r) => r.active === true)).toBe(true);
         expect(updated.map((r) => r.name).sort()).toEqual(['Bob', 'John']);
@@ -387,14 +403,24 @@ describe('DbCollection', () => {
         const deletedCount = collection.deleteMany({ age: 30 });
         expect(deletedCount).toBe(2);
         expect(collection.size).toBe(1);
-        expect(collection.find('2')).toEqual({ id: '2', name: 'Jane', age: 25 });
+        expect(collection.find('2')).toEqual({
+          id: '2',
+          name: 'Jane',
+          age: 25,
+        });
       });
 
       it('should delete records by predicate function', () => {
-        const deletedCount = collection.deleteMany({ where: (record) => (record.age ?? 0) > 25 });
+        const deletedCount = collection.deleteMany({
+          where: (record) => (record.age ?? 0) > 25,
+        });
         expect(deletedCount).toBe(2);
         expect(collection.size).toBe(1);
-        expect(collection.find('2')).toEqual({ id: '2', name: 'Jane', age: 25 });
+        expect(collection.find('2')).toEqual({
+          id: '2',
+          name: 'Jane',
+          age: 25,
+        });
       });
 
       it('should return 0 when no records match', () => {
@@ -409,7 +435,11 @@ describe('DbCollection', () => {
         });
         expect(deletedCount).toBe(2);
         expect(collection.size).toBe(1);
-        expect(collection.find('2')).toEqual({ id: '2', name: 'Jane', age: 25 });
+        expect(collection.find('2')).toEqual({
+          id: '2',
+          name: 'Jane',
+          age: 25,
+        });
       });
 
       it('should delete records with logical operators', () => {
@@ -452,7 +482,8 @@ describe('DbCollection', () => {
 
       it('should delete records with callback where and helpers', () => {
         const deletedCount = collection.deleteMany({
-          where: (record, { and, gte, eq }) => and(gte(record.age, 25), eq(record.name, 'John')),
+          where: (record, { and, gte, eq }) =>
+            and(gte(record.age, 25), eq(record.name, 'John')),
         });
         expect(deletedCount).toBe(1);
         expect(collection.size).toBe(2);
@@ -764,7 +795,10 @@ describe('DbCollection Types', () => {
       it('should combine logical helpers', () => {
         const results = collection.findMany({
           where: (record, { and, or, gte, eq }) =>
-            and(or(eq(record.status, 'active'), eq(record.status, 'pending')), gte(record.age, 30)),
+            and(
+              or(eq(record.status, 'active'), eq(record.status, 'pending')),
+              gte(record.age, 30),
+            ),
         });
         expect(results).toHaveLength(2);
         expect(results.map((r) => r.name)).toEqual(['Bob', 'Eve']);

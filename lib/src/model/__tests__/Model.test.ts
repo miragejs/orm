@@ -307,7 +307,9 @@ describe('Model', () => {
             author,
           },
           relationships: {
-            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+            author: associations.belongsTo(userModel, {
+              foreignKey: 'authorId',
+            }),
           },
           schema: testSchema,
         }).save();
@@ -333,7 +335,9 @@ describe('Model', () => {
         const post = new PostModelClass({
           attrs: { title: 'Test Post', content: 'Test content' },
           relationships: {
-            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+            author: associations.belongsTo(userModel, {
+              foreignKey: 'authorId',
+            }),
           },
           schema: testSchema,
         }).save();
@@ -358,7 +362,10 @@ describe('Model', () => {
           schema: testSchema,
         }).save();
 
-        const updatedUser = user.update({ name: 'Jane Doe', email: 'jane@example.com' });
+        const updatedUser = user.update({
+          name: 'Jane Doe',
+          email: 'jane@example.com',
+        });
 
         expect(updatedUser.name).toBe('Jane Doe');
         expect(updatedUser.email).toBe('jane@example.com');
@@ -389,7 +396,9 @@ describe('Model', () => {
             author: author1,
           },
           relationships: {
-            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+            author: associations.belongsTo(userModel, {
+              foreignKey: 'authorId',
+            }),
           },
           schema: testSchema,
         }).save();
@@ -423,7 +432,9 @@ describe('Model', () => {
         const post = new PostModelClass({
           attrs: { title: 'Test Post', content: 'Test content' },
           relationships: {
-            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+            author: associations.belongsTo(userModel, {
+              foreignKey: 'authorId',
+            }),
           },
           schema: testSchema,
         }).save();
@@ -490,7 +501,9 @@ describe('Model', () => {
         }).save();
 
         // Manually update in database
-        testSchema.db.getCollection('users').update(user.id!, { name: 'Updated Name' });
+        testSchema.db
+          .getCollection('users')
+          .update(user.id!, { name: 'Updated Name' });
 
         const reloadedUser = user.reload();
 
@@ -511,13 +524,17 @@ describe('Model', () => {
         const post = new PostModelClass({
           attrs: { title: 'Test Post', content: 'Test content' },
           relationships: {
-            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+            author: associations.belongsTo(userModel, {
+              foreignKey: 'authorId',
+            }),
           },
           schema: testSchema,
         }).save();
 
         // Manually update relationship in database
-        testSchema.db.getCollection('users').update(author.id!, { postIds: [post.id!] });
+        testSchema.db
+          .getCollection('users')
+          .update(author.id!, { postIds: [post.id!] });
 
         const reloadedAuthor = author.reload();
         expect(reloadedAuthor.postIds).toEqual([post.id]);
@@ -540,7 +557,9 @@ describe('Model', () => {
         const post = new PostModelClass({
           attrs: { title: 'Test Post', content: 'Test content' },
           relationships: {
-            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+            author: associations.belongsTo(userModel, {
+              foreignKey: 'authorId',
+            }),
           },
           schema: testSchema,
         }).save();
@@ -564,7 +583,9 @@ describe('Model', () => {
         const post1 = new PostModelClass({
           attrs: { title: 'Post 1', content: 'Content 1' },
           relationships: {
-            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+            author: associations.belongsTo(userModel, {
+              foreignKey: 'authorId',
+            }),
           },
           schema: testSchema,
         }).save();
@@ -572,7 +593,9 @@ describe('Model', () => {
         const post2 = new PostModelClass({
           attrs: { title: 'Post 2', content: 'Content 2' },
           relationships: {
-            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+            author: associations.belongsTo(userModel, {
+              foreignKey: 'authorId',
+            }),
           },
           schema: testSchema,
         }).save();
@@ -595,7 +618,9 @@ describe('Model', () => {
         const post = new PostModelClass({
           attrs: { title: 'Test Post', content: 'Test content' },
           relationships: {
-            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+            author: associations.belongsTo(userModel, {
+              foreignKey: 'authorId',
+            }),
           },
           schema: testSchema,
         }).save();
@@ -621,7 +646,9 @@ describe('Model', () => {
         const post = new PostModelClass({
           attrs: { title: 'Test Post', content: 'Test content', author },
           relationships: {
-            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+            author: associations.belongsTo(userModel, {
+              foreignKey: 'authorId',
+            }),
           },
           schema: testSchema,
         }).save();
@@ -638,7 +665,9 @@ describe('Model', () => {
         const post1 = new PostModelClass({
           attrs: { title: 'Post 1', content: 'Content 1' },
           relationships: {
-            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+            author: associations.belongsTo(userModel, {
+              foreignKey: 'authorId',
+            }),
           },
           schema: testSchema,
         }).save();
@@ -646,13 +675,19 @@ describe('Model', () => {
         const post2 = new PostModelClass({
           attrs: { title: 'Post 2', content: 'Content 2' },
           relationships: {
-            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+            author: associations.belongsTo(userModel, {
+              foreignKey: 'authorId',
+            }),
           },
           schema: testSchema,
         }).save();
 
         const author = new UserModelClass({
-          attrs: { name: 'Author', email: 'author@example.com', posts: [post1, post2] },
+          attrs: {
+            name: 'Author',
+            email: 'author@example.com',
+            posts: [post1, post2],
+          },
           relationships: {
             posts: associations.hasMany(postModel),
           },
@@ -679,7 +714,9 @@ describe('Model', () => {
         const post = new PostModelClass({
           attrs: { title: 'Test Post', content: 'Test content', author },
           relationships: {
-            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+            author: associations.belongsTo(userModel, {
+              foreignKey: 'authorId',
+            }),
           },
           schema: testSchema,
         }).save();
@@ -707,7 +744,9 @@ describe('Model', () => {
         const post = new PostModelClass({
           attrs: { title: 'Test Post', content: 'Test content', author },
           relationships: {
-            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+            author: associations.belongsTo(userModel, {
+              foreignKey: 'authorId',
+            }),
           },
           schema: testSchema,
         }).save();
@@ -722,7 +761,9 @@ describe('Model', () => {
         const post1 = new PostModelClass({
           attrs: { title: 'Post 1', content: 'Content 1' },
           relationships: {
-            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+            author: associations.belongsTo(userModel, {
+              foreignKey: 'authorId',
+            }),
           },
           schema: testSchema,
         }).save();
@@ -730,13 +771,19 @@ describe('Model', () => {
         const post2 = new PostModelClass({
           attrs: { title: 'Post 2', content: 'Content 2' },
           relationships: {
-            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+            author: associations.belongsTo(userModel, {
+              foreignKey: 'authorId',
+            }),
           },
           schema: testSchema,
         }).save();
 
         const author = new UserModelClass({
-          attrs: { name: 'Author', email: 'author@example.com', posts: [post1, post2] },
+          attrs: {
+            name: 'Author',
+            email: 'author@example.com',
+            posts: [post1, post2],
+          },
           relationships: {
             posts: associations.hasMany(postModel),
           },
@@ -752,7 +799,9 @@ describe('Model', () => {
         const post = new PostModelClass({
           attrs: { title: 'Test Post', content: 'Test content' },
           relationships: {
-            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+            author: associations.belongsTo(userModel, {
+              foreignKey: 'authorId',
+            }),
           },
           schema: testSchema,
         }).save();
@@ -824,9 +873,12 @@ describe('Model', () => {
 
     describe('with custom Serializer', () => {
       it('should use provided serializer when serializing model', () => {
-        const userSerializer = new Serializer<UserModel, TestSchema, UserJSON>(userModel, {
-          select: ['id', 'name'],
-        });
+        const userSerializer = new Serializer<UserModel, TestSchema, UserJSON>(
+          userModel,
+          {
+            select: ['id', 'name'],
+          },
+        );
 
         const user = new UserModelClass({
           attrs: { name: 'John Doe', email: 'secret@example.com' },
@@ -846,15 +898,20 @@ describe('Model', () => {
       });
 
       it('should use provided serializer with root wrapping for post model', () => {
-        const postSerializer = new Serializer<PostModel, TestSchema, PostJSON>(postModel, {
-          select: ['id', 'title'],
-          root: true,
-        });
+        const postSerializer = new Serializer<PostModel, TestSchema, PostJSON>(
+          postModel,
+          {
+            select: ['id', 'title'],
+            root: true,
+          },
+        );
 
         const post = new PostModelClass({
           attrs: { title: 'Test Post', content: 'Secret content' },
           relationships: {
-            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+            author: associations.belongsTo(userModel, {
+              foreignKey: 'authorId',
+            }),
           },
           schema: testSchema,
           serializer: postSerializer,
@@ -884,7 +941,11 @@ describe('Model', () => {
       });
 
       it('should pass through id attribute', () => {
-        const attrs = { id: 'custom-id', name: 'John Doe', email: 'john@example.com' };
+        const attrs = {
+          id: 'custom-id',
+          name: 'John Doe',
+          email: 'john@example.com',
+        };
         const result = Model.processAttrs<UserModel, TestSchema>(attrs);
 
         expect(result.modelAttrs).toEqual(attrs);
@@ -912,7 +973,10 @@ describe('Model', () => {
           author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
         };
 
-        const result = Model.processAttrs<PostModel, TestSchema>(attrs, relationships);
+        const result = Model.processAttrs<PostModel, TestSchema>(
+          attrs,
+          relationships,
+        );
 
         expect(result.modelAttrs).toEqual({
           authorId: author.id,
@@ -926,7 +990,9 @@ describe('Model', () => {
         const post1 = new PostModelClass({
           attrs: { title: 'Post 1', content: 'Content 1' },
           relationships: {
-            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+            author: associations.belongsTo(userModel, {
+              foreignKey: 'authorId',
+            }),
           },
           schema: testSchema,
         }).save();
@@ -934,7 +1000,9 @@ describe('Model', () => {
         const post2 = new PostModelClass({
           attrs: { title: 'Post 2', content: 'Content 2' },
           relationships: {
-            author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+            author: associations.belongsTo(userModel, {
+              foreignKey: 'authorId',
+            }),
           },
           schema: testSchema,
         }).save();
@@ -949,14 +1017,19 @@ describe('Model', () => {
           posts: associations.hasMany(postModel),
         };
 
-        const result = Model.processAttrs<UserModel, TestSchema>(attrs, relationships);
+        const result = Model.processAttrs<UserModel, TestSchema>(
+          attrs,
+          relationships,
+        );
 
         expect(result.modelAttrs).toEqual({
           postIds: [post1.id, post2.id],
           name: 'John Doe',
           email: 'john@example.com',
         });
-        expect(result.relationshipUpdates).toEqual({ posts: [post1.id, post2.id] });
+        expect(result.relationshipUpdates).toEqual({
+          posts: [post1.id, post2.id],
+        });
       });
 
       it('should handle null belongsTo model instance', () => {
@@ -969,7 +1042,10 @@ describe('Model', () => {
           author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
         };
 
-        const result = Model.processAttrs<PostModel, TestSchema>(attrs, relationships);
+        const result = Model.processAttrs<PostModel, TestSchema>(
+          attrs,
+          relationships,
+        );
 
         expect(result.modelAttrs).toEqual({
           authorId: null,
@@ -990,7 +1066,10 @@ describe('Model', () => {
           posts: associations.hasMany(postModel),
         };
 
-        const result = Model.processAttrs<UserModel, TestSchema>(attrs, relationships);
+        const result = Model.processAttrs<UserModel, TestSchema>(
+          attrs,
+          relationships,
+        );
 
         expect(result.modelAttrs).toEqual({
           postIds: [],
@@ -1013,7 +1092,10 @@ describe('Model', () => {
           author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
         };
 
-        const result = Model.processAttrs<PostModel, TestSchema>(attrs, relationships);
+        const result = Model.processAttrs<PostModel, TestSchema>(
+          attrs,
+          relationships,
+        );
 
         expect(result.modelAttrs).toEqual({
           authorId: 'user-123',
@@ -1033,14 +1115,19 @@ describe('Model', () => {
           posts: associations.hasMany(postModel),
         };
 
-        const result = Model.processAttrs<UserModel, TestSchema>(attrs, relationships);
+        const result = Model.processAttrs<UserModel, TestSchema>(
+          attrs,
+          relationships,
+        );
 
         expect(result.modelAttrs).toEqual({
           postIds: ['post-1', 'post-2'],
           name: 'John Doe',
           email: 'john@example.com',
         });
-        expect(result.relationshipUpdates).toEqual({ posts: ['post-1', 'post-2'] });
+        expect(result.relationshipUpdates).toEqual({
+          posts: ['post-1', 'post-2'],
+        });
       });
 
       it('should handle empty hasMany foreign key array', () => {
@@ -1053,7 +1140,10 @@ describe('Model', () => {
           posts: associations.hasMany(postModel),
         };
 
-        const result = Model.processAttrs<UserModel, TestSchema>(attrs, relationships);
+        const result = Model.processAttrs<UserModel, TestSchema>(
+          attrs,
+          relationships,
+        );
 
         expect(result.modelAttrs).toEqual({
           postIds: [],
@@ -1073,7 +1163,10 @@ describe('Model', () => {
           author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
         };
 
-        const result = Model.processAttrs<PostModel, TestSchema>(attrs, relationships);
+        const result = Model.processAttrs<PostModel, TestSchema>(
+          attrs,
+          relationships,
+        );
 
         expect(result.modelAttrs).toEqual({
           authorId: null,
@@ -1094,7 +1187,11 @@ describe('Model', () => {
           author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
         };
 
-        const result = Model.processAttrs<PostModel, TestSchema>(attrs, relationships, true);
+        const result = Model.processAttrs<PostModel, TestSchema>(
+          attrs,
+          relationships,
+          true,
+        );
 
         expect(result.modelAttrs).toEqual({
           authorId: null,
@@ -1113,7 +1210,11 @@ describe('Model', () => {
           posts: associations.hasMany(postModel),
         };
 
-        const result = Model.processAttrs<UserModel, TestSchema>(attrs, relationships, true);
+        const result = Model.processAttrs<UserModel, TestSchema>(
+          attrs,
+          relationships,
+          true,
+        );
 
         expect(result.modelAttrs).toEqual({
           postIds: [],
@@ -1142,7 +1243,10 @@ describe('Model', () => {
           author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
         };
 
-        const result = Model.processAttrs<PostModel, TestSchema>(attrs, relationships);
+        const result = Model.processAttrs<PostModel, TestSchema>(
+          attrs,
+          relationships,
+        );
 
         expect(result.modelAttrs).toEqual({
           id: 'custom-post-id',
@@ -1162,7 +1266,10 @@ describe('Model', () => {
           author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
         };
 
-        const result = Model.processAttrs<PostModel, TestSchema>(attrs, relationships);
+        const result = Model.processAttrs<PostModel, TestSchema>(
+          attrs,
+          relationships,
+        );
 
         expect(result.modelAttrs).toEqual({
           authorId: 'new-author-id',

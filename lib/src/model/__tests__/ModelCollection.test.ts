@@ -13,7 +13,11 @@ interface UserAttrs {
 }
 
 // Create test model
-const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
+const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<UserAttrs>()
+  .create();
 
 // Create test model type
 type UserModel = typeof userModel;
@@ -52,7 +56,10 @@ describe('ModelCollection', () => {
       attrs: { name: 'Alice', email: 'alice@example.com' },
       schema: testSchema,
     }).save();
-    userCollection = new ModelCollection<UserModel, TestSchema>(userModel, [user1, user2]);
+    userCollection = new ModelCollection<UserModel, TestSchema>(userModel, [
+      user1,
+      user2,
+    ]);
   });
 
   afterEach(() => {
@@ -67,7 +74,9 @@ describe('ModelCollection', () => {
     });
 
     it('should initialize empty collection', () => {
-      const emptyCollection = new ModelCollection<UserModel, TestSchema>(userModel);
+      const emptyCollection = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+      );
       expect(emptyCollection.length).toBe(0);
       expect(emptyCollection.isEmpty).toBe(true);
       expect(Array.from(emptyCollection)).toStrictEqual([]);
@@ -78,14 +87,18 @@ describe('ModelCollection', () => {
     it('should return correct length', () => {
       expect(userCollection.length).toBe(2);
 
-      const emptyCollection = new ModelCollection<UserModel, TestSchema>(userModel);
+      const emptyCollection = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+      );
       expect(emptyCollection.length).toBe(0);
     });
 
     it('should check if collection is empty', () => {
       expect(userCollection.isEmpty).toBe(false);
 
-      const emptyCollection = new ModelCollection<UserModel, TestSchema>(userModel);
+      const emptyCollection = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+      );
       expect(emptyCollection.isEmpty).toBe(true);
     });
 
@@ -99,14 +112,18 @@ describe('ModelCollection', () => {
     it('should get first model', () => {
       expect(userCollection.first()).toBe(user1);
 
-      const emptyCollection = new ModelCollection<UserModel, TestSchema>(userModel);
+      const emptyCollection = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+      );
       expect(emptyCollection.first()).toBeNull();
     });
 
     it('should get last model', () => {
       expect(userCollection.last()).toBe(user2);
 
-      const emptyCollection = new ModelCollection<UserModel, TestSchema>(userModel);
+      const emptyCollection = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+      );
       expect(emptyCollection.last()).toBeNull();
     });
   });
@@ -134,7 +151,9 @@ describe('ModelCollection', () => {
     });
 
     it('should filter models to new collection', () => {
-      const filteredCollection = userCollection.filter((model) => model.name === 'John');
+      const filteredCollection = userCollection.filter(
+        (model) => model.name === 'John',
+      );
 
       expect(filteredCollection).toBeInstanceOf(ModelCollection);
       expect(filteredCollection.length).toBe(1);
@@ -157,14 +176,21 @@ describe('ModelCollection', () => {
     });
 
     it('should check if every model matches condition', () => {
-      expect(userCollection.every((model) => model.email.includes('@example.com'))).toBe(true);
-      expect(userCollection.every((model) => model.name === 'John')).toBe(false);
+      expect(
+        userCollection.every((model) => model.email.includes('@example.com')),
+      ).toBe(true);
+      expect(userCollection.every((model) => model.name === 'John')).toBe(
+        false,
+      );
     });
   });
 
   describe('Array-like utility methods', () => {
     it('should concatenate collections and arrays', () => {
-      const otherCollection = new ModelCollection<UserModel, TestSchema>(userModel, [user3]);
+      const otherCollection = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+        [user3],
+      );
       const concatenated = userCollection.concat(otherCollection);
 
       expect(concatenated).toBeInstanceOf(ModelCollection);
@@ -197,7 +223,9 @@ describe('ModelCollection', () => {
     });
 
     it('should sort models in new collection', () => {
-      const sorted = userCollection.sort((a, b) => a.name.localeCompare(b.name));
+      const sorted = userCollection.sort((a, b) =>
+        a.name.localeCompare(b.name),
+      );
 
       expect(sorted).toBeInstanceOf(ModelCollection);
       expect(Array.from(sorted)).toStrictEqual([user2, user1]); // Jane comes before John
@@ -228,7 +256,9 @@ describe('ModelCollection', () => {
 
     it('should convert to string representation', () => {
       const str = userCollection.toString();
-      expect(str).toBe(`collection:users(${user1.toString()}, ${user2.toString()})`);
+      expect(str).toBe(
+        `collection:users(${user1.toString()}, ${user2.toString()})`,
+      );
     });
 
     it('should be iterable', () => {
@@ -353,7 +383,9 @@ describe('ModelCollection', () => {
 
   describe('Edge cases', () => {
     it('should handle empty collection operations', () => {
-      const emptyCollection = new ModelCollection<UserModel, TestSchema>(userModel);
+      const emptyCollection = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+      );
 
       expect(emptyCollection.length).toBe(0);
       expect(emptyCollection.isEmpty).toBe(true);
@@ -375,14 +407,22 @@ describe('ModelCollection', () => {
     });
 
     it('should handle operations with no matches', () => {
-      const notFound = userCollection.find((model) => model.name === 'NonExistent');
+      const notFound = userCollection.find(
+        (model) => model.name === 'NonExistent',
+      );
       expect(notFound).toBeUndefined();
 
-      const filtered = userCollection.filter((model) => model.name === 'NonExistent');
+      const filtered = userCollection.filter(
+        (model) => model.name === 'NonExistent',
+      );
       expect(filtered.length).toBe(0);
 
-      expect(userCollection.some((model) => model.name === 'NonExistent')).toBe(false);
-      expect(userCollection.every((model) => model.name === 'NonExistent')).toBe(false);
+      expect(userCollection.some((model) => model.name === 'NonExistent')).toBe(
+        false,
+      );
+      expect(
+        userCollection.every((model) => model.name === 'NonExistent'),
+      ).toBe(false);
     });
   });
 
@@ -404,7 +444,10 @@ describe('ModelCollection', () => {
         comments: CollectionConfig<typeof CommentModel>;
       };
 
-      const CommentModelClass = Model.define<typeof CommentModel, CommentSchema>(CommentModel);
+      const CommentModelClass = Model.define<
+        typeof CommentModel,
+        CommentSchema
+      >(CommentModel);
 
       const commentSchema = schema()
         .collections({
@@ -420,10 +463,10 @@ describe('ModelCollection', () => {
         attrs: { text: 'Second comment', userId: '2' },
         schema: commentSchema,
       }).save();
-      const commentCollection = new ModelCollection<typeof CommentModel, CommentSchema>(
-        CommentModel,
-        [comment1, comment2],
-      );
+      const commentCollection = new ModelCollection<
+        typeof CommentModel,
+        CommentSchema
+      >(CommentModel, [comment1, comment2]);
 
       expect(commentCollection.length).toBe(2);
       expect(commentCollection.at(0)?.text).toBe('First comment');

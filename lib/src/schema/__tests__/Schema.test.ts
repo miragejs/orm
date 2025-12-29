@@ -12,7 +12,10 @@ import {
 } from './test-helpers';
 
 // Create test collections
-const userCollection = collection().model(userModel).factory(userFactory).create();
+const userCollection = collection()
+  .model(userModel)
+  .factory(userFactory)
+  .create();
 
 const postCollection = collection()
   .model(postModel)
@@ -249,14 +252,22 @@ describe('Schema', () => {
 
     it('finds many or creates models with traits and defaults', () => {
       // Request 2 posts, but override the title
-      const posts = testSchema.posts.findManyOrCreateBy(2, {}, { title: 'Custom Post' });
+      const posts = testSchema.posts.findManyOrCreateBy(
+        2,
+        {},
+        { title: 'Custom Post' },
+      );
       expect(posts.length).toBe(2);
       // First 2 posts exist already
       expect(posts.models[0].title).toBe('Post 1');
       expect(posts.models[1].title).toBe('Post 2');
 
       // Request 4 posts total with custom title
-      const morePosts = testSchema.posts.findManyOrCreateBy(4, {}, { title: 'New Post' });
+      const morePosts = testSchema.posts.findManyOrCreateBy(
+        4,
+        {},
+        { title: 'New Post' },
+      );
       expect(morePosts.length).toBe(4);
       // First 4 posts exist already (2 original + 2 custom)
       expect(morePosts.models[0].title).toBe('Post 1');
@@ -308,7 +319,10 @@ describe('Schema', () => {
         })
         .setup();
 
-      const user = testSchema.users.create({ name: 'Charlie', email: 'charlie@example.com' });
+      const user = testSchema.users.create({
+        name: 'Charlie',
+        email: 'charlie@example.com',
+      });
 
       expect(user.toJSON()).toEqual({
         id: user.id,
@@ -320,11 +334,17 @@ describe('Schema', () => {
     it('should apply collection-level root config', () => {
       const testSchema = schema()
         .collections({
-          users: collection().model(userModel).serializer({ root: true }).create(),
+          users: collection()
+            .model(userModel)
+            .serializer({ root: true })
+            .create(),
         })
         .setup();
 
-      const user = testSchema.users.create({ name: 'Alice', email: 'alice@example.com' });
+      const user = testSchema.users.create({
+        name: 'Alice',
+        email: 'alice@example.com',
+      });
 
       expect(user.toJSON()).toEqual({
         user: { id: user.id, name: 'Alice', email: 'alice@example.com' },
@@ -334,11 +354,17 @@ describe('Schema', () => {
     it('should apply collection-level custom root key', () => {
       const testSchema = schema()
         .collections({
-          users: collection().model(userModel).serializer({ root: 'userData' }).create(),
+          users: collection()
+            .model(userModel)
+            .serializer({ root: 'userData' })
+            .create(),
         })
         .setup();
 
-      const user = testSchema.users.create({ name: 'Henry', email: 'henry@example.com' });
+      const user = testSchema.users.create({
+        name: 'Henry',
+        email: 'henry@example.com',
+      });
 
       expect(user.toJSON()).toEqual({
         userData: { id: user.id, name: 'Henry', email: 'henry@example.com' },
@@ -355,8 +381,14 @@ describe('Schema', () => {
         })
         .setup();
 
-      const user1 = testSchema.users.create({ name: 'Kate', email: 'kate@example.com' });
-      const user2 = testSchema.users.create({ name: 'Leo', email: 'leo@example.com' });
+      const user1 = testSchema.users.create({
+        name: 'Kate',
+        email: 'kate@example.com',
+      });
+      const user2 = testSchema.users.create({
+        name: 'Leo',
+        email: 'leo@example.com',
+      });
 
       const allUsers = testSchema.users.all();
 
@@ -369,11 +401,17 @@ describe('Schema', () => {
     it('should handle empty select array', () => {
       const testSchema = schema()
         .collections({
-          users: collection().model(userModel).serializer({ select: [] }).create(),
+          users: collection()
+            .model(userModel)
+            .serializer({ select: [] })
+            .create(),
         })
         .setup();
 
-      const user = testSchema.users.create({ name: 'Paul', email: 'paul@example.com' });
+      const user = testSchema.users.create({
+        name: 'Paul',
+        email: 'paul@example.com',
+      });
 
       // Empty select should return all attributes (fallback behavior)
       expect(user.toJSON()).toEqual({
@@ -393,7 +431,10 @@ describe('Schema', () => {
         })
         .setup();
 
-      const user = testSchema.users.create({ name: 'Rachel', email: 'rachel@example.com' });
+      const user = testSchema.users.create({
+        name: 'Rachel',
+        email: 'rachel@example.com',
+      });
 
       expect(user.toJSON()).toEqual({
         userRecord: { id: user.id, name: 'Rachel' },

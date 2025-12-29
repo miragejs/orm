@@ -33,9 +33,21 @@ interface CommentAttrs {
 }
 
 // Test models
-const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
-const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
-const commentModel = model().name('comment').collection('comments').attrs<CommentAttrs>().create();
+const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<UserAttrs>()
+  .create();
+const postModel = model()
+  .name('post')
+  .collection('posts')
+  .attrs<PostAttrs>()
+  .create();
+const commentModel = model()
+  .name('comment')
+  .collection('comments')
+  .attrs<CommentAttrs>()
+  .create();
 
 // Test schema type
 type TestSchema = {
@@ -141,9 +153,13 @@ test('CreateManyAssociation type should work correctly', () => {
     count: 5,
   };
 
-  expectTypeOf(countAssoc).toEqualTypeOf<CreateManyAssociation<typeof postModel>>();
+  expectTypeOf(countAssoc).toEqualTypeOf<
+    CreateManyAssociation<typeof postModel>
+  >();
   expectTypeOf(countAssoc.count).toEqualTypeOf<number | undefined>();
-  expectTypeOf(countAssoc.models).toEqualTypeOf<AssociationTraitsAndDefaults[] | undefined>();
+  expectTypeOf(countAssoc.models).toEqualTypeOf<
+    AssociationTraitsAndDefaults[] | undefined
+  >();
 
   // Array mode
   const arrayAssoc: CreateManyAssociation<typeof postModel> = {
@@ -152,9 +168,13 @@ test('CreateManyAssociation type should work correctly', () => {
     models: [[{ title: 'First' }], [{ title: 'Second' }]],
   };
 
-  expectTypeOf(arrayAssoc).toEqualTypeOf<CreateManyAssociation<typeof postModel>>();
+  expectTypeOf(arrayAssoc).toEqualTypeOf<
+    CreateManyAssociation<typeof postModel>
+  >();
   expectTypeOf(arrayAssoc.count).toEqualTypeOf<number | undefined>();
-  expectTypeOf(arrayAssoc.models).toEqualTypeOf<AssociationTraitsAndDefaults[] | undefined>();
+  expectTypeOf(arrayAssoc.models).toEqualTypeOf<
+    AssociationTraitsAndDefaults[] | undefined
+  >();
 });
 
 test('LinkAssociation type should work correctly', () => {
@@ -222,11 +242,17 @@ test('HasMany should accept inverse option', () => {
 });
 
 test('Inverse option should work with foreignKey option', () => {
-  const rel1 = belongsTo(userModel, { foreignKey: 'creatorId', inverse: 'createdPosts' });
+  const rel1 = belongsTo(userModel, {
+    foreignKey: 'creatorId',
+    inverse: 'createdPosts',
+  });
   expectTypeOf(rel1.foreignKey).toBeString();
   expectTypeOf(rel1.inverse).toEqualTypeOf<string | null | undefined>();
 
-  const rel2 = hasMany(postModel, { foreignKey: 'articleIds', inverse: 'author' });
+  const rel2 = hasMany(postModel, {
+    foreignKey: 'articleIds',
+    inverse: 'author',
+  });
   expectTypeOf(rel2.foreignKey).toBeString();
   expectTypeOf(rel2.inverse).toEqualTypeOf<string | null | undefined>();
 });

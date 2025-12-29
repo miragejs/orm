@@ -35,7 +35,9 @@ export default function belongsTo<
   opts?: TOpts,
 ): BelongsTo<
   TTarget,
-  TOpts extends { foreignKey: infer F extends string } ? F : `${ModelNameFor<TTarget>}Id`
+  TOpts extends { foreignKey: infer F extends string }
+    ? F
+    : `${ModelNameFor<TTarget>}Id`
 > {
   type ForeignKey = TOpts extends { foreignKey: infer F extends string }
     ? F

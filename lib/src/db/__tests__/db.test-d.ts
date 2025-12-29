@@ -5,7 +5,13 @@
  * Run: pnpm test:types
  */
 
-import type { DbRecord, DbRecordInput, OrderBy, QueryOptions, Where } from '@src/db';
+import type {
+  DbRecord,
+  DbRecordInput,
+  OrderBy,
+  QueryOptions,
+  Where,
+} from '@src/db';
 import { expectTypeOf, test } from 'vitest';
 
 // Test record types

@@ -19,7 +19,11 @@ interface UserAttrs {
 }
 
 // Create test model
-const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
+const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<UserAttrs>()
+  .create();
 
 // Define test model type
 type UserModel = typeof userModel;
@@ -59,7 +63,13 @@ describe('Factory', () => {
         model.processed = true;
       };
 
-      const factory = new Factory(userModel, attributes, traits, undefined, afterCreate);
+      const factory = new Factory(
+        userModel,
+        attributes,
+        traits,
+        undefined,
+        afterCreate,
+      );
 
       expect(factory.template).toBe(userModel);
       expect(factory.attributes).toBe(attributes);
@@ -93,7 +103,10 @@ describe('Factory', () => {
       {
         name: () => 'John Doe',
         email(id: string) {
-          const name = resolveFactoryAttr(this.name, id).split(' ').join('.').toLowerCase();
+          const name = resolveFactoryAttr(this.name, id)
+            .split(' ')
+            .join('.')
+            .toLowerCase();
           return `${name}-${id}@example.com`;
         },
         role: 'user',
@@ -169,16 +182,21 @@ describe('Factory', () => {
     });
 
     it('should handle function attributes correctly', () => {
-      const dynamicFactory = new Factory<UserModel, 'member', TestSchema>(userModel, {
-        name: (id) => {
-          return `User ${id}`;
+      const dynamicFactory = new Factory<UserModel, 'member', TestSchema>(
+        userModel,
+        {
+          name: (id) => {
+            return `User ${id}`;
+          },
+          email(id) {
+            const name = resolveFactoryAttr(this.name, id)
+              .replace(' ', '-')
+              .toLowerCase();
+            return `${name}@example.com`;
+          },
+          role: 'member',
         },
-        email(id) {
-          const name = resolveFactoryAttr(this.name, id).replace(' ', '-').toLowerCase();
-          return `${name}@example.com`;
-        },
-        role: 'member',
-      });
+      );
 
       const attrs = dynamicFactory.build(testSchema);
       expect(attrs).toMatchObject({
@@ -189,12 +207,15 @@ describe('Factory', () => {
     });
 
     it('should handle static values', () => {
-      const staticFactory = new Factory<UserModel, never, TestSchema>(userModel, {
-        email: 'static@example.com',
-        name: 'Static User',
-        role: 'guest',
-        createdAt: '2024-01-01T00:00:00Z',
-      });
+      const staticFactory = new Factory<UserModel, never, TestSchema>(
+        userModel,
+        {
+          email: 'static@example.com',
+          name: 'Static User',
+          role: 'guest',
+          createdAt: '2024-01-01T00:00:00Z',
+        },
+      );
 
       const attrs = staticFactory.build(testSchema);
       expect(attrs).toMatchObject({
@@ -208,26 +229,32 @@ describe('Factory', () => {
     it('should call function attributes only once, especially when they depend on each other', () => {
       const called = new Map<string, number>();
 
-      const dynamicFactory = new Factory<UserModel, never, TestSchema>(userModel, {
-        email(id) {
-          called.set('email', (called.get('email') ?? 0) + 1);
+      const dynamicFactory = new Factory<UserModel, never, TestSchema>(
+        userModel,
+        {
+          email(id) {
+            called.set('email', (called.get('email') ?? 0) + 1);
 
-          const name = resolveFactoryAttr(this.name, id).split(' ').join('.').toLowerCase();
-          return `${name}-${id}@example.com`;
-        },
-        name(id) {
-          called.set('name', (called.get('name') ?? 0) + 1);
-          return `User ${id}`;
-        },
-        bio(id) {
-          called.set('bio', (called.get('bio') ?? 0) + 1);
+            const name = resolveFactoryAttr(this.name, id)
+              .split(' ')
+              .join('.')
+              .toLowerCase();
+            return `${name}-${id}@example.com`;
+          },
+          name(id) {
+            called.set('name', (called.get('name') ?? 0) + 1);
+            return `User ${id}`;
+          },
+          bio(id) {
+            called.set('bio', (called.get('bio') ?? 0) + 1);
 
-          const name = resolveFactoryAttr(this.name, id);
-          const email = resolveFactoryAttr(this.email, id);
-          return `User: ${name} - ${email}`;
+            const name = resolveFactoryAttr(this.name, id);
+            const email = resolveFactoryAttr(this.email, id);
+            return `User: ${name} - ${email}`;
+          },
+          role: 'member',
         },
-        role: 'member',
-      });
+      );
       dynamicFactory.build(testSchema);
 
       expect(called.get('name')).toBe(1);
@@ -249,7 +276,9 @@ describe('Factory', () => {
         });
 
         factory.build(testSchema);
-      }).toThrow(`[Mirage]: Circular dependency detected in user factory: name -> email -> name`);
+      }).toThrow(
+        `[Mirage]: Circular dependency detected in user factory: name -> email -> name`,
+      );
     });
 
     it('should handle chained attribute dependencies', () => {

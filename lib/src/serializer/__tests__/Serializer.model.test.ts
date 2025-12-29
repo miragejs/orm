@@ -196,7 +196,9 @@ describe('Serializer - Model serialization', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .serializer({ with: ['author'], relationsMode: 'embedded' })
               .create(),
@@ -234,7 +236,9 @@ describe('Serializer - Model serialization', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .create(),
           })
@@ -272,7 +276,9 @@ describe('Serializer - Model serialization', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .create(),
           })
@@ -311,7 +317,9 @@ describe('Serializer - Model serialization', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .create(),
           })
@@ -348,7 +356,9 @@ describe('Serializer - Model serialization', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .create(),
           })
@@ -376,7 +386,9 @@ describe('Serializer - Model serialization', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .serializer({ select: ['id', 'title'] })
               .create(),
@@ -423,7 +435,9 @@ describe('Serializer - Model serialization', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .serializer({ select: ['id', 'title'], root: true })
               .create(),
@@ -489,7 +503,9 @@ describe('Serializer - Model serialization', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .serializer({ with: ['author'], relationsMode: 'embedded' })
               .create(),
@@ -548,7 +564,9 @@ describe('Serializer - Model serialization', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
                 comments: associations.hasMany(commentModel),
               })
               .serializer({ select: ['id', 'title'] })
@@ -556,7 +574,9 @@ describe('Serializer - Model serialization', () => {
             comments: collection()
               .model(commentModel)
               .relationships({
-                user: associations.belongsTo(userModel, { foreignKey: 'userId' }),
+                user: associations.belongsTo(userModel, {
+                  foreignKey: 'userId',
+                }),
               })
               .serializer({ select: ['id', 'content'] })
               .create(),
@@ -720,7 +740,9 @@ describe('Serializer - Model serialization', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .serializer({ with: ['author'], relationsMode: 'sideLoaded' })
               .create(),
@@ -738,7 +760,9 @@ describe('Serializer - Model serialization', () => {
           author: user,
         });
 
-        const json = post.serialize<{ author: UserAttrs }>({ relationsMode: 'embedded' });
+        const json = post.serialize<{ author: UserAttrs }>({
+          relationsMode: 'embedded',
+        });
 
         expect(json).toHaveProperty('author');
         expect(json.author).toEqual({
@@ -780,7 +804,9 @@ describe('Serializer - Model serialization', () => {
             posts: collection()
               .model(testPostModel)
               .relationships({
-                user: associations.belongsTo(testUserModel, { foreignKey: 'userId' }),
+                user: associations.belongsTo(testUserModel, {
+                  foreignKey: 'userId',
+                }),
               })
               .create(),
           })
@@ -808,7 +834,10 @@ describe('Serializer - Model serialization', () => {
       it('should merge multiple option overrides at method level', () => {
         const testSchema = schema()
           .collections({
-            users: collection().model(userModel).serializer({ root: false }).create(),
+            users: collection()
+              .model(userModel)
+              .serializer({ root: false })
+              .create(),
           })
           .setup();
 

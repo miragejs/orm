@@ -7,7 +7,11 @@
 
 import { model } from '@src/model';
 import { collection, schema, type SchemaCollections } from '@src/schema';
-import { Serializer, type DataSerializerOptions, type SerializerOptions } from '@src/serializer';
+import {
+  Serializer,
+  type DataSerializerOptions,
+  type SerializerOptions,
+} from '@src/serializer';
 import { expectTypeOf, test } from 'vitest';
 
 test('SerializerOptions should accept complete configuration', () => {
@@ -47,7 +51,9 @@ test('DataSerializerOptions should work with select', () => {
     select: ['id', 'name', 'email'],
   };
 
-  expectTypeOf(options).toEqualTypeOf<DataSerializerOptions<typeof userModel>>();
+  expectTypeOf(options).toEqualTypeOf<
+    DataSerializerOptions<typeof userModel>
+  >();
 });
 
 test('DataSerializerOptions should work with with for relationships', () => {
@@ -67,7 +73,9 @@ test('DataSerializerOptions should work with with for relationships', () => {
     with: ['author', 'comments'],
   };
 
-  expectTypeOf(options).toEqualTypeOf<DataSerializerOptions<typeof postModel>>();
+  expectTypeOf(options).toEqualTypeOf<
+    DataSerializerOptions<typeof postModel>
+  >();
 });
 
 test('SerializerOptions should work with partial select', () => {
@@ -117,7 +125,11 @@ test('Model.toJSON() should return model attrs by default (no serializer)', () =
     age: number;
   };
 
-  const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
+  const userModel = model()
+    .name('user')
+    .collection('users')
+    .attrs<UserAttrs>()
+    .create();
 
   const userCollection = collection().model(userModel).create();
   const testSchema = schema().collections({ users: userCollection }).setup();
@@ -236,7 +248,11 @@ test('ModelCollection.toJSON() should return PostJSON[] when defined via .json()
     .create();
   const testSchema = schema().collections({ posts: postCollection }).setup();
 
-  testSchema.posts.create({ title: 'Post 1', content: 'Content', published: true });
+  testSchema.posts.create({
+    title: 'Post 1',
+    content: 'Content',
+    published: true,
+  });
   const posts = testSchema.posts.all();
 
   const json = posts.toJSON();
@@ -273,7 +289,11 @@ test('ModelCollection.toJSON() should return root-wrapped type when defined via 
     .create();
   const testSchema = schema().collections({ posts: postCollection }).setup();
 
-  testSchema.posts.create({ title: 'Post 1', content: 'Content', published: true });
+  testSchema.posts.create({
+    title: 'Post 1',
+    content: 'Content',
+    published: true,
+  });
   const posts = testSchema.posts.all();
 
   const json = posts.toJSON();
@@ -301,14 +321,20 @@ test('CollectionBuilder.serializer() should preserve serializer type with instan
     .json<UserJSON>()
     .create();
 
-  const serializer = new Serializer<typeof userModel, SchemaCollections, UserJSON>(userModel, {
+  const serializer = new Serializer<
+    typeof userModel,
+    SchemaCollections,
+    UserJSON
+  >(userModel, {
     select: ['id', 'name', 'email'],
   });
 
   const builder = collection().model(userModel).serializer(serializer);
 
   const config = builder.create();
-  expectTypeOf(config.serializerInstance).toEqualTypeOf<typeof serializer | undefined>();
+  expectTypeOf(config.serializerInstance).toEqualTypeOf<
+    typeof serializer | undefined
+  >();
 });
 
 test('CollectionBuilder.serializer() should infer Serializer type from config', () => {
@@ -319,7 +345,11 @@ test('CollectionBuilder.serializer() should infer Serializer type from config', 
     age: number;
   };
 
-  const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
+  const userModel = model()
+    .name('user')
+    .collection('users')
+    .attrs<UserAttrs>()
+    .create();
 
   const builder = collection()
     .model(userModel)
@@ -390,12 +420,22 @@ test('Serializer instance can serialize models from different collections', () =
     .json<UserJSON>()
     .create();
 
-  const serializer = new Serializer<typeof userModel, SchemaCollections, UserJSON>(userModel, {
+  const serializer = new Serializer<
+    typeof userModel,
+    SchemaCollections,
+    UserJSON
+  >(userModel, {
     select: ['id', 'name', 'email'],
   });
 
-  const collection1 = collection().model(userModel).serializer(serializer).create();
-  const collection2 = collection().model(userModel).serializer(serializer).create();
+  const collection1 = collection()
+    .model(userModel)
+    .serializer(serializer)
+    .create();
+  const collection2 = collection()
+    .model(userModel)
+    .serializer(serializer)
+    .create();
 
   const testSchema = schema()
     .collections({

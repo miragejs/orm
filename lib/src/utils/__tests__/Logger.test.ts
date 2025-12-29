@@ -24,14 +24,24 @@ describe('Logger', () => {
       const logger = new Logger({ enabled: true, level: 'debug' });
       logger.debug('test message');
 
-      expect(consoleLogSpy).toHaveBeenCalledWith('[Mirage] DEBUG: test message', '');
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        '[Mirage] DEBUG: test message',
+        '',
+      );
     });
 
     it('should create logger with custom prefix', () => {
-      const logger = new Logger({ enabled: true, level: 'debug', prefix: '[MyORM]' });
+      const logger = new Logger({
+        enabled: true,
+        level: 'debug',
+        prefix: '[MyORM]',
+      });
       logger.debug('test message');
 
-      expect(consoleLogSpy).toHaveBeenCalledWith('[MyORM] DEBUG: test message', '');
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        '[MyORM] DEBUG: test message',
+        '',
+      );
     });
 
     it('should not log when disabled', () => {
@@ -52,28 +62,40 @@ describe('Logger', () => {
       const logger = new Logger({ enabled: true, level: 'debug' });
       logger.debug('debug message');
 
-      expect(consoleLogSpy).toHaveBeenCalledWith('[Mirage] DEBUG: debug message', '');
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        '[Mirage] DEBUG: debug message',
+        '',
+      );
     });
 
     it('should log info messages at info level', () => {
       const logger = new Logger({ enabled: true, level: 'info' });
       logger.info('info message');
 
-      expect(consoleLogSpy).toHaveBeenCalledWith('[Mirage] INFO: info message', '');
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        '[Mirage] INFO: info message',
+        '',
+      );
     });
 
     it('should log warn messages at warn level', () => {
       const logger = new Logger({ enabled: true, level: 'warn' });
       logger.warn('warn message');
 
-      expect(consoleWarnSpy).toHaveBeenCalledWith('[Mirage] WARN: warn message', '');
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '[Mirage] WARN: warn message',
+        '',
+      );
     });
 
     it('should log error messages at error level', () => {
       const logger = new Logger({ enabled: true, level: 'error' });
       logger.error('error message');
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('[Mirage] ERROR: error message', '');
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '[Mirage] ERROR: error message',
+        '',
+      );
     });
 
     it('should not log anything at silent level', () => {
@@ -96,7 +118,10 @@ describe('Logger', () => {
       logger.info('info message');
 
       expect(consoleLogSpy).toHaveBeenCalledTimes(1);
-      expect(consoleLogSpy).toHaveBeenCalledWith('[Mirage] INFO: info message', '');
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        '[Mirage] INFO: info message',
+        '',
+      );
     });
 
     it('should filter out debug and info messages when level is warn', () => {
@@ -107,7 +132,10 @@ describe('Logger', () => {
 
       expect(consoleLogSpy).not.toHaveBeenCalled();
       expect(consoleWarnSpy).toHaveBeenCalledTimes(1);
-      expect(consoleWarnSpy).toHaveBeenCalledWith('[Mirage] WARN: warn message', '');
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '[Mirage] WARN: warn message',
+        '',
+      );
     });
 
     it('should only log error messages when level is error', () => {
@@ -120,7 +148,10 @@ describe('Logger', () => {
       expect(consoleLogSpy).not.toHaveBeenCalled();
       expect(consoleWarnSpy).not.toHaveBeenCalled();
       expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
-      expect(consoleErrorSpy).toHaveBeenCalledWith('[Mirage] ERROR: error message', '');
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '[Mirage] ERROR: error message',
+        '',
+      );
     });
   });
 
@@ -130,7 +161,10 @@ describe('Logger', () => {
       const context = { userId: '123', action: 'create' };
       logger.debug('test message', context);
 
-      expect(consoleLogSpy).toHaveBeenCalledWith('[Mirage] DEBUG: test message', context);
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        '[Mirage] DEBUG: test message',
+        context,
+      );
     });
 
     it('should log context object with info message', () => {
@@ -138,7 +172,10 @@ describe('Logger', () => {
       const context = { count: 5 };
       logger.info('test message', context);
 
-      expect(consoleLogSpy).toHaveBeenCalledWith('[Mirage] INFO: test message', context);
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        '[Mirage] INFO: test message',
+        context,
+      );
     });
 
     it('should log context object with warn message', () => {
@@ -146,7 +183,10 @@ describe('Logger', () => {
       const context = { issue: 'missing field' };
       logger.warn('test message', context);
 
-      expect(consoleWarnSpy).toHaveBeenCalledWith('[Mirage] WARN: test message', context);
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '[Mirage] WARN: test message',
+        context,
+      );
     });
 
     it('should log context object with error message', () => {
@@ -154,14 +194,20 @@ describe('Logger', () => {
       const context = { error: 'validation failed' };
       logger.error('test message', context);
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('[Mirage] ERROR: test message', context);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '[Mirage] ERROR: test message',
+        context,
+      );
     });
 
     it('should handle empty context', () => {
       const logger = new Logger({ enabled: true, level: 'debug' });
       logger.debug('test message');
 
-      expect(consoleLogSpy).toHaveBeenCalledWith('[Mirage] DEBUG: test message', '');
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        '[Mirage] DEBUG: test message',
+        '',
+      );
     });
   });
 

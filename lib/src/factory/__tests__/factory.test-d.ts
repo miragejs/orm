@@ -39,8 +39,16 @@ interface PostAttrs {
 }
 
 // Test models
-const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
-const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
+const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<UserAttrs>()
+  .create();
+const postModel = model()
+  .name('post')
+  .collection('posts')
+  .attrs<PostAttrs>()
+  .create();
 
 // Test model types
 type UserModel = typeof userModel;
@@ -126,7 +134,11 @@ test('TraitDefinition should work with attribute functions', () => {
 });
 
 test('ModelTraits should work with multiple traits', () => {
-  const traits: ModelTraits<'admin' | 'moderator' | 'guest', UserModel, TestSchema> = {
+  const traits: ModelTraits<
+    'admin' | 'moderator' | 'guest',
+    UserModel,
+    TestSchema
+  > = {
     admin: {
       role: 'admin',
       permissions: ['read', 'write', 'delete'],
@@ -167,7 +179,9 @@ test('ModelTraits should work with afterCreate hooks', () => {
     },
   };
 
-  expectTypeOf(traits).toEqualTypeOf<ModelTraits<'admin' | 'verified', UserModel, TestSchema>>();
+  expectTypeOf(traits).toEqualTypeOf<
+    ModelTraits<'admin' | 'verified', UserModel, TestSchema>
+  >();
 });
 
 test('FactoryAfterCreateHook should work as standalone', () => {
@@ -180,7 +194,9 @@ test('FactoryAfterCreateHook should work as standalone', () => {
     const email = model.email;
   };
 
-  expectTypeOf(hook).toEqualTypeOf<FactoryAfterCreateHook<TestSchema, UserModel>>();
+  expectTypeOf(hook).toEqualTypeOf<
+    FactoryAfterCreateHook<TestSchema, UserModel>
+  >();
 });
 
 test('FactoryAfterCreateHook should work with async', () => {
@@ -192,7 +208,9 @@ test('FactoryAfterCreateHook should work with async', () => {
     console.log('User:', model.id);
   };
 
-  expectTypeOf(hook).toEqualTypeOf<FactoryAfterCreateHook<TestSchema, UserModel>>();
+  expectTypeOf(hook).toEqualTypeOf<
+    FactoryAfterCreateHook<TestSchema, UserModel>
+  >();
 });
 
 test('TraitName should extract trait names correctly', () => {
@@ -216,7 +234,9 @@ test('TraitDefinition should allow partial attributes', () => {
     name: () => 'Partial',
   };
 
-  expectTypeOf(partialTrait).toEqualTypeOf<TraitDefinition<UserModel, TestSchema>>();
+  expectTypeOf(partialTrait).toEqualTypeOf<
+    TraitDefinition<UserModel, TestSchema>
+  >();
 });
 
 test('FactoryAttrs this context should allow calling other attribute functions', () => {
@@ -269,7 +289,8 @@ test('FactoryAttrs this context should allow chaining attribute dependencies', (
     },
     role: function (id: string) {
       // Should be able to reference email which references name
-      const email = typeof this.email === 'function' ? this.email(id) : this.email;
+      const email =
+        typeof this.email === 'function' ? this.email(id) : this.email;
       return email?.includes('admin') ? 'admin' : 'user';
     },
   };
@@ -282,13 +303,17 @@ test('FactoryAttrs this context should preserve type safety', () => {
     title: () => 'Post Title',
     content: function (id: number) {
       // this.title is required, so resolved value is string (not string | undefined)
-      const title = typeof this.title === 'function' ? this.title(id) : this.title;
+      const title =
+        typeof this.title === 'function' ? this.title(id) : this.title;
       expectTypeOf(title).toEqualTypeOf<string>();
       return `Content for ${title}`;
     },
     published: function (id: number) {
       // this.published is optional, so resolved value is boolean | undefined
-      const pub = typeof this.published === 'function' ? this.published(id) : this.published;
+      const pub =
+        typeof this.published === 'function'
+          ? this.published(id)
+          : this.published;
       expectTypeOf(pub).toEqualTypeOf<boolean | undefined>();
       return pub ?? false;
     },
@@ -381,12 +406,18 @@ test('resolveFactoryAttr should work with required attributes only', () => {
 
 test('ExtractTraitsFromSchema should extract trait names from schema', () => {
   type SchemaWithTraits = {
-    users: CollectionConfig<UserModel, {}, Factory<UserModel, 'admin' | 'moderator' | 'guest'>>;
+    users: CollectionConfig<
+      UserModel,
+      {},
+      Factory<UserModel, 'admin' | 'moderator' | 'guest'>
+    >;
   };
 
   type ExtractedTraits = ExtractTraitsFromSchema<SchemaWithTraits, UserModel>;
 
-  expectTypeOf<ExtractedTraits>().toEqualTypeOf<'admin' | 'moderator' | 'guest'>();
+  expectTypeOf<ExtractedTraits>().toEqualTypeOf<
+    'admin' | 'moderator' | 'guest'
+  >();
 });
 
 test('ExtractTraitsFromSchema should fallback to string when no traits defined', () => {
@@ -394,7 +425,10 @@ test('ExtractTraitsFromSchema should fallback to string when no traits defined',
     users: CollectionConfig<UserModel>;
   };
 
-  type ExtractedTraits = ExtractTraitsFromSchema<SchemaWithoutTraits, UserModel>;
+  type ExtractedTraits = ExtractTraitsFromSchema<
+    SchemaWithoutTraits,
+    UserModel
+  >;
 
   // Should be assignable to string (fallback type)
   expectTypeOf<ExtractedTraits>().toMatchTypeOf<string>();
@@ -403,7 +437,11 @@ test('ExtractTraitsFromSchema should fallback to string when no traits defined',
 
 test('ExtractTraitsFromSchema should fallback to string when model not in schema', () => {
   type SchemaWithoutModel = {
-    posts: CollectionConfig<PostModel, {}, Factory<PostModel, 'published' | 'draft'>>;
+    posts: CollectionConfig<
+      PostModel,
+      {},
+      Factory<PostModel, 'published' | 'draft'>
+    >;
   };
 
   type ExtractedTraits = ExtractTraitsFromSchema<SchemaWithoutModel, UserModel>;
@@ -419,7 +457,11 @@ test('ExtractTraitsFromSchema should fallback to string when model not in schema
 
 test('FactoryBuilder.traits() should accept schema-defined traits', () => {
   type SchemaWithTraits = {
-    users: CollectionConfig<UserModel, {}, Factory<UserModel, 'admin' | 'premium'>>;
+    users: CollectionConfig<
+      UserModel,
+      {},
+      Factory<UserModel, 'admin' | 'premium'>
+    >;
   };
 
   const builder = factory<SchemaWithTraits>().model(userModel);
@@ -451,7 +493,11 @@ test('FactoryBuilder.traits() should accept schema-defined traits', () => {
 
 test('FactoryBuilder.traits() should allow custom traits alongside schema traits', () => {
   type SchemaWithTraits = {
-    users: CollectionConfig<UserModel, {}, Factory<UserModel, 'admin' | 'premium'>>;
+    users: CollectionConfig<
+      UserModel,
+      {},
+      Factory<UserModel, 'admin' | 'premium'>
+    >;
   };
 
   const builder = factory<SchemaWithTraits>().model(userModel);
@@ -493,7 +539,11 @@ test('FactoryBuilder.traits() should work without schema-defined traits', () => 
 
 test('FactoryBuilder.traits() should preserve trait names through chaining', () => {
   type SchemaWithTraits = {
-    users: CollectionConfig<UserModel, {}, Factory<UserModel, 'admin' | 'premium'>>;
+    users: CollectionConfig<
+      UserModel,
+      {},
+      Factory<UserModel, 'admin' | 'premium'>
+    >;
   };
 
   const builder1 = factory<SchemaWithTraits>()
@@ -518,7 +568,11 @@ test('FactoryBuilder.traits() should preserve trait names through chaining', () 
 
 test('FactoryBuilder.create() should return Factory with correct trait types', () => {
   type SchemaWithTraits = {
-    users: CollectionConfig<UserModel, {}, Factory<UserModel, 'admin' | 'premium'>>;
+    users: CollectionConfig<
+      UserModel,
+      {},
+      Factory<UserModel, 'admin' | 'premium'>
+    >;
   };
 
   const userFactory = factory<SchemaWithTraits>()

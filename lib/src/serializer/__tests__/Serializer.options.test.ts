@@ -96,7 +96,11 @@ describe('Serializer options', () => {
         });
 
         const json = user.toJSON();
-        expect(json).toEqual({ id: '1', name: 'Bob', email: 'bob@example.com' });
+        expect(json).toEqual({
+          id: '1',
+          name: 'Bob',
+          email: 'bob@example.com',
+        });
         expect(json).not.toHaveProperty('password');
         expect(json).not.toHaveProperty('role');
       });
@@ -129,7 +133,9 @@ describe('Serializer options', () => {
           .collections({
             users: collection()
               .model(userModel)
-              .serializer({ select: { id: true, name: true, email: false, password: false } })
+              .serializer({
+                select: { id: true, name: true, email: false, password: false },
+              })
               .create(),
           })
           .setup();
@@ -221,7 +227,9 @@ describe('Serializer options', () => {
       });
 
       it('should warn and ignore root=false when relationsMode=sideLoaded', () => {
-        const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const consoleWarnSpy = vi
+          .spyOn(console, 'warn')
+          .mockImplementation(() => {});
 
         const testSchema = schema()
           .collections({
@@ -230,7 +238,11 @@ describe('Serializer options', () => {
               .relationships({
                 posts: associations.hasMany(postModel),
               })
-              .serializer({ with: ['posts'], relationsMode: 'sideLoaded', root: false })
+              .serializer({
+                with: ['posts'],
+                relationsMode: 'sideLoaded',
+                root: false,
+              })
               .create(),
             posts: collection().model(postModel).create(),
           })
@@ -244,9 +256,15 @@ describe('Serializer options', () => {
 
         const json = user.toJSON();
 
-        expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('root'));
-        expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('sideLoaded'));
-        expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('ignored'));
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('root'),
+        );
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('sideLoaded'),
+        );
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('ignored'),
+        );
 
         expect(json).toHaveProperty('user');
         expect((json as any).user).toHaveProperty('id', user.id);
@@ -262,7 +280,11 @@ describe('Serializer options', () => {
               .relationships({
                 posts: associations.hasMany(postModel),
               })
-              .serializer({ with: ['posts'], relationsMode: 'sideLoaded', root: 'customUser' })
+              .serializer({
+                with: ['posts'],
+                relationsMode: 'sideLoaded',
+                root: 'customUser',
+              })
               .create(),
             posts: collection().model(postModel).create(),
           })
@@ -323,7 +345,9 @@ describe('Serializer options', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .create(),
           })
@@ -461,7 +485,9 @@ describe('Serializer options', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .create(),
           })
@@ -754,7 +780,9 @@ describe('Serializer options', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
                 comments: associations.hasMany(commentModel),
               })
               .serializer({ with: ['author'] })
@@ -865,7 +893,9 @@ describe('Serializer options', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
                 comments: associations.hasMany(commentModel),
               })
               .serializer({
@@ -923,7 +953,9 @@ describe('Serializer options', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .serializer({ with: ['author'] })
               .create(),
@@ -967,7 +999,9 @@ describe('Serializer options', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .create(),
           })
@@ -1086,7 +1120,9 @@ describe('Serializer options', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .create(),
           })
@@ -1141,7 +1177,9 @@ describe('Serializer options', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .serializer({
                 with: ['author'],
@@ -1196,7 +1234,9 @@ describe('Serializer options', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .create(),
           })
@@ -1207,7 +1247,11 @@ describe('Serializer options', () => {
           email: 'alice@example.com',
           password: 'secret',
         });
-        const post = testSchema.posts.create({ title: 'Post 1', content: 'Content', author: user });
+        const post = testSchema.posts.create({
+          title: 'Post 1',
+          content: 'Content',
+          author: user,
+        });
         user.reload();
 
         const json = user.toJSON();
@@ -1231,7 +1275,9 @@ describe('Serializer options', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .serializer({
                 with: ['author'],
@@ -1284,7 +1330,9 @@ describe('Serializer options', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
                 comments: associations.hasMany(commentModel),
               })
               .serializer({
@@ -1301,7 +1349,10 @@ describe('Serializer options', () => {
           email: 'charlie@example.com',
           password: 'secret',
         });
-        const comment = testSchema.comments.create({ content: 'Nice!', postId: '1' });
+        const comment = testSchema.comments.create({
+          content: 'Nice!',
+          postId: '1',
+        });
         const post = testSchema.posts.create({
           title: 'Post',
           content: 'Content',
@@ -1326,7 +1377,9 @@ describe('Serializer options', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .serializer({
                 root: true,
@@ -1378,7 +1431,9 @@ describe('Serializer options', () => {
             posts: collection()
               .model(postModel)
               .relationships({
-                author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
               })
               .create(),
           })

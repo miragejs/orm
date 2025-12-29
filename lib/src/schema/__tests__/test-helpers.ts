@@ -22,8 +22,16 @@ export interface CommentAttrs {
 }
 
 // Create test models
-export const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
-export const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
+export const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<UserAttrs>()
+  .create();
+export const postModel = model()
+  .name('post')
+  .collection('posts')
+  .attrs<PostAttrs>()
+  .create();
 export const commentModel = model()
   .name('comment')
   .collection('comments')

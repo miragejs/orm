@@ -37,7 +37,9 @@ export type DbQuery<TRecord extends DbRecord> =
  * Type for update operations
  * @template TRecord - The type of the record's attributes
  */
-export type DbUpdateInput<TRecord extends DbRecord> = TRecord['id'] | DbRecordInput<TRecord>;
+export type DbUpdateInput<TRecord extends DbRecord> =
+  | TRecord['id']
+  | DbRecordInput<TRecord>;
 
 /**
  * Type for database collections
@@ -67,7 +69,8 @@ export type DbCollectionsFromStaticData<TData> = {
  * Gets the data of a collection
  * @template T - The type of the collection
  */
-export type DbCollectionData<T> = T extends DbCollection<infer TAttrs> ? TAttrs[] : never;
+export type DbCollectionData<T> =
+  T extends DbCollection<infer TAttrs> ? TAttrs[] : never;
 
 /**
  * Configuration for creating a database collection
@@ -276,7 +279,9 @@ export type WhereHelperFns<TRecord> = {
  */
 export interface QueryOptions<TRecord> {
   /** Filter criteria - object DSL or callback function */
-  where?: Where<TRecord> | ((record: TRecord, helpers: WhereHelperFns<TRecord>) => boolean);
+  where?:
+    | Where<TRecord>
+    | ((record: TRecord, helpers: WhereHelperFns<TRecord>) => boolean);
   /** Sorting specification */
   orderBy?: OrderBy<TRecord>;
   /** Number of records to skip (offset pagination) */

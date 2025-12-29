@@ -2,7 +2,12 @@ import { collection } from '../CollectionBuilder';
 import { schema } from '../SchemaBuilder';
 import type { CollectionConfig } from '../types';
 
-import { postModel, userModel, type UserModel, type PostModel } from './test-helpers';
+import {
+  postModel,
+  userModel,
+  type UserModel,
+  type PostModel,
+} from './test-helpers';
 
 // Define shared schema type
 type TestSchema = {
@@ -62,10 +67,16 @@ describe('Schema with Seeds', () => {
             .model(userModel)
             .seeds({
               basic: (schema) => {
-                schema.users.create({ name: 'John', email: 'john@example.com' });
+                schema.users.create({
+                  name: 'John',
+                  email: 'john@example.com',
+                });
               },
               admin: (schema) => {
-                schema.users.create({ name: 'Admin', email: 'admin@example.com' });
+                schema.users.create({
+                  name: 'Admin',
+                  email: 'admin@example.com',
+                });
               },
             })
             .create(),
@@ -153,7 +164,10 @@ describe('Schema with Seeds', () => {
             .seeds({
               async: async (schema) => {
                 await Promise.resolve();
-                schema.users.create({ name: 'Async User', email: 'async@example.com' });
+                schema.users.create({
+                  name: 'Async User',
+                  email: 'async@example.com',
+                });
               },
             })
             .create(),
@@ -282,10 +296,16 @@ describe('Schema with Seeds', () => {
             .model(userModel)
             .seeds({
               default: (schema) => {
-                schema.users.create({ name: 'Default User', email: 'default@example.com' });
+                schema.users.create({
+                  name: 'Default User',
+                  email: 'default@example.com',
+                });
               },
               admin: (schema) => {
-                schema.users.create({ name: 'Admin', email: 'admin@example.com' });
+                schema.users.create({
+                  name: 'Admin',
+                  email: 'admin@example.com',
+                });
               },
             })
             .create(),
@@ -293,10 +313,16 @@ describe('Schema with Seeds', () => {
             .model(postModel)
             .seeds({
               default: (schema) => {
-                schema.posts.create({ title: 'Default Post', content: 'Default content' });
+                schema.posts.create({
+                  title: 'Default Post',
+                  content: 'Default content',
+                });
               },
               featured: (schema) => {
-                schema.posts.create({ title: 'Featured Post', content: 'Featured content' });
+                schema.posts.create({
+                  title: 'Featured Post',
+                  content: 'Featured content',
+                });
               },
             })
             .create(),
@@ -322,10 +348,16 @@ describe('Schema with Seeds', () => {
             .model(userModel)
             .seeds({
               default: (schema) => {
-                schema.users.create({ name: 'Default User', email: 'default@example.com' });
+                schema.users.create({
+                  name: 'Default User',
+                  email: 'default@example.com',
+                });
               },
               admin: (schema) => {
-                schema.users.create({ name: 'Admin', email: 'admin@example.com' });
+                schema.users.create({
+                  name: 'Admin',
+                  email: 'admin@example.com',
+                });
               },
             })
             .create(),
@@ -341,7 +373,10 @@ describe('Schema with Seeds', () => {
         .setup();
 
       // Load only default scenario for users using object syntax
-      await testSchema.loadSeeds({ collectionName: 'users', onlyDefault: true });
+      await testSchema.loadSeeds({
+        collectionName: 'users',
+        onlyDefault: true,
+      });
 
       const users = testSchema.users.all();
       expect(users.length).toBe(1);
@@ -358,7 +393,10 @@ describe('Schema with Seeds', () => {
           users: collection<TestSchema>()
             .model(userModel)
             .seeds((schema) => {
-              schema.users.create({ name: 'Function Seed', email: 'function@example.com' });
+              schema.users.create({
+                name: 'Function Seed',
+                email: 'function@example.com',
+              });
             })
             .create(),
         })
@@ -381,8 +419,14 @@ describe('Schema with Seeds', () => {
             users: collection<TestSchema>()
               .model(userModel)
               .seeds((schema) => {
-                schema.users.create({ name: 'John', email: 'john@example.com' });
-                schema.users.create({ name: 'Jane', email: 'jane@example.com' });
+                schema.users.create({
+                  name: 'John',
+                  email: 'john@example.com',
+                });
+                schema.users.create({
+                  name: 'Jane',
+                  email: 'jane@example.com',
+                });
               })
               .create(),
           })
@@ -403,7 +447,10 @@ describe('Schema with Seeds', () => {
             users: collection<TestSchema>()
               .model(userModel)
               .seeds((schema) => {
-                schema.users.create({ name: 'John', email: 'john@example.com' });
+                schema.users.create({
+                  name: 'John',
+                  email: 'john@example.com',
+                });
               })
               .create(),
           })
@@ -431,10 +478,16 @@ describe('Schema with Seeds', () => {
               .model(userModel)
               .seeds({
                 basic: (schema) => {
-                  schema.users.create({ name: 'John', email: 'john@example.com' });
+                  schema.users.create({
+                    name: 'John',
+                    email: 'john@example.com',
+                  });
                 },
                 admin: (schema) => {
-                  schema.users.create({ name: 'Admin', email: 'admin@example.com' });
+                  schema.users.create({
+                    name: 'Admin',
+                    email: 'admin@example.com',
+                  });
                 },
               })
               .create(),
@@ -461,10 +514,16 @@ describe('Schema with Seeds', () => {
               .model(userModel)
               .seeds({
                 basic: (schema) => {
-                  schema.users.create({ name: 'John', email: 'john@example.com' });
+                  schema.users.create({
+                    name: 'John',
+                    email: 'john@example.com',
+                  });
                 },
                 admin: (schema) => {
-                  schema.users.create({ name: 'Admin', email: 'admin@example.com' });
+                  schema.users.create({
+                    name: 'Admin',
+                    email: 'admin@example.com',
+                  });
                 },
               })
               .create(),
@@ -487,10 +546,16 @@ describe('Schema with Seeds', () => {
               .model(userModel)
               .seeds({
                 basic: (schema) => {
-                  schema.users.create({ name: 'John', email: 'john@example.com' });
+                  schema.users.create({
+                    name: 'John',
+                    email: 'john@example.com',
+                  });
                 },
                 admin: (schema) => {
-                  schema.users.create({ name: 'Admin', email: 'admin@example.com' });
+                  schema.users.create({
+                    name: 'Admin',
+                    email: 'admin@example.com',
+                  });
                 },
               })
               .create(),
@@ -513,7 +578,10 @@ describe('Schema with Seeds', () => {
               .model(userModel)
               .seeds({
                 basic: (schema) => {
-                  schema.users.create({ name: 'John', email: 'john@example.com' });
+                  schema.users.create({
+                    name: 'John',
+                    email: 'john@example.com',
+                  });
                 },
               })
               .create(),
@@ -544,7 +612,10 @@ describe('Schema with Seeds', () => {
             users: collection<TestSchema>()
               .model(userModel)
               .seeds((schema) => {
-                schema.users.create({ name: 'User', email: 'user@example.com' });
+                schema.users.create({
+                  name: 'User',
+                  email: 'user@example.com',
+                });
               })
               .create(),
             posts: collection<TestSchema>()

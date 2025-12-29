@@ -68,7 +68,10 @@ export default class QueryManager<TRecord extends DbRecord> {
    * @param predicate - The predicate object with field-value pairs
    * @returns True if all predicate fields match the record
    */
-  matchesPredicateObject(record: TRecord, predicate: Partial<TRecord>): boolean {
+  matchesPredicateObject(
+    record: TRecord,
+    predicate: Partial<TRecord>,
+  ): boolean {
     return Object.entries(predicate).every(
       ([key, value]) => String(record[key as keyof TRecord]) === String(value),
     );
@@ -89,7 +92,11 @@ export default class QueryManager<TRecord extends DbRecord> {
       const condition = fields[key];
 
       // Direct equality check or field operations
-      if (condition !== null && typeof condition === 'object' && !Array.isArray(condition)) {
+      if (
+        condition !== null &&
+        typeof condition === 'object' &&
+        !Array.isArray(condition)
+      ) {
         if (!this._matchesField(fieldValue, condition as FieldOps<unknown>)) {
           return false;
         }
@@ -102,12 +109,18 @@ export default class QueryManager<TRecord extends DbRecord> {
     }
 
     // Logical AND
-    if (Array.isArray(AND) && !AND.every((w: Where<TRecord>) => this.matchesWhere(record, w))) {
+    if (
+      Array.isArray(AND) &&
+      !AND.every((w: Where<TRecord>) => this.matchesWhere(record, w))
+    ) {
       return false;
     }
 
     // Logical OR
-    if (Array.isArray(OR) && !OR.some((w: Where<TRecord>) => this.matchesWhere(record, w))) {
+    if (
+      Array.isArray(OR) &&
+      !OR.some((w: Where<TRecord>) => this.matchesWhere(record, w))
+    ) {
       return false;
     }
 
@@ -130,7 +143,8 @@ export default class QueryManager<TRecord extends DbRecord> {
     if ('eq' in ops && value !== ops.eq) return false;
     if ('ne' in ops && value === ops.ne) return false;
     if ('in' in ops && ops.in && !ops.in.includes(value as never)) return false;
-    if ('nin' in ops && ops.nin && ops.nin.includes(value as never)) return false;
+    if ('nin' in ops && ops.nin && ops.nin.includes(value as never))
+      return false;
     if ('isNull' in ops) {
       const isNull = value == null;
       if (ops.isNull && !isNull) return false;
@@ -138,13 +152,41 @@ export default class QueryManager<TRecord extends DbRecord> {
     }
 
     // Range operations
-    if ('lt' in ops && ops.lt != null && !this._compareValues(value, ops.lt, '<')) return false;
-    if ('lte' in ops && ops.lte != null && !this._compareValues(value, ops.lte, '<=')) return false;
-    if ('gt' in ops && ops.gt != null && !this._compareValues(value, ops.gt, '>')) return false;
-    if ('gte' in ops && ops.gte != null && !this._compareValues(value, ops.gte, '>=')) return false;
-    if ('between' in ops && ops.between && Array.isArray(ops.between) && ops.between.length === 2) {
+    if (
+      'lt' in ops &&
+      ops.lt != null &&
+      !this._compareValues(value, ops.lt, '<')
+    )
+      return false;
+    if (
+      'lte' in ops &&
+      ops.lte != null &&
+      !this._compareValues(value, ops.lte, '<=')
+    )
+      return false;
+    if (
+      'gt' in ops &&
+      ops.gt != null &&
+      !this._compareValues(value, ops.gt, '>')
+    )
+      return false;
+    if (
+      'gte' in ops &&
+      ops.gte != null &&
+      !this._compareValues(value, ops.gte, '>=')
+    )
+      return false;
+    if (
+      'between' in ops &&
+      ops.between &&
+      Array.isArray(ops.between) &&
+      ops.between.length === 2
+    ) {
       const [min, max] = ops.between;
-      if (!this._compareValues(value, min, '>=') || !this._compareValues(value, max, '<=')) {
+      if (
+        !this._compareValues(value, min, '>=') ||
+        !this._compareValues(value, max, '<=')
+      ) {
         return false;
       }
     }
@@ -178,7 +220,8 @@ export default class QueryManager<TRecord extends DbRecord> {
       }
     }
     if ('length' in ops && ops.length && Array.isArray(value)) {
-      if (!this._matchesField(value.length, ops.length as FieldOps<unknown>)) return false;
+      if (!this._matchesField(value.length, ops.length as FieldOps<unknown>))
+        return false;
     }
 
     return true;
@@ -191,7 +234,11 @@ export default class QueryManager<TRecord extends DbRecord> {
    * @param op - Comparison operator
    * @returns True if the comparison holds
    */
-  private _compareValues(a: unknown, b: unknown, op: '<' | '<=' | '>' | '>='): boolean {
+  private _compareValues(
+    a: unknown,
+    b: unknown,
+    op: '<' | '<=' | '>' | '>=',
+  ): boolean {
     // Handle null/undefined
     if (a == null || b == null) return false;
 
@@ -244,20 +291,24 @@ export default class QueryManager<TRecord extends DbRecord> {
    * @param orderBy - Order specification
    * @returns Sorted records
    */
-  private _applyOrder(records: TRecord[], orderBy: OrderBy<TRecord>): TRecord[] {
+  private _applyOrder(
+    records: TRecord[],
+    orderBy: OrderBy<TRecord>,
+  ): TRecord[] {
     // Convert orderBy to array of [field, direction] tuples
-    const pairs: Array<readonly [keyof TRecord, 'asc' | 'desc']> = Array.isArray(orderBy)
-      ? orderBy
-      : (() => {
-          const result: Array<[keyof TRecord, 'asc' | 'desc']> = [];
-          for (const key in orderBy) {
-            const direction = orderBy[key];
-            if (direction) {
-              result.push([key as keyof TRecord, direction]);
+    const pairs: Array<readonly [keyof TRecord, 'asc' | 'desc']> =
+      Array.isArray(orderBy)
+        ? orderBy
+        : (() => {
+            const result: Array<[keyof TRecord, 'asc' | 'desc']> = [];
+            for (const key in orderBy) {
+              const direction = orderBy[key];
+              if (direction) {
+                result.push([key as keyof TRecord, direction]);
+              }
             }
-          }
-          return result;
-        })();
+            return result;
+          })();
 
     return [...records].sort((a, b) => {
       for (const [field, direction] of pairs) {
@@ -297,18 +348,19 @@ export default class QueryManager<TRecord extends DbRecord> {
     orderBy: OrderBy<TRecord>,
     cursor: Partial<TRecord>,
   ): TRecord[] {
-    const pairs: Array<readonly [keyof TRecord, 'asc' | 'desc']> = Array.isArray(orderBy)
-      ? orderBy
-      : (() => {
-          const result: Array<[keyof TRecord, 'asc' | 'desc']> = [];
-          for (const key in orderBy) {
-            const direction = orderBy[key];
-            if (direction) {
-              result.push([key as keyof TRecord, direction]);
+    const pairs: Array<readonly [keyof TRecord, 'asc' | 'desc']> =
+      Array.isArray(orderBy)
+        ? orderBy
+        : (() => {
+            const result: Array<[keyof TRecord, 'asc' | 'desc']> = [];
+            for (const key in orderBy) {
+              const direction = orderBy[key];
+              if (direction) {
+                result.push([key as keyof TRecord, direction]);
+              }
             }
-          }
-          return result;
-        })();
+            return result;
+          })();
 
     return records.filter((record) => {
       for (const [field, direction] of pairs) {
@@ -357,13 +409,21 @@ export default class QueryManager<TRecord extends DbRecord> {
       eq: (value, compareWith) => value === compareWith,
       ne: (value, compareWith) => value !== compareWith,
       gt: (value, compareWith) =>
-        value != null && compareWith != null && (value as Primitive) > (compareWith as Primitive),
+        value != null &&
+        compareWith != null &&
+        (value as Primitive) > (compareWith as Primitive),
       gte: (value, compareWith) =>
-        value != null && compareWith != null && (value as Primitive) >= (compareWith as Primitive),
+        value != null &&
+        compareWith != null &&
+        (value as Primitive) >= (compareWith as Primitive),
       lt: (value, compareWith) =>
-        value != null && compareWith != null && (value as Primitive) < (compareWith as Primitive),
+        value != null &&
+        compareWith != null &&
+        (value as Primitive) < (compareWith as Primitive),
       lte: (value, compareWith) =>
-        value != null && compareWith != null && (value as Primitive) <= (compareWith as Primitive),
+        value != null &&
+        compareWith != null &&
+        (value as Primitive) <= (compareWith as Primitive),
       between: (value, min, max) =>
         value != null &&
         min != null &&

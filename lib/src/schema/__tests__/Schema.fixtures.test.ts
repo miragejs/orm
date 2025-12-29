@@ -4,7 +4,12 @@ import { collection } from '../CollectionBuilder';
 import { schema } from '../SchemaBuilder';
 import type { CollectionConfig } from '../types';
 
-import { userModel, postModel, type UserModel, type PostModel } from './test-helpers';
+import {
+  userModel,
+  postModel,
+  type UserModel,
+  type PostModel,
+} from './test-helpers';
 
 // Define shared schema type
 type TestSchema = {
@@ -20,7 +25,10 @@ describe('Schema with Fixtures', () => {
         { id: '2', name: 'Jane', email: 'jane@example.com' },
       ];
 
-      const usersCollection = collection<TestSchema>().model(userModel).fixtures(fixtures).create();
+      const usersCollection = collection<TestSchema>()
+        .model(userModel)
+        .fixtures(fixtures)
+        .create();
 
       expect(usersCollection.fixtures).toBeDefined();
       expect(usersCollection.fixtures?.records).toEqual(fixtures);
@@ -43,7 +51,10 @@ describe('Schema with Fixtures', () => {
 
       const testSchema = schema()
         .collections({
-          users: collection<TestSchema>().model(userModel).fixtures(fixtures).create(),
+          users: collection<TestSchema>()
+            .model(userModel)
+            .fixtures(fixtures)
+            .create(),
         })
         .setup();
 
@@ -128,9 +139,12 @@ describe('Schema with Fixtures', () => {
           .collections({
             users: collection<TestSchema>()
               .model(userModel)
-              .fixtures([{ id: '1', name: 'User', email: 'user@example.com' }], {
-                strategy: 'auto',
-              })
+              .fixtures(
+                [{ id: '1', name: 'User', email: 'user@example.com' }],
+                {
+                  strategy: 'auto',
+                },
+              )
               .create(),
             posts: collection<TestSchema>()
               .model(postModel)
@@ -176,7 +190,10 @@ describe('Schema with Fixtures', () => {
     describe('with empty fixtures array', () => {
       const testSchema = schema()
         .collections({
-          users: collection<TestSchema>().model(userModel).fixtures([]).create(),
+          users: collection<TestSchema>()
+            .model(userModel)
+            .fixtures([])
+            .create(),
         })
         .setup();
 
@@ -202,7 +219,10 @@ describe('Schema with Fixtures', () => {
 
         const testSchema = schema()
           .collections({
-            users: collection<TestSchema>().model(userModel).fixtures(manyFixtures).create(),
+            users: collection<TestSchema>()
+              .model(userModel)
+              .fixtures(manyFixtures)
+              .create(),
           })
           .setup();
 
@@ -278,13 +298,18 @@ describe('Schema with Fixtures', () => {
         .collections({
           users: collection<TestSchema>()
             .model(userModel)
-            .fixtures([{ id: '1', name: 'Auto User', email: 'auto@example.com' }], {
-              strategy: 'auto',
-            })
+            .fixtures(
+              [{ id: '1', name: 'Auto User', email: 'auto@example.com' }],
+              {
+                strategy: 'auto',
+              },
+            )
             .create(),
           posts: collection<TestSchema>()
             .model(postModel)
-            .fixtures([{ id: 1, title: 'Manual Post', content: 'Manual content' }])
+            .fixtures([
+              { id: 1, title: 'Manual Post', content: 'Manual content' },
+            ])
             .create(),
         })
         .setup();
@@ -421,9 +446,18 @@ describe('Schema with Fixtures', () => {
         .collections({
           users: collection<TestSchema>()
             .model(userModel)
-            .fixtures([{ id: 'fixture-1', name: 'Fixture User', email: 'fixture@example.com' }])
+            .fixtures([
+              {
+                id: 'fixture-1',
+                name: 'Fixture User',
+                email: 'fixture@example.com',
+              },
+            ])
             .seeds((schema) => {
-              schema.users.create({ name: 'Seed User', email: 'seed@example.com' });
+              schema.users.create({
+                name: 'Seed User',
+                email: 'seed@example.com',
+              });
             })
             .create(),
         })
@@ -450,7 +484,9 @@ describe('Schema with Fixtures', () => {
         .collections({
           users: collection<TestSchema>()
             .model(userModel)
-            .fixtures([{ id: '1', name: 'Fixture', email: 'fixture@example.com' }])
+            .fixtures([
+              { id: '1', name: 'Fixture', email: 'fixture@example.com' },
+            ])
             .seeds((schema) => {
               schema.users.create({ name: 'Seed', email: 'seed@example.com' });
             })
@@ -502,10 +538,16 @@ describe('Schema with Fixtures', () => {
         .setup();
 
       // Insert a record with ID '1'
-      testSchema.users.create({ id: '1', name: 'Existing', email: 'existing@example.com' });
+      testSchema.users.create({
+        id: '1',
+        name: 'Existing',
+        email: 'existing@example.com',
+      });
 
       // Try to load fixtures (which includes ID '1')
-      await expect(testSchema.users.loadFixtures()).rejects.toThrow(MirageError);
+      await expect(testSchema.users.loadFixtures()).rejects.toThrow(
+        MirageError,
+      );
 
       await expect(testSchema.users.loadFixtures()).rejects.toThrow(
         `Cannot load fixtures for 'users': ID conflicts detected`,

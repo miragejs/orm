@@ -5,7 +5,11 @@
  * Run: pnpm test:types
  */
 
-import type { IdGenerator, IdType, IdentityManagerConfig } from '@src/id-manager';
+import type {
+  IdGenerator,
+  IdType,
+  IdentityManagerConfig,
+} from '@src/id-manager';
 import { expectTypeOf, test } from 'vitest';
 
 test('IdType should be string or number', () => {
@@ -28,7 +32,8 @@ test('IdGenerator with string should work correctly', () => {
 
 test('IdGenerator with number should work correctly', () => {
   const genNumber: IdGenerator<number> = (currentId) => Date.now();
-  const genRandom: IdGenerator<number> = (currentId) => Math.floor(Math.random() * 1000000);
+  const genRandom: IdGenerator<number> = (currentId) =>
+    Math.floor(Math.random() * 1000000);
 
   expectTypeOf(genNumber(1)).toEqualTypeOf<number>();
   expectTypeOf(genRandom(1)).toEqualTypeOf<number>();

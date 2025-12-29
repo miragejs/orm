@@ -1,4 +1,9 @@
-import type { DbCollection, DbRecordInput, QueryOptions, WhereHelperFns } from '@src/db';
+import type {
+  DbCollection,
+  DbRecordInput,
+  QueryOptions,
+  WhereHelperFns,
+} from '@src/db';
 import { Factory } from '@src/factory';
 import type { IdentityManager } from '@src/id-manager';
 import {
@@ -34,7 +39,11 @@ export abstract class BaseCollection<
   TSchema extends SchemaCollections = SchemaCollections,
   TTemplate extends ModelTemplate = ModelTemplate,
   TRelationships extends ModelRelationships = {},
-  TFactory extends Factory<TTemplate, string, TSchema> = Factory<TTemplate, string, TSchema>,
+  TFactory extends Factory<TTemplate, string, TSchema> = Factory<
+    TTemplate,
+    string,
+    TSchema
+  >,
 > {
   readonly template: TTemplate;
   readonly modelName: string;
@@ -42,7 +51,9 @@ export abstract class BaseCollection<
 
   public readonly Model: ModelClass<TTemplate, TSchema>;
   public readonly dbCollection: DbCollection<ModelAttrs<TTemplate, TSchema>>;
-  public readonly identityManager: IdentityManager<ModelAttrs<TTemplate, TSchema>['id']>;
+  public readonly identityManager: IdentityManager<
+    ModelAttrs<TTemplate, TSchema>['id']
+  >;
   public readonly relationships?: TRelationships;
   public readonly serializer?: Serializer<
     TTemplate,
@@ -105,7 +116,8 @@ export abstract class BaseCollection<
     this._logger?.debug(`Collection '${this.collectionName}' initialized`, {
       modelName: this.modelName,
       hasFactory: !!factory,
-      hasRelationships: !!relationships && Object.keys(relationships).length > 0,
+      hasRelationships:
+        !!relationships && Object.keys(relationships).length > 0,
       hasSeeds: !!seeds,
       hasFixtures: !!fixtures,
     });
@@ -172,7 +184,11 @@ export abstract class BaseCollection<
       | QueryOptions<ModelAttrs<TTemplate, TSchema>>,
   ): ModelInstance<TTemplate, TSchema> | null {
     // Handle QueryOptions with callback where clause
-    if (typeof input === 'object' && 'where' in input && typeof input.where === 'function') {
+    if (
+      typeof input === 'object' &&
+      'where' in input &&
+      typeof input.where === 'function'
+    ) {
       const queryOptions = this._convertQueryOptionsCallback(input);
       const record = this.dbCollection.find(queryOptions);
       return record ? this._createModelFromRecord(record) : null;
@@ -214,10 +230,16 @@ export abstract class BaseCollection<
       | QueryOptions<ModelAttrs<TTemplate, TSchema>>,
   ): ModelCollection<TTemplate, TSchema> {
     // Handle QueryOptions with callback where clause
-    if (typeof input === 'object' && 'where' in input && typeof input.where === 'function') {
+    if (
+      typeof input === 'object' &&
+      'where' in input &&
+      typeof input.where === 'function'
+    ) {
       const queryOptions = this._convertQueryOptionsCallback(input);
       const records = this.dbCollection.findMany(queryOptions);
-      const models = records.map((record) => this._createModelFromRecord(record));
+      const models = records.map((record) =>
+        this._createModelFromRecord(record),
+      );
       return new ModelCollection(this.template, models, this.serializer);
     }
 
@@ -260,7 +282,11 @@ export abstract class BaseCollection<
       | QueryOptions<ModelAttrs<TTemplate, TSchema>>,
   ): number {
     // Handle QueryOptions with callback where clause
-    if (typeof input === 'object' && 'where' in input && typeof input.where === 'function') {
+    if (
+      typeof input === 'object' &&
+      'where' in input &&
+      typeof input.where === 'function'
+    ) {
       const queryOptions = this._convertQueryOptionsCallback(input);
       return this.dbCollection.deleteMany(queryOptions);
     }
@@ -312,7 +338,10 @@ export abstract class BaseCollection<
   ): ModelInstance<TTemplate, TSchema> {
     return new this.Model({
       attrs: record as ModelCreateAttrs<TTemplate, TSchema>,
-      relationships: this.relationships as unknown as RelationshipsByTemplate<TTemplate, TSchema>,
+      relationships: this.relationships as unknown as RelationshipsByTemplate<
+        TTemplate,
+        TSchema
+      >,
       schema: this._schema,
       serializer: this.serializer,
     } as unknown as ModelConfig<
@@ -336,8 +365,8 @@ export abstract class BaseCollection<
         identityManager: identityManager,
       });
     }
-    return this._schema.db.getCollection(this.template.collectionName) as unknown as DbCollection<
-      ModelAttrs<TTemplate, TSchema>
-    >;
+    return this._schema.db.getCollection(
+      this.template.collectionName,
+    ) as unknown as DbCollection<ModelAttrs<TTemplate, TSchema>>;
   }
 }

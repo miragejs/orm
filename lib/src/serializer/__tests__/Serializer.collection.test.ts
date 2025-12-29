@@ -29,7 +29,11 @@ type PostsJSON = {
 };
 
 // Create base model templates with default JSON types
-const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
+const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<UserAttrs>()
+  .create();
 
 const postModel = model()
   .name('post')
@@ -142,12 +146,18 @@ describe('Serializer - Collection serialization', () => {
             .relationships({
               posts: associations.hasMany(postModel),
             })
-            .serializer({ select: ['id', 'name'], with: ['posts'], relationsMode: 'embedded' })
+            .serializer({
+              select: ['id', 'name'],
+              with: ['posts'],
+              relationsMode: 'embedded',
+            })
             .create(),
           posts: collection()
             .model(postModel)
             .relationships({
-              author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+              author: associations.belongsTo(userModel, {
+                foreignKey: 'authorId',
+              }),
             })
             .create(),
         })
@@ -223,7 +233,9 @@ describe('Serializer - Collection serialization', () => {
           posts: collection()
             .model(postModel)
             .relationships({
-              author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+              author: associations.belongsTo(userModel, {
+                foreignKey: 'authorId',
+              }),
             })
             .create(),
         })
@@ -274,8 +286,16 @@ describe('Serializer - Collection serialization', () => {
           })
           .setup();
 
-        testSchema.users.create({ name: 'Alice', email: 'alice@example.com', password: 'secret' });
-        testSchema.users.create({ name: 'Bob', email: 'bob@example.com', password: 'secret' });
+        testSchema.users.create({
+          name: 'Alice',
+          email: 'alice@example.com',
+          password: 'secret',
+        });
+        testSchema.users.create({
+          name: 'Bob',
+          email: 'bob@example.com',
+          password: 'secret',
+        });
 
         const users = testSchema.users.all();
         const json = users.serialize();
@@ -298,8 +318,16 @@ describe('Serializer - Collection serialization', () => {
           })
           .setup();
 
-        testSchema.users.create({ name: 'Alice', email: 'alice@example.com', password: 'secret' });
-        testSchema.users.create({ name: 'Bob', email: 'bob@example.com', password: 'secret' });
+        testSchema.users.create({
+          name: 'Alice',
+          email: 'alice@example.com',
+          password: 'secret',
+        });
+        testSchema.users.create({
+          name: 'Bob',
+          email: 'bob@example.com',
+          password: 'secret',
+        });
 
         const users = testSchema.users.all();
         const json = users.serialize({ select: ['id', 'name'] });
@@ -320,8 +348,16 @@ describe('Serializer - Collection serialization', () => {
           })
           .setup();
 
-        testSchema.users.create({ name: 'Alice', email: 'alice@example.com', password: 'secret' });
-        testSchema.users.create({ name: 'Bob', email: 'bob@example.com', password: 'secret' });
+        testSchema.users.create({
+          name: 'Alice',
+          email: 'alice@example.com',
+          password: 'secret',
+        });
+        testSchema.users.create({
+          name: 'Bob',
+          email: 'bob@example.com',
+          password: 'secret',
+        });
 
         const users = testSchema.users.all();
         const json = users.serialize({ root: true });
@@ -344,7 +380,11 @@ describe('Serializer - Collection serialization', () => {
           })
           .setup();
 
-        testSchema.users.create({ name: 'Alice', email: 'alice@example.com', password: 'secret' });
+        testSchema.users.create({
+          name: 'Alice',
+          email: 'alice@example.com',
+          password: 'secret',
+        });
 
         const users = testSchema.users.all();
         const json = users.serialize({ root: 'people' });
@@ -357,7 +397,10 @@ describe('Serializer - Collection serialization', () => {
       it('should merge multiple option overrides at method level', () => {
         const testSchema = schema()
           .collections({
-            users: collection().model(userModel).serializer({ root: false }).create(),
+            users: collection()
+              .model(userModel)
+              .serializer({ root: false })
+              .create(),
           })
           .setup();
 
@@ -369,7 +412,10 @@ describe('Serializer - Collection serialization', () => {
         });
 
         const users = testSchema.users.all();
-        const json = users.serialize({ select: ['id', 'name'], root: 'people' });
+        const json = users.serialize({
+          select: ['id', 'name'],
+          root: 'people',
+        });
 
         expect(json).toEqual({
           people: [{ id: '1', name: 'Alice' }],
@@ -385,15 +431,33 @@ describe('Serializer - Collection serialization', () => {
           })
           .setup();
 
-        testSchema.users.create({ name: 'Alice', email: 'alice@example.com', password: 'secret' });
-        testSchema.users.create({ name: 'Bob', email: 'bob@example.com', password: 'secret' });
+        testSchema.users.create({
+          name: 'Alice',
+          email: 'alice@example.com',
+          password: 'secret',
+        });
+        testSchema.users.create({
+          name: 'Bob',
+          email: 'bob@example.com',
+          password: 'secret',
+        });
 
         const users = testSchema.users.all();
         const json = users.serialize();
 
         expect(json).toEqual([
-          { id: '1', name: 'Alice', email: 'alice@example.com', password: 'secret' },
-          { id: '2', name: 'Bob', email: 'bob@example.com', password: 'secret' },
+          {
+            id: '1',
+            name: 'Alice',
+            email: 'alice@example.com',
+            password: 'secret',
+          },
+          {
+            id: '2',
+            name: 'Bob',
+            email: 'bob@example.com',
+            password: 'secret',
+          },
         ]);
       });
 
@@ -404,7 +468,11 @@ describe('Serializer - Collection serialization', () => {
           })
           .setup();
 
-        testSchema.users.create({ name: 'Alice', email: 'alice@example.com', password: 'secret' });
+        testSchema.users.create({
+          name: 'Alice',
+          email: 'alice@example.com',
+          password: 'secret',
+        });
 
         const users = testSchema.users.all();
         const json = users.serialize({ select: ['id', 'name'], root: true });

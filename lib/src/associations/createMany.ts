@@ -16,7 +16,10 @@ import type {
  * @param traitsAndDefaults - Traits and/or defaults to apply (variadic) - trait names are validated against schema
  * @returns The create many association
  */
-export default function createMany<TSchema extends SchemaCollections, TModel extends ModelTemplate>(
+export default function createMany<
+  TSchema extends SchemaCollections,
+  TModel extends ModelTemplate,
+>(
   model: TModel,
   count: number,
   ...traitsAndDefaults: TypedAssociationTraitsAndDefaults<TSchema, TModel>
@@ -44,7 +47,10 @@ export default function createMany<TModel extends ModelTemplate>(
  * @param models - Array of traits/defaults for each model - trait names are validated against schema
  * @returns The create many association
  */
-export default function createMany<TSchema extends SchemaCollections, TModel extends ModelTemplate>(
+export default function createMany<
+  TSchema extends SchemaCollections,
+  TModel extends ModelTemplate,
+>(
   model: TModel,
   models: TypedAssociationTraitsAndDefaults<TSchema, TModel>[],
 ): CreateManyAssociation<TModel>;

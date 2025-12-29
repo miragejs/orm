@@ -57,9 +57,19 @@ export default class ModelBuilder<
    */
   name<T extends string>(
     modelName: T,
-  ): ModelBuilder<TModelAttrs, T, TCollectionName, TSerializedModel, TSerializedCollection> {
+  ): ModelBuilder<
+    TModelAttrs,
+    T,
+    TCollectionName,
+    TSerializedModel,
+    TSerializedCollection
+  > {
     // Validate model name
-    if (!modelName || typeof modelName !== 'string' || modelName.trim() === '') {
+    if (
+      !modelName ||
+      typeof modelName !== 'string' ||
+      modelName.trim() === ''
+    ) {
       throw new MirageError('Model name must be a non-empty string.');
     }
 
@@ -87,9 +97,19 @@ export default class ModelBuilder<
    */
   collection<T extends string>(
     collectionName: T,
-  ): ModelBuilder<TModelAttrs, TModelName, T, TSerializedModel, TSerializedCollection> {
+  ): ModelBuilder<
+    TModelAttrs,
+    TModelName,
+    T,
+    TSerializedModel,
+    TSerializedCollection
+  > {
     // Validate collection name
-    if (!collectionName || typeof collectionName !== 'string' || collectionName.trim() === '') {
+    if (
+      !collectionName ||
+      typeof collectionName !== 'string' ||
+      collectionName.trim() === ''
+    ) {
       throw new MirageError('Collection name must be a non-empty string.');
     }
 
@@ -119,7 +139,13 @@ export default class ModelBuilder<
    * const builder = model().name('user').collection('users').attrs<UserAttrs>();
    * ```
    */
-  attrs<T extends { id: any }>(): ModelBuilder<T, TModelName, TCollectionName, T, T[]> {
+  attrs<T extends { id: any }>(): ModelBuilder<
+    T,
+    TModelName,
+    TCollectionName,
+    T,
+    T[]
+  > {
     const builder = new ModelBuilder<T, TModelName, TCollectionName, T, T[]>();
     builder._modelName = this._modelName as TModelName;
     builder._collectionName = this._collectionName as TCollectionName;
@@ -199,10 +225,14 @@ export default class ModelBuilder<
     };
   } {
     if (!this._modelName) {
-      throw new MirageError('Model name is required. Call .name() before .create()');
+      throw new MirageError(
+        'Model name is required. Call .name() before .create()',
+      );
     }
     if (!this._collectionName) {
-      throw new MirageError('Collection name is required. Call .collection() before .create()');
+      throw new MirageError(
+        'Collection name is required. Call .collection() before .create()',
+      );
     }
 
     return {

@@ -43,7 +43,9 @@ export type SelectObject<T extends ModelTemplate> = Partial<
 /**
  * Select option - array or object format
  */
-export type SelectOption<T extends ModelTemplate> = SelectArray<T> | SelectObject<T>;
+export type SelectOption<T extends ModelTemplate> =
+  | SelectArray<T>
+  | SelectObject<T>;
 
 // -- With Option Types --
 
@@ -53,7 +55,9 @@ export type SelectOption<T extends ModelTemplate> = SelectArray<T> | SelectObjec
  * - Only select and with (boolean only) are available
  * @template T - The model template
  */
-export interface NestedSerializerOptions<T extends ModelTemplate = ModelTemplate> {
+export interface NestedSerializerOptions<
+  T extends ModelTemplate = ModelTemplate,
+> {
   /**
    * Attribute selection for the related model
    * Uses string[] for flexibility with nested relationships
@@ -86,7 +90,9 @@ export type WithValue<T extends ModelTemplate = ModelTemplate> =
  * @example with: { posts: true, comments: false } // include posts, exclude comments
  * @example with: { posts: { select: ['id', 'title'] } } // include posts with only id and title
  */
-export type WithOption<TRelationships extends ModelRelationships = ModelRelationships> =
+export type WithOption<
+  TRelationships extends ModelRelationships = ModelRelationships,
+> =
   | (keyof TRelationships)[]
   | Partial<Record<keyof TRelationships, WithValue<any>>>;
 

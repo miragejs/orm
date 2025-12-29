@@ -18,7 +18,11 @@ interface UserAttrs {
 }
 
 // Create test models
-const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
+const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<UserAttrs>()
+  .create();
 
 // Define test model type
 type UserModel = typeof userModel;
@@ -32,7 +36,11 @@ const testSchema = schema()
 
 // Define test schema type
 type TestSchema = {
-  users: CollectionConfig<UserModel, {}, Factory<UserModel, 'admin' | 'premium'>>;
+  users: CollectionConfig<
+    UserModel,
+    {},
+    Factory<UserModel, 'admin' | 'premium'>
+  >;
 };
 
 describe('FactoryBuilder', () => {
@@ -287,7 +295,12 @@ describe('FactoryBuilder', () => {
       const postModel = model()
         .name('post')
         .collection('posts')
-        .attrs<{ id: string; title: string; authorId?: string; editorId?: string }>()
+        .attrs<{
+          id: string;
+          title: string;
+          authorId?: string;
+          editorId?: string;
+        }>()
         .create();
 
       type PostTestSchema = {

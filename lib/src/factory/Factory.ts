@@ -9,11 +9,20 @@ import {
   type PartialModelAttrs,
   type RelationshipsByTemplate,
 } from '@src/model';
-import type { Collection, SchemaCollections, SchemaInstance } from '@src/schema';
+import type {
+  Collection,
+  SchemaCollections,
+  SchemaInstance,
+} from '@src/schema';
 import { MirageError } from '@src/utils';
 
 import AssociationsManager from './AssociationsManager';
-import type { FactoryAttrs, FactoryAfterCreateHook, ModelTraits, TraitDefinition } from './types';
+import type {
+  FactoryAttrs,
+  FactoryAfterCreateHook,
+  ModelTraits,
+  TraitDefinition,
+} from './types';
 
 // TODO: Review types to make them more precise
 /**
@@ -33,7 +42,10 @@ export default class Factory<
   readonly associations?: FactoryAssociations<TTemplate, TSchema>;
   readonly afterCreate?: FactoryAfterCreateHook<TSchema, TTemplate>;
 
-  private readonly _associationsManager: AssociationsManager<TTemplate, TSchema>;
+  private readonly _associationsManager: AssociationsManager<
+    TTemplate,
+    TSchema
+  >;
 
   constructor(
     template: TTemplate,
@@ -69,16 +81,22 @@ export default class Factory<
     // 1. Get collection from schema using template's collectionName
     const collection = schema[
       this.template.collectionName as keyof TSchema
-    ] as unknown as Collection<TSchema, TTemplate, RelationshipsByTemplate<TTemplate, TSchema>>;
+    ] as unknown as Collection<
+      TSchema,
+      TTemplate,
+      RelationshipsByTemplate<TTemplate, TSchema>
+    >;
 
     // 2. Extract defaults and process attributes
-    const { defaults, traitNames } = this._processTraitsAndDefaults(...traitsAndDefaults);
+    const { defaults, traitNames } = this._processTraitsAndDefaults(
+      ...traitsAndDefaults,
+    );
 
     // 3. Extract model attributes and relationship updates
-    const { modelAttrs, relationshipUpdates } = Model.processAttrs<TTemplate, TSchema>(
-      defaults,
-      collection.relationships,
-    );
+    const { modelAttrs, relationshipUpdates } = Model.processAttrs<
+      TTemplate,
+      TSchema
+    >(defaults, collection.relationships);
 
     // 4. Evaluate and get ID
     const nextId = modelAttrs.id ?? collection.dbCollection.nextId;
@@ -99,7 +117,10 @@ export default class Factory<
     const associations = this._getAssociations(traitNames, relationshipUpdates);
 
     // 8. Process the filtered associations
-    const relationshipValues = this._associationsManager.processAssociations(schema, associations);
+    const relationshipValues = this._associationsManager.processAssociations(
+      schema,
+      associations,
+    );
 
     // 10. Merge: associations override factory attrs, but user-provided relationship values take precedence
     const mergedAttrs = {
@@ -146,10 +167,12 @@ export default class Factory<
 
     // Execute hooks with the properly typed model instance and schema
     hooks.forEach((hook) => {
-      (hook as (model: ModelInstance<TTemplate, TSchema>, schema: SchemaInstance<TSchema>) => void)(
-        model,
-        schema,
-      );
+      (
+        hook as (
+          model: ModelInstance<TTemplate, TSchema>,
+          schema: SchemaInstance<TSchema>,
+        ) => void
+      )(model, schema);
     });
 
     return model;
@@ -185,12 +208,17 @@ export default class Factory<
     );
   }
 
-  private _collectTraitAttributes(traitNames: string[]): PartialModelAttrs<TTemplate> {
+  private _collectTraitAttributes(
+    traitNames: string[],
+  ): PartialModelAttrs<TTemplate> {
     return traitNames.reduce((traitAttributes, name) => {
       const trait = this.traits?.[name as TTraits];
 
       if (trait) {
-        const { afterCreate: _, ...extension } = trait as TraitDefinition<TTemplate, TSchema>;
+        const { afterCreate: _, ...extension } = trait as TraitDefinition<
+          TTemplate,
+          TSchema
+        >;
         return { ...traitAttributes, ...extension };
       }
 
@@ -313,7 +341,8 @@ export default class Factory<
         const typedTrait = trait as TraitDefinition<TTemplate, TSchema>;
 
         for (const key in typedTrait) {
-          const value = typedTrait[key as keyof TraitDefinition<TTemplate, TSchema>];
+          const value =
+            typedTrait[key as keyof TraitDefinition<TTemplate, TSchema>];
 
           if (this._isAssociation(value)) {
             associations[key] = value;
@@ -332,8 +361,9 @@ export default class Factory<
       // Skip if user provided a value for this relationship (model instance or FK)
       // relationshipUpdates contains entries like { author: '123' } or { posts: ['1', '2'] }
       if (!(relationshipName in relationshipUpdates)) {
-        filtered[relationshipName as keyof FactoryAssociations<TTemplate, TSchema>] =
-          associations[relationshipName];
+        filtered[
+          relationshipName as keyof FactoryAssociations<TTemplate, TSchema>
+        ] = associations[relationshipName];
       }
     }
 

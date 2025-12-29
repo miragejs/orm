@@ -35,7 +35,9 @@ export default function hasMany<
   opts?: TOpts,
 ): HasMany<
   TTarget,
-  TOpts extends { foreignKey: infer F extends string } ? F : `${ModelNameFor<TTarget>}Ids`
+  TOpts extends { foreignKey: infer F extends string }
+    ? F
+    : `${ModelNameFor<TTarget>}Ids`
 > {
   type ForeignKey = TOpts extends { foreignKey: infer F extends string }
     ? F

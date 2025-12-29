@@ -23,8 +23,16 @@ interface PostAttrs {
 }
 
 // Create test models
-const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
-const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
+const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<UserAttrs>()
+  .create();
+const postModel = model()
+  .name('post')
+  .collection('posts')
+  .attrs<PostAttrs>()
+  .create();
 
 // Create test factory
 const userFactory = factory()
@@ -56,7 +64,9 @@ describe('CollectionBuilder', () => {
     });
 
     it('should allow method chaining with model() and factory()', () => {
-      const builder = new CollectionBuilder().model(userModel).factory(userFactory);
+      const builder = new CollectionBuilder()
+        .model(userModel)
+        .factory(userFactory);
       expect(builder).toBeInstanceOf(CollectionBuilder);
     });
 
@@ -110,7 +120,10 @@ describe('CollectionBuilder', () => {
 
     it('should throw error if model is not set even with other configs', () => {
       expect(() => {
-        new CollectionBuilder().factory(userFactory).identityManager(userIdentityManager).create();
+        new CollectionBuilder()
+          .factory(userFactory)
+          .identityManager(userIdentityManager)
+          .create();
       }).toThrow(
         '[Mirage]: Model template must be set before creating collection. Call .model() first.',
       );
@@ -124,7 +137,10 @@ describe('CollectionBuilder', () => {
     });
 
     it('should support fluent API', () => {
-      const testCollection = collection().model(userModel).factory(userFactory).create();
+      const testCollection = collection()
+        .model(userModel)
+        .factory(userFactory)
+        .create();
 
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.factory).toBe(userFactory);
@@ -138,8 +154,14 @@ describe('CollectionBuilder', () => {
     });
 
     it('should allow flexible method order', () => {
-      const collection1 = collection().model(userModel).factory(userFactory).create();
-      const collection2 = collection().factory(userFactory).model(userModel).create();
+      const collection1 = collection()
+        .model(userModel)
+        .factory(userFactory)
+        .create();
+      const collection2 = collection()
+        .factory(userFactory)
+        .model(userModel)
+        .create();
 
       expect(collection1.model).toBe(userModel);
       expect(collection1.factory).toBe(userFactory);
@@ -208,14 +230,19 @@ describe('CollectionBuilder', () => {
         posts: associations.hasMany(postModel),
         profile: associations.belongsTo(userModel, { foreignKey: 'profileId' }),
       };
-      const testCollection = collection().model(userModel).relationships(relationships).create();
+      const testCollection = collection()
+        .model(userModel)
+        .relationships(relationships)
+        .create();
       expect(testCollection.relationships).toBe(relationships);
     });
   });
 
   describe('identityManager()', () => {
     it('should set the identity manager and return a new builder instance', () => {
-      const builder = collection().model(userModel).identityManager(userIdentityManager);
+      const builder = collection()
+        .model(userModel)
+        .identityManager(userIdentityManager);
       expect(builder).toBeInstanceOf(CollectionBuilder);
     });
 
@@ -240,7 +267,9 @@ describe('CollectionBuilder', () => {
 
     it('should set serializer instance and return a new builder instance', () => {
       const customSerializer = new Serializer(userModel, { root: 'userData' });
-      const builder = collection().model(userModel).serializer(customSerializer);
+      const builder = collection()
+        .model(userModel)
+        .serializer(customSerializer);
       expect(builder).toBeInstanceOf(CollectionBuilder);
     });
 
@@ -253,7 +282,9 @@ describe('CollectionBuilder', () => {
 
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.factory).toBe(userFactory);
-      expect(testCollection.serializerConfig).toEqual({ select: ['id', 'name'] });
+      expect(testCollection.serializerConfig).toEqual({
+        select: ['id', 'name'],
+      });
     });
 
     it('should preserve other configurations when setting serializer instance', () => {
@@ -275,11 +306,16 @@ describe('CollectionBuilder', () => {
         .serializer({ select: ['id', 'name', 'email'] })
         .create();
 
-      expect(testCollection.serializerConfig).toEqual({ select: ['id', 'name', 'email'] });
+      expect(testCollection.serializerConfig).toEqual({
+        select: ['id', 'name', 'email'],
+      });
     });
 
     it('should support root wrapping config', () => {
-      const testCollection = collection().model(userModel).serializer({ root: true }).create();
+      const testCollection = collection()
+        .model(userModel)
+        .serializer({ root: true })
+        .create();
 
       expect(testCollection.serializerConfig).toEqual({ root: true });
     });
@@ -317,7 +353,10 @@ describe('CollectionBuilder', () => {
         .serializer({ root: false, select: ['id'] })
         .create();
 
-      expect(testCollection.serializerConfig).toEqual({ root: false, select: ['id'] });
+      expect(testCollection.serializerConfig).toEqual({
+        root: false,
+        select: ['id'],
+      });
     });
 
     it('should allow switching from config to instance', () => {
@@ -340,7 +379,9 @@ describe('CollectionBuilder', () => {
         .serializer({ select: ['id', 'name'] })
         .create();
 
-      expect(testCollection.serializerConfig).toEqual({ select: ['id', 'name'] });
+      expect(testCollection.serializerConfig).toEqual({
+        select: ['id', 'name'],
+      });
       expect(testCollection.serializerInstance).toBeUndefined();
     });
 
@@ -355,7 +396,10 @@ describe('CollectionBuilder', () => {
         .create();
 
       expect(testCollection.relationships).toBe(relationships);
-      expect(testCollection.serializerConfig).toEqual({ root: true, with: ['posts'] });
+      expect(testCollection.serializerConfig).toEqual({
+        root: true,
+        with: ['posts'],
+      });
     });
   });
 
@@ -368,7 +412,10 @@ describe('CollectionBuilder', () => {
 
     it('should set seed function in the config', () => {
       const seedFn = () => {};
-      const testCollection = collection().model(userModel).seeds(seedFn).create();
+      const testCollection = collection()
+        .model(userModel)
+        .seeds(seedFn)
+        .create();
       expect(testCollection.seeds).toBe(seedFn);
     });
 
@@ -377,7 +424,10 @@ describe('CollectionBuilder', () => {
         basic: () => {},
         admin: () => {},
       };
-      const testCollection = collection().model(userModel).seeds(seedScenarios).create();
+      const testCollection = collection()
+        .model(userModel)
+        .seeds(seedScenarios)
+        .create();
       expect(testCollection.seeds).toBe(seedScenarios);
     });
 
@@ -435,12 +485,18 @@ describe('CollectionBuilder', () => {
         .create();
 
       expect(testCollection.model).toBe(userModel);
-      expect(testCollection.serializerConfig).toEqual({ root: true, select: ['id', 'name'] });
+      expect(testCollection.serializerConfig).toEqual({
+        root: true,
+        select: ['id', 'name'],
+      });
     });
 
     it('should support serializer() method for specifying serializer instance', () => {
       const customSerializer = new Serializer(userModel, { root: 'user' });
-      const testCollection = collection().model(userModel).serializer(customSerializer).create();
+      const testCollection = collection()
+        .model(userModel)
+        .serializer(customSerializer)
+        .create();
 
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.serializerInstance).toBe(customSerializer);
@@ -765,7 +821,9 @@ describe('CollectionBuilder', () => {
         expect(() => {
           collection()
             .model(fixtureUserModel)
-            .fixtures([{ id: null, name: 'John', email: 'john@example.com' } as any]);
+            .fixtures([
+              { id: null, name: 'John', email: 'john@example.com' } as any,
+            ]);
         }).toThrow("Fixture at index 0 is missing required 'id' property");
       });
 

@@ -19,5 +19,7 @@ export function resolveFactoryAttr<T, TModelId>(
   attr: T | ((this: any, modelId: TModelId) => T),
   modelId: TModelId,
 ): T {
-  return typeof attr === 'function' ? (attr as (modelId: TModelId) => T)(modelId) : attr;
+  return typeof attr === 'function'
+    ? (attr as (modelId: TModelId) => T)(modelId)
+    : attr;
 }

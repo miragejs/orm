@@ -23,7 +23,10 @@ describe('ModelBuilder', () => {
     });
 
     it('should allow method chaining with attrs()', () => {
-      const builder = new ModelBuilder().name('user').collection('users').attrs<UserAttrs>();
+      const builder = new ModelBuilder()
+        .name('user')
+        .collection('users')
+        .attrs<UserAttrs>();
       expect(builder).toBeInstanceOf(ModelBuilder);
     });
 
@@ -59,14 +62,22 @@ describe('ModelBuilder', () => {
     });
 
     it('should support fluent API', () => {
-      const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
+      const userModel = model()
+        .name('user')
+        .collection('users')
+        .attrs<UserAttrs>()
+        .create();
 
       expect(userModel.modelName).toBe('user');
       expect(userModel.collectionName).toBe('users');
     });
 
     it('should create template with typed attributes', () => {
-      const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
+      const userModel = model()
+        .name('user')
+        .collection('users')
+        .attrs<UserAttrs>()
+        .create();
 
       expect(userModel.modelName).toBe('user');
       expect(userModel.collectionName).toBe('users');
@@ -92,7 +103,11 @@ describe('ModelBuilder', () => {
 
   describe('type safety', () => {
     it('should maintain type information through the builder chain', () => {
-      const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
+      const userModel = model()
+        .name('user')
+        .collection('users')
+        .attrs<UserAttrs>()
+        .create();
 
       // These should be type-safe (no TypeScript errors)
       expect(userModel.modelName).toBe('user');

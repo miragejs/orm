@@ -30,8 +30,16 @@ type CollectionConfigFor<
  * @template TModel - The model template
  * @internal
  */
-type FactoryFor<TSchema extends SchemaCollections, TModel extends ModelTemplate> =
-  CollectionConfigFor<TSchema, TModel> extends CollectionConfig<any, any, infer TFactory, any>
+type FactoryFor<
+  TSchema extends SchemaCollections,
+  TModel extends ModelTemplate,
+> =
+  CollectionConfigFor<TSchema, TModel> extends CollectionConfig<
+    any,
+    any,
+    infer TFactory,
+    any
+  >
     ? TFactory
     : undefined;
 
@@ -129,7 +137,9 @@ export type AssociationQueryPredicate<TModel> = (model: TModel) => boolean;
  * Query for finding models - can be an attributes object or a predicate function
  * @template TModel - The model type to query
  */
-export type AssociationQuery<TModel = any> = Partial<TModel> | AssociationQueryPredicate<TModel>;
+export type AssociationQuery<TModel = any> =
+  | Partial<TModel>
+  | AssociationQueryPredicate<TModel>;
 
 /**
  * Runtime storage for traits and defaults passed to factory associations.
@@ -176,8 +186,9 @@ export interface CreateAssociation<TModel extends ModelTemplate = ModelTemplate>
  * Association that always creates N new related models
  * @template TModel - The model template to create
  */
-export interface CreateManyAssociation<TModel extends ModelTemplate = ModelTemplate>
-  extends BaseAssociation<TModel> {
+export interface CreateManyAssociation<
+  TModel extends ModelTemplate = ModelTemplate,
+> extends BaseAssociation<TModel> {
   type: 'createMany';
   /** Number of models to create (for identical models) */
   count?: number;
@@ -200,8 +211,9 @@ export interface LinkAssociation<TModel extends ModelTemplate = ModelTemplate>
  * Association that tries to find N existing models, or creates more if needed
  * @template TModel - The model template to link or create
  */
-export interface LinkManyAssociation<TModel extends ModelTemplate = ModelTemplate>
-  extends BaseAssociation<TModel> {
+export interface LinkManyAssociation<
+  TModel extends ModelTemplate = ModelTemplate,
+> extends BaseAssociation<TModel> {
   type: 'linkMany';
   /** Number of models to link */
   count: number;
@@ -255,7 +267,9 @@ export type FactoryAssociations<
   RelationshipsByTemplate<TTemplate, TSchema> extends ModelRelationships
     ? {
         [K in keyof RelationshipsByTemplate<TTemplate, TSchema>]?: Association<
-          RelationshipTargetTemplate<RelationshipsByTemplate<TTemplate, TSchema>[K]>
+          RelationshipTargetTemplate<
+            RelationshipsByTemplate<TTemplate, TSchema>[K]
+          >
         >;
       }
     : {};

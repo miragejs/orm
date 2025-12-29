@@ -47,9 +47,21 @@ interface CommentAttrs {
 }
 
 // Test models
-const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
-const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
-const commentModel = model().name('comment').collection('comments').attrs<CommentAttrs>().create();
+const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<UserAttrs>()
+  .create();
+const postModel = model()
+  .name('post')
+  .collection('posts')
+  .attrs<PostAttrs>()
+  .create();
+const commentModel = model()
+  .name('comment')
+  .collection('comments')
+  .attrs<CommentAttrs>()
+  .create();
 
 // Test schema type
 type TestSchema = {
@@ -177,7 +189,9 @@ test('ModelAttrs should work with relationships', () => {
     authorId: 'user-1',
   };
 
-  expectTypeOf(attrs).toEqualTypeOf<ModelAttrs<typeof postModel, TestSchema, PostRelationships>>();
+  expectTypeOf(attrs).toEqualTypeOf<
+    ModelAttrs<typeof postModel, TestSchema, PostRelationships>
+  >();
 });
 
 test('ModelUpdateAttrs should work with optional fields', () => {
@@ -222,7 +236,9 @@ test('ModelInstance serializer type is inferred from template', () => {
     SerializedCollectionFor<typeof userModel>
   >;
 
-  expectTypeOf<UserInstance['_serializer']>().toEqualTypeOf<ExpectedSerializer | undefined>();
+  expectTypeOf<UserInstance['_serializer']>().toEqualTypeOf<
+    ExpectedSerializer | undefined
+  >();
 });
 
 test('NewModelInstance should default to Serializer<TTemplate, SchemaCollections>', () => {
@@ -245,7 +261,9 @@ test('NewModelInstance serializer type is inferred from template', () => {
     SerializedCollectionFor<typeof userModel>
   >;
 
-  expectTypeOf<NewUser['_serializer']>().toEqualTypeOf<ExpectedSerializer | undefined>();
+  expectTypeOf<NewUser['_serializer']>().toEqualTypeOf<
+    ExpectedSerializer | undefined
+  >();
 });
 
 test('ModelInstance toJSON should infer correct return type with default serializer', () => {
@@ -279,7 +297,9 @@ test('ModelInstance with same template and schema have same serializer type', ()
   type Instance2 = ModelInstance<typeof userModel, TestSchema>;
 
   // Both use the same template and schema, so they have the same serializer type
-  expectTypeOf<Instance1['_serializer']>().toEqualTypeOf<Instance2['_serializer']>();
+  expectTypeOf<Instance1['_serializer']>().toEqualTypeOf<
+    Instance2['_serializer']
+  >();
 
   // Both should have the same attrs
   expectTypeOf<Instance1['attrs']>().toMatchTypeOf<Instance2['attrs']>();
@@ -322,7 +342,9 @@ test('ModelCollection serializer type is inferred from template', () => {
     SerializedCollectionFor<typeof userModel>
   >;
 
-  expectTypeOf<UsersCollection['_serializer']>().toEqualTypeOf<ExpectedSerializer | undefined>();
+  expectTypeOf<UsersCollection['_serializer']>().toEqualTypeOf<
+    ExpectedSerializer | undefined
+  >();
 });
 
 test('ModelCollection toJSON returns SerializedCollectionFor<TTemplate>', () => {

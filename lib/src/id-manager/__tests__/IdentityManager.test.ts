@@ -1,4 +1,7 @@
-import IdentityManager, { StringIdentityManager, NumberIdentityManager } from '../IdentityManager';
+import IdentityManager, {
+  StringIdentityManager,
+  NumberIdentityManager,
+} from '../IdentityManager';
 
 describe('IdentityManager', () => {
   describe('constructor', () => {
@@ -14,7 +17,10 @@ describe('IdentityManager', () => {
 
     it('should initialize with custom used IDs', () => {
       const usedIds = ['1', '2', '3'];
-      const manager = new IdentityManager({ initialCounter: '1', initialUsedIds: usedIds });
+      const manager = new IdentityManager({
+        initialCounter: '1',
+        initialUsedIds: usedIds,
+      });
       expect(manager.get()).toBe('4');
     });
 

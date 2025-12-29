@@ -17,7 +17,10 @@ import type {
  * @param traitsAndDefaults - Traits and/or defaults to apply when creating (variadic) - trait names are validated against schema
  * @returns The link association
  */
-export default function link<TSchema extends SchemaCollections, TModel extends ModelTemplate>(
+export default function link<
+  TSchema extends SchemaCollections,
+  TModel extends ModelTemplate,
+>(
   model: TModel,
   query?: AssociationQuery<ModelAttrsFor<TModel>>,
   ...traitsAndDefaults: TypedAssociationTraitsAndDefaults<TSchema, TModel>

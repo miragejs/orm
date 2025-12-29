@@ -24,12 +24,10 @@ export default class FactoryBuilder<
   TSchema extends SchemaCollections = SchemaCollections,
 > {
   protected _template?: TTemplate;
-  protected _attributes: FactoryAttrs<TTemplate> = {} as FactoryAttrs<TTemplate>;
-  protected _traits: ModelTraits<TTraits, TTemplate, TSchema> = {} as ModelTraits<
-    TTraits,
-    TTemplate,
-    TSchema
-  >;
+  protected _attributes: FactoryAttrs<TTemplate> =
+    {} as FactoryAttrs<TTemplate>;
+  protected _traits: ModelTraits<TTraits, TTemplate, TSchema> =
+    {} as ModelTraits<TTraits, TTemplate, TSchema>;
   protected _associations?: FactoryAssociations<TTemplate, TSchema>;
   protected _afterCreate?: FactoryAfterCreateHook<TSchema, TTemplate>;
 
@@ -44,7 +42,11 @@ export default class FactoryBuilder<
   model<T extends ModelTemplate>(
     template: T,
   ): FactoryBuilder<T, ExtractTraitsFromSchema<TSchema, T>, TSchema> {
-    const builder = new FactoryBuilder<T, ExtractTraitsFromSchema<TSchema, T>, TSchema>();
+    const builder = new FactoryBuilder<
+      T,
+      ExtractTraitsFromSchema<TSchema, T>,
+      TSchema
+    >();
     builder._template = template;
     return builder;
   }

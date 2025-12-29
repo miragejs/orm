@@ -22,7 +22,9 @@ export default class Schema<
   TConfig extends SchemaConfig<any> = SchemaConfig<StringIdentityManager>,
 > {
   public readonly db: DbInstance<SchemaDbCollections<TCollections>>;
-  public readonly identityManager: TConfig extends SchemaConfig<infer TIdentityManager>
+  public readonly identityManager: TConfig extends SchemaConfig<
+    infer TIdentityManager
+  >
     ? TIdentityManager
     : StringIdentityManager;
   public readonly logger?: Logger;
@@ -35,7 +37,8 @@ export default class Schema<
       this.logger = new Logger(config.logging);
     }
 
-    this.identityManager = config?.identityManager ?? new StringIdentityManager();
+    this.identityManager =
+      config?.identityManager ?? new StringIdentityManager();
     this.db = createDatabase<SchemaDbCollections<TCollections>>({
       logger: this.logger,
     });
@@ -139,11 +142,17 @@ export default class Schema<
       const collection = this.getCollection(collectionName);
       await collection.loadSeeds(onlyDefault ? 'default' : undefined);
 
-      this.logger?.info(`Seeds loaded for '${String(collectionName)}'`, this.db.dump());
+      this.logger?.info(
+        `Seeds loaded for '${String(collectionName)}'`,
+        this.db.dump(),
+      );
     } else {
-      this.logger?.info(`Loading all seeds${onlyDefault ? ' (default only)' : ''}`, {
-        collections: Array.from(this._collections.keys()),
-      });
+      this.logger?.info(
+        `Loading all seeds${onlyDefault ? ' (default only)' : ''}`,
+        {
+          collections: Array.from(this._collections.keys()),
+        },
+      );
 
       for (const [_, collection] of this._collections) {
         await collection.loadSeeds(onlyDefault ? 'default' : undefined);
@@ -173,7 +182,10 @@ export default class Schema<
       const collection = this.getCollection(collectionName);
       await collection.loadFixtures();
 
-      this.logger?.info(`Fixtures loaded for '${String(collectionName)}'`, this.db.dump());
+      this.logger?.info(
+        `Fixtures loaded for '${String(collectionName)}'`,
+        this.db.dump(),
+      );
     } else {
       this.logger?.info('Loading all fixtures', {
         collections: Array.from(this._collections.keys()),
@@ -211,7 +223,8 @@ export default class Schema<
         seeds,
         fixtures,
       } = collectionConfig;
-      const identityManager = collectionConfig.identityManager ?? this.identityManager;
+      const identityManager =
+        collectionConfig.identityManager ?? this.identityManager;
 
       // Determine the final serializer to use
       let finalSerializer: any;
@@ -224,15 +237,18 @@ export default class Schema<
         finalSerializer = new Serializer(model, serializerConfig);
       }
 
-      const collection = createCollection(this as SchemaInstance<TCollections, TConfig>, {
-        model,
-        factory,
-        identityManager,
-        relationships,
-        serializer: finalSerializer,
-        seeds,
-        fixtures,
-      });
+      const collection = createCollection(
+        this as SchemaInstance<TCollections, TConfig>,
+        {
+          model,
+          factory,
+          identityManager,
+          relationships,
+          serializer: finalSerializer,
+          seeds,
+          fixtures,
+        },
+      );
       this._collections.set(collectionName, collection);
 
       Object.defineProperty(this, collectionName, {
@@ -296,7 +312,8 @@ export default class Schema<
 
         const inverseName = relationship.inverse as string;
         const targetCollectionName = relationship.targetModel.collectionName;
-        const targetCollectionConfig = collections[targetCollectionName as keyof TCollections];
+        const targetCollectionConfig =
+          collections[targetCollectionName as keyof TCollections];
 
         if (!targetCollectionConfig) {
           throw new MirageError(
@@ -315,7 +332,10 @@ export default class Schema<
 
         // Validate that inverse relationship points back to this collection
         const inverseRel = targetRelationships[inverseName];
-        if (inverseRel.targetModel.collectionName !== collectionConfig.model.collectionName) {
+        if (
+          inverseRel.targetModel.collectionName !==
+          collectionConfig.model.collectionName
+        ) {
           throw new MirageError(
             `Invalid inverse relationship: '${collectionName}.${relName}' ` +
               `declares inverse '${inverseName}', but '${targetCollectionName}.${inverseName}' ` +

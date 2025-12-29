@@ -21,8 +21,16 @@ interface PostAttrs {
 }
 
 // Create test models
-const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
-const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
+const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<UserAttrs>()
+  .create();
+const postModel = model()
+  .name('post')
+  .collection('posts')
+  .attrs<PostAttrs>()
+  .create();
 
 // Create test schema with collections
 const testSchema = schema()
@@ -124,7 +132,12 @@ describe('BaseCollection', () => {
   describe('DB integration', () => {
     it('should read records from database', () => {
       const usersCollection = testSchema.db.getCollection('users');
-      usersCollection.insert({ id: '1', name: 'John', email: 'john@example.com', postIds: [] });
+      usersCollection.insert({
+        id: '1',
+        name: 'John',
+        email: 'john@example.com',
+        postIds: [],
+      });
 
       const user = testSchema.users.find('1');
       expect(user).toBeDefined();
@@ -136,7 +149,12 @@ describe('BaseCollection', () => {
 
     it('should delete records from database', () => {
       const usersCollection = testSchema.db.getCollection('users');
-      usersCollection.insert({ id: '1', name: 'John', email: 'john@example.com', postIds: [] });
+      usersCollection.insert({
+        id: '1',
+        name: 'John',
+        email: 'john@example.com',
+        postIds: [],
+      });
 
       expect(testSchema.users.find('1')).not.toBeNull();
 
@@ -175,7 +193,12 @@ describe('BaseCollection', () => {
   describe('find()', () => {
     it('should find by ID', () => {
       const usersCollection = testSchema.db.getCollection('users');
-      usersCollection.insert({ id: '1', name: 'John', email: 'john@example.com', postIds: [] });
+      usersCollection.insert({
+        id: '1',
+        name: 'John',
+        email: 'john@example.com',
+        postIds: [],
+      });
 
       const user = testSchema.users.find('1');
       expect(user?.attrs.id).toBe('1');
@@ -202,9 +225,27 @@ describe('BaseCollection', () => {
     it('should find with query options (predicate object)', () => {
       const usersCollection = testSchema.db.getCollection('users');
       usersCollection.insertMany([
-        { id: '1', name: 'John', email: 'john@example.com', age: 25, postIds: [] },
-        { id: '2', name: 'Jane', email: 'jane@example.com', age: 30, postIds: [] },
-        { id: '3', name: 'Bob', email: 'bob@example.com', age: 35, postIds: [] },
+        {
+          id: '1',
+          name: 'John',
+          email: 'john@example.com',
+          age: 25,
+          postIds: [],
+        },
+        {
+          id: '2',
+          name: 'Jane',
+          email: 'jane@example.com',
+          age: 30,
+          postIds: [],
+        },
+        {
+          id: '3',
+          name: 'Bob',
+          email: 'bob@example.com',
+          age: 35,
+          postIds: [],
+        },
       ]);
 
       const user = testSchema.users.find({
@@ -219,9 +260,27 @@ describe('BaseCollection', () => {
     it('should find with query options (field operators)', () => {
       const usersCollection = testSchema.db.getCollection('users');
       usersCollection.insertMany([
-        { id: '1', name: 'John', email: 'john@example.com', age: 25, postIds: [] },
-        { id: '2', name: 'Jane', email: 'jane@example.com', age: 30, postIds: [] },
-        { id: '3', name: 'Bob', email: 'bob@example.com', age: 35, postIds: [] },
+        {
+          id: '1',
+          name: 'John',
+          email: 'john@example.com',
+          age: 25,
+          postIds: [],
+        },
+        {
+          id: '2',
+          name: 'Jane',
+          email: 'jane@example.com',
+          age: 30,
+          postIds: [],
+        },
+        {
+          id: '3',
+          name: 'Bob',
+          email: 'bob@example.com',
+          age: 35,
+          postIds: [],
+        },
       ]);
 
       const user = testSchema.users.find({
@@ -254,11 +313,19 @@ describe('BaseCollection', () => {
           status: 'inactive',
           postIds: [],
         },
-        { id: '3', name: 'Bob', email: 'bob@example.com', age: 35, status: 'active', postIds: [] },
+        {
+          id: '3',
+          name: 'Bob',
+          email: 'bob@example.com',
+          age: 35,
+          status: 'active',
+          postIds: [],
+        },
       ]);
 
       const user = testSchema.users.find({
-        where: (model: any) => (model.attrs.age ?? 0) >= 30 && model.attrs.status === 'active',
+        where: (model: any) =>
+          (model.attrs.age ?? 0) >= 30 && model.attrs.status === 'active',
       });
 
       expect(user?.attrs.name).toBe('Bob');
@@ -272,9 +339,27 @@ describe('BaseCollection', () => {
     it('should find with callback where clause using helpers', () => {
       const usersCollection = testSchema.db.getCollection('users');
       usersCollection.insertMany([
-        { id: '1', name: 'John', email: 'john@example.com', age: 25, postIds: [] },
-        { id: '2', name: 'Jane', email: 'jane@example.com', age: 30, postIds: [] },
-        { id: '3', name: 'Bob', email: 'bob@example.com', age: 35, postIds: [] },
+        {
+          id: '1',
+          name: 'John',
+          email: 'john@example.com',
+          age: 25,
+          postIds: [],
+        },
+        {
+          id: '2',
+          name: 'Jane',
+          email: 'jane@example.com',
+          age: 30,
+          postIds: [],
+        },
+        {
+          id: '3',
+          name: 'Bob',
+          email: 'bob@example.com',
+          age: 35,
+          postIds: [],
+        },
       ]);
 
       const user = testSchema.users.find({
@@ -290,7 +375,12 @@ describe('BaseCollection', () => {
 
     it('should return null when no match found', () => {
       const usersCollection = testSchema.db.getCollection('users');
-      usersCollection.insert({ id: '1', name: 'John', email: 'john@example.com', postIds: [] });
+      usersCollection.insert({
+        id: '1',
+        name: 'John',
+        email: 'john@example.com',
+        postIds: [],
+      });
 
       expect(testSchema.users.find('999')).toBeNull();
       expect(testSchema.users.find({ name: 'NonExistent' })).toBeNull();
@@ -321,9 +411,27 @@ describe('BaseCollection', () => {
     it('should find by predicate object', () => {
       const usersCollection = testSchema.db.getCollection('users');
       usersCollection.insertMany([
-        { id: '1', name: 'John', email: 'john@example.com', status: 'active', postIds: [] },
-        { id: '2', name: 'Jane', email: 'jane@example.com', status: 'active', postIds: [] },
-        { id: '3', name: 'Bob', email: 'bob@example.com', status: 'inactive', postIds: [] },
+        {
+          id: '1',
+          name: 'John',
+          email: 'john@example.com',
+          status: 'active',
+          postIds: [],
+        },
+        {
+          id: '2',
+          name: 'Jane',
+          email: 'jane@example.com',
+          status: 'active',
+          postIds: [],
+        },
+        {
+          id: '3',
+          name: 'Bob',
+          email: 'bob@example.com',
+          status: 'inactive',
+          postIds: [],
+        },
       ]);
 
       const users = testSchema.users.findMany({ status: 'active' });
@@ -338,9 +446,27 @@ describe('BaseCollection', () => {
     it('should find with query options and ordering', () => {
       const usersCollection = testSchema.db.getCollection('users');
       usersCollection.insertMany([
-        { id: '1', name: 'John', email: 'john@example.com', age: 25, postIds: [] },
-        { id: '2', name: 'Jane', email: 'jane@example.com', age: 30, postIds: [] },
-        { id: '3', name: 'Bob', email: 'bob@example.com', age: 35, postIds: [] },
+        {
+          id: '1',
+          name: 'John',
+          email: 'john@example.com',
+          age: 25,
+          postIds: [],
+        },
+        {
+          id: '2',
+          name: 'Jane',
+          email: 'jane@example.com',
+          age: 30,
+          postIds: [],
+        },
+        {
+          id: '3',
+          name: 'Bob',
+          email: 'bob@example.com',
+          age: 35,
+          postIds: [],
+        },
       ]);
 
       const users = testSchema.users.findMany({
@@ -387,7 +513,8 @@ describe('BaseCollection', () => {
       ]);
 
       const users = testSchema.users.findMany({
-        where: (model: any) => (model.attrs.age ?? 0) >= 25 && model.attrs.status === 'active',
+        where: (model: any) =>
+          (model.attrs.age ?? 0) >= 25 && model.attrs.status === 'active',
       });
       expect(users.length).toBe(2);
       expect(users.models[0].attrs.name).toBe('John');
@@ -442,7 +569,12 @@ describe('BaseCollection', () => {
 
     it('should return empty collection when no matches found', () => {
       const usersCollection = testSchema.db.getCollection('users');
-      usersCollection.insert({ id: '1', name: 'John', email: 'john@example.com', postIds: [] });
+      usersCollection.insert({
+        id: '1',
+        name: 'John',
+        email: 'john@example.com',
+        postIds: [],
+      });
 
       const users = testSchema.users.findMany({ name: 'NonExistent' });
       expect(users.length).toBe(0);
@@ -474,9 +606,27 @@ describe('BaseCollection', () => {
     it('should delete by predicate object', () => {
       const usersCollection = testSchema.db.getCollection('users');
       usersCollection.insertMany([
-        { id: '1', name: 'John', email: 'john@example.com', status: 'inactive', postIds: [] },
-        { id: '2', name: 'Jane', email: 'jane@example.com', status: 'active', postIds: [] },
-        { id: '3', name: 'Bob', email: 'bob@example.com', status: 'inactive', postIds: [] },
+        {
+          id: '1',
+          name: 'John',
+          email: 'john@example.com',
+          status: 'inactive',
+          postIds: [],
+        },
+        {
+          id: '2',
+          name: 'Jane',
+          email: 'jane@example.com',
+          status: 'active',
+          postIds: [],
+        },
+        {
+          id: '3',
+          name: 'Bob',
+          email: 'bob@example.com',
+          status: 'inactive',
+          postIds: [],
+        },
       ]);
 
       const deletedCount = testSchema.users.deleteMany({ status: 'inactive' });
@@ -491,9 +641,27 @@ describe('BaseCollection', () => {
     it('should delete with query options', () => {
       const usersCollection = testSchema.db.getCollection('users');
       usersCollection.insertMany([
-        { id: '1', name: 'John', email: 'john@example.com', age: 25, postIds: [] },
-        { id: '2', name: 'Jane', email: 'jane@example.com', age: 30, postIds: [] },
-        { id: '3', name: 'Bob', email: 'bob@example.com', age: 35, postIds: [] },
+        {
+          id: '1',
+          name: 'John',
+          email: 'john@example.com',
+          age: 25,
+          postIds: [],
+        },
+        {
+          id: '2',
+          name: 'Jane',
+          email: 'jane@example.com',
+          age: 30,
+          postIds: [],
+        },
+        {
+          id: '3',
+          name: 'Bob',
+          email: 'bob@example.com',
+          age: 35,
+          postIds: [],
+        },
       ]);
 
       const deletedCount = testSchema.users.deleteMany({
@@ -537,7 +705,8 @@ describe('BaseCollection', () => {
       ]);
 
       const deletedCount = testSchema.users.deleteMany({
-        where: (model: any) => (model.attrs.age ?? 0) < 30 || model.attrs.status === 'inactive',
+        where: (model: any) =>
+          (model.attrs.age ?? 0) < 30 || model.attrs.status === 'inactive',
       });
       expect(deletedCount).toBe(2);
       expect(testSchema.users.all().length).toBe(1);
@@ -549,7 +718,12 @@ describe('BaseCollection', () => {
 
     it('should return 0 when no matches found', () => {
       const usersCollection = testSchema.db.getCollection('users');
-      usersCollection.insert({ id: '1', name: 'John', email: 'john@example.com', postIds: [] });
+      usersCollection.insert({
+        id: '1',
+        name: 'John',
+        email: 'john@example.com',
+        postIds: [],
+      });
 
       const deletedCount = testSchema.users.deleteMany({ name: 'NonExistent' });
       expect(deletedCount).toBe(0);

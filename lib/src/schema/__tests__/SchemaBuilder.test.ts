@@ -21,8 +21,16 @@ interface PostAttrs {
 }
 
 // Create test models
-const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
-const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
+const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<UserAttrs>()
+  .create();
+const postModel = model()
+  .name('post')
+  .collection('posts')
+  .attrs<PostAttrs>()
+  .create();
 
 // Create test factories
 const userFactory = factory()
@@ -105,7 +113,9 @@ describe('SchemaBuilder', () => {
       const collections = {
         users: userCollection,
       };
-      const builder = schema().collections(collections).identityManager(appIdentityManager);
+      const builder = schema()
+        .collections(collections)
+        .identityManager(appIdentityManager);
       const schemaInstance = builder.setup();
 
       expect(schemaInstance.identityManager).toBe(appIdentityManager);
@@ -122,7 +132,9 @@ describe('SchemaBuilder', () => {
 
       expect(schemaInstance).toBeDefined();
       expect(schemaInstance.db).toBeDefined();
-      expect(schemaInstance.identityManager).toBeInstanceOf(StringIdentityManager);
+      expect(schemaInstance.identityManager).toBeInstanceOf(
+        StringIdentityManager,
+      );
     });
 
     it('should create a complete Schema instance with all options', () => {
@@ -183,9 +195,15 @@ describe('SchemaBuilder', () => {
       };
 
       // Order 1: collections -> identityManager
-      const schema1 = schema().collections(collections).identityManager(appIdentityManager).setup();
+      const schema1 = schema()
+        .collections(collections)
+        .identityManager(appIdentityManager)
+        .setup();
       // Order 2: identityManager -> collections
-      const schema2 = schema().identityManager(appIdentityManager).collections(collections).setup();
+      const schema2 = schema()
+        .identityManager(appIdentityManager)
+        .collections(collections)
+        .setup();
 
       expect(schema1.identityManager).toBe(appIdentityManager);
       expect(schema2.identityManager).toBe(appIdentityManager);
@@ -207,7 +225,9 @@ describe('SchemaBuilder', () => {
             .model(postModel)
             .factory(postFactory)
             .relationships({
-              author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+              author: associations.belongsTo(userModel, {
+                foreignKey: 'authorId',
+              }),
             })
             .identityManager(postIdentityManager)
             .create(),
@@ -238,7 +258,9 @@ describe('SchemaBuilder', () => {
           posts: collection()
             .model(postModel)
             .relationships({
-              author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+              author: associations.belongsTo(userModel, {
+                foreignKey: 'authorId',
+              }),
             })
             .create(),
         })
@@ -283,7 +305,9 @@ describe('SchemaBuilder', () => {
             db: testCollection,
           })
           .setup();
-      }).toThrow(`Collection name 'db' conflicts with existing Schema property or method`);
+      }).toThrow(
+        `Collection name 'db' conflicts with existing Schema property or method`,
+      );
     });
 
     it('should throw error for reserved collection name: identityManager', () => {

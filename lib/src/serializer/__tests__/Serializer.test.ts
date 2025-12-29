@@ -85,8 +85,13 @@ describe('Serializer', () => {
       const serializer = new TimestampSerializer(customUserModel, {
         select: ['id', 'name', 'email'],
       });
-      const userCollection = collection().model(customUserModel).serializer(serializer).create();
-      const testSchema = schema().collections({ users: userCollection }).setup();
+      const userCollection = collection()
+        .model(customUserModel)
+        .serializer(serializer)
+        .create();
+      const testSchema = schema()
+        .collections({ users: userCollection })
+        .setup();
 
       const user = testSchema.users.create({
         name: 'John Doe',
@@ -161,9 +166,15 @@ describe('Serializer', () => {
 
   describe('Fallback behavior', () => {
     it('should return raw attributes when no serializer is configured', () => {
-      const rawUserModel = model().name('user').collection('users').attrs<UserAttrs>().create();
+      const rawUserModel = model()
+        .name('user')
+        .collection('users')
+        .attrs<UserAttrs>()
+        .create();
       const userCollection = collection().model(rawUserModel).create();
-      const testSchema = schema().collections({ users: userCollection }).setup();
+      const testSchema = schema()
+        .collections({ users: userCollection })
+        .setup();
 
       const user = testSchema.users.create({
         name: 'John Doe',
@@ -183,9 +194,15 @@ describe('Serializer', () => {
     });
 
     it('should return array of raw attributes for collection when no serializer', () => {
-      const rawPostModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
+      const rawPostModel = model()
+        .name('post')
+        .collection('posts')
+        .attrs<PostAttrs>()
+        .create();
       const postCollection = collection().model(rawPostModel).create();
-      const testSchema = schema().collections({ posts: postCollection }).setup();
+      const testSchema = schema()
+        .collections({ posts: postCollection })
+        .setup();
 
       testSchema.posts.create({
         title: 'First Post',

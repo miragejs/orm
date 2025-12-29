@@ -36,11 +36,15 @@ export default class AssociationsManager<
   processAssociations(
     schema: SchemaInstance<TSchema>,
     associations: FactoryAssociations<TTemplate, TSchema>,
-  ): Partial<RelatedModelAttrs<TSchema, RelationshipsByTemplate<TTemplate, TSchema>>> {
+  ): Partial<
+    RelatedModelAttrs<TSchema, RelationshipsByTemplate<TTemplate, TSchema>>
+  > {
     const relationshipValues: Record<string, any> = {};
 
     for (const relationshipName in associations) {
-      const association = associations[relationshipName] as Association<ModelTemplate>;
+      const association = associations[
+        relationshipName
+      ] as Association<ModelTemplate>;
       if (!association) continue;
 
       // Get the collection directly from the model's collectionName
@@ -99,7 +103,9 @@ export default class AssociationsManager<
     collection: Collection<TSchema, any, any, any>,
     traitsAndDefaults: AssociationTraitsAndDefaults = [],
   ): ModelInstance<any, TSchema> {
-    return collection.create(...(traitsAndDefaults as CollectionCreateAttrs<TTemplate, TSchema>[]));
+    return collection.create(
+      ...(traitsAndDefaults as CollectionCreateAttrs<TTemplate, TSchema>[]),
+    );
   }
 
   private _processCreateMany(
@@ -110,12 +116,17 @@ export default class AssociationsManager<
   ): ModelCollection<any, TSchema> {
     if (models) {
       // Array mode: create different models
-      return collection.createMany(models as CollectionCreateAttrs<TTemplate, TSchema>[][]);
+      return collection.createMany(
+        models as CollectionCreateAttrs<TTemplate, TSchema>[][],
+      );
     } else {
       // Count mode: create N identical models
       return collection.createMany(
         count!,
-        ...((traitsAndDefaults ?? []) as CollectionCreateAttrs<TTemplate, TSchema>[]),
+        ...((traitsAndDefaults ?? []) as CollectionCreateAttrs<
+          TTemplate,
+          TSchema
+        >[]),
       );
     }
   }
@@ -150,7 +161,10 @@ export default class AssociationsManager<
     // Create if not found (with traits and defaults) // Create if not found (with traits and defaults)
     if (!model) {
       model = collection.create(
-        ...((traitsAndDefaults ?? []) as CollectionCreateAttrs<TTemplate, TSchema>[]),
+        ...((traitsAndDefaults ?? []) as CollectionCreateAttrs<
+          TTemplate,
+          TSchema
+        >[]),
       );
     }
 
@@ -184,7 +198,10 @@ export default class AssociationsManager<
     if (needed > 0) {
       const newModels = collection.createMany(
         needed,
-        ...((traitsAndDefaults ?? []) as CollectionCreateAttrs<TTemplate, TSchema>[]),
+        ...((traitsAndDefaults ?? []) as CollectionCreateAttrs<
+          TTemplate,
+          TSchema
+        >[]),
       );
       // Combine shuffled existing with new ones
       const allModels = [...shuffledModels, ...newModels.models];

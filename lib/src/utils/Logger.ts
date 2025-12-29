@@ -127,7 +127,11 @@ export default class Logger {
    * @param context - Optional context object
    * @private
    */
-  private _log(level: LogLevel, message: string, context?: Record<string, unknown>): void {
+  private _log(
+    level: LogLevel,
+    message: string,
+    context?: Record<string, unknown>,
+  ): void {
     if (!this._config.enabled) {
       return;
     }

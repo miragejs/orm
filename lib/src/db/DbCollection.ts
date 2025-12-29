@@ -32,7 +32,8 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
   constructor(name: string, config?: DbCollectionConfig<TRecord>) {
     this.name = name;
     this.identityManager =
-      config?.identityManager ?? (new StringIdentityManager() as IdentityManager<TRecord['id']>);
+      config?.identityManager ??
+      (new StringIdentityManager() as IdentityManager<TRecord['id']>);
     this._logger = config?.logger;
 
     if (config?.initialData) {
@@ -132,7 +133,9 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
    * });
    * ```
    */
-  find(input: TRecord['id'] | DbRecordInput<TRecord> | QueryOptions<TRecord>): TRecord | null {
+  find(
+    input: TRecord['id'] | DbRecordInput<TRecord> | QueryOptions<TRecord>,
+  ): TRecord | null {
     // 1. Handle ID-based lookup
     if (typeof input === 'string' || typeof input === 'number') {
       const record = this._records.get(input as TRecord['id']) ?? null;
@@ -165,8 +168,9 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
     // 3. Handle predicate object (simple equality matching)
     const predicate = input as DbRecordInput<TRecord>;
     const record =
-      this.all().find((record) => this._queryManager.matchesPredicateObject(record, predicate)) ??
-      null;
+      this.all().find((record) =>
+        this._queryManager.matchesPredicateObject(record, predicate),
+      ) ?? null;
     this._logger?.debug(`Found ${record ? 1 : 0} records in '${this.name}'`, {
       query: predicate,
       operation: 'find',
@@ -194,10 +198,14 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
    * });
    * ```
    */
-  findMany(input: TRecord['id'][] | DbRecordInput<TRecord> | QueryOptions<TRecord>): TRecord[] {
+  findMany(
+    input: TRecord['id'][] | DbRecordInput<TRecord> | QueryOptions<TRecord>,
+  ): TRecord[] {
     // 1. Handle array of IDs
     if (Array.isArray(input)) {
-      const records = input.map((id) => this._records.get(id)).filter(Boolean) as TRecord[];
+      const records = input
+        .map((id) => this._records.get(id))
+        .filter(Boolean) as TRecord[];
       this._logger?.debug(`Found ${records.length} records in '${this.name}'`, {
         query: input,
         operation: 'findMany',
@@ -298,10 +306,13 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
     const records = data.map((record) => this.insert(record));
     const ids = records.map((r) => r.id);
 
-    this._logger?.debug(`Inserted ${records.length} records into '${this.name}'`, {
-      ids,
-      operation: 'insertMany',
-    });
+    this._logger?.debug(
+      `Inserted ${records.length} records into '${this.name}'`,
+      {
+        ids,
+        operation: 'insertMany',
+      },
+    );
 
     return records;
   }
@@ -312,7 +323,10 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
    * @param patch - The data to update the record with.
    * @returns The updated record, or `null` if the record was not found.
    */
-  update(id: TRecord['id'], patch: TRecord | DbRecordInput<TRecord>): TRecord | null {
+  update(
+    id: TRecord['id'],
+    patch: TRecord | DbRecordInput<TRecord>,
+  ): TRecord | null {
     const existingRecord = this._records.get(id);
     if (!existingRecord) {
       return null;
@@ -347,10 +361,13 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
     });
     const updatedIds = updatedRecords.map((r) => r.id);
 
-    this._logger?.debug(`${updatedIds.length} records updated in '${this.name}'`, {
-      ids: updatedIds,
-      patch,
-    });
+    this._logger?.debug(
+      `${updatedIds.length} records updated in '${this.name}'`,
+      {
+        ids: updatedIds,
+        patch,
+      },
+    );
 
     return updatedRecords;
   }
@@ -373,12 +390,16 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
    * @param input - Array of IDs, predicate object, or query options to find records.
    * @returns The number of records that were deleted.
    */
-  deleteMany(input: TRecord['id'][] | DbRecordInput<TRecord> | QueryOptions<TRecord>): number {
+  deleteMany(
+    input: TRecord['id'][] | DbRecordInput<TRecord> | QueryOptions<TRecord>,
+  ): number {
     const recordsToDelete = this.findMany(input);
     const ids = recordsToDelete.map((r) => r.id);
 
     recordsToDelete.forEach((record) => this._records.delete(record.id));
-    this._logger?.debug(`${ids.length} records deleted from '${this.name}'`, { ids });
+    this._logger?.debug(`${ids.length} records deleted from '${this.name}'`, {
+      ids,
+    });
 
     return recordsToDelete.length;
   }

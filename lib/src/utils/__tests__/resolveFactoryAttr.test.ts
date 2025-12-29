@@ -18,7 +18,11 @@ interface UserAttrs {
 }
 
 // Create test model
-const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
+const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<UserAttrs>()
+  .create();
 
 // Define test model type
 type UserModel = typeof userModel;
@@ -50,7 +54,11 @@ describe('resolveFactoryAttr', () => {
 
   it('should be usable in factory attribute functions', () => {
     type LocalSchema = {
-      users: CollectionConfig<UserModel, {}, Factory<UserModel, string, LocalSchema>>;
+      users: CollectionConfig<
+        UserModel,
+        {},
+        Factory<UserModel, string, LocalSchema>
+      >;
     };
 
     const factory = new Factory<UserModel, string, LocalSchema>(userModel, {

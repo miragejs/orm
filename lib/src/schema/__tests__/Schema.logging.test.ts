@@ -20,8 +20,16 @@ interface PostAttrs {
 }
 
 // Create test models
-const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
-const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
+const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<UserAttrs>()
+  .create();
+const postModel = model()
+  .name('post')
+  .collection('posts')
+  .attrs<PostAttrs>()
+  .create();
 
 // Create test factories
 const userFactory = factory()
@@ -145,7 +153,10 @@ describe('Schema with Logging', () => {
       const testSchema = schema()
         .logging({ enabled: true, level: 'debug' })
         .collections({
-          users: collection<TestSchema>().model(userModel).factory(userFactory).create(),
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .create(),
         })
         .setup();
 
@@ -183,7 +194,10 @@ describe('Schema with Logging', () => {
       const testSchema = schema()
         .logging({ enabled: true, level: 'info' })
         .collections({
-          users: collection<TestSchema>().model(userModel).factory(userFactory).create(),
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .create(),
         })
         .setup();
 
@@ -205,7 +219,10 @@ describe('Schema with Logging', () => {
       const testSchema = schema()
         .logging({ enabled: true, level: 'debug' })
         .collections({
-          users: collection<TestSchema>().model(userModel).factory(userFactory).create(),
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .create(),
         })
         .setup();
 
@@ -226,7 +243,10 @@ describe('Schema with Logging', () => {
       const testSchema = schema()
         .logging({ enabled: true, level: 'debug' })
         .collections({
-          users: collection<TestSchema>().model(userModel).factory(userFactory).create(),
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .create(),
         })
         .setup();
 
@@ -255,7 +275,10 @@ describe('Schema with Logging', () => {
       const testSchema = schema()
         .logging({ enabled: true, level: 'debug' })
         .collections({
-          users: collection<TestSchema>().model(userModel).factory(userFactory).create(),
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .create(),
         })
         .setup();
 
@@ -284,7 +307,10 @@ describe('Schema with Logging', () => {
       const testSchema = schema()
         .logging({ enabled: true, level: 'debug' })
         .collections({
-          users: collection<TestSchema>().model(userModel).factory(userFactory).create(),
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .create(),
         })
         .setup();
 
@@ -311,7 +337,10 @@ describe('Schema with Logging', () => {
       const testSchema = schema()
         .logging({ enabled: true, level: 'debug' })
         .collections({
-          users: collection<TestSchema>().model(userModel).factory(userFactory).create(),
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .create(),
         })
         .setup();
 
@@ -332,7 +361,10 @@ describe('Schema with Logging', () => {
       const testSchema = schema()
         .logging({ enabled: true, level: 'debug' })
         .collections({
-          users: collection<TestSchema>().model(userModel).factory(userFactory).create(),
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .create(),
         })
         .setup();
 
@@ -463,7 +495,10 @@ describe('Schema with Logging', () => {
         }),
       );
 
-      expect(consoleLogSpy).toHaveBeenCalledWith("[Mirage] INFO: Seeds loaded for 'users'", '');
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        "[Mirage] INFO: Seeds loaded for 'users'",
+        '',
+      );
     });
 
     it('should log seed scenario loading', async () => {
@@ -619,7 +654,10 @@ describe('Schema with Logging', () => {
       const testSchema = schema()
         .logging({ enabled: true, level: 'silent' })
         .collections({
-          users: collection<TestSchema>().model(userModel).factory(userFactory).create(),
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .create(),
         })
         .setup();
 
