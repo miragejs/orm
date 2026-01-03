@@ -1518,6 +1518,132 @@ describe('Serializer options', () => {
       });
     });
 
+    describe('per-relation mode override', () => {
+      it('should embed relationship when using with object with mode override (no global relationsMode)', () => {
+        interface TeamAttrs {
+          id: string;
+          name: string;
+        }
+
+        const teamModel = model()
+          .name('team')
+          .collection('teams')
+          .attrs<TeamAttrs>()
+          .create();
+
+        interface TaskAttrs {
+          id: string;
+          title: string;
+          teamId: string;
+        }
+
+        interface TaskJSON {
+          id: string;
+          title: string;
+          team: TeamAttrs;
+        }
+
+        const taskModel = model()
+          .name('task')
+          .collection('tasks')
+          .attrs<TaskAttrs>()
+          .json<TaskJSON>()
+          .create();
+
+        const testSchema = schema()
+          .collections({
+            teams: collection().model(teamModel).create(),
+            tasks: collection()
+              .model(taskModel)
+              .relationships({
+                team: associations.belongsTo(teamModel, {
+                  foreignKey: 'teamId',
+                }),
+              })
+              .serializer({
+                // No global relationsMode - should default to foreignKey
+                // But per-relation mode override should still work
+                with: { team: { mode: 'embedded' } },
+              })
+              .create(),
+          })
+          .setup();
+
+        const team = testSchema.teams.create({ name: 'DevX' });
+        const task = testSchema.tasks.create({
+          title: 'Fix bug',
+          team: team,
+        });
+
+        const json = task.toJSON();
+
+        // Per-relation mode override should embed the team
+        expect(json).toHaveProperty('team');
+        expect(json.team).toEqual({ id: team.id, name: 'DevX' });
+        // Foreign key should be removed when mode is 'embedded'
+        expect(json).not.toHaveProperty('teamId');
+      });
+
+      it('should use foreignKey for specific relation even when global mode is embedded', () => {
+        type UserJSON = {
+          id: string;
+          name: string;
+          email: string;
+          postIds: string[];
+        };
+
+        const testUserModel = model()
+          .name('user')
+          .collection('users')
+          .attrs<UserAttrs>()
+          .json<UserJSON>()
+          .create();
+
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(testUserModel)
+              .relationships({
+                posts: associations.hasMany(postModel),
+              })
+              .serializer({
+                relationsMode: 'embedded',
+                with: { posts: { mode: 'foreignKey' } },
+              })
+              .create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: associations.belongsTo(testUserModel, {
+                  foreignKey: 'authorId',
+                }),
+              })
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Alice',
+          email: 'alice@example.com',
+          password: 'secret',
+        });
+        const post = testSchema.posts.create({
+          title: 'Post 1',
+          content: 'Content',
+          author: user,
+        });
+        user.reload();
+
+        const json = user.toJSON();
+
+        // Per-relation mode override to foreignKey should NOT embed posts
+        expect(json).not.toHaveProperty('posts');
+        // But should include the foreign key
+        expect(json).toHaveProperty('postIds');
+        expect(json.postIds).toEqual([post.id]);
+      });
+    });
+
     describe('multiple relationships with mixed modes', () => {
       it('should handle multiple includes correctly in side-load mode', () => {
         interface CommentAttrs {

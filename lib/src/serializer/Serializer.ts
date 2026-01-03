@@ -345,7 +345,8 @@ export default class Serializer<
     if (opts.relationsMode === 'foreignKey' || !opts.relationsMode) {
       // Foreign key mode (relationsMode='foreignKey' or undefined for backward compatibility):
       // - Include foreign keys ONLY for relationships in the with array
-      // - No relationship data
+      // - No relationship data (unless per-relation mode override)
+      // - Support per-relation mode overrides (e.g., with: { team: { mode: 'embedded' } })
       // Example: with=['author'] -> { id: 1, title: '...', authorId: 1 } (no commentIds)
       const filteredAttrs = { ...attrs };
       const relationships = model.relationships as
@@ -353,26 +354,38 @@ export default class Serializer<
         | undefined;
 
       if (relationships) {
-        // Remove foreign keys for relationships NOT in the with array
+        // Process each relationship
         for (const relName in relationships) {
-          if (!withNames.includes(relName)) {
-            const relationship = relationships[relName] as {
-              type: string;
-              foreignKey: string;
-            };
+          const relationship = relationships[relName] as {
+            type: string;
+            foreignKey: string;
+          };
 
+          if (!withNames.includes(relName)) {
+            // Relationship NOT in with array - remove its foreign key
             if (
               relationship.type === 'hasMany' ||
               relationship.type === 'belongsTo'
             ) {
-              // Remove foreign key using configured foreignKey from relationship definition
               delete filteredAttrs[relationship.foreignKey];
             }
+          } else {
+            // Relationship IS in with array - check for per-relation mode override
+            const nestedOpts = this._getNestedOptions(opts.with, relName);
+            const relationMode = nestedOpts?.mode;
+
+            // If per-relation mode is 'embedded', remove the foreign key
+            if (relationMode === 'embedded') {
+              delete filteredAttrs[relationship.foreignKey];
+            }
+            // For 'embedded+foreignKey', 'sideLoaded', 'sideLoaded+foreignKey', keep the FK
+            // For 'foreignKey' or undefined, keep the FK (default behavior)
           }
         }
       }
 
-      return filteredAttrs;
+      // Include embedded/sideLoaded relationships from per-relation mode overrides
+      return { ...filteredAttrs, ...embedded, ...sideLoaded };
     }
 
     // If we reach here, throw an error for unknown mode
