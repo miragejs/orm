@@ -166,7 +166,7 @@ describe('DbCollection', () => {
       });
 
       it('should find records using predicate function', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: (record) => (record.age ?? 0) > 25,
         });
         expect(results).toHaveLength(2);
@@ -625,28 +625,28 @@ describe('DbCollection Types', () => {
 
     describe('Where clause with field operations', () => {
       it('should filter with eq operator', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: { status: { eq: 'active' } },
         });
         expect(results).toHaveLength(3);
       });
 
       it('should filter with ne operator', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: { status: { ne: 'active' } },
         });
         expect(results).toHaveLength(2);
       });
 
       it('should filter with in operator', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: { status: { in: ['active', 'pending'] } },
         });
         expect(results).toHaveLength(4);
       });
 
       it('should filter with range operators', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: { age: { gte: 30, lte: 35 } },
         });
         expect(results).toHaveLength(2);
@@ -654,28 +654,28 @@ describe('DbCollection Types', () => {
       });
 
       it('should filter with between operator', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: { age: { between: [28, 35] } },
         });
         expect(results).toHaveLength(3);
       });
 
       it('should filter with string like operator', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: { email: { like: '%@example.com' } },
         });
         expect(results).toHaveLength(3);
       });
 
       it('should filter with string ilike operator', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: { email: { ilike: '%@EXAMPLE.COM' } },
         });
         expect(results).toHaveLength(3);
       });
 
       it('should filter with startsWith operator', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: { name: { startsWith: 'A' } },
         });
         expect(results).toHaveLength(1);
@@ -683,21 +683,21 @@ describe('DbCollection Types', () => {
       });
 
       it('should filter with endsWith operator', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: { email: { endsWith: 'test.com' } },
         });
         expect(results).toHaveLength(2);
       });
 
       it('should filter with contains operator', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: { name: { contains: 'li' } },
         });
         expect(results).toHaveLength(2);
       });
 
       it('should filter array contains', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: { tags: { contains: 'admin' } },
         });
         expect(results).toHaveLength(2);
@@ -707,7 +707,7 @@ describe('DbCollection Types', () => {
 
     describe('Logical operators', () => {
       it('should combine conditions with AND', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: {
             AND: [{ status: 'active' }, { age: { gte: 30 } }],
           },
@@ -717,7 +717,7 @@ describe('DbCollection Types', () => {
       });
 
       it('should combine conditions with OR', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: {
             OR: [{ status: 'inactive' }, { age: { lt: 28 } }],
           },
@@ -727,7 +727,7 @@ describe('DbCollection Types', () => {
       });
 
       it('should negate conditions with NOT', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: {
             NOT: { status: 'active' },
           },
@@ -736,7 +736,7 @@ describe('DbCollection Types', () => {
       });
 
       it('should combine AND, OR, and NOT', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: {
             AND: [
               {
@@ -753,7 +753,7 @@ describe('DbCollection Types', () => {
 
     describe('Callback where with helpers', () => {
       it('should filter with callback and helpers', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: (record, { and, gte, eq }) =>
             and(gte(record.age, 30), eq(record.status, 'active')),
         });
@@ -762,21 +762,21 @@ describe('DbCollection Types', () => {
       });
 
       it('should use string helpers', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: (record, { ilike }) => ilike(record.email, '%@EXAMPLE.COM'),
         });
         expect(results).toHaveLength(3);
       });
 
       it('should use range helpers', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: (record, { between }) => between(record.age, 28, 35),
         });
         expect(results).toHaveLength(3);
       });
 
       it('should use or helper for multiple conditions', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: (record, { or, eq }) =>
             or(eq(record.status, 'inactive'), eq(record.status, 'pending')),
         });
@@ -785,7 +785,7 @@ describe('DbCollection Types', () => {
       });
 
       it('should use not helper to invert condition', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: (record, { not, eq }) => not(eq(record.status, 'active')),
         });
         expect(results).toHaveLength(2);
@@ -793,7 +793,7 @@ describe('DbCollection Types', () => {
       });
 
       it('should combine logical helpers', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: (record, { and, or, gte, eq }) =>
             and(
               or(eq(record.status, 'active'), eq(record.status, 'pending')),
@@ -807,21 +807,21 @@ describe('DbCollection Types', () => {
 
     describe('Sorting', () => {
       it('should sort by single field ascending', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           orderBy: { age: 'asc' },
         });
         expect(results.map((r) => r.age)).toEqual([25, 28, 30, 35, 40]);
       });
 
       it('should sort by single field descending', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           orderBy: { age: 'desc' },
         });
         expect(results.map((r) => r.age)).toEqual([40, 35, 30, 28, 25]);
       });
 
       it('should sort by multiple fields using array', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           orderBy: [
             ['age', 'desc'],
             ['name', 'asc'],
@@ -832,7 +832,7 @@ describe('DbCollection Types', () => {
       });
 
       it('should sort with where clause', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: { status: 'active' },
           orderBy: { age: 'desc' },
         });
@@ -843,14 +843,14 @@ describe('DbCollection Types', () => {
 
     describe('Offset and limit pagination', () => {
       it('should apply limit', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           limit: 2,
         });
         expect(results).toHaveLength(2);
       });
 
       it('should apply offset', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           orderBy: { id: 'asc' },
           offset: 2,
         });
@@ -859,7 +859,7 @@ describe('DbCollection Types', () => {
       });
 
       it('should apply offset and limit together', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           orderBy: { id: 'asc' },
           offset: 1,
           limit: 2,
@@ -869,7 +869,7 @@ describe('DbCollection Types', () => {
       });
 
       it('should paginate with where and orderBy', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           where: { status: 'active' },
           orderBy: { age: 'asc' },
           offset: 1,
@@ -882,7 +882,7 @@ describe('DbCollection Types', () => {
 
     describe('Cursor-based (keyset) pagination', () => {
       it('should apply cursor with single field', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           orderBy: { age: 'asc' },
           cursor: { age: 28 },
         });
@@ -890,7 +890,7 @@ describe('DbCollection Types', () => {
       });
 
       it('should apply cursor with descending order', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           orderBy: { age: 'desc' },
           cursor: { age: 35 },
         });
@@ -898,7 +898,7 @@ describe('DbCollection Types', () => {
       });
 
       it('should apply cursor with multiple fields', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           orderBy: [
             ['age', 'desc'],
             ['name', 'asc'],
@@ -909,7 +909,7 @@ describe('DbCollection Types', () => {
       });
 
       it('should apply cursor with date field', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           orderBy: { createdAt: 'desc' },
           cursor: { createdAt: new Date('2025-01-03') },
         });
@@ -917,13 +917,23 @@ describe('DbCollection Types', () => {
       });
 
       it('should combine cursor with limit', () => {
-        const results = collection.findMany({
+        const { records: results } = collection.findMany({
           orderBy: { age: 'asc' },
           cursor: { age: 25 },
           limit: 2,
         });
         expect(results).toHaveLength(2);
         expect(results.map((r) => r.age)).toEqual([28, 30]);
+      });
+
+      it('should return total count before pagination', () => {
+        const { records, total } = collection.findMany({
+          where: { status: 'active' },
+          orderBy: { age: 'asc' },
+          limit: 1,
+        });
+        expect(records).toHaveLength(1);
+        expect(total).toBe(3); // 3 active users total
       });
     });
 

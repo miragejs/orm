@@ -3,6 +3,8 @@ import { Serializer } from '@src/serializer';
 import type { SerializerOptions } from '@src/serializer';
 
 import type {
+  ModelAttrs,
+  QueryMeta,
   SerializedCollectionFor,
   SerializedModelFor,
   ModelInstance,
@@ -23,6 +25,13 @@ export default class ModelCollection<
   private readonly _template: TTemplate;
   public readonly collectionName: string;
   public models: Array<ModelInstance<TTemplate, TSchema>>;
+
+  /**
+   * Query metadata containing the original query options and total count.
+   * Only present when the collection was created from a paginated query.
+   */
+  public readonly meta?: QueryMeta<ModelAttrs<TTemplate, TSchema>>;
+
   protected _serializer?: Serializer<
     TTemplate,
     TSchema,
@@ -39,9 +48,11 @@ export default class ModelCollection<
       SerializedModelFor<TTemplate>,
       SerializedCollectionFor<TTemplate>
     >,
+    meta?: QueryMeta<ModelAttrs<TTemplate, TSchema>>,
   ) {
     this.collectionName = template.collectionName;
     this.models = [...(models ?? [])];
+    this.meta = meta;
 
     this._template = template;
     this._serializer = serializer;

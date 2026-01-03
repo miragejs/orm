@@ -1,6 +1,7 @@
 import type {
   DbCollection,
   DbRecordInput,
+  PaginatedResult,
   QueryOptions,
   WhereHelperFns,
 } from '@src/db';
@@ -201,7 +202,8 @@ export abstract class BaseCollection<
   /**
    * Finds multiple models by IDs, predicate object, or query options.
    * @param input - The array of IDs, predicate object, or query options to find by.
-   * @returns A collection of matching model instances.
+   * @returns A collection of matching model instances. When using QueryOptions,
+   *          the collection includes metadata with the original query and total count.
    * @example
    * ```typescript
    * // Find by IDs
@@ -210,12 +212,13 @@ export abstract class BaseCollection<
    * // Find by predicate object
    * collection.findMany({ status: 'active' });
    *
-   * // Find with query options
-   * collection.findMany({
+   * // Find with query options (includes meta with total)
+   * const result = collection.findMany({
    *   where: { age: { gte: 18 } },
    *   orderBy: { name: 'asc' },
    *   limit: 10
    * });
+   * result.meta?.total; // Total matching records before pagination
    *
    * // Find with callback where clause
    * collection.findMany({
@@ -229,21 +232,49 @@ export abstract class BaseCollection<
       | DbRecordInput<ModelAttrs<TTemplate, TSchema>>
       | QueryOptions<ModelAttrs<TTemplate, TSchema>>,
   ): ModelCollection<TTemplate, TSchema> {
-    // Handle QueryOptions with callback where clause
-    if (
-      typeof input === 'object' &&
-      'where' in input &&
-      typeof input.where === 'function'
-    ) {
-      const queryOptions = this._convertQueryOptionsCallback(input);
-      const records = this.dbCollection.findMany(queryOptions);
+    // Handle array of IDs - returns array from DbCollection
+    if (Array.isArray(input)) {
+      const records = this.dbCollection.findMany(input);
       const models = records.map((record) =>
         this._createModelFromRecord(record),
       );
       return new ModelCollection(this.template, models, this.serializer);
     }
 
-    const records = this.dbCollection.findMany(input);
+    // Check if it's QueryOptions (has where, orderBy, cursor, offset, or limit)
+    const hasQueryKeys =
+      typeof input === 'object' &&
+      ('where' in input ||
+        'orderBy' in input ||
+        'cursor' in input ||
+        'offset' in input ||
+        'limit' in input);
+
+    if (hasQueryKeys) {
+      // Handle QueryOptions with callback where clause
+      const queryOptions =
+        typeof input.where === 'function'
+          ? this._convertQueryOptionsCallback(
+              input as QueryOptions<ModelAttrs<TTemplate, TSchema>>,
+            )
+          : (input as QueryOptions<ModelAttrs<TTemplate, TSchema>>);
+      const result = this.dbCollection.findMany(
+        queryOptions,
+      ) as PaginatedResult<ModelAttrs<TTemplate, TSchema>>;
+      const models = result.records.map((record) =>
+        this._createModelFromRecord(record),
+      );
+
+      return new ModelCollection(this.template, models, this.serializer, {
+        query: queryOptions,
+        total: result.total,
+      });
+    }
+
+    // Handle predicate object - returns array from DbCollection
+    const records = this.dbCollection.findMany(
+      input as DbRecordInput<ModelAttrs<TTemplate, TSchema>>,
+    );
     const models = records.map((record) => this._createModelFromRecord(record));
     return new ModelCollection(this.template, models, this.serializer);
   }

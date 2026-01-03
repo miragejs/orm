@@ -583,6 +583,104 @@ describe('BaseCollection', () => {
       // Cleanup
       usersCollection.clear();
     });
+
+    it('should include meta with total count when using QueryOptions', () => {
+      const usersCollection = testSchema.db.getCollection('users');
+      usersCollection.insertMany([
+        {
+          id: '1',
+          name: 'John',
+          email: 'john@example.com',
+          age: 25,
+          status: 'active',
+          postIds: [],
+        },
+        {
+          id: '2',
+          name: 'Jane',
+          email: 'jane@example.com',
+          age: 30,
+          status: 'active',
+          postIds: [],
+        },
+        {
+          id: '3',
+          name: 'Bob',
+          email: 'bob@example.com',
+          age: 35,
+          status: 'active',
+          postIds: [],
+        },
+        {
+          id: '4',
+          name: 'Alice',
+          email: 'alice@example.com',
+          age: 40,
+          status: 'inactive',
+          postIds: [],
+        },
+      ]);
+
+      const users = testSchema.users.findMany({
+        where: { status: 'active' },
+        orderBy: { age: 'asc' },
+        limit: 2,
+      });
+
+      expect(users.length).toBe(2);
+      expect(users.meta).toBeDefined();
+      expect(users.meta?.total).toBe(3); // 3 active users total
+      expect(users.meta?.query).toEqual({
+        where: { status: 'active' },
+        orderBy: { age: 'asc' },
+        limit: 2,
+      });
+
+      // Cleanup
+      usersCollection.clear();
+    });
+
+    it('should not include meta when using ID array', () => {
+      const usersCollection = testSchema.db.getCollection('users');
+      usersCollection.insertMany([
+        { id: '1', name: 'John', email: 'john@example.com', postIds: [] },
+        { id: '2', name: 'Jane', email: 'jane@example.com', postIds: [] },
+      ]);
+
+      const users = testSchema.users.findMany(['1', '2']);
+      expect(users.length).toBe(2);
+      expect(users.meta).toBeUndefined();
+
+      // Cleanup
+      usersCollection.clear();
+    });
+
+    it('should not include meta when using predicate object', () => {
+      const usersCollection = testSchema.db.getCollection('users');
+      usersCollection.insertMany([
+        {
+          id: '1',
+          name: 'John',
+          email: 'john@example.com',
+          status: 'active',
+          postIds: [],
+        },
+        {
+          id: '2',
+          name: 'Jane',
+          email: 'jane@example.com',
+          status: 'active',
+          postIds: [],
+        },
+      ]);
+
+      const users = testSchema.users.findMany({ status: 'active' });
+      expect(users.length).toBe(2);
+      expect(users.meta).toBeUndefined();
+
+      // Cleanup
+      usersCollection.clear();
+    });
   });
 
   describe('deleteMany()', () => {

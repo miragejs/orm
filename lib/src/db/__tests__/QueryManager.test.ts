@@ -73,7 +73,7 @@ describe('QueryManager', () => {
   describe('Basic filtering', () => {
     describe('Equality operations', () => {
       it('should filter with eq operator', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           where: { name: { eq: 'Alice' } },
         });
         expect(results).toHaveLength(1);
@@ -81,7 +81,7 @@ describe('QueryManager', () => {
       });
 
       it('should filter with ne operator', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           where: { status: { ne: 'active' } },
         });
         expect(results).toHaveLength(2);
@@ -89,14 +89,14 @@ describe('QueryManager', () => {
       });
 
       it('should filter with in operator', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           where: { status: { in: ['active', 'pending'] } },
         });
         expect(results).toHaveLength(4);
       });
 
       it('should filter with nin operator', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           where: { status: { nin: ['active'] } },
         });
         expect(results).toHaveLength(2);
@@ -108,22 +108,25 @@ describe('QueryManager', () => {
           ...records,
           { id: '6', name: 'Frank', age: undefined, status: 'active' },
         ];
-        const results = queryManager.query(recordsWithNull as UserRecord[], {
-          where: { age: { isNull: true } },
-        });
+        const { records: results } = queryManager.query(
+          recordsWithNull as UserRecord[],
+          {
+            where: { age: { isNull: true } },
+          },
+        );
         expect(results).toHaveLength(1);
         expect(results[0].name).toBe('Frank');
       });
 
       it('should filter with isNull false', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           where: { age: { isNull: false } },
         });
         expect(results).toHaveLength(5);
       });
 
       it('should filter with direct value (shorthand equality)', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           where: { status: 'active' },
         });
         expect(results).toHaveLength(3);
@@ -132,7 +135,7 @@ describe('QueryManager', () => {
 
     describe('Range operations', () => {
       it('should filter with lt operator', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           where: { age: { lt: 30 } },
         });
         expect(results).toHaveLength(2);
@@ -140,14 +143,14 @@ describe('QueryManager', () => {
       });
 
       it('should filter with lte operator', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           where: { age: { lte: 30 } },
         });
         expect(results).toHaveLength(3);
       });
 
       it('should filter with gt operator', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           where: { age: { gt: 30 } },
         });
         expect(results).toHaveLength(2);
@@ -155,14 +158,14 @@ describe('QueryManager', () => {
       });
 
       it('should filter with gte operator', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           where: { age: { gte: 30 } },
         });
         expect(results).toHaveLength(3);
       });
 
       it('should filter with between operator', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           where: { age: { between: [28, 35] } },
         });
         expect(results).toHaveLength(3);
@@ -170,7 +173,7 @@ describe('QueryManager', () => {
       });
 
       it('should filter dates with range operators', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           where: { createdAt: { gte: new Date('2025-01-03') } },
         });
         expect(results).toHaveLength(3);
@@ -179,21 +182,21 @@ describe('QueryManager', () => {
 
     describe('String operations', () => {
       it('should filter with like operator (% wildcards)', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           where: { email: { like: '%@example.com' } },
         });
         expect(results).toHaveLength(3);
       });
 
       it('should filter with ilike operator (case-insensitive)', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           where: { email: { ilike: '%@EXAMPLE.COM' } },
         });
         expect(results).toHaveLength(3);
       });
 
       it('should filter with startsWith operator', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           where: { name: { startsWith: 'A' } },
         });
         expect(results).toHaveLength(1);
@@ -201,14 +204,14 @@ describe('QueryManager', () => {
       });
 
       it('should filter with endsWith operator', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           where: { email: { endsWith: 'test.com' } },
         });
         expect(results).toHaveLength(2);
       });
 
       it('should filter with contains operator', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           where: { name: { contains: 'li' } },
         });
         expect(results).toHaveLength(2);
@@ -218,7 +221,7 @@ describe('QueryManager', () => {
 
     describe('Array operations', () => {
       it('should filter array contains single element', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           where: { tags: { contains: 'admin' } },
         });
         expect(results).toHaveLength(2);
@@ -226,7 +229,7 @@ describe('QueryManager', () => {
       });
 
       it('should filter array contains multiple elements', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           where: { tags: { contains: ['admin', 'user'] } },
         });
         expect(results).toHaveLength(1);
@@ -234,7 +237,7 @@ describe('QueryManager', () => {
       });
 
       it('should filter array length with range ops', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           where: { tags: { length: { gte: 2 } } },
         });
         expect(results).toHaveLength(2);
@@ -244,7 +247,7 @@ describe('QueryManager', () => {
 
   describe('Logical operators', () => {
     it('should combine conditions with AND', () => {
-      const results = queryManager.query(records, {
+      const { records: results } = queryManager.query(records, {
         where: {
           AND: [{ status: 'active' }, { age: { gte: 30 } }],
         },
@@ -255,7 +258,7 @@ describe('QueryManager', () => {
     });
 
     it('should combine conditions with OR', () => {
-      const results = queryManager.query(records, {
+      const { records: results } = queryManager.query(records, {
         where: {
           OR: [{ status: 'inactive' }, { age: { lt: 28 } }],
         },
@@ -266,7 +269,7 @@ describe('QueryManager', () => {
     });
 
     it('should negate conditions with NOT', () => {
-      const results = queryManager.query(records, {
+      const { records: results } = queryManager.query(records, {
         where: {
           NOT: { status: 'active' },
         },
@@ -277,7 +280,7 @@ describe('QueryManager', () => {
     });
 
     it('should combine AND, OR, and NOT', () => {
-      const results = queryManager.query(records, {
+      const { records: results } = queryManager.query(records, {
         where: {
           AND: [
             {
@@ -294,7 +297,7 @@ describe('QueryManager', () => {
     });
 
     it('should handle nested logical operators', () => {
-      const results = queryManager.query(records, {
+      const { records: results } = queryManager.query(records, {
         where: {
           OR: [
             {
@@ -313,7 +316,7 @@ describe('QueryManager', () => {
 
   describe('Callback where', () => {
     it('should filter with callback predicate', () => {
-      const results = queryManager.query(records, {
+      const { records: results } = queryManager.query(records, {
         where: (record) => record.age > 30,
       });
       expect(results).toHaveLength(2);
@@ -321,7 +324,7 @@ describe('QueryManager', () => {
     });
 
     it('should provide helper functions in callback', () => {
-      const results = queryManager.query(records, {
+      const { records: results } = queryManager.query(records, {
         where: (record, { and, gte, eq }) =>
           and(gte(record.age, 30), eq(record.status, 'active')),
       });
@@ -330,14 +333,14 @@ describe('QueryManager', () => {
     });
 
     it('should use string helpers in callback', () => {
-      const results = queryManager.query(records, {
+      const { records: results } = queryManager.query(records, {
         where: (record, { ilike }) => ilike(record.email, '%@EXAMPLE.COM'),
       });
       expect(results).toHaveLength(3);
     });
 
     it('should use range helpers in callback', () => {
-      const results = queryManager.query(records, {
+      const { records: results } = queryManager.query(records, {
         where: (record, { between }) => between(record.age, 28, 35),
       });
       expect(results).toHaveLength(3);
@@ -348,15 +351,18 @@ describe('QueryManager', () => {
         ...records,
         { id: '6', name: 'Frank', status: 'active' },
       ];
-      const results = queryManager.query(recordsWithNull as UserRecord[], {
-        where: (record, { isNull }) => isNull(record.age),
-      });
+      const { records: results } = queryManager.query(
+        recordsWithNull as UserRecord[],
+        {
+          where: (record, { isNull }) => isNull(record.age),
+        },
+      );
       expect(results).toHaveLength(1);
       expect(results[0].name).toBe('Frank');
     });
 
     it('should use or helper for multiple conditions', () => {
-      const results = queryManager.query(records, {
+      const { records: results } = queryManager.query(records, {
         where: (record, { or, eq }) =>
           or(eq(record.status, 'inactive'), eq(record.status, 'pending')),
       });
@@ -365,7 +371,7 @@ describe('QueryManager', () => {
     });
 
     it('should use not helper to invert condition', () => {
-      const results = queryManager.query(records, {
+      const { records: results } = queryManager.query(records, {
         where: (record, { not, eq }) => not(eq(record.status, 'active')),
       });
       expect(results).toHaveLength(2);
@@ -373,7 +379,7 @@ describe('QueryManager', () => {
     });
 
     it('should combine logical helpers (and, or, not)', () => {
-      const results = queryManager.query(records, {
+      const { records: results } = queryManager.query(records, {
         where: (record, { and, or, not, gte, eq }) =>
           and(
             or(eq(record.status, 'active'), eq(record.status, 'pending')),
@@ -388,14 +394,14 @@ describe('QueryManager', () => {
 
   describe('Sorting', () => {
     it('should sort by single field ascending', () => {
-      const results = queryManager.query(records, {
+      const { records: results } = queryManager.query(records, {
         orderBy: { age: 'asc' },
       });
       expect(results.map((r) => r.age)).toEqual([25, 28, 30, 35, 40]);
     });
 
     it('should sort by single field descending', () => {
-      const results = queryManager.query(records, {
+      const { records: results } = queryManager.query(records, {
         orderBy: { age: 'desc' },
       });
       expect(results.map((r) => r.age)).toEqual([40, 35, 30, 28, 25]);
@@ -407,7 +413,7 @@ describe('QueryManager', () => {
         { id: '2', name: 'Bob', age: 30, status: 'inactive' },
         { id: '3', name: 'Charlie', age: 25, status: 'active' },
       ];
-      const results = queryManager.query(
+      const { records: results } = queryManager.query(
         recordsWithDuplicates as UserRecord[],
         {
           orderBy: { age: 'desc', name: 'asc' },
@@ -422,7 +428,7 @@ describe('QueryManager', () => {
         { id: '2', name: 'Bob', age: 30, status: 'inactive' },
         { id: '3', name: 'Charlie', age: 25, status: 'active' },
       ];
-      const results = queryManager.query(
+      const { records: results } = queryManager.query(
         recordsWithDuplicates as UserRecord[],
         {
           orderBy: [
@@ -435,7 +441,7 @@ describe('QueryManager', () => {
     });
 
     it('should sort dates correctly', () => {
-      const results = queryManager.query(records, {
+      const { records: results } = queryManager.query(records, {
         orderBy: { createdAt: 'desc' },
       });
       expect(results.map((r) => r.id)).toEqual(['5', '4', '3', '2', '1']);
@@ -447,9 +453,12 @@ describe('QueryManager', () => {
         { id: '2', name: 'Bob', age: undefined },
         { id: '3', name: 'Charlie', age: 25 },
       ];
-      const results = queryManager.query(recordsWithNull as UserRecord[], {
-        orderBy: { age: 'asc' },
-      });
+      const { records: results } = queryManager.query(
+        recordsWithNull as UserRecord[],
+        {
+          orderBy: { age: 'asc' },
+        },
+      );
       expect(results.map((r) => r.id)).toEqual(['3', '1', '2']);
     });
   });
@@ -457,14 +466,14 @@ describe('QueryManager', () => {
   describe('Pagination', () => {
     describe('Offset and limit', () => {
       it('should apply limit', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           limit: 2,
         });
         expect(results).toHaveLength(2);
       });
 
       it('should apply offset', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           orderBy: { id: 'asc' },
           offset: 2,
         });
@@ -473,7 +482,7 @@ describe('QueryManager', () => {
       });
 
       it('should apply offset and limit together', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           orderBy: { id: 'asc' },
           offset: 1,
           limit: 2,
@@ -483,14 +492,14 @@ describe('QueryManager', () => {
       });
 
       it('should handle offset beyond records length', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           offset: 10,
         });
         expect(results).toHaveLength(0);
       });
 
       it('should handle limit larger than remaining records', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           offset: 3,
           limit: 10,
         });
@@ -498,9 +507,48 @@ describe('QueryManager', () => {
       });
     });
 
+    describe('Total count', () => {
+      it('should return total count before pagination', () => {
+        const { records: results, total } = queryManager.query(records, {
+          limit: 2,
+        });
+        expect(results).toHaveLength(2);
+        expect(total).toBe(5); // Total records before limit applied
+      });
+
+      it('should return total count after filtering but before pagination', () => {
+        const { records: results, total } = queryManager.query(records, {
+          where: { status: 'active' },
+          limit: 1,
+        });
+        expect(results).toHaveLength(1);
+        expect(total).toBe(3); // 3 active records total, but only 1 returned
+      });
+
+      it('should return total count with offset pagination', () => {
+        const { records: results, total } = queryManager.query(records, {
+          orderBy: { id: 'asc' },
+          offset: 2,
+          limit: 2,
+        });
+        expect(results).toHaveLength(2);
+        expect(total).toBe(5); // Total before pagination
+      });
+
+      it('should return total count with cursor pagination', () => {
+        const { records: results, total } = queryManager.query(records, {
+          orderBy: { age: 'asc' },
+          cursor: { age: 28 },
+          limit: 1,
+        });
+        expect(results).toHaveLength(1);
+        expect(total).toBe(5); // Total after filtering and sorting, before cursor/limit
+      });
+    });
+
     describe('Cursor-based (keyset) pagination', () => {
       it('should apply cursor with single field ascending', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           orderBy: { age: 'asc' },
           cursor: { age: 28 },
         });
@@ -508,7 +556,7 @@ describe('QueryManager', () => {
       });
 
       it('should apply cursor with single field descending', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           orderBy: { age: 'desc' },
           cursor: { age: 35 },
         });
@@ -537,7 +585,7 @@ describe('QueryManager', () => {
             createdAt: new Date('2025-01-04'),
           },
         ];
-        const results = queryManager.query(
+        const { records: results } = queryManager.query(
           recordsWithDuplicates as UserRecord[],
           {
             orderBy: [
@@ -551,7 +599,7 @@ describe('QueryManager', () => {
       });
 
       it('should apply cursor with dates', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           orderBy: { createdAt: 'desc' },
           cursor: { createdAt: new Date('2025-01-03') },
         });
@@ -559,7 +607,7 @@ describe('QueryManager', () => {
       });
 
       it('should exclude record at cursor position (cursor is exclusive)', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           orderBy: { age: 'asc' },
           cursor: { age: 30 },
         });
@@ -567,7 +615,7 @@ describe('QueryManager', () => {
       });
 
       it('should handle partial cursor (only some orderBy fields)', () => {
-        const results = queryManager.query(records, {
+        const { records: results } = queryManager.query(records, {
           orderBy: [
             ['age', 'desc'],
             ['name', 'asc'],
@@ -581,7 +629,7 @@ describe('QueryManager', () => {
 
   describe('Combined operations', () => {
     it('should combine filtering, sorting, and pagination', () => {
-      const results = queryManager.query(records, {
+      const { records: results } = queryManager.query(records, {
         where: { status: 'active' },
         orderBy: { age: 'desc' },
         offset: 1,
@@ -592,7 +640,7 @@ describe('QueryManager', () => {
     });
 
     it('should combine complex where, sorting, and cursor', () => {
-      const results = queryManager.query(records, {
+      const { records: results } = queryManager.query(records, {
         where: {
           OR: [{ status: 'active' }, { status: 'pending' }],
         },
@@ -605,7 +653,7 @@ describe('QueryManager', () => {
     });
 
     it('should handle all options together', () => {
-      const results = queryManager.query(records, {
+      const { records: results } = queryManager.query(records, {
         where: {
           AND: [{ active: true }, { age: { gte: 25 } }],
         },
@@ -622,26 +670,27 @@ describe('QueryManager', () => {
 
   describe('Edge cases', () => {
     it('should handle empty records array', () => {
-      const results = queryManager.query([], {
+      const { records: results, total } = queryManager.query([], {
         where: { status: 'active' },
       });
       expect(results).toEqual([]);
+      expect(total).toBe(0);
     });
 
     it('should handle empty where clause', () => {
-      const results = queryManager.query(records, {
+      const { records: results } = queryManager.query(records, {
         where: {},
       });
       expect(results).toHaveLength(5);
     });
 
     it('should handle no options', () => {
-      const results = queryManager.query(records, {});
+      const { records: results } = queryManager.query(records, {});
       expect(results).toHaveLength(5);
     });
 
     it('should handle complex field operations combined', () => {
-      const results = queryManager.query(records, {
+      const { records: results } = queryManager.query(records, {
         where: {
           age: {
             gte: 25,
@@ -654,14 +703,14 @@ describe('QueryManager', () => {
     });
 
     it('should handle limit of 0', () => {
-      const results = queryManager.query(records, {
+      const { records: results } = queryManager.query(records, {
         limit: 0,
       });
       expect(results).toEqual([]);
     });
 
     it('should handle negative offset (treated as 0)', () => {
-      const results = queryManager.query(records, {
+      const { records: results } = queryManager.query(records, {
         offset: -5,
       });
       expect(results).toHaveLength(5);

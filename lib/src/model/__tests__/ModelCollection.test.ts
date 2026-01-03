@@ -381,6 +381,94 @@ describe('ModelCollection', () => {
     });
   });
 
+  describe('Query metadata', () => {
+    it('should have undefined meta by default', () => {
+      expect(userCollection.meta).toBeUndefined();
+    });
+
+    it('should have undefined meta for empty collection', () => {
+      const emptyCollection = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+      );
+      expect(emptyCollection.meta).toBeUndefined();
+    });
+
+    it('should store meta when provided to constructor', () => {
+      const query = { where: { name: 'John' }, limit: 10 };
+      const collectionWithMeta = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+        [user1, user2],
+        undefined,
+        { query, total: 100 },
+      );
+      expect(collectionWithMeta.meta).toBeDefined();
+      expect(collectionWithMeta.meta?.query).toBe(query);
+      expect(collectionWithMeta.meta?.total).toBe(100);
+    });
+
+    it('should not preserve meta when filtering collection', () => {
+      const collectionWithMeta = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+        [user1, user2],
+        undefined,
+        { query: { limit: 10 }, total: 100 },
+      );
+
+      const filtered = collectionWithMeta.filter((m) => m.name === 'John');
+      expect(filtered.meta).toBeUndefined();
+    });
+
+    it('should not preserve meta when mapping collection', () => {
+      const collectionWithMeta = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+        [user1, user2],
+        undefined,
+        { query: { limit: 10 }, total: 100 },
+      );
+
+      const mapped = collectionWithMeta.map((m) => m);
+      expect(mapped.meta).toBeUndefined();
+    });
+
+    it('should not preserve meta when sorting collection', () => {
+      const collectionWithMeta = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+        [user1, user2],
+        undefined,
+        { query: { limit: 10 }, total: 100 },
+      );
+
+      const sorted = collectionWithMeta.sort((a, b) =>
+        a.name.localeCompare(b.name),
+      );
+      expect(sorted.meta).toBeUndefined();
+    });
+
+    it('should not preserve meta when reversing collection', () => {
+      const collectionWithMeta = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+        [user1, user2],
+        undefined,
+        { query: { limit: 10 }, total: 100 },
+      );
+
+      const reversed = collectionWithMeta.reverse();
+      expect(reversed.meta).toBeUndefined();
+    });
+
+    it('should not preserve meta when concatenating collections', () => {
+      const collectionWithMeta = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+        [user1, user2],
+        undefined,
+        { query: { limit: 10 }, total: 100 },
+      );
+
+      const concatenated = collectionWithMeta.concat([user3]);
+      expect(concatenated.meta).toBeUndefined();
+    });
+  });
+
   describe('Edge cases', () => {
     it('should handle empty collection operations', () => {
       const emptyCollection = new ModelCollection<UserModel, TestSchema>(

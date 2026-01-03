@@ -18,9 +18,12 @@ export default class QueryManager<TRecord extends DbRecord> {
    * Executes a query against a set of records.
    * @param records - All records to query
    * @param options - Query options
-   * @returns Filtered, sorted, and paginated records
+   * @returns Object containing filtered/paginated records and total count before pagination
    */
-  query(records: TRecord[], options: QueryOptions<TRecord>): TRecord[] {
+  query(
+    records: TRecord[],
+    options: QueryOptions<TRecord>,
+  ): { records: TRecord[]; total: number } {
     let results = records;
     const { cursor, limit, offset, orderBy, where } = options;
 
@@ -39,6 +42,9 @@ export default class QueryManager<TRecord extends DbRecord> {
       results = this._applyOrder(results, orderBy);
     }
 
+    // Capture total count BEFORE pagination (after filtering and sorting)
+    const total = results.length;
+
     // Apply cursor-based pagination (keyset)
     if (cursor && orderBy) {
       results = this._applyCursor(results, orderBy, cursor);
@@ -52,14 +58,14 @@ export default class QueryManager<TRecord extends DbRecord> {
     // Apply limit
     if (typeof limit === 'number') {
       if (limit === 0) {
-        return [];
+        return { records: [], total };
       }
       if (limit > 0) {
         results = results.slice(0, limit);
       }
     }
 
-    return results;
+    return { records: results, total };
   }
 
   /**

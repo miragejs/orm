@@ -1,4 +1,5 @@
 import type { BelongsTo, HasMany, Relationships } from '@src/associations';
+import type { QueryOptions } from '@src/db';
 import type {
   CollectionConfig,
   SchemaCollections,
@@ -597,3 +598,19 @@ export type ModelInstance<
  * Model status type
  */
 export type ModelStatus = 'new' | 'saved';
+
+// ============================================================================
+// QUERY METADATA TYPES
+// ============================================================================
+
+/**
+ * Metadata for query results in ModelCollection
+ * Contains information about the original query and total count before pagination
+ * @template TAttrs - The model attributes type
+ */
+export interface QueryMeta<TAttrs extends { id: unknown }> {
+  /** The query options used to fetch results */
+  query: QueryOptions<TAttrs>;
+  /** Total matching records before pagination */
+  total: number;
+}

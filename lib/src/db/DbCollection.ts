@@ -7,6 +7,7 @@ import type {
   DbRecord,
   DbRecordInput,
   NewDbRecord,
+  PaginatedResult,
   QueryOptions,
   Where,
 } from './types';
@@ -157,12 +158,12 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
 
     if (hasQueryKeys) {
       const query = { ...input, limit: 1 };
-      const results = this._queryManager.query(this.all(), query);
-      this._logger?.debug(`Found ${results.length} records in '${this.name}'`, {
+      const { records } = this._queryManager.query(this.all(), query);
+      this._logger?.debug(`Found ${records.length} records in '${this.name}'`, {
         query,
         operation: 'find',
       });
-      return results[0] ?? null;
+      return records[0] ?? null;
     }
 
     // 3. Handle predicate object (simple equality matching)
@@ -179,28 +180,50 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
   }
 
   /**
+   * Finds multiple records by IDs.
+   * @param ids - Array of IDs to find
+   * @returns An array of records that match
+   */
+  findMany(ids: TRecord['id'][]): TRecord[];
+
+  /**
+   * Finds multiple records by predicate object.
+   * @param predicate - Predicate object for simple equality matching
+   * @returns An array of records that match
+   */
+  findMany(predicate: DbRecordInput<TRecord>): TRecord[];
+
+  /**
+   * Finds multiple records by query options.
+   * @param options - Query options for advanced filtering, sorting, pagination
+   * @returns A paginated result with records and total count
+   */
+  findMany(options: QueryOptions<TRecord>): PaginatedResult<TRecord>;
+
+  /**
    * Finds multiple records by IDs, predicate object, or query options.
    * @param input - Array of IDs, predicate object, or query options
-   * @returns An array of records that match
+   * @returns An array of records or paginated result depending on input type
    * @example
    * ```typescript
-   * // By IDs
+   * // By IDs - returns TRecord[]
    * collection.findMany(['user-1', 'user-2']);
    *
-   * // By predicate object (simple equality)
+   * // By predicate object (simple equality) - returns TRecord[]
    * collection.findMany({ active: true });
    *
-   * // By query options (advanced filtering, sorting, pagination)
+   * // By query options (advanced filtering, sorting, pagination) - returns PaginatedResult
    * collection.findMany({
    *   where: { age: { gte: 18 }, status: { in: ['active', 'pending'] } },
    *   orderBy: { createdAt: 'desc' },
    *   limit: 10,
    * });
+   * // => { records: [...], total: 150 }
    * ```
    */
   findMany(
     input: TRecord['id'][] | DbRecordInput<TRecord> | QueryOptions<TRecord>,
-  ): TRecord[] {
+  ): TRecord[] | PaginatedResult<TRecord> {
     // 1. Handle array of IDs
     if (Array.isArray(input)) {
       const records = input
@@ -224,12 +247,16 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
 
     if (hasQueryKeys) {
       const query = input as QueryOptions<TRecord>;
-      const records = this._queryManager.query(this.all(), query);
-      this._logger?.debug(`Found ${records.length} records in '${this.name}'`, {
-        query,
-        operation: 'findMany',
-      });
-      return records;
+      const result = this._queryManager.query(this.all(), query);
+      this._logger?.debug(
+        `Found ${result.records.length} records in '${this.name}'`,
+        {
+          query,
+          total: result.total,
+          operation: 'findMany',
+        },
+      );
+      return result;
     }
 
     // 3. Handle predicate object (simple equality matching)
@@ -258,7 +285,7 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
     if (!where) {
       return this.size;
     }
-    return this._queryManager.query(this.all(), { where }).length;
+    return this._queryManager.query(this.all(), { where }).total;
   }
 
   /**
@@ -275,7 +302,10 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
     if (!where) {
       return !this.isEmpty;
     }
-    return this._queryManager.query(this.all(), { where, limit: 1 }).length > 0;
+    return (
+      this._queryManager.query(this.all(), { where, limit: 1 }).records.length >
+      0
+    );
   }
 
   // -- MUTATION METHODS --
@@ -353,7 +383,7 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
     input: TRecord['id'][] | DbRecordInput<TRecord> | QueryOptions<TRecord>,
     patch: TRecord | DbRecordInput<TRecord>,
   ): TRecord[] {
-    const recordsToUpdate = this.findMany(input);
+    const recordsToUpdate = this._getRecordsFromFindMany(input);
     const updatedRecords = recordsToUpdate.map((record) => {
       const updated = { ...record, ...patch } as TRecord;
       this._records.set(record.id, updated);
@@ -393,7 +423,7 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
   deleteMany(
     input: TRecord['id'][] | DbRecordInput<TRecord> | QueryOptions<TRecord>,
   ): number {
-    const recordsToDelete = this.findMany(input);
+    const recordsToDelete = this._getRecordsFromFindMany(input);
     const ids = recordsToDelete.map((r) => r.id);
 
     recordsToDelete.forEach((record) => this._records.delete(record.id));
@@ -413,6 +443,33 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
   }
 
   // -- PRIVATE METHODS --
+
+  /**
+   * Extracts records from findMany result, handling both array and PaginatedResult.
+   * @param input - Input to pass to findMany
+   * @returns Array of records
+   */
+  private _getRecordsFromFindMany(
+    input: TRecord['id'][] | DbRecordInput<TRecord> | QueryOptions<TRecord>,
+  ): TRecord[] {
+    // Handle each input type explicitly to avoid type narrowing issues
+    if (Array.isArray(input)) {
+      return this.findMany(input);
+    }
+    // Check if it's QueryOptions
+    const hasQueryKeys =
+      typeof input === 'object' &&
+      ('where' in input ||
+        'orderBy' in input ||
+        'cursor' in input ||
+        'offset' in input ||
+        'limit' in input);
+    if (hasQueryKeys) {
+      return this.findMany(input as QueryOptions<TRecord>).records;
+    }
+    // Must be predicate object
+    return this.findMany(input as DbRecordInput<TRecord>);
+  }
 
   /**
    * Prepares a record for insertion by generating an ID if it doesn't exist.

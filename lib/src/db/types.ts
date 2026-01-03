@@ -291,3 +291,14 @@ export interface QueryOptions<TRecord> {
   /** Cursor for keyset pagination (must align with orderBy fields) */
   cursor?: Partial<TRecord>;
 }
+
+/**
+ * Result type for paginated queries
+ * @template TRecord - The record type
+ */
+export interface PaginatedResult<TRecord> {
+  /** The matching records (after pagination applied) */
+  records: TRecord[];
+  /** Total count of records matching the where clause (before pagination) */
+  total: number;
+}
