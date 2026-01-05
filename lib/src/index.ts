@@ -85,6 +85,7 @@ export type {
   ModelUpdateAttrs,
   NewModelInstance,
   PartialModelAttrs,
+  ModelCollection,
 } from './model';
 
 // ----------------------------------------------------------------------------
