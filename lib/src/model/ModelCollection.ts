@@ -22,22 +22,21 @@ export default class ModelCollection<
   TTemplate extends ModelTemplate = ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
 > {
-  private readonly _template: TTemplate;
-  public readonly collectionName: string;
   public models: Array<ModelInstance<TTemplate, TSchema>>;
-
+  public readonly collectionName: string;
+  public readonly serializer?: Serializer<
+    TTemplate,
+    TSchema,
+    SerializedModelFor<TTemplate>,
+    SerializedCollectionFor<TTemplate>
+  >;
   /**
    * Query metadata containing the original query options and total count.
    * Only present when the collection was created from a paginated query.
    */
   public readonly meta?: QueryMeta<ModelAttrs<TTemplate, TSchema>>;
 
-  protected _serializer?: Serializer<
-    TTemplate,
-    TSchema,
-    SerializedModelFor<TTemplate>,
-    SerializedCollectionFor<TTemplate>
-  >;
+  private readonly _template: TTemplate;
 
   constructor(
     template: TTemplate,
@@ -52,10 +51,10 @@ export default class ModelCollection<
   ) {
     this.collectionName = template.collectionName;
     this.models = [...(models ?? [])];
+    this.serializer = serializer;
     this.meta = meta;
 
     this._template = template;
-    this._serializer = serializer;
   }
 
   /**
@@ -142,7 +141,7 @@ export default class ModelCollection<
     const mappedModels = this.models.map((model, index) =>
       cb(model, index, this),
     );
-    return new ModelCollection(this._template, mappedModels, this._serializer);
+    return new ModelCollection(this._template, mappedModels, this.serializer);
   }
 
   /**
@@ -160,11 +159,7 @@ export default class ModelCollection<
     const filteredModels = this.models.filter((model, index) =>
       cb(model, index, this),
     );
-    return new ModelCollection(
-      this._template,
-      filteredModels,
-      this._serializer,
-    );
+    return new ModelCollection(this._template, filteredModels, this.serializer);
   }
 
   /**
@@ -231,7 +226,7 @@ export default class ModelCollection<
         Array.isArray(other) ? other : other.models,
       ),
     ];
-    return new ModelCollection(this._template, allModels, this._serializer);
+    return new ModelCollection(this._template, allModels, this.serializer);
   }
 
   /**
@@ -264,7 +259,7 @@ export default class ModelCollection<
     ) => number,
   ): ModelCollection<TTemplate, TSchema> {
     const sortedModels = [...this.models].sort(compareFn);
-    return new ModelCollection(this._template, sortedModels, this._serializer);
+    return new ModelCollection(this._template, sortedModels, this.serializer);
   }
 
   /**
@@ -273,11 +268,7 @@ export default class ModelCollection<
    */
   reverse(): ModelCollection<TTemplate, TSchema> {
     const reversedModels = [...this.models].reverse();
-    return new ModelCollection(
-      this._template,
-      reversedModels,
-      this._serializer,
-    );
+    return new ModelCollection(this._template, reversedModels, this.serializer);
   }
 
   // -- CRUD OPERATIONS --
@@ -359,8 +350,8 @@ export default class ModelCollection<
   serialize<TSerialized = SerializedCollectionFor<TTemplate>>(
     options?: Partial<SerializerOptions<TTemplate, TSchema>>,
   ): TSerialized {
-    if (this._serializer instanceof Serializer) {
-      return this._serializer.serializeCollection(this, options) as TSerialized;
+    if (this.serializer instanceof Serializer) {
+      return this.serializer.serializeCollection(this, options) as TSerialized;
     }
     // Type assertion needed: Array of attrs may not exactly match conditional return type
     return this.models.map((model) => model.attrs) as TSerialized;

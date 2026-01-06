@@ -1215,6 +1215,158 @@ describe('Serializer options', () => {
         });
         expect(json).not.toHaveProperty('authorId');
       });
+
+      it('should use serializeAttrs for nested relationships (attrs + FKs only)', () => {
+        // Note: Deep nested relationships from related model's serializer config
+        // are NOT automatically applied. Use parent's nested with option instead.
+        // This prevents circular reference issues.
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .relationships({
+                posts: associations.hasMany(postModel),
+              })
+              .serializer({
+                with: ['posts'],
+                relationsMode: 'embedded',
+              })
+              .create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
+              })
+              // Post's serializer config is used for post.toJSON(), NOT when embedded in user
+              .serializer({
+                select: ['id', 'title', 'content'],
+              })
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Eve',
+          email: 'eve@example.com',
+          password: 'secret',
+        });
+        const post1 = testSchema.posts.create({
+          title: 'Post 1',
+          content: 'Content 1',
+          author: user,
+        });
+        const post2 = testSchema.posts.create({
+          title: 'Post 2',
+          content: 'Content 2',
+          author: user,
+        });
+
+        user.reload();
+        const json = user.toJSON();
+
+        // Embedded posts use serializeAttrs: selected attrs + foreign keys
+        expect(json).toEqual({
+          id: user.id,
+          name: 'Eve',
+          email: 'eve@example.com',
+          password: 'secret',
+          posts: [
+            {
+              id: post1.id,
+              title: 'Post 1',
+              content: 'Content 1',
+              authorId: user.id, // FK included via serializeAttrs
+            },
+            {
+              id: post2.id,
+              title: 'Post 2',
+              content: 'Content 2',
+              authorId: user.id, // FK included via serializeAttrs
+            },
+          ],
+        });
+        expect(json).not.toHaveProperty('postIds');
+      });
+
+      it('should support deep nesting via parent with option', () => {
+        // To include nested relationships, use the parent's with option
+        const testSchema = schema()
+          .collections({
+            users: collection()
+              .model(userModel)
+              .relationships({
+                posts: associations.hasMany(postModel),
+              })
+              .serializer({
+                // Parent controls nested relationships via with option
+                with: {
+                  posts: {
+                    select: ['id', 'title', 'content'],
+                    with: { author: true },
+                  },
+                },
+                relationsMode: 'embedded',
+              })
+              .create(),
+            posts: collection()
+              .model(postModel)
+              .relationships({
+                author: associations.belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                }),
+              })
+              .create(),
+          })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Eve',
+          email: 'eve@example.com',
+          password: 'secret',
+        });
+        const post1 = testSchema.posts.create({
+          title: 'Post 1',
+          content: 'Content 1',
+          author: user,
+        });
+        const post2 = testSchema.posts.create({
+          title: 'Post 2',
+          content: 'Content 2',
+          author: user,
+        });
+
+        user.reload();
+        const json = user.toJSON();
+
+        // Posts include nested author via parent's with option
+        expect(json).toMatchObject({
+          id: user.id,
+          name: 'Eve',
+          posts: [
+            {
+              id: post1.id,
+              title: 'Post 1',
+              content: 'Content 1',
+              author: expect.objectContaining({
+                id: user.id,
+                name: 'Eve',
+              }),
+            },
+            {
+              id: post2.id,
+              title: 'Post 2',
+              content: 'Content 2',
+              author: expect.objectContaining({
+                id: user.id,
+                name: 'Eve',
+              }),
+            },
+          ],
+        });
+        expect(json).not.toHaveProperty('postIds');
+      });
     });
 
     describe('embedded+foreignKey mode', () => {
@@ -1725,6 +1877,68 @@ describe('Serializer options', () => {
           comments: [expect.objectContaining({ id: comment.id })],
         });
         expect(json.post).toHaveProperty('commentIds');
+      });
+    });
+  });
+
+  describe('embedded relationships respect related model serializer config', () => {
+    it('should apply related model select config when embedding', () => {
+      // Define JSON type that includes embedded author
+      type PostWithAuthorJSON = {
+        id: string;
+        title: string;
+        content: string;
+        author: { id: string; name: string };
+      };
+
+      const testPostModel = model()
+        .name('post')
+        .collection('posts')
+        .attrs<PostAttrs>()
+        .json<PostWithAuthorJSON>()
+        .create();
+
+      const testSchema = schema()
+        .collections({
+          users: collection()
+            .model(userModel)
+            .serializer({
+              select: ['id', 'name'],
+            })
+            .create(),
+          posts: collection()
+            .model(testPostModel)
+            .relationships({
+              author: associations.belongsTo(userModel, {
+                foreignKey: 'authorId',
+              }),
+            })
+            .serializer({
+              with: ['author'],
+              relationsMode: 'embedded',
+            })
+            .create(),
+        })
+        .setup();
+
+      const user = testSchema.users.create({
+        name: 'Bob',
+        email: 'bob@example.com',
+        password: 'secret',
+      });
+      testSchema.posts.create({
+        title: 'Post 1',
+        content: 'Content',
+        author: user,
+      });
+
+      const post = testSchema.posts.first()!;
+      const json = post.toJSON();
+
+      // Embedded author should only have id and name (from user's serializer select)
+      expect(json.author).toEqual({
+        id: user.id,
+        name: 'Bob',
       });
     });
   });

@@ -220,8 +220,14 @@ test('ModelInstance should default to Serializer<TTemplate, SchemaCollections>',
   type UserInstance = ModelInstance<typeof userModel>;
 
   // Should default to Serializer<userModel, SchemaCollections>
-  expectTypeOf<UserInstance['_serializer']>().toEqualTypeOf<
-    Serializer<typeof userModel, SchemaCollections> | undefined
+  expectTypeOf<UserInstance['serializer']>().toEqualTypeOf<
+    | Serializer<
+        typeof userModel,
+        SchemaCollections,
+        SerializedModelFor<typeof userModel>,
+        SerializedCollectionFor<typeof userModel>
+      >
+    | undefined
   >();
 });
 
@@ -236,7 +242,7 @@ test('ModelInstance serializer type is inferred from template', () => {
     SerializedCollectionFor<typeof userModel>
   >;
 
-  expectTypeOf<UserInstance['_serializer']>().toEqualTypeOf<
+  expectTypeOf<UserInstance['serializer']>().toEqualTypeOf<
     ExpectedSerializer | undefined
   >();
 });
@@ -245,8 +251,14 @@ test('NewModelInstance should default to Serializer<TTemplate, SchemaCollections
   type NewUser = NewModelInstance<typeof userModel>;
 
   // Should default to Serializer<userModel, SchemaCollections>
-  expectTypeOf<NewUser['_serializer']>().toEqualTypeOf<
-    Serializer<typeof userModel, SchemaCollections> | undefined
+  expectTypeOf<NewUser['serializer']>().toEqualTypeOf<
+    | Serializer<
+        typeof userModel,
+        SchemaCollections,
+        SerializedModelFor<typeof userModel>,
+        SerializedCollectionFor<typeof userModel>
+      >
+    | undefined
   >();
 });
 
@@ -261,7 +273,7 @@ test('NewModelInstance serializer type is inferred from template', () => {
     SerializedCollectionFor<typeof userModel>
   >;
 
-  expectTypeOf<NewUser['_serializer']>().toEqualTypeOf<
+  expectTypeOf<NewUser['serializer']>().toEqualTypeOf<
     ExpectedSerializer | undefined
   >();
 });
@@ -326,8 +338,14 @@ test('ModelCollection should default to Serializer<TTemplate, TSchema>', () => {
   type UsersCollection = ModelCollection<typeof userModel, TestSchema>;
 
   // Should default to Serializer<userModel, TestSchema>
-  expectTypeOf<UsersCollection['_serializer']>().toEqualTypeOf<
-    Serializer<typeof userModel, TestSchema> | undefined
+  expectTypeOf<UsersCollection['serializer']>().toEqualTypeOf<
+    | Serializer<
+        typeof userModel,
+        TestSchema,
+        SerializedModelFor<typeof userModel>,
+        SerializedCollectionFor<typeof userModel>
+      >
+    | undefined
   >();
 });
 
@@ -342,7 +360,7 @@ test('ModelCollection serializer type is inferred from template', () => {
     SerializedCollectionFor<typeof userModel>
   >;
 
-  expectTypeOf<UsersCollection['_serializer']>().toEqualTypeOf<
+  expectTypeOf<UsersCollection['serializer']>().toEqualTypeOf<
     ExpectedSerializer | undefined
   >();
 });

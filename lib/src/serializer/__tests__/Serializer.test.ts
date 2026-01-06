@@ -1,5 +1,11 @@
+import { Factory } from '@src/factory';
 import { model, ModelInstance } from '@src/model';
-import { collection, schema, SchemaCollections } from '@src/schema';
+import {
+  collection,
+  CollectionConfig,
+  schema,
+  SchemaCollections,
+} from '@src/schema';
 
 import Serializer from '../Serializer';
 
@@ -222,6 +228,232 @@ describe('Serializer', () => {
         { id: '1', title: 'First Post', content: 'Content 1', authorId: '1' },
         { id: '2', title: 'Second Post', content: 'Content 2', authorId: '1' },
       ]);
+    });
+  });
+
+  describe('Layered serialization methods', () => {
+    describe('serializeAttrs (Layer 1)', () => {
+      it('should return selected attributes plus all foreign keys', () => {
+        type UserAttrsJSON = { id: string; name: string; postIds: string[] };
+
+        const testUserModel = model()
+          .name('user')
+          .collection('users')
+          .attrs<UserAttrs>()
+          .json<UserAttrsJSON>()
+          .create();
+
+        type TestUserModel = typeof testUserModel;
+
+        type TestSchema = {
+          users: CollectionConfig<
+            TestUserModel,
+            {},
+            Factory<TestUserModel>,
+            TestSchema,
+            Serializer<TestUserModel, TestSchema>
+          >;
+        };
+
+        const serializer = new Serializer<TestUserModel, TestSchema>(
+          testUserModel,
+          {
+            select: ['id', 'name'],
+          },
+        );
+        const userCollection = collection<TestSchema>()
+          .model(testUserModel)
+          .serializer(serializer)
+          .create();
+        const testSchema = schema()
+          .collections({ users: userCollection })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Alice',
+          email: 'alice@example.com',
+          password: 'secret',
+          role: 'admin',
+        });
+
+        const attrs = serializer.serializeAttrs(user);
+
+        expect(attrs).toEqual({ id: '1', name: 'Alice' });
+      });
+    });
+
+    describe('serializeCollectionAttrs (Layer 1)', () => {
+      it('should return array of attributes for each model', () => {
+        type UserAttrsJSON = { id: string; name: string };
+
+        const testUserModel = model()
+          .name('user')
+          .collection('users')
+          .attrs<UserAttrs>()
+          .json<UserAttrsJSON>()
+          .create();
+
+        type TestUserModel = typeof testUserModel;
+
+        type TestSchema = {
+          users: CollectionConfig<
+            TestUserModel,
+            {},
+            Factory<TestUserModel>,
+            TestSchema,
+            Serializer<TestUserModel, TestSchema>
+          >;
+        };
+
+        const serializer = new Serializer<TestUserModel, TestSchema>(
+          testUserModel,
+          {
+            select: ['id', 'name'],
+          },
+        );
+        const userCollection = collection<TestSchema>()
+          .model(testUserModel)
+          .serializer(serializer)
+          .create();
+        const testSchema = schema()
+          .collections({ users: userCollection })
+          .setup();
+
+        testSchema.users.create({
+          name: 'Alice',
+          email: 'alice@example.com',
+          password: 'secret',
+          role: 'admin',
+        });
+        testSchema.users.create({
+          name: 'Bob',
+          email: 'bob@example.com',
+          password: 'secret',
+          role: 'user',
+        });
+
+        const users = testSchema.users.all();
+        const attrs = serializer.serializeCollectionAttrs(users);
+
+        expect(attrs).toEqual([
+          { id: '1', name: 'Alice' },
+          { id: '2', name: 'Bob' },
+        ]);
+      });
+    });
+
+    describe('serializeModel (Layer 2)', () => {
+      it('should return model data without root wrapping', () => {
+        type UserAttrsJSON = { id: string; name: string; email: string };
+
+        const testUserModel = model()
+          .name('user')
+          .collection('users')
+          .attrs<UserAttrs>()
+          .json<UserAttrsJSON>()
+          .create();
+
+        type TestUserModel = typeof testUserModel;
+
+        type TestSchema = {
+          users: CollectionConfig<
+            TestUserModel,
+            {},
+            Factory<TestUserModel>,
+            TestSchema,
+            Serializer<TestUserModel, TestSchema>
+          >;
+        };
+
+        const serializer = new Serializer<TestUserModel, TestSchema>(
+          testUserModel,
+          {
+            select: ['id', 'name', 'email'],
+          },
+        );
+        const userCollection = collection<TestSchema>()
+          .model(testUserModel)
+          .serializer(serializer)
+          .create();
+        const testSchema = schema()
+          .collections({ users: userCollection })
+          .setup();
+
+        const user = testSchema.users.create({
+          name: 'Alice',
+          email: 'alice@example.com',
+          password: 'secret',
+          role: 'admin',
+        });
+
+        const data = serializer.serializeModel(user);
+
+        expect(data).toEqual({
+          id: '1',
+          name: 'Alice',
+          email: 'alice@example.com',
+        });
+      });
+    });
+
+    describe('serializeCollectionModels (Layer 2)', () => {
+      it('should return array of model data without root wrapping', () => {
+        type UserAttrsJSON = { id: string; name: string };
+
+        const testUserModel = model()
+          .name('user')
+          .collection('users')
+          .attrs<UserAttrs>()
+          .json<UserAttrsJSON>()
+          .create();
+
+        type TestUserModel = typeof testUserModel;
+
+        type TestSchema = {
+          users: CollectionConfig<
+            TestUserModel,
+            {},
+            Factory<TestUserModel>,
+            TestSchema,
+            Serializer<TestUserModel, TestSchema>
+          >;
+        };
+
+        const serializer = new Serializer<TestUserModel, TestSchema>(
+          testUserModel,
+          {
+            select: ['id', 'name'],
+          },
+        );
+        const userCollection = collection<TestSchema>()
+          .model(testUserModel)
+          .serializer(serializer)
+          .create();
+        const testSchema = schema()
+          .collections({ users: userCollection })
+          .setup();
+
+        testSchema.users.create({
+          name: 'Alice',
+          email: 'alice@example.com',
+          password: 'secret',
+          role: 'admin',
+        });
+        testSchema.users.create({
+          name: 'Bob',
+          email: 'bob@example.com',
+          password: 'secret',
+          role: 'user',
+        });
+
+        const users = testSchema.users.all();
+        const data = serializer.serializeCollectionModels(users);
+
+        expect(data).toEqual([
+          { id: '1', name: 'Alice' },
+          { id: '2', name: 'Bob' },
+        ]);
+      });
     });
   });
 });

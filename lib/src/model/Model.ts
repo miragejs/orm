@@ -43,13 +43,13 @@ export default class Model<
   SerializedModelFor<TTemplate>
 > {
   public readonly relationships?: RelationshipsByTemplate<TTemplate, TSchema>;
-  protected _relationshipsManager?: RelationshipsManager<TTemplate, TSchema>;
-  declare protected _serializer?: Serializer<
+  public readonly serializer?: Serializer<
     TTemplate,
     TSchema,
     SerializedModelFor<TTemplate>,
     SerializedCollectionFor<TTemplate>
   >;
+  protected _relationshipsManager?: RelationshipsManager<TTemplate, TSchema>;
 
   constructor(
     template: TTemplate,
@@ -80,6 +80,7 @@ export default class Model<
       serializer,
     );
 
+    this.serializer = serializer;
     this.relationships = relationships;
     if (schema && relationships) {
       // Cast to base Model type since RelationshipsManager doesn't need serializer type info
@@ -448,8 +449,8 @@ export default class Model<
   serialize<TSerialized = SerializedModelFor<TTemplate>>(
     options?: Partial<SerializerOptions<TTemplate, TSchema>>,
   ): TSerialized {
-    if (this._serializer instanceof Serializer) {
-      return this._serializer.serialize(
+    if (this.serializer instanceof Serializer) {
+      return this.serializer.serialize(
         this as unknown as ModelInstance<TTemplate, TSchema>,
         options,
       ) as TSerialized;

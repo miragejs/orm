@@ -16,6 +16,8 @@ import type {
   RelationsMode,
 } from './types';
 
+// TODO: Review types to make them more precise
+// TODO: Review the serializer logic for potential performance optimization
 /**
  * Serializer class that handles model serialization with custom JSON types
  * @template TTemplate - The model template
@@ -84,15 +86,16 @@ export default class Serializer<
     options?: Partial<SerializerOptions<TTemplate, TSchema>>,
   ): TSerializedModel {
     const opts = this._resolveOptions(options);
-    const data = this._serializeData(model, opts);
+    const data = this.serializeModel(model, options);
 
     // Side-load mode: extract side-loaded relationships and place them at top level
     const withNames = this._getWithNames(opts.with);
-    if (
-      (opts.relationsMode === 'sideLoaded' ||
-        opts.relationsMode === 'sideLoaded+foreignKey') &&
-      withNames.length > 0
-    ) {
+    const hasRelations = withNames.length > 0;
+    const hasSideLoaded =
+      opts.relationsMode === 'sideLoaded' ||
+      opts.relationsMode === 'sideLoaded+foreignKey';
+
+    if (hasRelations && hasSideLoaded) {
       const { sideLoaded } = this._getRelationships(model, opts);
 
       // Get attributes without side-loaded relationships
@@ -134,7 +137,7 @@ export default class Serializer<
     options?: Partial<SerializerOptions<TTemplate, TSchema>>,
   ): TSerializedCollection {
     const opts = this._resolveOptions(options);
-    const data = this._serializeCollectionData(collection, opts);
+    const data = this.serializeCollectionModels(collection, options);
 
     if (opts.root) {
       const rootKey =
@@ -145,6 +148,62 @@ export default class Serializer<
 
     // Without root wrapping: return array directly
     return data as TSerializedCollection;
+  }
+
+  // -- LAYER 1: ATTRIBUTES ONLY --
+
+  /**
+   * Layer 1: Serialize only model attributes with foreign keys
+   * Respects select config for regular attributes.
+   * Always includes all foreign keys regardless of select.
+   * Does not include relationships.
+   * @param model - The model instance to serialize
+   * @returns The serialized attributes with foreign keys
+   */
+  serializeAttrs(
+    model: ModelInstance<TTemplate, TSchema>,
+  ): Record<string, unknown> {
+    const opts = this._resolveOptions();
+    const attrs = this._getAttributes(model, opts);
+
+    // Add all foreign keys from relationships
+    const relationships = model.relationships as
+      | Record<string, unknown>
+      | undefined;
+
+    if (relationships) {
+      for (const relName in relationships) {
+        const relationship = relationships[relName] as {
+          foreignKey: string;
+        };
+
+        if (relationship?.foreignKey) {
+          const fkValue = model.attrs[
+            relationship.foreignKey as keyof typeof model.attrs
+          ] as unknown;
+
+          if (fkValue !== undefined) {
+            attrs[relationship.foreignKey] = fkValue;
+          }
+        }
+      }
+    }
+
+    return attrs;
+  }
+
+  /**
+   * Layer 1: Serialize collection as array of attributes with foreign keys
+   * Respects select config for regular attributes.
+   * Always includes all foreign keys regardless of select.
+   * Does not include relationships.
+   * @param collection - The model collection to serialize
+   * @returns Array of serialized attributes with foreign keys
+   */
+  serializeCollectionAttrs(
+    collection: ModelCollection<TTemplate, TSchema>,
+  ): Record<string, unknown>[] {
+    return collection.models.map((model) => this.serializeAttrs(model));
   }
 
   // -- PRIVATE HELPERS --
@@ -242,18 +301,21 @@ export default class Serializer<
     return undefined;
   }
 
+  // -- LAYER 2: WITH RELATIONSHIPS --
+
   /**
-   * Serialize raw data from a model without structural wrapping
-   * This method extracts and returns the data (attributes + relationships)
-   * without applying any root wrapping. Used internally by serialize().
+   * Layer 2: Serialize model with relationship handling
+   * Returns attributes + relationships based on relationsMode.
+   * No root wrapping. Used internally by serialize().
    * @param model - The model instance to serialize
-   * @param opts - Resolved serializer options
+   * @param options - Optional method-level options to override class-level options
    * @returns The serialized model data without root wrapping
    */
-  private _serializeData(
+  serializeModel(
     model: ModelInstance<TTemplate, TSchema>,
-    opts: SerializerOptions<TTemplate, TSchema>,
+    options?: Partial<SerializerOptions<TTemplate, TSchema>>,
   ): Record<string, unknown> {
+    const opts = this._resolveOptions(options);
     const attrs = this._getAttributes(model, opts);
     const withNames = this._getWithNames(opts.with);
 
@@ -396,17 +458,18 @@ export default class Serializer<
   }
 
   /**
-   * Serialize raw data from a collection without structural wrapping
-   * Returns an array of serialized model data without root wrapping
-   * Used internally by serializeCollection().
+   * Layer 2: Serialize collection as array with relationships
+   * Returns array of model data with relationships based on relationsMode.
+   * No root wrapping. Used internally by serializeCollection().
    * @param collection - The model collection to serialize
-   * @param opts - Resolved serializer options
+   * @param options - Optional method-level options to override class-level options
    * @returns Array of serialized model data
    */
-  private _serializeCollectionData(
+  serializeCollectionModels(
     collection: ModelCollection<TTemplate, TSchema>,
-    opts: SerializerOptions<TTemplate, TSchema>,
+    options?: Partial<SerializerOptions<TTemplate, TSchema>>,
   ): Record<string, unknown>[] {
+    const opts = this._resolveOptions(options);
     const withNames = this._getWithNames(opts.with);
 
     // For collections with side-load mode (relationsMode='sideLoaded' or 'sideLoaded+foreignKey'), we include relationships
@@ -423,7 +486,9 @@ export default class Serializer<
       });
     }
 
-    return collection.models.map((model) => this._serializeData(model, opts));
+    return collection.models.map((model) =>
+      this.serializeModel(model, options),
+    );
   }
 
   /**
@@ -635,19 +700,31 @@ export default class Serializer<
 
   /**
    * Serialize a related model with nested options
-   * Applies select and nested with options (with boolean only)
-   * @param relModel - The related model to serialize containing attrs property
+   * Uses relModel.serializer.serializeAttrs() if available (respects related model's select config),
+   * otherwise falls back to copying attrs directly.
+   * Applies parent's select override if provided.
+   * @param relModel - The related model to serialize
    * @param relModel.attrs - The model's attributes
-   * @param nestedOpts - Nested serializer options
+   * @param relModel.serializer - Optional serializer instance for Layer 1 serialization
+   * @param nestedOpts - Nested serializer options from parent
    * @returns Serialized related model data
    */
   private _serializeRelatedModel(
-    relModel: { attrs: Record<string, unknown> },
+    relModel: {
+      attrs: Record<string, unknown>;
+      serializer?: Serializer<ModelTemplate, SchemaCollections>;
+    },
     nestedOpts?: NestedSerializerOptions<ModelTemplate>,
   ): Record<string, unknown> {
-    let attrs = { ...relModel.attrs };
+    // Use serializer.serializeAttrs if available (Layer 1 - respects related model's select config)
+    // Otherwise fall back to copying attrs directly
+    let attrs = relModel.serializer
+      ? relModel.serializer.serializeAttrs(
+          relModel as ModelInstance<ModelTemplate, SchemaCollections>,
+        )
+      : { ...relModel.attrs };
 
-    // Apply select option if present
+    // Apply parent's select override if present
     if (nestedOpts?.select) {
       attrs = this._applySelectToAttrs(attrs, nestedOpts.select);
     }
@@ -665,14 +742,30 @@ export default class Serializer<
               'models' in (nestedRelData as object);
             if (isNestedCollection) {
               const collection = nestedRelData as {
-                models: Array<{ attrs: Record<string, unknown> }>;
+                models: Array<{
+                  attrs: Record<string, unknown>;
+                  serializer?: Serializer<ModelTemplate, SchemaCollections>;
+                }>;
               };
-              attrs[nestedRelName] = collection.models.map((m) => ({
-                ...m.attrs,
-              }));
+              // Use serializer.serializeAttrs for nested models if available
+              attrs[nestedRelName] = collection.models.map((m) =>
+                m.serializer
+                  ? m.serializer.serializeAttrs(
+                      m as ModelInstance<ModelTemplate, SchemaCollections>,
+                    )
+                  : { ...m.attrs },
+              );
             } else {
-              const model = nestedRelData as { attrs: Record<string, unknown> };
-              attrs[nestedRelName] = { ...model.attrs };
+              const model = nestedRelData as {
+                attrs: Record<string, unknown>;
+                serializer?: Serializer<ModelTemplate, SchemaCollections>;
+              };
+              // Use serializer.serializeAttrs for nested model if available
+              attrs[nestedRelName] = model.serializer
+                ? model.serializer.serializeAttrs(
+                    model as ModelInstance<ModelTemplate, SchemaCollections>,
+                  )
+                : { ...model.attrs };
             }
           } else if (nestedRelData === null) {
             attrs[nestedRelName] = null;
