@@ -1,3 +1,4 @@
+import type { RelationshipTargetTemplate } from '@src/associations';
 import type {
   ModelAttrsFor,
   ModelRelationships,
@@ -60,9 +61,8 @@ export interface NestedSerializerOptions<
 > {
   /**
    * Attribute selection for the related model
-   * Uses string[] for flexibility with nested relationships
    */
-  select?: SelectOption<T> | string[] | Record<string, boolean>;
+  select?: SelectOption<T>;
   /**
    * Nested relationships to include (boolean only at nested level)
    */
@@ -94,7 +94,11 @@ export type WithOption<
   TRelationships extends ModelRelationships = ModelRelationships,
 > =
   | (keyof TRelationships)[]
-  | Partial<Record<keyof TRelationships, WithValue<any>>>;
+  | {
+      [K in keyof TRelationships]?: WithValue<
+        RelationshipTargetTemplate<TRelationships[K]>
+      >;
+    };
 
 // -- Serializer Options --
 

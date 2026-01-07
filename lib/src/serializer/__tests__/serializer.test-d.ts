@@ -5,12 +5,15 @@
  * Run: pnpm test:types
  */
 
+import { associations, type BelongsTo, type HasMany } from '@src/associations';
 import { model } from '@src/model';
 import { collection, schema, type SchemaCollections } from '@src/schema';
 import {
   Serializer,
   type DataSerializerOptions,
   type SerializerOptions,
+  type WithOption,
+  type NestedSerializerOptions,
 } from '@src/serializer';
 import { expectTypeOf, test } from 'vitest';
 
@@ -455,4 +458,543 @@ test('Serializer instance can serialize models from different collections', () =
 
   expectTypeOf(result1).toEqualTypeOf<UserJSON | undefined>();
   expectTypeOf(result2).toEqualTypeOf<UserJSON | undefined>();
+});
+
+// -- LAYERED SERIALIZATION METHODS --
+
+test('Serializer.serializeAttrs() should return Record<string, unknown>', () => {
+  type UserAttrs = {
+    id: string;
+    name: string;
+    email: string;
+  };
+
+  const userModel = model()
+    .name('user')
+    .collection('users')
+    .attrs<UserAttrs>()
+    .create();
+
+  const userCollection = collection()
+    .model(userModel)
+    .serializer({ select: ['id', 'name'] })
+    .create();
+  const testSchema = schema().collections({ users: userCollection }).setup();
+
+  const user = testSchema.users.create({
+    name: 'John',
+    email: 'john@example.com',
+  });
+
+  const result = testSchema.users.serializer?.serializeAttrs(user);
+  expectTypeOf(result).toEqualTypeOf<Record<string, unknown> | undefined>();
+});
+
+test('Serializer.serializeCollectionAttrs() should return Record<string, unknown>[]', () => {
+  type UserAttrs = {
+    id: string;
+    name: string;
+    email: string;
+  };
+
+  const userModel = model()
+    .name('user')
+    .collection('users')
+    .attrs<UserAttrs>()
+    .create();
+
+  const userCollection = collection()
+    .model(userModel)
+    .serializer({ select: ['id', 'name'] })
+    .create();
+  const testSchema = schema().collections({ users: userCollection }).setup();
+
+  testSchema.users.create({ name: 'John', email: 'john@example.com' });
+  testSchema.users.create({ name: 'Jane', email: 'jane@example.com' });
+  const users = testSchema.users.all();
+
+  const result = testSchema.users.serializer?.serializeCollectionAttrs(users);
+  expectTypeOf(result).toEqualTypeOf<Record<string, unknown>[] | undefined>();
+});
+
+test('Serializer.serializeModel() should return Record<string, unknown>', () => {
+  type UserAttrs = {
+    id: string;
+    name: string;
+    email: string;
+  };
+
+  const userModel = model()
+    .name('user')
+    .collection('users')
+    .attrs<UserAttrs>()
+    .create();
+
+  const userCollection = collection()
+    .model(userModel)
+    .serializer({ select: ['id', 'name'] })
+    .create();
+  const testSchema = schema().collections({ users: userCollection }).setup();
+
+  const user = testSchema.users.create({
+    name: 'John',
+    email: 'john@example.com',
+  });
+
+  const result = testSchema.users.serializer?.serializeModel(user);
+  expectTypeOf(result).toEqualTypeOf<Record<string, unknown> | undefined>();
+});
+
+test('Serializer.serializeCollectionModels() should return Record<string, unknown>[]', () => {
+  type UserAttrs = {
+    id: string;
+    name: string;
+    email: string;
+  };
+
+  const userModel = model()
+    .name('user')
+    .collection('users')
+    .attrs<UserAttrs>()
+    .create();
+
+  const userCollection = collection()
+    .model(userModel)
+    .serializer({ select: ['id', 'name'] })
+    .create();
+  const testSchema = schema().collections({ users: userCollection }).setup();
+
+  testSchema.users.create({ name: 'John', email: 'john@example.com' });
+  testSchema.users.create({ name: 'Jane', email: 'jane@example.com' });
+  const users = testSchema.users.all();
+
+  const result = testSchema.users.serializer?.serializeCollectionModels(users);
+  expectTypeOf(result).toEqualTypeOf<Record<string, unknown>[] | undefined>();
+});
+
+// -- PUBLIC SERIALIZER PROPERTY --
+
+test('Model instance should have public serializer property', () => {
+  type UserAttrs = {
+    id: string;
+    name: string;
+    email: string;
+  };
+
+  type UserJSON = {
+    id: string;
+    name: string;
+  };
+
+  const userModel = model()
+    .name('user')
+    .collection('users')
+    .attrs<UserAttrs>()
+    .json<UserJSON>()
+    .create();
+
+  const userCollection = collection()
+    .model(userModel)
+    .serializer({ select: ['id', 'name'] })
+    .create();
+  const testSchema = schema().collections({ users: userCollection }).setup();
+
+  const user = testSchema.users.create({
+    name: 'John',
+    email: 'john@example.com',
+  });
+
+  // Model should have public serializer property (readonly, optional)
+  expectTypeOf(user).toHaveProperty('serializer');
+
+  // When serializer exists, it should have serialize and serializeAttrs methods
+  if (user.serializer) {
+    expectTypeOf(user.serializer.serialize).toBeFunction();
+    expectTypeOf(user.serializer.serializeAttrs).toBeFunction();
+    expectTypeOf(user.serializer.serializeModel).toBeFunction();
+  }
+});
+
+test('ModelCollection should have public serializer property', () => {
+  type UserAttrs = {
+    id: string;
+    name: string;
+    email: string;
+  };
+
+  type UserJSON = {
+    id: string;
+    name: string;
+  };
+
+  const userModel = model()
+    .name('user')
+    .collection('users')
+    .attrs<UserAttrs>()
+    .json<UserJSON>()
+    .create();
+
+  const userCollection = collection()
+    .model(userModel)
+    .serializer({ select: ['id', 'name'] })
+    .create();
+  const testSchema = schema().collections({ users: userCollection }).setup();
+
+  testSchema.users.create({ name: 'John', email: 'john@example.com' });
+  const users = testSchema.users.all();
+
+  // ModelCollection should have public serializer property (readonly, optional)
+  expectTypeOf(users).toHaveProperty('serializer');
+
+  // When serializer exists, it should have serializeCollection and serializeCollectionAttrs methods
+  if (users.serializer) {
+    expectTypeOf(users.serializer.serializeCollection).toBeFunction();
+    expectTypeOf(users.serializer.serializeCollectionAttrs).toBeFunction();
+    expectTypeOf(users.serializer.serializeCollectionModels).toBeFunction();
+  }
+});
+
+// -- TYPED WITH OPTION --
+
+test('WithOption should infer relationship names from schema', () => {
+  type UserAttrs = { id: string; name: string; postIds: string[] };
+  type PostAttrs = { id: string; title: string; content: string };
+
+  const postModel = model()
+    .name('post')
+    .collection('posts')
+    .attrs<PostAttrs>()
+    .create();
+
+  const userModel = model()
+    .name('user')
+    .collection('users')
+    .attrs<UserAttrs>()
+    .create();
+
+  // Define relationships type for user
+  type UserRelationships = {
+    posts: HasMany<typeof postModel, 'postIds'>;
+  };
+
+  // WithOption should accept relationship names as keys
+  type UserWithOption = WithOption<UserRelationships>;
+
+  // Valid: 'posts' is a relationship name
+  const withArray: UserWithOption = ['posts'];
+  expectTypeOf(withArray).toMatchTypeOf<UserWithOption>();
+
+  const withObject: UserWithOption = { posts: true };
+  expectTypeOf(withObject).toMatchTypeOf<UserWithOption>();
+
+  const withNestedOptions: UserWithOption = {
+    posts: { select: ['id', 'title'] },
+  };
+  expectTypeOf(withNestedOptions).toMatchTypeOf<UserWithOption>();
+});
+
+test('WithOption should infer target model attributes for nested select', () => {
+  type UserAttrs = { id: string; name: string; email: string };
+  type PostAttrs = {
+    id: string;
+    title: string;
+    content: string;
+    authorId: string;
+  };
+
+  const userModel = model()
+    .name('user')
+    .collection('users')
+    .attrs<UserAttrs>()
+    .create();
+
+  const postModel = model()
+    .name('post')
+    .collection('posts')
+    .attrs<PostAttrs>()
+    .create();
+
+  // Define relationships type for user
+  type UserRelationships = {
+    posts: HasMany<typeof postModel, 'postIds'>;
+  };
+
+  type UserWithOption = WithOption<UserRelationships>;
+
+  // Nested select should accept Post attributes
+  const withNestedSelect: UserWithOption = {
+    posts: { select: ['id', 'title', 'content', 'authorId'] },
+  };
+  expectTypeOf(withNestedSelect).toMatchTypeOf<UserWithOption>();
+});
+
+test('NestedSerializerOptions should type select based on target model', () => {
+  type PostAttrs = {
+    id: string;
+    title: string;
+    content: string;
+    published: boolean;
+  };
+
+  const postModel = model()
+    .name('post')
+    .collection('posts')
+    .attrs<PostAttrs>()
+    .create();
+
+  // NestedSerializerOptions for Post model
+  type PostNestedOptions = NestedSerializerOptions<typeof postModel>;
+
+  // Array format select
+  const arraySelect: PostNestedOptions = {
+    select: ['id', 'title'],
+  };
+  expectTypeOf(arraySelect).toMatchTypeOf<PostNestedOptions>();
+
+  // Object format select
+  const objectSelect: PostNestedOptions = {
+    select: { content: false, published: false },
+  };
+  expectTypeOf(objectSelect).toMatchTypeOf<PostNestedOptions>();
+});
+
+test('SerializerOptions with should infer relationships from schema', () => {
+  type UserAttrs = { id: string; name: string; postIds: string[] };
+  type PostAttrs = { id: string; title: string; authorId: string };
+
+  const postModel = model()
+    .name('post')
+    .collection('posts')
+    .attrs<PostAttrs>()
+    .create();
+
+  const userModel = model()
+    .name('user')
+    .collection('users')
+    .attrs<UserAttrs>()
+    .create();
+
+  const userCollection = collection()
+    .model(userModel)
+    .relationships({
+      posts: associations.hasMany(postModel),
+    })
+    .serializer({
+      with: {
+        // This should suggest Post attributes for select
+        posts: { select: ['id', 'title'] },
+      },
+      relationsMode: 'embedded',
+    })
+    .create();
+
+  const postCollection = collection()
+    .model(postModel)
+    .relationships({
+      author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+    })
+    .create();
+
+  const testSchema = schema()
+    .collections({
+      users: userCollection,
+      posts: postCollection,
+    })
+    .setup();
+
+  // The schema should be set up correctly with typed serializer
+  expectTypeOf(testSchema.users.serializer).not.toBeUndefined();
+});
+
+// -- SELECT OPTION FORMATS --
+
+test('SelectOption should accept array format', () => {
+  type UserAttrs = {
+    id: string;
+    name: string;
+    email: string;
+    password: string;
+  };
+
+  const userModel = model()
+    .name('user')
+    .collection('users')
+    .attrs<UserAttrs>()
+    .create();
+
+  // Array format: include only specified attributes - should type check
+  const options: SerializerOptions<typeof userModel> = {
+    select: ['id', 'name', 'email'],
+  };
+
+  expectTypeOf(options).toEqualTypeOf<SerializerOptions<typeof userModel>>();
+});
+
+test('SelectOption should accept object exclusion format', () => {
+  type UserAttrs = {
+    id: string;
+    name: string;
+    email: string;
+    password: string;
+  };
+
+  const userModel = model()
+    .name('user')
+    .collection('users')
+    .attrs<UserAttrs>()
+    .create();
+
+  // Object exclusion format: all false values - should type check
+  const options: SerializerOptions<typeof userModel> = {
+    select: { password: false },
+  };
+
+  expectTypeOf(options).toEqualTypeOf<SerializerOptions<typeof userModel>>();
+});
+
+test('SelectOption should accept object inclusion format', () => {
+  type UserAttrs = {
+    id: string;
+    name: string;
+    email: string;
+    password: string;
+  };
+
+  const userModel = model()
+    .name('user')
+    .collection('users')
+    .attrs<UserAttrs>()
+    .create();
+
+  // Object inclusion format: include only true keys - should type check
+  const options: SerializerOptions<typeof userModel> = {
+    select: { id: true, name: true },
+  };
+
+  expectTypeOf(options).toEqualTypeOf<SerializerOptions<typeof userModel>>();
+});
+
+test('SelectOption should accept mixed object format', () => {
+  type UserAttrs = {
+    id: string;
+    name: string;
+    email: string;
+    password: string;
+  };
+
+  const userModel = model()
+    .name('user')
+    .collection('users')
+    .attrs<UserAttrs>()
+    .create();
+
+  // Mixed format: include true keys, exclude false keys - should type check
+  const options: SerializerOptions<typeof userModel> = {
+    select: { id: true, name: true, password: false },
+  };
+
+  expectTypeOf(options).toEqualTypeOf<SerializerOptions<typeof userModel>>();
+});
+
+// -- WITH OPTION FORMATS --
+
+test('WithOption should accept array format', () => {
+  type UserRelationships = {
+    posts: HasMany<any, 'postIds'>;
+    profile: BelongsTo<any, 'profileId'>;
+  };
+
+  // Array format: include specified relationships
+  const withArray: WithOption<UserRelationships> = ['posts', 'profile'];
+  expectTypeOf(withArray).toMatchTypeOf<WithOption<UserRelationships>>();
+});
+
+test('WithOption should accept object with boolean values', () => {
+  type UserRelationships = {
+    posts: HasMany<any, 'postIds'>;
+    profile: BelongsTo<any, 'profileId'>;
+  };
+
+  // Object format with boolean values
+  const withBooleans: WithOption<UserRelationships> = {
+    posts: true,
+    profile: false,
+  };
+  expectTypeOf(withBooleans).toMatchTypeOf<WithOption<UserRelationships>>();
+});
+
+test('WithOption should accept object with nested options', () => {
+  type PostAttrs = { id: string; title: string; content: string };
+
+  const postModel = model()
+    .name('post')
+    .collection('posts')
+    .attrs<PostAttrs>()
+    .create();
+
+  type UserRelationships = {
+    posts: HasMany<typeof postModel, 'postIds'>;
+  };
+
+  // Object format with nested serializer options
+  const withNested: WithOption<UserRelationships> = {
+    posts: {
+      select: ['id', 'title'],
+      mode: 'embedded',
+    },
+  };
+  expectTypeOf(withNested).toMatchTypeOf<WithOption<UserRelationships>>();
+});
+
+test('WithOption should accept mixed object values', () => {
+  type PostAttrs = { id: string; title: string };
+  type ProfileAttrs = { id: string; bio: string };
+
+  const postModel = model()
+    .name('post')
+    .collection('posts')
+    .attrs<PostAttrs>()
+    .create();
+
+  const profileModel = model()
+    .name('profile')
+    .collection('profiles')
+    .attrs<ProfileAttrs>()
+    .create();
+
+  type UserRelationships = {
+    posts: HasMany<typeof postModel, 'postIds'>;
+    profile: BelongsTo<typeof profileModel, 'profileId'>;
+  };
+
+  // Mixed: boolean and nested options
+  const withMixed: WithOption<UserRelationships> = {
+    posts: { select: ['id', 'title'] },
+    profile: true,
+  };
+  expectTypeOf(withMixed).toMatchTypeOf<WithOption<UserRelationships>>();
+});
+
+test('WithOption nested options should support mode override', () => {
+  type PostAttrs = { id: string; title: string; content: string };
+
+  const postModel = model()
+    .name('post')
+    .collection('posts')
+    .attrs<PostAttrs>()
+    .create();
+
+  type UserRelationships = {
+    posts: HasMany<typeof postModel, 'postIds'>;
+  };
+
+  // Nested options with mode override
+  const withModeOverride: WithOption<UserRelationships> = {
+    posts: {
+      select: ['id', 'title'],
+      mode: 'sideLoaded',
+      with: { author: true },
+    },
+  };
+  expectTypeOf(withModeOverride).toMatchTypeOf<WithOption<UserRelationships>>();
 });

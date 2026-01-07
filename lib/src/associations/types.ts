@@ -234,9 +234,8 @@ export type Association<TModel extends ModelTemplate = ModelTemplate> =
 /**
  * Extract the target model template from a relationship
  * @template TRelationship - The relationship type (BelongsTo or HasMany)
- * @internal
  */
-type RelationshipTargetTemplate<TRelationship> = TRelationship extends {
+export type RelationshipTargetTemplate<TRelationship> = TRelationship extends {
   targetModel: infer TTarget;
 }
   ? TTarget extends ModelTemplate
