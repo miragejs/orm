@@ -27,6 +27,7 @@ export type TestCollections = {
     {
       manager: BelongsTo<UserModel, 'managerId'>;
       members: HasMany<UserModel, 'memberIds'>;
+      tasks: HasMany<TaskModel>;
     },
     Factory<TeamModel, 'withManager' | 'withMembers', TestCollections>,
     TestCollections
@@ -60,7 +61,8 @@ export type TestCollections = {
       author: BelongsTo<UserModel, 'authorId'>;
       task: BelongsTo<TaskModel>;
     },
-    Factory<CommentModel>
+    Factory<CommentModel>,
+    TestCollections
   >;
 };
 

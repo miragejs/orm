@@ -1,33 +1,20 @@
-import { buildTableQuery } from '@shared/utils';
 import type { TableParams } from '@shared/utils';
-import type { TeamMember } from '@shared/types';
+import type { MemberSortableColumn, SimpleUser } from '@shared/types';
 
-export type SortableColumn = 'name' | 'role' | 'email';
-
-export type GetTeamMembersParams = TableParams<SortableColumn>;
-
-export interface GetTeamMembersResponse extends GetTeamMembersParams {
-  members: TeamMember[];
+export interface GetTeamMembersResponse extends TableParams<MemberSortableColumn> {
+  members: SimpleUser[];
   total: number;
 }
 
-/** Default pagination/sorting params */
-export const defaultMembersParams: GetTeamMembersParams = {
-  page: 0,
-  pageSize: 5,
-  sortBy: 'name',
-  sortOrder: 'asc',
-};
-
 /**
  * Fetch current user's team members with pagination and sorting
+ * @param searchParams - URL search params string or URLSearchParams object
  */
 export async function getTeamMembers(
-  params: GetTeamMembersParams = defaultMembersParams,
+  searchParams?: string | URLSearchParams,
 ): Promise<GetTeamMembersResponse> {
-  const searchParams = buildTableQuery(params);
-
-  const response = await fetch(`/api/teams/me/members?${searchParams}`, {
+  const query = searchParams?.toString() || '';
+  const response = await fetch(`/api/teams/me/members?${query}`, {
     credentials: 'include',
   });
 
@@ -38,5 +25,6 @@ export async function getTeamMembers(
     throw new Error('Failed to fetch team members');
   }
 
-  return response.json();
+  const data: GetTeamMembersResponse = await response.json();
+  return data;
 }

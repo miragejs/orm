@@ -15,20 +15,15 @@ import {
   TableSortLabel,
   Box,
 } from '@mui/material';
-import { updateSearchParams } from '@shared/utils';
-import { defaultMembersParams } from '../api';
-import type {
-  GetTeamMembersResponse,
-  GetTeamMembersParams,
-  SortableColumn,
-} from '../api';
+import type { MemberSortableColumn } from '@shared/types';
+import type { GetTeamMembersResponse } from '../api';
 
 interface MembersTableProps {
   data: GetTeamMembersResponse;
 }
 
 interface ColumnConfig {
-  id: SortableColumn;
+  id: MemberSortableColumn;
   label: string;
 }
 
@@ -43,12 +38,27 @@ const columns: ColumnConfig[] = [
  * State is managed via URL search params, triggering loader on change
  */
 function MembersTable({ data }: MembersTableProps) {
-  const { members, total, page, pageSize, sortBy, sortOrder } = data;
+  const {
+    members,
+    page = 0,
+    pageSize = 5,
+    sortBy = 'name',
+    sortOrder = 'asc',
+    total,
+  } = data;
   const [, setSearchParams] = useSearchParams();
 
   const updateParams = useCallback(
-    (updates: Partial<GetTeamMembersParams>) => {
-      setSearchParams((prev) => updateSearchParams(prev, updates, defaultMembersParams));
+    (updates: Record<string, string | number | undefined>) => {
+      setSearchParams((prev) => {
+        const newParams = new URLSearchParams(prev);
+        Object.entries(updates).forEach(([key, value]) => {
+          if (value !== undefined) {
+            newParams.set(key, String(value));
+          }
+        });
+        return newParams;
+      });
     },
     [setSearchParams],
   );
@@ -61,7 +71,7 @@ function MembersTable({ data }: MembersTableProps) {
     updateParams({ pageSize: parseInt(event.target.value, 10), page: 0 });
   };
 
-  const handleSort = (column: SortableColumn) => {
+  const handleSort = (column: MemberSortableColumn) => {
     const isAsc = sortBy === column && sortOrder === 'asc';
     updateParams({ sortBy: column, sortOrder: isAsc ? 'desc' : 'asc', page: 0 });
   };

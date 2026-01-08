@@ -1,5 +1,5 @@
 import { model } from 'miragejs-orm';
-import { TaskStatus, TaskPriority, Task } from '@shared/types';
+import type { TaskStatus, TaskPriority, Task } from '@shared/types';
 
 export interface TaskAttrs {
   id: string;

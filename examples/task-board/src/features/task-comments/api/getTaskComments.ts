@@ -16,6 +16,6 @@ export async function getTaskComments(taskId: string): Promise<Comment[]> {
     throw new Error('Failed to fetch task comments');
   }
 
-  const { comments } = (await response.json()) as GetTaskCommentsResponse;
-  return comments;
+  const data: GetTaskCommentsResponse = await response.json();
+  return data.comments;
 }

@@ -5,10 +5,10 @@ import {
   Email as EmailIcon,
   Badge as BadgeIcon,
 } from '@mui/icons-material';
-import type { TeamMember } from '@shared/types';
+import type { SimpleUser } from '@shared/types';
 
 interface ManagerCardProps {
-  manager: TeamMember | null;
+  manager: SimpleUser | null;
 }
 
 /**

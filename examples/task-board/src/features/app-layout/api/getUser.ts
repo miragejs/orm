@@ -1,7 +1,3 @@
-/**
- * Get User API
- */
-
 import type { User } from '@shared/types';
 
 export interface GetUserResponse {

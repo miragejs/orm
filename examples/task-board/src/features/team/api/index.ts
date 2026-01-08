@@ -1,9 +1,3 @@
 export { getTeam } from './getTeam';
-export { getTeamManager } from './getTeamManager';
-export { getTeamMembers, defaultMembersParams } from './getTeamMembers';
-export type {
-  GetTeamMembersParams,
-  GetTeamMembersResponse,
-  SortableColumn,
-} from './getTeamMembers';
-export type { SortDirection } from '@shared/utils';
+export { getTeamMembers } from './getTeamMembers';
+export type { GetTeamMembersResponse } from './getTeamMembers';

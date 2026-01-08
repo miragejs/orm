@@ -1,8 +1,7 @@
 import { Suspense } from 'react';
 import { useLoaderData, Await } from 'react-router';
 import { Box, Typography, Stack } from '@mui/material';
-import { parseTableQuery } from '@shared/utils';
-import { getTeam, getTeamManager, getTeamMembers, defaultMembersParams } from './api';
+import { getTeam, getTeamMembers } from './api';
 import {
   TeamInfoCard,
   TeamInfoCardSkeleton,
@@ -15,15 +14,13 @@ import type { LoaderFunctionArgs } from 'react-router';
 
 /**
  * Team page loader - returns deferred promises for parallel loading
- * Parses URL search params for members table pagination/sorting
  */
 export async function loader({ request }: LoaderFunctionArgs) {
-  const membersParams = parseTableQuery(request.url, defaultMembersParams);
+  const url = new URL(request.url);
 
   return {
+    membersPromise: getTeamMembers(url.searchParams),
     teamPromise: getTeam(),
-    managerPromise: getTeamManager(),
-    membersPromise: getTeamMembers(membersParams),
   };
 }
 
@@ -32,7 +29,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
  * Uses deferred data loading with Suspense for optimal UX
  */
 export default function Team() {
-  const { teamPromise, managerPromise, membersPromise } = useLoaderData<typeof loader>();
+  const { teamPromise, membersPromise } = useLoaderData<typeof loader>();
 
   return (
     <Box>
@@ -61,8 +58,8 @@ export default function Team() {
           {/* Manager Card */}
           <Box sx={{ flex: 1 }}>
             <Suspense fallback={<ManagerCardSkeleton />}>
-              <Await resolve={managerPromise}>
-                {(manager) => <ManagerCard manager={manager} />}
+              <Await resolve={teamPromise}>
+                {(team) => <ManagerCard manager={team.manager} />}
               </Await>
             </Suspense>
           </Box>

@@ -1,5 +1,11 @@
-import { collection, associations } from 'miragejs-orm';
-import { taskModel, userModel, teamModel, commentModel } from '@test/schema/models';
+import { collection, associations, type PartialModelAttrs } from 'miragejs-orm';
+import {
+  taskModel,
+  userModel,
+  teamModel,
+  commentModel,
+  type TaskModel,
+} from '@test/schema/models';
 import type { TestCollections } from '@test/schema/types';
 import { taskFactory } from './taskFactory';
 
@@ -7,14 +13,23 @@ export const tasksCollection = collection<TestCollections>()
   .model(taskModel)
   .factory(taskFactory)
   .relationships({
-    assignee: associations.belongsTo(userModel, { foreignKey: 'assigneeId' }),
+    assignee: associations.belongsTo(userModel, {
+      foreignKey: 'assigneeId',
+    }),
     comments: associations.hasMany(commentModel),
-    creator: associations.belongsTo(userModel, { foreignKey: 'creatorId' }),
+    creator: associations.belongsTo(userModel, {
+      foreignKey: 'creatorId',
+    }),
     team: associations.belongsTo(teamModel),
   })
   .serializer({
     root: true,
-    with: ['assignee', 'creator', 'team'],
+    with: {
+      assignee: { select: ['avatar', 'email', 'id', 'name', 'role'] },
+      creator: { select: ['avatar', 'email', 'id', 'name', 'role'] },
+      team: { select: ['department', 'description', 'id', 'name'] },
+    },
+    relationsMode: 'embedded',
   })
   .seeds({
     default(schema) {
@@ -27,7 +42,7 @@ export const tasksCollection = collection<TestCollections>()
         throw new Error('Users and DevX team must be created before loading task seeds');
       }
 
-      const associationAttrs = {
+      const associationAttrs: PartialModelAttrs<TaskModel> = {
         assigneeId: currentUser.id,
         creatorId: managerUser.id,
         teamId: devXTeam.id,

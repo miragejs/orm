@@ -1,6 +1,6 @@
 import { associations, factory } from 'miragejs-orm';
 import { faker } from '@faker-js/faker';
-import { teamModel, userModel } from '@test/schema/models';
+import { teamModel, UserModel, userModel } from '@test/schema/models';
 import type { TestCollections } from '@test/schema/types';
 
 export const teamFactory = factory<TestCollections>()
@@ -13,10 +13,13 @@ export const teamFactory = factory<TestCollections>()
   })
   .traits({
     withManager: {
-      manager: associations.create(userModel, 'manager'),
+      // TODO: Try to simplify generic type for association methods
+      manager: associations.create<TestCollections, UserModel>(userModel, 'manager'),
     },
     withMembers: {
-      members: associations.createMany(userModel, 10),
+      afterCreate(team, schema) {
+        schema.users.createMany(10, { team }, 'withTasks');
+      },
     },
   })
   .create();

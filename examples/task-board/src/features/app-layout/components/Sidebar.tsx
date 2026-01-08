@@ -1,8 +1,10 @@
-import { useNavigate, useLocation } from 'react-router';
+import { useMemo } from 'react';
+import { useNavigate, useLocation, useRouteLoaderData } from 'react-router';
 import {
   Assignment as AssignmentIcon,
   Groups as GroupsIcon,
   Logout as LogoutIcon,
+  Dashboard as DashboardIcon,
 } from '@mui/icons-material';
 import {
   Box,
@@ -14,8 +16,11 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material';
+import kebabCase from 'lodash.kebabcase';
 import { logout } from '@features/auth/api';
 import { Logo } from '@shared/components';
+import { UserRole } from '@shared/types';
+import type { AppLoaderData } from '../AppLayout';
 
 const DRAWER_WIDTH = 72;
 
@@ -25,25 +30,40 @@ interface NavItem {
   icon: React.ReactNode;
 }
 
-const navItems: NavItem[] = [
-  {
-    label: 'Dashboard',
-    path: '/dashboard',
-    icon: <AssignmentIcon />,
-  },
-  {
-    label: 'Team',
-    path: '/team',
-    icon: <GroupsIcon />,
-  },
-];
-
 /**
- * Sidebar Navigation Component
+ * Sidebar Navigation Component - Shows role-based navigation items
  */
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useRouteLoaderData('root') as AppLoaderData;
+
+  const teamSlug = useMemo(() => kebabCase(user.team.name), [user.team.name]);
+
+  const navItems = useMemo((): NavItem[] => {
+    if (user.role === UserRole.MANAGER) {
+      return [
+        {
+          label: 'Dashboard',
+          path: `/${teamSlug}/dashboard`,
+          icon: <DashboardIcon />,
+        },
+      ];
+    }
+
+    return [
+      {
+        icon: <AssignmentIcon />,
+        label: 'My Tasks',
+        path: `/${teamSlug}/users/${user.id}`,
+      },
+      {
+        label: 'Team',
+        path: `/${teamSlug}/users/${user.id}/team`,
+        icon: <GroupsIcon />,
+      },
+    ];
+  }, [user.role, user.id, teamSlug]);
 
   const handleNavigate = (path: string) => {
     navigate(path);
@@ -56,6 +76,10 @@ export default function Sidebar() {
     } catch (error) {
       console.error('Logout failed:', error);
     }
+  };
+
+  const isActivePath = (itemPath: string) => {
+    return location.pathname.endsWith(itemPath);
   };
 
   return (
@@ -96,7 +120,7 @@ export default function Sidebar() {
       >
         <List sx={{ px: 1.5 }}>
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = isActivePath(item.path);
 
             return (
               <ListItem key={item.path} disablePadding sx={{ mb: 1 }}>

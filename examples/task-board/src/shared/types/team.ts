@@ -1,20 +1,20 @@
-import { User } from './user';
+import type { SimpleUser } from './user';
 
 /**
  * Team entity type
  */
 export interface Team {
   id: string;
-  name: string;
+  createdAt: string;
   department: string;
   description: string;
-  createdAt: string;
-  managerId: string;
+  manager: SimpleUser;
+  members: SimpleUser[];
+  name: string;
+  taskIds: string[];
 }
 
 /**
- * Team member type without circular team reference
+ * Simple Team type
  */
-export type TeamMember = Omit<User, 'team'> & {
-  teamId: Team['id'];
-};
+export type SimpleTeam = Pick<Team, 'department' | 'description' | 'id' | 'name'>;

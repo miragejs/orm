@@ -1,5 +1,5 @@
 import { collection, associations } from 'miragejs-orm';
-import { teamModel, userModel } from '@test/schema/models';
+import { taskModel, teamModel, userModel } from '@test/schema/models';
 import type { TestCollections } from '@test/schema/types';
 import { teamFactory } from './teamFactory';
 
@@ -15,10 +15,15 @@ export const teamsCollection = collection<TestCollections>()
       foreignKey: 'memberIds',
       inverse: 'team',
     }),
+    tasks: associations.hasMany(taskModel),
   })
   .serializer({
     root: true,
-    with: ['members', 'manager'],
+    with: {
+      manager: { select: ['avatar', 'email', 'id', 'name', 'role'] },
+      members: { select: ['avatar', 'email', 'id', 'name', 'role'] },
+      tasks: { mode: 'foreignKey' },
+    },
     relationsMode: 'embedded',
   })
   .seeds({

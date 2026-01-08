@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw';
-import { testSchema } from '@test/schema/testSchema';
+import { testSchema } from '@test/schema';
 import { User } from '@shared/types';
 
 /**
@@ -9,13 +9,11 @@ export const userHandlers = [
   // GET /api/users/me - Get current user
   http.get('/api/users/me', ({ cookies }) => {
     const userId = cookies.userId;
-
     if (!userId) {
       return HttpResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     const user = testSchema.users.find(userId);
-
     if (!user) {
       return HttpResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -27,7 +25,6 @@ export const userHandlers = [
   // GET /api/users/:id - Get user by ID
   http.get<{ id: string }>('/api/users/:id', ({ params }) => {
     const user = testSchema.users.find(params.id);
-
     if (!user) {
       return HttpResponse.json({ error: 'User not found' }, { status: 404 });
     }

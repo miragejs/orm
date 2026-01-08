@@ -1,26 +1,23 @@
 import { memo } from 'react';
 import { Box, Card, CardContent, Chip, Typography } from '@mui/material';
-import { formatTaskTitle } from '@shared/utils';
 import { TaskPriority } from '@shared/types';
-import type { Task } from '@shared/types';
+import type { SimpleTask } from '@shared/types';
 
 interface TaskCardProps {
-  task: Task;
+  task: SimpleTask;
   statusColor: 'default' | 'info' | 'warning' | 'success' | 'error';
   onTaskClick: (taskId: string) => void;
 }
 
-// Priority configuration
 const priorityConfig = {
-  [TaskPriority.LOW]: { color: 'default' as const },
-  [TaskPriority.MEDIUM]: { color: 'info' as const },
-  [TaskPriority.HIGH]: { color: 'warning' as const },
-  [TaskPriority.URGENT]: { color: 'error' as const },
-};
+  [TaskPriority.LOW]: { color: 'default' },
+  [TaskPriority.MEDIUM]: { color: 'info' },
+  [TaskPriority.HIGH]: { color: 'warning' },
+  [TaskPriority.URGENT]: { color: 'error' },
+} as const;
 
 /**
  * TaskCard Component - Displays a single task card
- * Memoized to prevent unnecessary re-renders
  */
 function TaskCard({ task, statusColor, onTaskClick }: TaskCardProps) {
   return (
@@ -49,7 +46,7 @@ function TaskCard({ task, statusColor, onTaskClick }: TaskCardProps) {
           }}
         >
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            {formatTaskTitle(task)}
+            {task.title}
           </Typography>
           <Chip label={task.status} color={statusColor} size="small" />
         </Box>

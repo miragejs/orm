@@ -1,8 +1,9 @@
-import { Navigate } from 'react-router';
 import type { RouteObject } from 'react-router';
 import Login, { action as loginAction } from './features/auth/Login';
 import AppLayout, { loader as appLayoutLoader } from './features/app-layout/AppLayout';
+import { RoleBasedRedirect } from './features/app-layout/components';
 import Dashboard, { loader as dashboardLoader } from './features/dashboard/Dashboard';
+import UserBoard, { loader as userBoardLoader } from './features/user-board/UserBoard';
 import TaskDetails, {
   loader as taskDetailsLoader,
 } from './features/task-details/TaskDetails';
@@ -13,6 +14,13 @@ import ErrorBoundary from './shared/components/ErrorBoundary';
 /**
  * Application routes configuration
  * Following React Router 7 Data Mode best practices
+ *
+ * Route Structure:
+ * - /:teamName/dashboard            - Manager's dashboard
+ * - /:teamName/dashboard/:taskId    - Task details (manager view)
+ * - /:teamName/users/:userId        - User's task board
+ * - /:teamName/users/:userId/:taskId - Task details (user view)
+ * - /:teamName/users/:userId/team   - Team page
  *
  * @see https://reactrouter.com/start/framework/routing
  */
@@ -28,44 +36,85 @@ export const routes: RouteObject[] = [
       requiresAuth: true,
     },
     children: [
+      // Index route - redirects based on user role
       {
         index: true,
-        element: <Navigate to="/dashboard" replace />,
+        element: <RoleBasedRedirect />,
       },
+      // Team-scoped routes
       {
-        id: 'dashboard',
-        path: 'dashboard',
-        element: <Dashboard />,
-        loader: dashboardLoader,
-        handle: {
-          title: 'Dashboard',
-        },
+        path: ':teamName',
         children: [
+          // Manager routes
           {
-            id: 'taskDetails',
-            path: ':id',
-            element: <TaskDetails />,
-            loader: taskDetailsLoader,
+            id: 'dashboard',
+            path: 'dashboard',
+            element: <Dashboard />,
+            loader: dashboardLoader,
             handle: {
-              title: 'Task Details',
+              title: 'Dashboard',
+              requiresRole: 'MANAGER',
             },
             children: [
               {
+                id: 'dashboardTaskDetails',
+                path: ':taskId',
+                element: <TaskDetails />,
+                loader: taskDetailsLoader,
+                handle: {
+                  title: 'Task Details',
+                },
+                children: [
+                  {
+                    index: true,
+                    element: <TaskComments />,
+                  },
+                ],
+              },
+            ],
+          },
+          // User routes
+          {
+            path: 'users/:userId',
+            children: [
+              {
+                id: 'userBoard',
                 index: true,
-                element: <TaskComments />,
+                element: <UserBoard />,
+                loader: userBoardLoader,
+                handle: {
+                  title: 'My Tasks',
+                  requiresRole: 'USER',
+                },
+              },
+              {
+                id: 'userTaskDetails',
+                path: ':taskId',
+                element: <TaskDetails />,
+                loader: taskDetailsLoader,
+                handle: {
+                  title: 'Task Details',
+                },
+                children: [
+                  {
+                    index: true,
+                    element: <TaskComments />,
+                  },
+                ],
+              },
+              {
+                id: 'team',
+                path: 'team',
+                element: <Team />,
+                loader: teamLoader,
+                handle: {
+                  title: 'Team',
+                  requiresRole: 'USER',
+                },
               },
             ],
           },
         ],
-      },
-      {
-        id: 'team',
-        path: 'team',
-        element: <Team />,
-        loader: teamLoader,
-        handle: {
-          title: 'Team',
-        },
       },
     ],
   },

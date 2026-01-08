@@ -1,5 +1,5 @@
 import { model } from 'miragejs-orm';
-import { Team } from '@shared/types';
+import type { Team } from '@shared/types';
 
 export interface TeamAttrs {
   id: string;
@@ -7,7 +7,9 @@ export interface TeamAttrs {
   department: string;
   description: string;
   managerId: string;
+  memberIds: string[];
   name: string;
+  taskIds: string[];
 }
 
 export const teamModel = model()

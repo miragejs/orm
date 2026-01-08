@@ -8,7 +8,7 @@ import { TaskStatus } from '@shared/types';
 
 export interface StatusConfig {
   label: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ sx?: object }>;
   color: 'default' | 'info' | 'warning' | 'success' | 'error';
 }
 

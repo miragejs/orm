@@ -1,0 +1,87 @@
+import { memo } from 'react';
+import { Card, CardContent, Typography, Box, Avatar, Chip } from '@mui/material';
+import { Groups as GroupsIcon, Assignment as AssignmentIcon } from '@mui/icons-material';
+import type { SimpleUser } from '@shared/types';
+
+interface TeamStatsCardProps {
+  members: SimpleUser[];
+  taskCount: number;
+}
+
+/**
+ * TeamStatsCard - Displays team stats and members preview
+ */
+function TeamStatsCard({ members, taskCount }: TeamStatsCardProps) {
+  return (
+    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <CardContent sx={{ flexGrow: 1 }}>
+        <Typography variant="h6" component="h3" gutterBottom>
+          Team Overview
+        </Typography>
+
+        <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          {/* Stats Section */}
+          <Box sx={{ display: 'flex', gap: 4 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <GroupsIcon color="action" />
+              <Box>
+                <Typography variant="h5" component="span">
+                  {members.length}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                  Members
+                </Typography>
+              </Box>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <AssignmentIcon color="action" />
+              <Box>
+                <Typography variant="h5" component="span">
+                  {taskCount}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                  Tasks
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Members Preview */}
+          <Box sx={{ flex: '1 1 300px' }}>
+            <Typography
+              variant="overline"
+              color="text.secondary"
+              sx={{ display: 'block', mb: 1 }}
+            >
+              Team Members
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              {members.slice(0, 8).map((member) => (
+                <Chip
+                  key={member.id}
+                  avatar={
+                    <Avatar src={member.avatar} alt={member.name}>
+                      {member.name.charAt(0)}
+                    </Avatar>
+                  }
+                  label={member.name}
+                  size="small"
+                  variant="outlined"
+                />
+              ))}
+              {members.length > 8 && (
+                <Chip
+                  label={`+${members.length - 8} more`}
+                  size="small"
+                  color="default"
+                />
+              )}
+            </Box>
+          </Box>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default memo(TeamStatsCard);

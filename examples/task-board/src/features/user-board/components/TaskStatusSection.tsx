@@ -9,13 +9,13 @@ import {
   Typography,
 } from '@mui/material';
 import TaskCard from './TaskCard';
-import type { Task } from '@shared/types';
+import type { SimpleTask } from '@shared/types';
 
 interface TaskStatusSectionProps {
   statusLabel: string;
-  statusIcon: React.ComponentType<any>;
+  statusIcon: React.ComponentType<{ sx?: object }>;
   statusColor: 'default' | 'info' | 'warning' | 'success' | 'error';
-  tasks: Task[];
+  tasks: SimpleTask[];
   expanded: boolean;
   onExpandChange: (isExpanded: boolean) => void;
   onTaskClick: (taskId: string) => void;
@@ -23,7 +23,6 @@ interface TaskStatusSectionProps {
 
 /**
  * TaskStatusSection Component - Displays an accordion section for a task status
- * Memoized to prevent unnecessary re-renders when other sections change
  */
 function TaskStatusSection({
   statusLabel,

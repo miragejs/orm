@@ -56,26 +56,17 @@ export const taskFactory = factory<TestCollections>()
     withComments: {
       afterCreate(task, schema) {
         // Get users for comment authors (current user and manager)
-        const currentUser = schema.users.find({ email: 'john.doe@example.com' });
-        const managerUser = schema.users.find({ email: 'jane.smith@example.com' });
-
-        if (!currentUser || !managerUser) return;
-
-        const users = [currentUser, managerUser];
-        const commentCount = faker.number.int({ min: 2, max: 4 });
+        const members = schema.users.findMany({ where: { teamId: task.teamId } });
+        const commentCount = faker.number.int({ min: 1, max: 4 });
 
         // Generate comments with dates between task creation and now
         for (let i = 0; i < commentCount; i++) {
-          const randomUser = faker.helpers.arrayElement(users);
+          const randomUser = faker.helpers.arrayElement(members.models);
           const createdAt = faker.date
             .between({ from: task.createdAt, to: task.updatedAt })
             .toISOString();
 
-          schema.comments.create({
-            author: randomUser,
-            createdAt,
-            task,
-          });
+          schema.comments.create({ author: randomUser, createdAt, task });
         }
       },
     },

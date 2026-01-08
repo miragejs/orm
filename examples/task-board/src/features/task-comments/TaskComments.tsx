@@ -37,10 +37,18 @@ function TaskCommentsErrorFallback() {
 
 /**
  * Task Comments Component - Displays comments for a task with deferred loading
+ * Works for both dashboard and user task details routes
  */
 export default function TaskComments() {
   const rootData = useRouteLoaderData('root') as AppLoaderData;
-  const taskData = useRouteLoaderData('taskDetails') as TaskDetailsLoaderData;
+  // Both hooks must be called unconditionally per React rules
+  const dashboardTaskData = useRouteLoaderData(
+    'dashboardTaskDetails',
+  ) as TaskDetailsLoaderData | null;
+  const userTaskData = useRouteLoaderData(
+    'userTaskDetails',
+  ) as TaskDetailsLoaderData | null;
+  const taskData = (dashboardTaskData || userTaskData) as TaskDetailsLoaderData;
   const currentUserId = rootData.user?.id;
 
   return (
