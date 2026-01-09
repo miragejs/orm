@@ -1,4 +1,3 @@
-import type { RouteObject } from 'react-router';
 import Login, { action as loginAction } from './features/auth/Login';
 import AppLayout, { loader as appLayoutLoader } from './features/app-layout/AppLayout';
 import { RoleBasedRedirect } from './features/app-layout/components';
@@ -10,6 +9,7 @@ import TaskDetails, {
 import TaskComments from './features/task-comments/TaskComments';
 import Team, { loader as teamLoader } from './features/team/Team';
 import ErrorBoundary from './shared/components/ErrorBoundary';
+import type { RouteObject } from 'react-router';
 
 /**
  * Application routes configuration
@@ -75,18 +75,15 @@ export const routes: RouteObject[] = [
           },
           // User routes
           {
+            id: 'userBoard',
             path: 'users/:userId',
+            element: <UserBoard />,
+            loader: userBoardLoader,
+            handle: {
+              title: 'My Tasks',
+              requiresRole: 'USER',
+            },
             children: [
-              {
-                id: 'userBoard',
-                index: true,
-                element: <UserBoard />,
-                loader: userBoardLoader,
-                handle: {
-                  title: 'My Tasks',
-                  requiresRole: 'USER',
-                },
-              },
               {
                 id: 'userTaskDetails',
                 path: ':taskId',
@@ -102,17 +99,17 @@ export const routes: RouteObject[] = [
                   },
                 ],
               },
-              {
-                id: 'team',
-                path: 'team',
-                element: <Team />,
-                loader: teamLoader,
-                handle: {
-                  title: 'Team',
-                  requiresRole: 'USER',
-                },
-              },
             ],
+          },
+          {
+            id: 'team',
+            path: 'users/:userId/team',
+            element: <Team />,
+            loader: teamLoader,
+            handle: {
+              title: 'Team',
+              requiresRole: 'USER',
+            },
           },
         ],
       },

@@ -67,9 +67,7 @@ export default function TaskDetails() {
       <DialogContent>
         <TaskStatusChips status={task.status} priority={task.priority} />
 
-        <Typography variant="body1" paragraph>
-          {task.description}
-        </Typography>
+        <Typography variant="body2">{task.description}</Typography>
 
         <Divider sx={{ my: 2 }} />
 
