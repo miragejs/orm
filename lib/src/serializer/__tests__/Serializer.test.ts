@@ -164,7 +164,7 @@ describe('Serializer', () => {
       });
 
       expect(postJson).toEqual({
-        id: '2',
+        id: '1',
         title: 'My Post',
       });
     });

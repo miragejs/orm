@@ -1,4 +1,3 @@
-import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
 import { MirageError, type LoggerConfig } from '@src/utils';
 
 import Schema, { type SchemaInstance } from './Schema';
@@ -8,10 +7,12 @@ import type { SchemaCollections, SchemaConfig } from './types';
  * A fluent builder for creating schema instances.
  *
  * The SchemaBuilder provides a type-safe way to construct Schema instances with
- * configurable collections and identity manager. It follows the builder
- * pattern, allowing method chaining to progressively configure the schema.
+ * configurable collections. It follows the builder pattern, allowing method
+ * chaining to progressively configure the schema.
+ *
+ * Each collection manages its own identity manager - configure them using
+ * `collection().identityManager()` when building individual collections.
  * @template TCollections - The schema collections configuration type
- * @template TIdentityManager - The global identity manager type
  * @example
  * ```typescript
  * const appSchema = schema()
@@ -19,16 +20,13 @@ import type { SchemaCollections, SchemaConfig } from './types';
  *     users: userCollection,
  *     posts: postCollection,
  *   })
- *   .identityManager(appIdentityManager)
  *   .setup();
  * ```
  */
 export default class SchemaBuilder<
   TCollections extends SchemaCollections = SchemaCollections,
-  TIdentityManager extends IdentityManager<any> = StringIdentityManager,
 > {
   private _collections?: TCollections;
-  private _identityManager?: TIdentityManager;
   private _loggingConfig?: LoggerConfig;
 
   /**
@@ -54,9 +52,7 @@ export default class SchemaBuilder<
    * });
    * ```
    */
-  collections<C extends SchemaCollections>(
-    collections: C,
-  ): SchemaBuilder<C, TIdentityManager> {
+  collections<C extends SchemaCollections>(collections: C): SchemaBuilder<C> {
     // Validate collections is not empty
     if (Object.keys(collections).length === 0) {
       throw new MirageError(
@@ -67,10 +63,10 @@ export default class SchemaBuilder<
     // Validate collection names don't conflict with reserved Schema properties
     const RESERVED_SCHEMA_PROPS = [
       'db',
-      'identityManager',
       'getCollection',
       'loadSeeds',
       'loadFixtures',
+      'logger',
     ];
 
     for (const name of Object.keys(collections)) {
@@ -79,7 +75,7 @@ export default class SchemaBuilder<
           `Collection name '${name}' conflicts with existing Schema property or method.\n\n` +
             `The Schema instance has the following built-in properties and methods:\n` +
             `  - schema.db: Database instance\n` +
-            `  - schema.identityManager: ID generation manager\n` +
+            `  - schema.logger: Logger instance (if logging enabled)\n` +
             `  - schema.getCollection(): Method to access collections\n` +
             `  - schema.loadSeeds(): Method to load seed data\n` +
             `  - schema.loadFixtures(): Method to load fixture data\n\n` +
@@ -94,35 +90,8 @@ export default class SchemaBuilder<
       }
     }
 
-    const builder = new SchemaBuilder<C, TIdentityManager>();
+    const builder = new SchemaBuilder<C>();
     builder._collections = collections;
-    builder._identityManager = this._identityManager;
-    builder._loggingConfig = this._loggingConfig;
-    return builder;
-  }
-
-  /**
-   * Sets the global identity manager for this schema.
-   *
-   * The identity manager handles ID generation and management for model instances
-   * across all collections in the schema. Individual collections can override this
-   * with their own identity managers.
-   * @template I - The identity manager type
-   * @param identityManager - The identity manager instance
-   * @returns A new SchemaBuilder instance with the specified identity manager
-   * @example
-   * ```typescript
-   * const builder = schema()
-   *   .collections({ users: userCollection })
-   *   .identityManager(new StringIdentityManager());
-   * ```
-   */
-  identityManager<I extends IdentityManager<any>>(
-    identityManager: I,
-  ): SchemaBuilder<TCollections, I> {
-    const builder = new SchemaBuilder<TCollections, I>();
-    builder._collections = this._collections;
-    builder._identityManager = identityManager;
     builder._loggingConfig = this._loggingConfig;
     return builder;
   }
@@ -147,12 +116,9 @@ export default class SchemaBuilder<
    *   .collections({ users: userCollection });
    * ```
    */
-  logging(
-    config: LoggerConfig | undefined,
-  ): SchemaBuilder<TCollections, TIdentityManager> {
-    const builder = new SchemaBuilder<TCollections, TIdentityManager>();
+  logging(config: LoggerConfig | undefined): SchemaBuilder<TCollections> {
+    const builder = new SchemaBuilder<TCollections>();
     builder._collections = this._collections;
-    builder._identityManager = this._identityManager;
     builder._loggingConfig = config ?? this._loggingConfig;
     return builder;
   }
@@ -171,8 +137,6 @@ export default class SchemaBuilder<
    *     users: userCollection,
    *     posts: postCollection,
    *   })
-   *   .serializer({ root: true })
-   *   .identityManager(appIdentityManager)
    *   .setup();
    *
    * // Use the schema
@@ -180,22 +144,21 @@ export default class SchemaBuilder<
    * const user = appSchema.users.create({ name: 'John' });
    * ```
    */
-  setup(): SchemaInstance<TCollections, SchemaConfig<TIdentityManager>> {
+  setup(): SchemaInstance<TCollections> {
     if (!this._collections) {
       throw new MirageError(
         'SchemaBuilder: collections are required. Call .collections() before .setup()',
       );
     }
 
-    const config = {
-      identityManager: this._identityManager,
+    const config: SchemaConfig = {
       logging: this._loggingConfig,
-    } as SchemaConfig<TIdentityManager>;
+    };
 
-    return new Schema(this._collections, config) as SchemaInstance<
-      TCollections,
-      SchemaConfig<TIdentityManager>
-    >;
+    return new Schema(
+      this._collections,
+      config,
+    ) as SchemaInstance<TCollections>;
   }
 }
 
@@ -203,8 +166,11 @@ export default class SchemaBuilder<
  * Creates a new SchemaBuilder instance for building schema configurations.
  *
  * This is the main entry point for creating schemas in the builder-based API.
- * The returned SchemaBuilder can be configured with collections and identity manager
- * before setting up the final schema instance.
+ * The returned SchemaBuilder can be configured with collections before setting
+ * up the final schema instance.
+ *
+ * Each collection manages its own identity manager - configure them using
+ * `collection().identityManager()` when building individual collections.
  * @returns A new SchemaBuilder instance ready for configuration
  * @example
  * ```typescript
@@ -215,13 +181,13 @@ export default class SchemaBuilder<
  *   })
  *   .setup();
  *
- * // Full schema configuration
+ * // With logging
  * const appSchema = schema()
+ *   .logging({ enabled: true, level: 'debug' })
  *   .collections({
  *     users: userCollection,
  *     posts: postCollection,
  *   })
- *   .identityManager(new StringIdentityManager())
  *   .setup();
  * ```
  * @see {@link SchemaBuilder} for available configuration methods

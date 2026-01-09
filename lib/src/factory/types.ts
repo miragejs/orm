@@ -62,7 +62,6 @@ export type TraitDefinition<
     afterCreate?: FactoryAfterCreateHook<TSchema, TTemplate>;
   };
 
-// TODO: Rename to FactoryTraits
 export type ModelTraits<
   TTraits extends string = never,
   TTemplate extends ModelTemplate = ModelTemplate,

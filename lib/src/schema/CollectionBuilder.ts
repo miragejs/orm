@@ -51,14 +51,14 @@ export default class CollectionBuilder<
     TSchema
   >,
 > {
-  private _template?: TTemplate;
   private _factory?: TFactory;
-  private _relationships?: TRelationships;
+  private _fixtures?: FixtureConfig<TTemplate, TRelationships>;
   private _identityManager?: TIdentityManager;
+  private _relationships?: TRelationships;
+  private _seeds?: Seeds<TSchema>;
   private _serializerConfig?: SerializerOptions<TTemplate, TSchema>;
   private _serializerInstance?: TSerializer;
-  private _seeds?: Seeds<TSchema>;
-  private _fixtures?: FixtureConfig<TTemplate, TRelationships>;
+  private _template?: TTemplate;
 
   /**
    * Creates a new CollectionBuilder instance.

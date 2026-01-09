@@ -568,7 +568,7 @@ describe('Serializer options', () => {
         const json = user.toJSON();
 
         expect(json).toHaveProperty('posts');
-        expect(json.posts[0]).toEqual({ id: '2', title: 'Post 1' });
+        expect(json.posts[0]).toEqual({ id: '1', title: 'Post 1' });
         expect(json.posts[0]).not.toHaveProperty('content');
         expect(json.posts[0]).not.toHaveProperty('authorId');
       });

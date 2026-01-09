@@ -1,5 +1,4 @@
 import type { BelongsTo } from '@src/associations';
-import { StringIdentityManager } from '@src/id-manager';
 import { model } from '@src/model';
 import type {
   CollectionConfig,
@@ -55,23 +54,20 @@ test('SchemaCollections should work with basic collections map', () => {
   expectTypeOf(collections).toBeObject();
 });
 
-test('SchemaConfig should work with default identity manager', () => {
-  const config: SchemaConfig = {
-    identityManager: new StringIdentityManager(),
-  };
-
-  expectTypeOf(config).toEqualTypeOf<SchemaConfig>();
-});
-
 test('SchemaConfig should work with logging configuration', () => {
   const config: SchemaConfig = {
-    identityManager: new StringIdentityManager(),
     logging: {
       enabled: true,
       level: 'info',
       prefix: '[ORM]',
     },
   };
+
+  expectTypeOf(config).toEqualTypeOf<SchemaConfig>();
+});
+
+test('SchemaConfig should work with empty config', () => {
+  const config: SchemaConfig = {};
 
   expectTypeOf(config).toEqualTypeOf<SchemaConfig>();
 });

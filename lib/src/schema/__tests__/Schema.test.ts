@@ -1,5 +1,3 @@
-import { StringIdentityManager } from '@src/id-manager';
-
 import { collection } from '../CollectionBuilder';
 import { schema } from '../SchemaBuilder';
 
@@ -29,7 +27,6 @@ const testSchema = schema()
     users: userCollection,
     posts: postCollection,
   })
-  .identityManager(new StringIdentityManager())
   .setup();
 
 describe('Schema', () => {
@@ -61,11 +58,6 @@ describe('Schema', () => {
     it('provides access to database instance', () => {
       expect(testSchema.db).toBeDefined();
       expect(typeof testSchema.db.getCollection).toBe('function');
-    });
-
-    it('provides access to identity manager', () => {
-      expect(testSchema.identityManager).toBeDefined();
-      expect(typeof testSchema.identityManager.get).toBe('function');
     });
   });
 
@@ -280,34 +272,28 @@ describe('Schema', () => {
       const user = testSchema.users.create();
       const post = testSchema.posts.create();
 
-      // Users use StringIdentityManager
+      // Users use default StringIdentityManager (no custom one configured)
       expect(typeof user.id).toBe('string');
 
-      // Posts use NumberIdentityManager
+      // Posts use NumberIdentityManager (configured via collection builder)
       expect(typeof post.id).toBe('number');
     });
 
-    it('allows global identity manager override', () => {
-      const schemaWithNumberDefault = schema()
-        .collections({
-          users: {
-            model: userModel,
-            factory: userFactory,
-            identityManager: new StringIdentityManager(),
-          },
-          posts: {
-            model: postModel,
-            factory: postFactory,
-          },
-        })
-        .identityManager(postIdentityManager)
-        .setup();
+    it('each collection has independent ID sequences', () => {
+      // Create users and posts in different orders
+      testSchema.users.create();
+      testSchema.users.create();
+      testSchema.posts.create();
 
-      const user = schemaWithNumberDefault.users.create();
-      const post = schemaWithNumberDefault.posts.create();
+      // Each collection should have its own ID sequence starting from 1
+      const user3 = testSchema.users.create();
+      const post2 = testSchema.posts.create();
 
-      expect(typeof user.id).toBe('string');
-      expect(typeof post.id).toBe('number');
+      // User should be "3" (third user created)
+      expect(user3.id).toBe('3');
+
+      // Post should be 2 (second post created, using NumberIdentityManager)
+      expect(post2.id).toBe(2);
     });
   });
 

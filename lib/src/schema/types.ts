@@ -1,6 +1,6 @@
 import type { DbCollection } from '@src/db';
 import type { Factory } from '@src/factory';
-import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
+import type { IdentityManager } from '@src/id-manager';
 import type {
   ModelAttrs,
   ModelForeignKeys,
@@ -81,12 +81,8 @@ export interface FixtureConfig<
 
 /**
  * Global schema configuration
- * @template TIdentityManager - The identity manager type
  */
-export interface SchemaConfig<
-  TIdentityManager extends IdentityManager = StringIdentityManager,
-> {
-  identityManager?: TIdentityManager;
+export interface SchemaConfig {
   logging?: LoggerConfig;
 }
 

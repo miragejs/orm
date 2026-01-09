@@ -1,5 +1,4 @@
 import { createDatabase, type DbInstance } from '@src/db';
-import { StringIdentityManager } from '@src/id-manager';
 import { Serializer } from '@src/serializer';
 import { Logger, MirageError } from '@src/utils';
 
@@ -13,32 +12,25 @@ import type {
 } from './types';
 
 /**
- * Schema class that manages database and collections
+ * Schema class that manages database and collections.
+ *
+ * Each collection manages its own identity manager - configure them using
+ * `collection().identityManager()` when building individual collections.
+ * By default, collections use `StringIdentityManager`.
  * @template TCollections - The type map of collection names to their configurations
- * @template TConfig - The schema configuration type with identity manager
  */
-export default class Schema<
-  TCollections extends SchemaCollections,
-  TConfig extends SchemaConfig<any> = SchemaConfig<StringIdentityManager>,
-> {
+export default class Schema<TCollections extends SchemaCollections> {
   public readonly db: DbInstance<SchemaDbCollections<TCollections>>;
-  public readonly identityManager: TConfig extends SchemaConfig<
-    infer TIdentityManager
-  >
-    ? TIdentityManager
-    : StringIdentityManager;
   public readonly logger?: Logger;
 
   private _collections: Map<string, Collection<any, any, any, any>> = new Map();
 
-  constructor(collections: TCollections, config?: TConfig) {
+  constructor(collections: TCollections, config?: SchemaConfig) {
     // Create logger if logging is enabled
     if (config?.logging?.enabled) {
       this.logger = new Logger(config.logging);
     }
 
-    this.identityManager =
-      config?.identityManager ?? new StringIdentityManager();
     this.db = createDatabase<SchemaDbCollections<TCollections>>({
       logger: this.logger,
     });
@@ -215,16 +207,15 @@ export default class Schema<
     for (const collectionName in collections) {
       const collectionConfig = collections[collectionName];
       const {
-        model,
         factory,
+        fixtures,
+        identityManager,
+        model,
         relationships,
+        seeds,
         serializerConfig,
         serializerInstance,
-        seeds,
-        fixtures,
       } = collectionConfig;
-      const identityManager =
-        collectionConfig.identityManager ?? this.identityManager;
 
       // Determine the final serializer to use
       let finalSerializer: any;
@@ -238,7 +229,7 @@ export default class Schema<
       }
 
       const collection = createCollection(
-        this as SchemaInstance<TCollections, TConfig>,
+        this as SchemaInstance<TCollections>,
         {
           model,
           factory,
@@ -364,7 +355,5 @@ export default class Schema<
  * Type for a complete schema instance with collections
  * Provides both string-based property access and symbol-based relationship resolution
  */
-export type SchemaInstance<
-  TCollections extends SchemaCollections,
-  TConfig extends SchemaConfig<any> = SchemaConfig<StringIdentityManager>,
-> = Schema<TCollections, TConfig> & SchemaCollectionAccessors<TCollections>;
+export type SchemaInstance<TCollections extends SchemaCollections> =
+  Schema<TCollections> & SchemaCollectionAccessors<TCollections>;

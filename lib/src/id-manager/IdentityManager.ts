@@ -40,11 +40,9 @@ export default class IdentityManager<T extends IdType = string> {
    */
   get(): T {
     let nextId = this._counter;
-
     while (this._usedIds.has(nextId)) {
       nextId = this._idGenerator(nextId);
     }
-
     return nextId;
   }
 
