@@ -66,8 +66,8 @@
 // ----------------------------------------------------------------------------
 // Identity Manager
 // ----------------------------------------------------------------------------
-export { StringIdentityManager, NumberIdentityManager } from './id-manager';
-export type { IdentityManager } from './id-manager';
+export { IdentityManager } from './id-manager';
+export type { IdentityManagerConfig, IdType, IdGenerator } from './id-manager';
 
 // ----------------------------------------------------------------------------
 // Model Builder

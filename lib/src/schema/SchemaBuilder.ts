@@ -1,3 +1,4 @@
+import type { IdentityManagerConfig, IdType } from '@src/id-manager';
 import { MirageError, type LoggerConfig } from '@src/utils';
 
 import Schema, { type SchemaInstance } from './Schema';
@@ -10,12 +11,14 @@ import type { SchemaCollections, SchemaConfig } from './types';
  * configurable collections. It follows the builder pattern, allowing method
  * chaining to progressively configure the schema.
  *
- * Each collection manages its own identity manager - configure them using
- * `collection().identityManager()` when building individual collections.
+ * You can set a default identity manager configuration at the schema level,
+ * which individual collections can override with their own configuration.
  * @template TCollections - The schema collections configuration type
+ * @template TIdType - The default ID type for collections (defaults to string)
  * @example
  * ```typescript
  * const appSchema = schema()
+ *   .identityManager({ initialCounter: '1' }) // Default for all collections
  *   .collections({
  *     users: userCollection,
  *     posts: postCollection,
@@ -25,8 +28,10 @@ import type { SchemaCollections, SchemaConfig } from './types';
  */
 export default class SchemaBuilder<
   TCollections extends SchemaCollections = SchemaCollections,
+  TIdType extends IdType = string,
 > {
   private _collections?: TCollections;
+  private _identityManagerConfig?: IdentityManagerConfig<TIdType>;
   private _loggingConfig?: LoggerConfig;
 
   /**
@@ -52,7 +57,9 @@ export default class SchemaBuilder<
    * });
    * ```
    */
-  collections<C extends SchemaCollections>(collections: C): SchemaBuilder<C> {
+  collections<C extends SchemaCollections>(
+    collections: C,
+  ): SchemaBuilder<C, TIdType> {
     // Validate collections is not empty
     if (Object.keys(collections).length === 0) {
       throw new MirageError(
@@ -90,8 +97,49 @@ export default class SchemaBuilder<
       }
     }
 
-    const builder = new SchemaBuilder<C>();
+    const builder = new SchemaBuilder<C, TIdType>();
     builder._collections = collections;
+    builder._identityManagerConfig = this._identityManagerConfig;
+    builder._loggingConfig = this._loggingConfig;
+    return builder;
+  }
+
+  /**
+   * Sets the default identity manager configuration for all collections.
+   *
+   * The identity manager handles ID generation for model instances.
+   * Individual collections can override this with their own configuration.
+   * The ID type is inferred from the initialCounter value.
+   * @template T - The ID type (inferred from initialCounter)
+   * @param config - The identity manager configuration
+   * @returns A new SchemaBuilder instance with the specified identity manager config
+   * @example
+   * ```typescript
+   * // String IDs (default)
+   * const builder = schema()
+   *   .identityManager({ initialCounter: '1' })
+   *   .collections({ users: userCollection });
+   *
+   * // Number IDs
+   * const builder = schema()
+   *   .identityManager({ initialCounter: 1 })
+   *   .collections({ users: userCollection });
+   *
+   * // Custom ID generator
+   * const builder = schema()
+   *   .identityManager({
+   *     initialCounter: 'uuid-1',
+   *     idGenerator: (current) => `uuid-${parseInt(current.split('-')[1]) + 1}`
+   *   })
+   *   .collections({ users: userCollection });
+   * ```
+   */
+  identityManager<T extends IdType>(
+    config: IdentityManagerConfig<T>,
+  ): SchemaBuilder<TCollections, T> {
+    const builder = new SchemaBuilder<TCollections, T>();
+    builder._collections = this._collections;
+    builder._identityManagerConfig = config;
     builder._loggingConfig = this._loggingConfig;
     return builder;
   }
@@ -116,9 +164,12 @@ export default class SchemaBuilder<
    *   .collections({ users: userCollection });
    * ```
    */
-  logging(config: LoggerConfig | undefined): SchemaBuilder<TCollections> {
-    const builder = new SchemaBuilder<TCollections>();
+  logging(
+    config: LoggerConfig | undefined,
+  ): SchemaBuilder<TCollections, TIdType> {
+    const builder = new SchemaBuilder<TCollections, TIdType>();
     builder._collections = this._collections;
+    builder._identityManagerConfig = this._identityManagerConfig;
     builder._loggingConfig = config ?? this._loggingConfig;
     return builder;
   }
@@ -151,7 +202,8 @@ export default class SchemaBuilder<
       );
     }
 
-    const config: SchemaConfig = {
+    const config: SchemaConfig<TIdType> = {
+      identityManager: this._identityManagerConfig,
       logging: this._loggingConfig,
     };
 

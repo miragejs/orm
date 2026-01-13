@@ -108,35 +108,3 @@ export default class IdentityManager<T extends IdType = string> {
     }
   }
 }
-
-/**
- * String-based identity manager with sensible defaults.
- * @example
- * const identityManager = new StringIdentityManager();
- * identityManager.fetch(); // => "1"
- * identityManager.fetch(); // => "2"
- */
-export class StringIdentityManager extends IdentityManager<string> {
-  constructor(options?: Partial<IdentityManagerConfig<string>>) {
-    super({
-      initialCounter: '1',
-      ...options,
-    });
-  }
-}
-
-/**
- * Number-based identity manager with sensible defaults.
- * @example
- * const identityManager = new NumberIdentityManager();
- * identityManager.fetch(); // => 1
- * identityManager.fetch(); // => 2
- */
-export class NumberIdentityManager extends IdentityManager<number> {
-  constructor(options?: Partial<IdentityManagerConfig<number>>) {
-    super({
-      initialCounter: 1,
-      ...options,
-    });
-  }
-}

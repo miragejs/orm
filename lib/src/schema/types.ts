@@ -1,6 +1,10 @@
 import type { DbCollection } from '@src/db';
 import type { Factory } from '@src/factory';
-import type { IdentityManager } from '@src/id-manager';
+import type {
+  IdentityManager,
+  IdentityManagerConfig,
+  IdType,
+} from '@src/id-manager';
 import type {
   ModelAttrs,
   ModelForeignKeys,
@@ -81,8 +85,14 @@ export interface FixtureConfig<
 
 /**
  * Global schema configuration
+ * @template TIdType - The default ID type for collections (inferred from identityManager.initialCounter)
  */
-export interface SchemaConfig {
+export interface SchemaConfig<TIdType extends IdType = string> {
+  /**
+   * Default identity manager configuration for all collections.
+   * Individual collections can override this with their own configuration.
+   */
+  identityManager?: IdentityManagerConfig<TIdType>;
   logging?: LoggerConfig;
 }
 
@@ -110,17 +120,19 @@ export interface CollectionConfig<
   model: TTemplate;
   factory?: TFactory;
   relationships?: TRelationships;
-  identityManager?: IdentityManager<ModelIdFor<TTemplate>>;
   /**
-   * Serializer configuration object (attrs, root, embed, include)
-   * Used when collection().serializer({...config}) is called
+   * Identity manager configuration or instance for this collection.
+   * Can be either an IdentityManagerConfig object or an IdentityManager instance.
+   * The ID type must match the model template's ID type.
    */
-  serializerConfig?: SerializerOptions<TTemplate, TSchema>;
+  identityManager?:
+    | IdentityManagerConfig<ModelIdFor<TTemplate>>
+    | IdentityManager<ModelIdFor<TTemplate>>;
   /**
-   * Serializer instance (custom serializer class) - must extend Serializer for the template
-   * Used when collection().serializer(instance) is called
+   * Serializer configuration or instance for this collection.
+   * Can be either a SerializerOptions config object or a Serializer instance.
    */
-  serializerInstance?: TSerializer;
+  serializer?: SerializerOptions<TTemplate, TSchema> | TSerializer;
   /**
    * Seeds configuration - can be a function or object with named scenarios
    * Used when collection().seeds(...) is called

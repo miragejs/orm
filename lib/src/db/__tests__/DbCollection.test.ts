@@ -1,4 +1,4 @@
-import { NumberIdentityManager, StringIdentityManager } from '@src/id-manager';
+import { IdentityManager } from '@src/id-manager';
 
 import DbCollection from '../DbCollection';
 
@@ -529,7 +529,7 @@ describe('DbCollection Types', () => {
       }
 
       const comments = new DbCollection<CommentAttrs>('comments', {
-        identityManager: new NumberIdentityManager(),
+        identityManager: new IdentityManager({ initialCounter: 1 }),
       });
       const comment = comments.insert({ text: 'Great post!', userId: 1 });
 
@@ -542,7 +542,7 @@ describe('DbCollection Types', () => {
   describe('Custom string ID behavior', () => {
     it('should work with custom string IDs', () => {
       const users = new DbCollection<UserRecord>('users', {
-        identityManager: new StringIdentityManager({
+        identityManager: new IdentityManager({
           initialCounter: 'user-1',
           idGenerator: (currentId: string) => {
             const num = parseInt(currentId.split('-')[1]);

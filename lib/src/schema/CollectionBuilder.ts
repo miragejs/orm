@@ -1,6 +1,6 @@
 import type { Factory } from '@src/factory';
-import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
-import type { ModelRelationships, ModelTemplate } from '@src/model';
+import type { IdentityManagerConfig } from '@src/id-manager';
+import type { ModelIdFor, ModelRelationships, ModelTemplate } from '@src/model';
 import { Serializer, type SerializerOptions } from '@src/serializer';
 import { MirageError } from '@src/utils';
 
@@ -22,9 +22,10 @@ const SUPPORTED_RELATIONSHIP_TYPES = ['hasMany', 'belongsTo'];
  * with configurable model template, factory, relationships, serializer, and identity manager. It follows
  * the builder pattern, allowing method chaining to progressively configure the collection.
  * @template TTemplate - The model template type
+ * @template TSchema - The schema collections type
  * @template TRelationships - The model relationships configuration
  * @template TFactory - The factory type
- * @template TIdentityManager - The identity manager type
+ * @template TSerializer - The serializer type
  * @example
  * ```typescript
  * const userCollection = collection(UserModel)
@@ -32,7 +33,7 @@ const SUPPORTED_RELATIONSHIP_TYPES = ['hasMany', 'belongsTo'];
  *     posts: associations.hasMany(PostModel),
  *   })
  *   .factory(userFactory)
- *   .identityManager(userIdentityManager)
+ *   .identityManager({ initialCounter: '1' })
  *   .create();
  * ```
  */
@@ -45,7 +46,6 @@ export default class CollectionBuilder<
     string,
     SchemaCollections
   >,
-  TIdentityManager extends IdentityManager = StringIdentityManager,
   TSerializer extends Serializer<any, any, any, any> = Serializer<
     ModelTemplate,
     TSchema
@@ -53,11 +53,10 @@ export default class CollectionBuilder<
 > {
   private _factory?: TFactory;
   private _fixtures?: FixtureConfig<TTemplate, TRelationships>;
-  private _identityManager?: TIdentityManager;
+  private _identityManager?: IdentityManagerConfig<ModelIdFor<TTemplate>>;
   private _relationships?: TRelationships;
   private _seeds?: Seeds<TSchema>;
-  private _serializerConfig?: SerializerOptions<TTemplate, TSchema>;
-  private _serializerInstance?: TSerializer;
+  private _serializer?: SerializerOptions<TTemplate, TSchema> | TSerializer;
   private _template?: TTemplate;
 
   /**
@@ -86,7 +85,6 @@ export default class CollectionBuilder<
     TSchema,
     TRelationships,
     Factory<T, any, any>,
-    TIdentityManager,
     Serializer<T, TSchema>
   > {
     // Validate model template structure
@@ -111,7 +109,6 @@ export default class CollectionBuilder<
       TSchema,
       TRelationships,
       Factory<T, any, any>,
-      TIdentityManager,
       Serializer<T, TSchema>
     >();
     builder._template = template;
@@ -119,11 +116,10 @@ export default class CollectionBuilder<
     // This allows for flexibility in the builder pattern while maintaining type safety at build time
     builder._factory = this._factory as unknown as typeof builder._factory;
     builder._relationships = this._relationships;
-    builder._serializerConfig = this
-      ._serializerConfig as unknown as typeof builder._serializerConfig;
-    builder._serializerInstance = this
-      ._serializerInstance as unknown as typeof builder._serializerInstance;
-    builder._identityManager = this._identityManager;
+    builder._serializer = this
+      ._serializer as unknown as typeof builder._serializer;
+    builder._identityManager = this
+      ._identityManager as unknown as typeof builder._identityManager;
     builder._seeds = this._seeds;
     builder._fixtures = this._fixtures as unknown as typeof builder._fixtures;
     return builder;
@@ -144,28 +140,19 @@ export default class CollectionBuilder<
    */
   factory<F extends Factory<any, any, any>>(
     factory: F,
-  ): CollectionBuilder<
-    TTemplate,
-    TSchema,
-    TRelationships,
-    F,
-    TIdentityManager,
-    TSerializer
-  > {
+  ): CollectionBuilder<TTemplate, TSchema, TRelationships, F, TSerializer> {
     const builder = new CollectionBuilder<
       TTemplate,
       TSchema,
       TRelationships,
       F,
-      TIdentityManager,
       TSerializer
     >();
     builder._template = this._template;
     builder._factory = factory;
     builder._relationships = this._relationships;
     builder._identityManager = this._identityManager;
-    builder._serializerConfig = this._serializerConfig;
-    builder._serializerInstance = this._serializerInstance;
+    builder._serializer = this._serializer;
     builder._seeds = this._seeds;
     builder._fixtures = this._fixtures;
     return builder;
@@ -190,14 +177,7 @@ export default class CollectionBuilder<
    */
   relationships<R extends ModelRelationships>(
     relationships: R,
-  ): CollectionBuilder<
-    TTemplate,
-    TSchema,
-    R,
-    TFactory,
-    TIdentityManager,
-    TSerializer
-  > {
+  ): CollectionBuilder<TTemplate, TSchema, R, TFactory, TSerializer> {
     // Validate relationships configuration
     if (!relationships || typeof relationships !== 'object') {
       throw new MirageError(
@@ -242,15 +222,13 @@ export default class CollectionBuilder<
       TSchema,
       R,
       TFactory,
-      TIdentityManager,
       TSerializer
     >();
     builder._template = this._template;
     builder._factory = this._factory;
     builder._relationships = relationships;
     builder._identityManager = this._identityManager;
-    builder._serializerConfig = this._serializerConfig;
-    builder._serializerInstance = this._serializerInstance;
+    builder._serializer = this._serializer;
     builder._seeds = this._seeds;
     builder._fixtures = this._fixtures as typeof builder._fixtures;
     return builder;
@@ -281,20 +259,12 @@ export default class CollectionBuilder<
     S extends Serializer<TTemplate, TSchema> = Serializer<TTemplate, TSchema>,
   >(
     configOrSerializer: SerializerOptions<TTemplate, TSchema> | S,
-  ): CollectionBuilder<
-    TTemplate,
-    TSchema,
-    TRelationships,
-    TFactory,
-    TIdentityManager,
-    S
-  > {
+  ): CollectionBuilder<TTemplate, TSchema, TRelationships, TFactory, S> {
     const builder = new CollectionBuilder<
       TTemplate,
       TSchema,
       TRelationships,
       TFactory,
-      TIdentityManager,
       S
     >();
     builder._template = this._template;
@@ -303,40 +273,50 @@ export default class CollectionBuilder<
     builder._identityManager = this._identityManager;
     builder._seeds = this._seeds;
     builder._fixtures = this._fixtures;
-
-    // Determine if it's a config object or a serializer instance
-    if (configOrSerializer instanceof Serializer) {
-      builder._serializerInstance = configOrSerializer;
-    } else {
-      builder._serializerConfig = configOrSerializer;
-    }
+    builder._serializer = configOrSerializer;
 
     return builder;
   }
 
   /**
-   * Sets the identity manager for this collection.
+   * Sets the identity manager configuration for this collection.
    *
    * The identity manager handles ID generation and management for model instances
-   * in this collection. If not specified, the schema's global identity manager will be used.
-   * @template I - The identity manager type
-   * @param identityManager - The identity manager instance
-   * @returns A new CollectionBuilder instance with the specified identity manager
+   * in this collection. If not specified, the schema's default identity manager config
+   * will be used, or string IDs starting from "1" as the ultimate default.
+   *
+   * The ID type is inferred from the initialCounter value. The config's ID type
+   * must be compatible with the model template's ID type.
+   * @param config - The identity manager configuration
+   * @returns A new CollectionBuilder instance with the specified identity manager config
    * @example
    * ```typescript
-   * const builder = collection
+   * // String IDs (default)
+   * const builder = collection()
    *   .model(UserModel)
-   *   .identityManager(new StringIdentityManager());
+   *   .identityManager({ initialCounter: '1' });
+   *
+   * // Number IDs
+   * const builder = collection()
+   *   .model(UserModel)
+   *   .identityManager({ initialCounter: 1 });
+   *
+   * // Custom generator
+   * const builder = collection()
+   *   .model(UserModel)
+   *   .identityManager({
+   *     initialCounter: 'uuid-1',
+   *     idGenerator: (current) => `uuid-${parseInt(current.split('-')[1]) + 1}`
+   *   });
    * ```
    */
-  identityManager<I extends IdentityManager<any>>(
-    identityManager: I,
+  identityManager(
+    config: IdentityManagerConfig<ModelIdFor<TTemplate>>,
   ): CollectionBuilder<
     TTemplate,
     TSchema,
     TRelationships,
     TFactory,
-    I,
     TSerializer
   > {
     const builder = new CollectionBuilder<
@@ -344,15 +324,13 @@ export default class CollectionBuilder<
       TSchema,
       TRelationships,
       TFactory,
-      I,
       TSerializer
     >();
     builder._template = this._template;
     builder._factory = this._factory;
     builder._relationships = this._relationships;
-    builder._identityManager = identityManager;
-    builder._serializerConfig = this._serializerConfig;
-    builder._serializerInstance = this._serializerInstance;
+    builder._identityManager = config;
+    builder._serializer = this._serializer;
     builder._seeds = this._seeds;
     builder._fixtures = this._fixtures;
     return builder;
@@ -395,7 +373,6 @@ export default class CollectionBuilder<
     TSchema,
     TRelationships,
     TFactory,
-    TIdentityManager,
     TSerializer
   > {
     const builder = new CollectionBuilder<
@@ -403,15 +380,13 @@ export default class CollectionBuilder<
       TSchema,
       TRelationships,
       TFactory,
-      TIdentityManager,
       TSerializer
     >();
     builder._template = this._template;
     builder._factory = this._factory;
     builder._relationships = this._relationships;
     builder._identityManager = this._identityManager;
-    builder._serializerConfig = this._serializerConfig;
-    builder._serializerInstance = this._serializerInstance;
+    builder._serializer = this._serializer;
     builder._seeds = seeds;
     builder._fixtures = this._fixtures;
     return builder;
@@ -455,7 +430,6 @@ export default class CollectionBuilder<
     TSchema,
     TRelationships,
     TFactory,
-    TIdentityManager,
     TSerializer
   > {
     // Validate fixtures
@@ -484,7 +458,6 @@ export default class CollectionBuilder<
       TSchema,
       TRelationships,
       TFactory,
-      TIdentityManager,
       TSerializer
     >();
 
@@ -492,8 +465,7 @@ export default class CollectionBuilder<
     builder._factory = this._factory;
     builder._relationships = this._relationships;
     builder._identityManager = this._identityManager;
-    builder._serializerConfig = this._serializerConfig;
-    builder._serializerInstance = this._serializerInstance;
+    builder._serializer = this._serializer;
     builder._seeds = this._seeds;
     builder._fixtures = {
       records,
@@ -525,8 +497,7 @@ export default class CollectionBuilder<
       relationships: this._relationships,
       factory: this._factory,
       identityManager: this._identityManager,
-      serializerConfig: this._serializerConfig,
-      serializerInstance: this._serializerInstance,
+      serializer: this._serializer,
       seeds: this._seeds,
       fixtures: this._fixtures,
     };
@@ -558,7 +529,6 @@ export function collection<
   TSchema,
   {},
   Factory<ModelTemplate, string, SchemaCollections>,
-  StringIdentityManager,
   Serializer<ModelTemplate, TSchema>
 > {
   return new CollectionBuilder<
@@ -566,7 +536,6 @@ export function collection<
     TSchema,
     {},
     Factory<ModelTemplate, string, SchemaCollections>,
-    StringIdentityManager,
     Serializer<ModelTemplate, TSchema>
   >();
 }

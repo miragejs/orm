@@ -1,4 +1,4 @@
-import { IdentityManager, StringIdentityManager } from '@src/id-manager';
+import IdentityManager from '@src/id-manager/IdentityManager';
 import type { Logger } from '@src/utils';
 
 import QueryManager from './QueryManager';
@@ -16,7 +16,7 @@ import type {
  * A collection of records in a database. Think of it as a table in a relational database.
  * @param config - Configuration for the collection.
  * @param config.name - The name of the collection.
- * @param config.identityManager - The identity manager for the collection.
+ * @param config.identityManager - The identity manager instance for ID generation.
  * @param config.initialData - Initial data for the collection.
  * @example
  * const users = new DbCollection({ name: 'users' });
@@ -34,7 +34,9 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
     this.name = name;
     this.identityManager =
       config?.identityManager ??
-      (new StringIdentityManager() as IdentityManager<TRecord['id']>);
+      new IdentityManager<TRecord['id']>({
+        initialCounter: '1' as TRecord['id'],
+      });
     this._logger = config?.logger;
 
     if (config?.initialData) {

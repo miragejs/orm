@@ -1,6 +1,6 @@
 import { associations } from '@src/associations';
 import { factory } from '@src/factory';
-import { NumberIdentityManager } from '@src/id-manager';
+import type { IdentityManagerConfig } from '@src/id-manager';
 import { model } from '@src/model';
 import { MirageError } from '@src/utils';
 
@@ -49,8 +49,10 @@ const postFactory = factory()
   })
   .create();
 
-// Create test identity managers
-const postIdentityManager = new NumberIdentityManager();
+// Create test identity manager configs
+const postIdentityManagerConfig: IdentityManagerConfig<number> = {
+  initialCounter: 1,
+};
 
 // Create test collections
 const userCollection = collection()
@@ -67,7 +69,7 @@ const postCollection = collection()
   .relationships({
     author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
   })
-  .identityManager(postIdentityManager)
+  .identityManager(postIdentityManagerConfig)
   .create();
 
 describe('SchemaBuilder', () => {
@@ -192,7 +194,7 @@ describe('SchemaBuilder', () => {
                 foreignKey: 'authorId',
               }),
             })
-            .identityManager(postIdentityManager)
+            .identityManager(postIdentityManagerConfig)
             .create(),
         })
         .setup();

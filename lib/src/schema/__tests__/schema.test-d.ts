@@ -83,7 +83,7 @@ test('CollectionConfig should work with minimal configuration', () => {
 test('CollectionConfig should work with serializer config', () => {
   const config: CollectionConfig<typeof userModel> = {
     model: userModel,
-    serializerConfig: {
+    serializer: {
       select: ['id', 'name', 'email'],
     },
   };

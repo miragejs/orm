@@ -1,5 +1,5 @@
 import { factory } from '@src/factory';
-import { NumberIdentityManager } from '@src/id-manager';
+import type { IdentityManagerConfig } from '@src/id-manager';
 import { model } from '@src/model';
 
 // Define test model attributes
@@ -72,5 +72,7 @@ export const commentFactory = factory()
   })
   .create();
 
-// Create post identity manager (reused across tests)
-export const postIdentityManager = new NumberIdentityManager();
+// Create post identity manager config (reused across tests)
+export const postIdentityManagerConfig: IdentityManagerConfig<number> = {
+  initialCounter: 1,
+};

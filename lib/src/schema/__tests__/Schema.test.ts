@@ -3,7 +3,7 @@ import { schema } from '../SchemaBuilder';
 
 import {
   postFactory,
-  postIdentityManager,
+  postIdentityManagerConfig,
   postModel,
   userFactory,
   userModel,
@@ -18,7 +18,7 @@ const userCollection = collection()
 const postCollection = collection()
   .model(postModel)
   .factory(postFactory)
-  .identityManager(postIdentityManager)
+  .identityManager(postIdentityManagerConfig)
   .create();
 
 // Create test schema
@@ -272,10 +272,10 @@ describe('Schema', () => {
       const user = testSchema.users.create();
       const post = testSchema.posts.create();
 
-      // Users use default StringIdentityManager (no custom one configured)
+      // Users use default string IDs (no custom config)
       expect(typeof user.id).toBe('string');
 
-      // Posts use NumberIdentityManager (configured via collection builder)
+      // Posts use number IDs (configured via collection builder)
       expect(typeof post.id).toBe('number');
     });
 
@@ -292,7 +292,7 @@ describe('Schema', () => {
       // User should be "3" (third user created)
       expect(user3.id).toBe('3');
 
-      // Post should be 2 (second post created, using NumberIdentityManager)
+      // Post should be 2 (second post created, using number ID config)
       expect(post2.id).toBe(2);
     });
   });

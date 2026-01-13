@@ -1,6 +1,6 @@
 import { associations, hasMany, belongsTo } from '@src/associations';
 import { factory } from '@src/factory';
-import { NumberIdentityManager, StringIdentityManager } from '@src/id-manager';
+import type { IdentityManagerConfig } from '@src/id-manager';
 import { model } from '@src/model';
 import { Serializer, type SerializerOptions } from '@src/serializer';
 import { MirageError } from '@src/utils';
@@ -48,8 +48,10 @@ const userFactory = factory()
   })
   .create();
 
-// Create test identity manager
-const userIdentityManager = new StringIdentityManager();
+// Create test identity manager config
+const userIdentityManagerConfig: IdentityManagerConfig<string> = {
+  initialCounter: '1',
+};
 
 describe('CollectionBuilder', () => {
   describe('CollectionBuilder class', () => {
@@ -78,7 +80,7 @@ describe('CollectionBuilder', () => {
         .model(userModel)
         .factory(userFactory)
         .relationships(relationships)
-        .identityManager(userIdentityManager);
+        .identityManager(userIdentityManagerConfig);
       expect(builder).toBeInstanceOf(CollectionBuilder);
     });
 
@@ -99,15 +101,15 @@ describe('CollectionBuilder', () => {
         .model(userModel)
         .factory(userFactory)
         .relationships(relationships)
-        .identityManager(userIdentityManager)
+        .identityManager(userIdentityManagerConfig)
         .serializer({ root: true })
         .create();
 
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.factory).toBe(userFactory);
       expect(testCollection.relationships).toBe(relationships);
-      expect(testCollection.identityManager).toBe(userIdentityManager);
-      expect(testCollection.serializerConfig).toEqual({ root: true });
+      expect(testCollection.identityManager).toBe(userIdentityManagerConfig);
+      expect(testCollection.serializer).toEqual({ root: true });
     });
 
     it('should throw error if model is not set', () => {
@@ -122,7 +124,8 @@ describe('CollectionBuilder', () => {
       expect(() => {
         new CollectionBuilder()
           .factory(userFactory)
-          .identityManager(userIdentityManager)
+          // Cast to any since this test verifies runtime validation, not types
+          .identityManager(userIdentityManagerConfig as any)
           .create();
       }).toThrow(
         '[Mirage]: Model template must be set before creating collection. Call .model() first.',
@@ -242,7 +245,7 @@ describe('CollectionBuilder', () => {
     it('should set the identity manager and return a new builder instance', () => {
       const builder = collection()
         .model(userModel)
-        .identityManager(userIdentityManager);
+        .identityManager(userIdentityManagerConfig);
       expect(builder).toBeInstanceOf(CollectionBuilder);
     });
 
@@ -250,12 +253,12 @@ describe('CollectionBuilder', () => {
       const testCollection = collection()
         .model(userModel)
         .factory(userFactory)
-        .identityManager(userIdentityManager)
+        .identityManager(userIdentityManagerConfig)
         .create();
 
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.factory).toBe(userFactory);
-      expect(testCollection.identityManager).toBe(userIdentityManager);
+      expect(testCollection.identityManager).toBe(userIdentityManagerConfig);
     });
   });
 
@@ -282,7 +285,7 @@ describe('CollectionBuilder', () => {
 
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.factory).toBe(userFactory);
-      expect(testCollection.serializerConfig).toEqual({
+      expect(testCollection.serializer).toEqual({
         select: ['id', 'name'],
       });
     });
@@ -297,7 +300,7 @@ describe('CollectionBuilder', () => {
 
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.factory).toBe(userFactory);
-      expect(testCollection.serializerInstance).toBe(customSerializer);
+      expect(testCollection.serializer).toBe(customSerializer);
     });
 
     it('should support select filtering config', () => {
@@ -306,7 +309,7 @@ describe('CollectionBuilder', () => {
         .serializer({ select: ['id', 'name', 'email'] })
         .create();
 
-      expect(testCollection.serializerConfig).toEqual({
+      expect(testCollection.serializer).toEqual({
         select: ['id', 'name', 'email'],
       });
     });
@@ -317,7 +320,7 @@ describe('CollectionBuilder', () => {
         .serializer({ root: true })
         .create();
 
-      expect(testCollection.serializerConfig).toEqual({ root: true });
+      expect(testCollection.serializer).toEqual({ root: true });
     });
 
     it('should support custom root key config', () => {
@@ -326,7 +329,7 @@ describe('CollectionBuilder', () => {
         .serializer({ root: 'customUser' })
         .create();
 
-      expect(testCollection.serializerConfig).toEqual({ root: 'customUser' });
+      expect(testCollection.serializer).toEqual({ root: 'customUser' });
     });
 
     it('should support combined config options', () => {
@@ -339,7 +342,7 @@ describe('CollectionBuilder', () => {
         })
         .create();
 
-      expect(testCollection.serializerConfig).toEqual({
+      expect(testCollection.serializer).toEqual({
         root: 'userData',
         select: ['id', 'name'],
         relationsMode: 'embedded',
@@ -353,7 +356,7 @@ describe('CollectionBuilder', () => {
         .serializer({ root: false, select: ['id'] })
         .create();
 
-      expect(testCollection.serializerConfig).toEqual({
+      expect(testCollection.serializer).toEqual({
         root: false,
         select: ['id'],
       });
@@ -367,8 +370,7 @@ describe('CollectionBuilder', () => {
         .serializer(customSerializer)
         .create();
 
-      expect(testCollection.serializerInstance).toBe(customSerializer);
-      expect(testCollection.serializerConfig).toBeUndefined();
+      expect(testCollection.serializer).toBe(customSerializer);
     });
 
     it('should allow switching from instance to config', () => {
@@ -379,10 +381,9 @@ describe('CollectionBuilder', () => {
         .serializer({ select: ['id', 'name'] })
         .create();
 
-      expect(testCollection.serializerConfig).toEqual({
+      expect(testCollection.serializer).toEqual({
         select: ['id', 'name'],
       });
-      expect(testCollection.serializerInstance).toBeUndefined();
     });
 
     it('should work with relationships and serializer together', () => {
@@ -396,7 +397,7 @@ describe('CollectionBuilder', () => {
         .create();
 
       expect(testCollection.relationships).toBe(relationships);
-      expect(testCollection.serializerConfig).toEqual({
+      expect(testCollection.serializer).toEqual({
         root: true,
         with: ['posts'],
       });
@@ -448,13 +449,13 @@ describe('CollectionBuilder', () => {
       const testCollection = collection()
         .model(userModel)
         .factory(userFactory)
-        .identityManager(userIdentityManager)
+        .identityManager(userIdentityManagerConfig)
         .seeds(seedFn)
         .create();
 
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.factory).toBe(userFactory);
-      expect(testCollection.identityManager).toBe(userIdentityManager);
+      expect(testCollection.identityManager).toBe(userIdentityManagerConfig);
       expect(testCollection.seeds).toBe(seedFn);
     });
   });
@@ -468,14 +469,14 @@ describe('CollectionBuilder', () => {
         .model(userModel)
         .relationships(relationships)
         .factory(userFactory)
-        .identityManager(userIdentityManager)
+        .identityManager(userIdentityManagerConfig)
         .create();
 
       // These should be type-safe (no TypeScript errors)
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.factory).toBe(userFactory);
       expect(testCollection.relationships).toBe(relationships);
-      expect(testCollection.identityManager).toBe(userIdentityManager);
+      expect(testCollection.identityManager).toBe(userIdentityManagerConfig);
     });
 
     it('should support serializer() method for specifying serialization config', () => {
@@ -485,7 +486,7 @@ describe('CollectionBuilder', () => {
         .create();
 
       expect(testCollection.model).toBe(userModel);
-      expect(testCollection.serializerConfig).toEqual({
+      expect(testCollection.serializer).toEqual({
         root: true,
         select: ['id', 'name'],
       });
@@ -499,7 +500,7 @@ describe('CollectionBuilder', () => {
         .create();
 
       expect(testCollection.model).toBe(userModel);
-      expect(testCollection.serializerInstance).toBe(customSerializer);
+      expect(testCollection.serializer).toBe(customSerializer);
     });
   });
 
@@ -518,7 +519,7 @@ describe('CollectionBuilder', () => {
         .model(userModel)
         .relationships(relationships)
         .factory(userFactory)
-        .identityManager(userIdentityManager)
+        .identityManager(userIdentityManagerConfig)
         .serializer(serializerConfig)
         .create();
 
@@ -526,7 +527,7 @@ describe('CollectionBuilder', () => {
       const collection2 = collection()
         .model(userModel)
         .serializer(serializerConfig)
-        .identityManager(userIdentityManager)
+        .identityManager(userIdentityManagerConfig)
         .factory(userFactory)
         .relationships(relationships)
         .create();
@@ -534,14 +535,14 @@ describe('CollectionBuilder', () => {
       expect(collection1.model).toBe(userModel);
       expect(collection1.factory).toBe(userFactory);
       expect(collection1.relationships).toBe(relationships);
-      expect(collection1.identityManager).toBe(userIdentityManager);
-      expect(collection1.serializerConfig).toEqual(serializerConfig);
+      expect(collection1.identityManager).toBe(userIdentityManagerConfig);
+      expect(collection1.serializer).toEqual(serializerConfig);
 
       expect(collection2.model).toBe(userModel);
       expect(collection2.factory).toBe(userFactory);
       expect(collection2.relationships).toBe(relationships);
-      expect(collection2.identityManager).toBe(userIdentityManager);
-      expect(collection2.serializerConfig).toEqual(serializerConfig);
+      expect(collection2.identityManager).toBe(userIdentityManagerConfig);
+      expect(collection2.serializer).toEqual(serializerConfig);
     });
 
     it('should allow overriding configurations', () => {
@@ -564,21 +565,25 @@ describe('CollectionBuilder', () => {
       expect(testCollection.factory).not.toBe(initialFactory);
     });
 
-    it('should work with different identity manager types', () => {
-      const stringIdManager = new StringIdentityManager();
-      const numberIdManager = new NumberIdentityManager();
+    it('should work with different identity manager configs', () => {
+      const stringIdConfig: IdentityManagerConfig<string> = {
+        initialCounter: '1',
+      };
+      const numberIdConfig: IdentityManagerConfig<number> = {
+        initialCounter: 1,
+      };
 
       const userCollection = collection()
         .model(userModel)
-        .identityManager(stringIdManager)
+        .identityManager(stringIdConfig)
         .create();
       const postCollection = collection()
         .model(postModel)
-        .identityManager(numberIdManager)
+        .identityManager(numberIdConfig)
         .create();
 
-      expect(userCollection.identityManager).toBe(stringIdManager);
-      expect(postCollection.identityManager).toBe(numberIdManager);
+      expect(userCollection.identityManager).toEqual(stringIdConfig);
+      expect(postCollection.identityManager).toEqual(numberIdConfig);
     });
   });
 

@@ -335,8 +335,8 @@ test('CollectionBuilder.serializer() should preserve serializer type with instan
   const builder = collection().model(userModel).serializer(serializer);
 
   const config = builder.create();
-  expectTypeOf(config.serializerInstance).toEqualTypeOf<
-    typeof serializer | undefined
+  expectTypeOf(config.serializer).toEqualTypeOf<
+    SerializerOptions<typeof userModel> | typeof serializer | undefined
   >();
 });
 
@@ -360,8 +360,10 @@ test('CollectionBuilder.serializer() should infer Serializer type from config', 
 
   const config = builder.create();
 
-  expectTypeOf(config.serializerConfig).toEqualTypeOf<
-    SerializerOptions<typeof userModel> | undefined
+  expectTypeOf(config.serializer).toEqualTypeOf<
+    | SerializerOptions<typeof userModel>
+    | Serializer<typeof userModel>
+    | undefined
   >();
 });
 

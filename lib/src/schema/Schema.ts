@@ -1,5 +1,9 @@
 import { createDatabase, type DbInstance } from '@src/db';
-import { Serializer } from '@src/serializer';
+import {
+  IdentityManager,
+  type IdentityManagerConfig,
+  type IdType,
+} from '@src/id-manager';
 import { Logger, MirageError } from '@src/utils';
 
 import Collection, { createCollection } from './Collection';
@@ -14,27 +18,37 @@ import type {
 /**
  * Schema class that manages database and collections.
  *
- * Each collection manages its own identity manager - configure them using
- * `collection().identityManager()` when building individual collections.
- * By default, collections use `StringIdentityManager`.
+ * You can set a default identity manager configuration at the schema level,
+ * which individual collections can override with their own configuration.
+ * By default, collections use string IDs starting from "1".
  * @template TCollections - The type map of collection names to their configurations
+ * @template TIdType - The default ID type for collections (defaults to string)
  */
-export default class Schema<TCollections extends SchemaCollections> {
+export default class Schema<
+  TCollections extends SchemaCollections,
+  TIdType extends IdType = string,
+> {
   public readonly db: DbInstance<SchemaDbCollections<TCollections>>;
   public readonly logger?: Logger;
 
   private _collections: Map<string, Collection<any, any, any, any>> = new Map();
+  private _defaultIdentityManagerConfig?: IdentityManagerConfig<TIdType>;
 
-  constructor(collections: TCollections, config?: SchemaConfig) {
+  constructor(collections: TCollections, config?: SchemaConfig<TIdType>) {
     // Create logger if logging is enabled
     if (config?.logging?.enabled) {
       this.logger = new Logger(config.logging);
     }
 
+    // Store the default identity manager config for later merging with collection configs
+    this._defaultIdentityManagerConfig = config?.identityManager;
+
+    // Create database instance
     this.db = createDatabase<SchemaDbCollections<TCollections>>({
       logger: this.logger,
     });
 
+    // Register collections
     this._registerCollections(collections);
 
     if (this.logger) {
@@ -61,8 +75,6 @@ export default class Schema<TCollections extends SchemaCollections> {
     if (!collection) {
       throw new MirageError(`Collection '${String(collectionName)}' not found`);
     }
-    // Type assertion needed: Map storage loses specific generic parameters
-    // TypeScript can't verify stored collection matches complex conditional return type
     return collection as any;
   }
 
@@ -202,7 +214,7 @@ export default class Schema<TCollections extends SchemaCollections> {
     });
 
     // Track collections with auto-loading fixtures
-    const autoLoadCollections: any[] = [];
+    const autoLoadCollections: Collection<TCollections>[] = [];
 
     for (const collectionName in collections) {
       const collectionConfig = collections[collectionName];
@@ -213,32 +225,27 @@ export default class Schema<TCollections extends SchemaCollections> {
         model,
         relationships,
         seeds,
-        serializerConfig,
-        serializerInstance,
+        serializer,
       } = collectionConfig;
 
-      // Determine the final serializer to use
-      let finalSerializer: any;
-
-      if (serializerInstance) {
-        // Collection-level serializer instance has priority
-        finalSerializer = serializerInstance;
-      } else if (serializerConfig) {
-        // Create serializer from collection config
-        finalSerializer = new Serializer(model, serializerConfig);
-      }
+      const mergedIdentityManager = this._mergeIdentityManager(identityManager);
 
       const collection = createCollection(
         this as SchemaInstance<TCollections>,
         {
           model,
-          factory,
-          identityManager,
           relationships,
-          serializer: finalSerializer,
+          factory,
+          identityManager: mergedIdentityManager,
+          serializer,
           seeds,
           fixtures,
-        },
+        } as CollectionConfig<
+          typeof model,
+          typeof relationships,
+          typeof factory,
+          TCollections
+        >,
       );
       this._collections.set(collectionName, collection);
 
@@ -268,12 +275,41 @@ export default class Schema<TCollections extends SchemaCollections> {
       this.logger?.info('Auto-loading fixtures', {
         collections: autoLoadCollections.map((c) => c.collectionName),
       });
+
       for (const collection of autoLoadCollections) {
         // Load fixtures synchronously using a non-async approach
         // Since we're in a constructor context, we need to handle this carefully
         void collection.loadFixtures();
       }
     }
+  }
+
+  /**
+   * Merge identity manager from collection config with schema defaults.
+   * Collection-level config/instance takes priority over schema-level default.
+   * @param collectionIdentityManager - The identity manager from collection config (config or instance)
+   * @returns The merged identity manager config or instance, or undefined
+   * @private
+   */
+  private _mergeIdentityManager<TId extends IdType>(
+    collectionIdentityManager?:
+      | IdentityManagerConfig<TId>
+      | IdentityManager<TId>,
+  ): IdentityManagerConfig<TId> | IdentityManager<TId> | undefined {
+    // If collection has an IdentityManager instance, use it directly (highest priority)
+    if (collectionIdentityManager instanceof IdentityManager) {
+      return collectionIdentityManager;
+    }
+
+    // If collection has a config, use it (takes priority over schema default)
+    if (collectionIdentityManager) {
+      return collectionIdentityManager;
+    }
+
+    // Fall back to schema default config (cast needed as schema default may have different ID type)
+    return this._defaultIdentityManagerConfig as
+      | IdentityManagerConfig<TId>
+      | undefined;
   }
 
   /**

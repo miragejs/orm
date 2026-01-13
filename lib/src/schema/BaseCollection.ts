@@ -6,7 +6,7 @@ import type {
   WhereHelperFns,
 } from '@src/db';
 import { Factory } from '@src/factory';
-import type { IdentityManager } from '@src/id-manager';
+import { IdentityManager, type IdentityManagerConfig } from '@src/id-manager';
 import {
   Model,
   ModelCollection,
@@ -22,7 +22,7 @@ import {
   type ModelTemplate,
   type RelationshipsByTemplate,
 } from '@src/model';
-import type { Serializer } from '@src/serializer';
+import { Serializer, type SerializerOptions } from '@src/serializer';
 import type { Logger } from '@src/utils';
 
 import type { SchemaInstance } from './Schema';
@@ -84,8 +84,12 @@ export abstract class BaseCollection<
       relationships?: TRelationships;
       fixtures?: FixtureConfig<TTemplate, TRelationships>;
       seeds?: Seeds<TSchema>;
-      serializer?: Serializer<TTemplate, TSchema>;
-      identityManager?: IdentityManager<ModelIdFor<TTemplate>>;
+      serializer?:
+        | SerializerOptions<TTemplate, TSchema>
+        | Serializer<TTemplate, TSchema>;
+      identityManager?:
+        | IdentityManagerConfig<ModelIdFor<TTemplate>>
+        | IdentityManager<ModelIdFor<TTemplate>>;
     },
   ) {
     const {
@@ -102,7 +106,9 @@ export abstract class BaseCollection<
     this.modelName = model.modelName;
     this.collectionName = model.collectionName;
     this.relationships = relationships;
-    this.serializer = serializer;
+
+    // Resolve serializer: use instance directly or create from config
+    this.serializer = this._resolveSerializer(model, serializer);
 
     this._schema = schema;
     this._logger = schema.logger;
@@ -111,7 +117,11 @@ export abstract class BaseCollection<
     this._seeds = seeds;
 
     this.Model = Model.define<TTemplate, TSchema>(model);
-    this.dbCollection = this._initializeDbCollection(identityManager);
+
+    // Resolve identity manager: use instance directly or create from config
+    const resolvedIdentityManager =
+      this._resolveIdentityManager(identityManager);
+    this.dbCollection = this._initializeDbCollection(resolvedIdentityManager);
     this.identityManager = this.dbCollection.identityManager;
 
     this._logger?.debug(`Collection '${this.collectionName}' initialized`, {
@@ -383,8 +393,67 @@ export abstract class BaseCollection<
   }
 
   /**
+   * Resolve serializer from config or instance.
+   * If a Serializer instance is provided, use it directly.
+   * If a config object is provided, create a new Serializer instance.
+   * @param model - The model template
+   * @param serializer - The serializer config or instance
+   * @returns The resolved Serializer instance or undefined
+   * @private
+   */
+  private _resolveSerializer(
+    model: TTemplate,
+    serializer?:
+      | SerializerOptions<TTemplate, TSchema>
+      | Serializer<TTemplate, TSchema>,
+  ):
+    | Serializer<
+        TTemplate,
+        TSchema,
+        SerializedModelFor<TTemplate>,
+        SerializedCollectionFor<TTemplate>
+      >
+    | undefined {
+    if (!serializer) {
+      return undefined;
+    }
+
+    if (serializer instanceof Serializer) {
+      return serializer;
+    }
+
+    // It's a config object, create a new Serializer instance
+    return new Serializer(model, serializer);
+  }
+
+  /**
+   * Resolve identity manager from config or instance.
+   * If an IdentityManager instance is provided, use it directly.
+   * If a config object is provided, create a new IdentityManager instance.
+   * @param identityManager - The identity manager config or instance
+   * @returns The resolved IdentityManager instance or undefined
+   * @private
+   */
+  private _resolveIdentityManager(
+    identityManager?:
+      | IdentityManagerConfig<ModelIdFor<TTemplate>>
+      | IdentityManager<ModelIdFor<TTemplate>>,
+  ): IdentityManager<ModelIdFor<TTemplate>> | undefined {
+    if (!identityManager) {
+      return undefined;
+    }
+
+    if (identityManager instanceof IdentityManager) {
+      return identityManager;
+    }
+
+    // It's a config object, create a new IdentityManager instance
+    return new IdentityManager(identityManager);
+  }
+
+  /**
    * Initialize and create the database collection if needed
-   * @param identityManager - The identity manager to use for the collection
+   * @param identityManager - The identity manager instance for the collection
    * @returns The database collection instance
    * @private
    */
@@ -393,7 +462,7 @@ export abstract class BaseCollection<
   ): DbCollection<ModelAttrs<TTemplate, TSchema>> {
     if (!this._schema.db.hasCollection(this.collectionName)) {
       this._schema.db.createCollection(this.collectionName, {
-        identityManager: identityManager,
+        identityManager,
       });
     }
     return this._schema.db.getCollection(

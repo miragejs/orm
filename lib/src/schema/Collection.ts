@@ -417,27 +417,28 @@ export default class Collection<
  */
 export function createCollection<
   TSchema extends SchemaCollections,
-  TConfig extends CollectionConfig<any, any, any, any, any>,
+  TTemplate extends ModelTemplate,
+  TRelationships extends ModelRelationships,
+  TFactory extends Factory<TTemplate, any, any>,
 >(
   schema: SchemaInstance<TSchema>,
-  config: TConfig,
-): TConfig extends CollectionConfig<
-  infer TTemplate,
-  infer TRelationships,
-  infer TFactory,
-  any,
-  any
->
-  ? Collection<
-      TSchema,
-      TTemplate,
-      TRelationships extends ModelRelationships ? TRelationships : {},
-      TFactory extends Factory<TTemplate, any, any>
-        ? TFactory
-        : Factory<TTemplate, string, TSchema>
-    >
-  : never {
+  config: CollectionConfig<TTemplate, TRelationships, TFactory, TSchema>,
+): Collection<
+  TSchema,
+  TTemplate,
+  TRelationships,
+  TFactory extends Factory<TTemplate, any, any>
+    ? TFactory
+    : Factory<TTemplate, string, TSchema>
+> {
   // Type assertion needed: Factory function with complex conditional return type
   // TypeScript can't verify generic parameters match the conditional type structure
-  return new Collection(schema, config) as any;
+  return new Collection(schema, config) as Collection<
+    TSchema,
+    TTemplate,
+    TRelationships,
+    TFactory extends Factory<TTemplate, any, any>
+      ? TFactory
+      : Factory<TTemplate, string, TSchema>
+  >;
 }

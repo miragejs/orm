@@ -1,5 +1,5 @@
 import { DbCollection } from '@src/db';
-import { NumberIdentityManager } from '@src/id-manager';
+import { IdentityManager } from '@src/id-manager';
 
 import BaseModel from '../BaseModel';
 
@@ -141,7 +141,9 @@ describe('BaseModel', () => {
         id: number;
         title: string;
         content: string;
-      }>('posts', { identityManager: new NumberIdentityManager() });
+      }>('posts', {
+        identityManager: new IdentityManager({ initialCounter: 1 }),
+      });
 
       const post = new BaseModel<{
         id: number;

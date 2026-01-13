@@ -77,6 +77,10 @@ export type DbCollectionData<T> =
  * @template TRecord - The type of the record's attributes
  */
 export interface DbCollectionConfig<TRecord extends DbRecord> {
+  /**
+   * Identity manager instance for ID generation.
+   * If not provided, a default manager with string IDs starting from "1" will be used.
+   */
   identityManager?: IdentityManager<TRecord['id']>;
   initialData?: TRecord[];
   logger?: Logger;
