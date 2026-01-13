@@ -1,7 +1,7 @@
 import type { Factory } from '@src/factory';
 import type { IdentityManagerConfig } from '@src/id-manager';
 import type { ModelIdFor, ModelRelationships, ModelTemplate } from '@src/model';
-import { Serializer, type SerializerOptions } from '@src/serializer';
+import { Serializer, type SerializerConfig } from '@src/serializer';
 import { MirageError } from '@src/utils';
 
 import type {
@@ -56,7 +56,7 @@ export default class CollectionBuilder<
   private _identityManager?: IdentityManagerConfig<ModelIdFor<TTemplate>>;
   private _relationships?: TRelationships;
   private _seeds?: Seeds<TSchema>;
-  private _serializer?: SerializerOptions<TTemplate, TSchema> | TSerializer;
+  private _serializer?: SerializerConfig<TTemplate, TSchema> | TSerializer;
   private _template?: TTemplate;
 
   /**
@@ -258,7 +258,7 @@ export default class CollectionBuilder<
   serializer<
     S extends Serializer<TTemplate, TSchema> = Serializer<TTemplate, TSchema>,
   >(
-    configOrSerializer: SerializerOptions<TTemplate, TSchema> | S,
+    configOrSerializer: SerializerConfig<TTemplate, TSchema> | S,
   ): CollectionBuilder<TTemplate, TSchema, TRelationships, TFactory, S> {
     const builder = new CollectionBuilder<
       TTemplate,

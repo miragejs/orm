@@ -154,7 +154,7 @@ export type {
 export { Serializer } from './serializer';
 export type {
   DataSerializerOptions,
-  SerializerOptions,
+  SerializerConfig,
   StructuralSerializerOptions,
 } from './serializer';
 

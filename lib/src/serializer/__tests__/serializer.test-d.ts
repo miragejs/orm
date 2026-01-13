@@ -11,13 +11,13 @@ import { collection, schema, type SchemaCollections } from '@src/schema';
 import {
   Serializer,
   type DataSerializerOptions,
-  type SerializerOptions,
+  type SerializerConfig,
   type WithOption,
   type NestedSerializerOptions,
 } from '@src/serializer';
 import { expectTypeOf, test } from 'vitest';
 
-test('SerializerOptions should accept complete configuration', () => {
+test('SerializerConfig should accept complete configuration', () => {
   const userModel = model()
     .name('user')
     .collection('users')
@@ -29,13 +29,13 @@ test('SerializerOptions should accept complete configuration', () => {
     }>()
     .create();
 
-  const options: SerializerOptions<typeof userModel> = {
+  const options: SerializerConfig<typeof userModel> = {
     select: ['id', 'name', 'email'],
     root: true,
     relationsMode: 'sideLoaded',
   };
 
-  expectTypeOf(options).toEqualTypeOf<SerializerOptions<typeof userModel>>();
+  expectTypeOf(options).toEqualTypeOf<SerializerConfig<typeof userModel>>();
 });
 
 test('DataSerializerOptions should work with select', () => {
@@ -81,7 +81,7 @@ test('DataSerializerOptions should work with with for relationships', () => {
   >();
 });
 
-test('SerializerOptions should work with partial select', () => {
+test('SerializerConfig should work with partial select', () => {
   const userModel = model()
     .name('user')
     .collection('users')
@@ -93,14 +93,14 @@ test('SerializerOptions should work with partial select', () => {
     }>()
     .create();
 
-  const options: SerializerOptions<typeof userModel> = {
+  const options: SerializerConfig<typeof userModel> = {
     select: ['id', 'name'],
   };
 
-  expectTypeOf(options).toEqualTypeOf<SerializerOptions<typeof userModel>>();
+  expectTypeOf(options).toEqualTypeOf<SerializerConfig<typeof userModel>>();
 });
 
-test('SerializerOptions should work with root and relationsMode options', () => {
+test('SerializerConfig should work with root and relationsMode options', () => {
   const postModel = model()
     .name('post')
     .collection('posts')
@@ -112,12 +112,12 @@ test('SerializerOptions should work with root and relationsMode options', () => 
     }>()
     .create();
 
-  const options: SerializerOptions<typeof postModel> = {
+  const options: SerializerConfig<typeof postModel> = {
     root: 'data',
     relationsMode: 'embedded',
   };
 
-  expectTypeOf(options).toEqualTypeOf<SerializerOptions<typeof postModel>>();
+  expectTypeOf(options).toEqualTypeOf<SerializerConfig<typeof postModel>>();
 });
 
 test('Model.toJSON() should return model attrs by default (no serializer)', () => {
@@ -336,7 +336,7 @@ test('CollectionBuilder.serializer() should preserve serializer type with instan
 
   const config = builder.create();
   expectTypeOf(config.serializer).toEqualTypeOf<
-    SerializerOptions<typeof userModel> | typeof serializer | undefined
+    SerializerConfig<typeof userModel> | typeof serializer | undefined
   >();
 });
 
@@ -361,7 +361,7 @@ test('CollectionBuilder.serializer() should infer Serializer type from config', 
   const config = builder.create();
 
   expectTypeOf(config.serializer).toEqualTypeOf<
-    | SerializerOptions<typeof userModel>
+    | SerializerConfig<typeof userModel>
     | Serializer<typeof userModel>
     | undefined
   >();
@@ -760,7 +760,7 @@ test('NestedSerializerOptions should type select based on target model', () => {
   expectTypeOf(objectSelect).toMatchTypeOf<PostNestedOptions>();
 });
 
-test('SerializerOptions with should infer relationships from schema', () => {
+test('SerializerConfig with should infer relationships from schema', () => {
   type UserAttrs = { id: string; name: string; postIds: string[] };
   type PostAttrs = { id: string; title: string; authorId: string };
 
@@ -825,11 +825,11 @@ test('SelectOption should accept array format', () => {
     .create();
 
   // Array format: include only specified attributes - should type check
-  const options: SerializerOptions<typeof userModel> = {
+  const options: SerializerConfig<typeof userModel> = {
     select: ['id', 'name', 'email'],
   };
 
-  expectTypeOf(options).toEqualTypeOf<SerializerOptions<typeof userModel>>();
+  expectTypeOf(options).toEqualTypeOf<SerializerConfig<typeof userModel>>();
 });
 
 test('SelectOption should accept object exclusion format', () => {
@@ -847,11 +847,11 @@ test('SelectOption should accept object exclusion format', () => {
     .create();
 
   // Object exclusion format: all false values - should type check
-  const options: SerializerOptions<typeof userModel> = {
+  const options: SerializerConfig<typeof userModel> = {
     select: { password: false },
   };
 
-  expectTypeOf(options).toEqualTypeOf<SerializerOptions<typeof userModel>>();
+  expectTypeOf(options).toEqualTypeOf<SerializerConfig<typeof userModel>>();
 });
 
 test('SelectOption should accept object inclusion format', () => {
@@ -869,11 +869,11 @@ test('SelectOption should accept object inclusion format', () => {
     .create();
 
   // Object inclusion format: include only true keys - should type check
-  const options: SerializerOptions<typeof userModel> = {
+  const options: SerializerConfig<typeof userModel> = {
     select: { id: true, name: true },
   };
 
-  expectTypeOf(options).toEqualTypeOf<SerializerOptions<typeof userModel>>();
+  expectTypeOf(options).toEqualTypeOf<SerializerConfig<typeof userModel>>();
 });
 
 test('SelectOption should accept mixed object format', () => {
@@ -891,11 +891,11 @@ test('SelectOption should accept mixed object format', () => {
     .create();
 
   // Mixed format: include true keys, exclude false keys - should type check
-  const options: SerializerOptions<typeof userModel> = {
+  const options: SerializerConfig<typeof userModel> = {
     select: { id: true, name: true, password: false },
   };
 
-  expectTypeOf(options).toEqualTypeOf<SerializerOptions<typeof userModel>>();
+  expectTypeOf(options).toEqualTypeOf<SerializerConfig<typeof userModel>>();
 });
 
 // -- WITH OPTION FORMATS --

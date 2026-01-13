@@ -22,7 +22,7 @@ import {
   type ModelTemplate,
   type RelationshipsByTemplate,
 } from '@src/model';
-import { Serializer, type SerializerOptions } from '@src/serializer';
+import { Serializer, type SerializerConfig } from '@src/serializer';
 import type { Logger } from '@src/utils';
 
 import type { SchemaInstance } from './Schema';
@@ -85,7 +85,7 @@ export abstract class BaseCollection<
       fixtures?: FixtureConfig<TTemplate, TRelationships>;
       seeds?: Seeds<TSchema>;
       serializer?:
-        | SerializerOptions<TTemplate, TSchema>
+        | SerializerConfig<TTemplate, TSchema>
         | Serializer<TTemplate, TSchema>;
       identityManager?:
         | IdentityManagerConfig<ModelIdFor<TTemplate>>
@@ -404,7 +404,7 @@ export abstract class BaseCollection<
   private _resolveSerializer(
     model: TTemplate,
     serializer?:
-      | SerializerOptions<TTemplate, TSchema>
+      | SerializerConfig<TTemplate, TSchema>
       | Serializer<TTemplate, TSchema>,
   ):
     | Serializer<

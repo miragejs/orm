@@ -1,6 +1,6 @@
 import type { SchemaCollections } from '@src/schema';
 import { Serializer } from '@src/serializer';
-import type { SerializerOptions } from '@src/serializer';
+import type { SerializerConfig } from '@src/serializer';
 
 import type {
   ModelAttrs,
@@ -348,7 +348,7 @@ export default class ModelCollection<
    * @returns A serialized representation of the collection
    */
   serialize<TSerialized = SerializedCollectionFor<TTemplate>>(
-    options?: Partial<SerializerOptions<TTemplate, TSchema>>,
+    options?: Partial<SerializerConfig<TTemplate, TSchema>>,
   ): TSerialized {
     if (this.serializer instanceof Serializer) {
       return this.serializer.serializeCollection(this, options) as TSerialized;

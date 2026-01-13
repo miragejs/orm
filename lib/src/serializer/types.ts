@@ -154,26 +154,13 @@ export interface DataSerializerOptions<
 }
 
 /**
- * Complete serializer options (collection-level)
+ * Complete serializer configuration (collection-level)
  * Combines structural and data selection options
  * @template TTemplate - The model template
  * @template TSchema - The schema collections for relationship suggestions
  */
-export interface SerializerOptions<
+export interface SerializerConfig<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
 > extends StructuralSerializerOptions,
     DataSerializerOptions<TTemplate, TSchema> {}
-
-/**
- * @deprecated Use StructuralSerializerOptions instead
- */
-export type GlobalSerializerConfig = StructuralSerializerOptions;
-
-/**
- * @deprecated Use SerializerOptions instead
- */
-export type SerializerConfig<
-  TTemplate extends ModelTemplate,
-  TSchema extends SchemaCollections = SchemaCollections,
-> = SerializerOptions<TTemplate, TSchema>;

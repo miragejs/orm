@@ -2,7 +2,7 @@ import { associations, hasMany, belongsTo } from '@src/associations';
 import { factory } from '@src/factory';
 import type { IdentityManagerConfig } from '@src/id-manager';
 import { model } from '@src/model';
-import { Serializer, type SerializerOptions } from '@src/serializer';
+import { Serializer, type SerializerConfig } from '@src/serializer';
 import { MirageError } from '@src/utils';
 
 import CollectionBuilder, { collection } from '../CollectionBuilder';
@@ -509,7 +509,7 @@ describe('CollectionBuilder', () => {
       const relationships = {
         posts: associations.hasMany(postModel),
       };
-      const serializerConfig: SerializerOptions<typeof userModel> = {
+      const serializerConfig: SerializerConfig<typeof userModel> = {
         root: true,
         select: ['id', 'name'],
       };

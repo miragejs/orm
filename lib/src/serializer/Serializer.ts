@@ -9,7 +9,7 @@ import type ModelCollection from '@src/model/ModelCollection';
 import type { SchemaCollections } from '@src/schema';
 
 import type {
-  SerializerOptions,
+  SerializerConfig,
   SelectOption,
   WithOption,
   NestedSerializerOptions,
@@ -55,7 +55,7 @@ export default class Serializer<
   TSchema extends SchemaCollections = SchemaCollections,
   TSerializedModel = SerializedModelFor<TTemplate>,
   TSerializedCollection = SerializedCollectionFor<TTemplate>,
-  TOptions extends SerializerOptions<TTemplate, TSchema> = SerializerOptions<
+  TOptions extends SerializerConfig<TTemplate, TSchema> = SerializerConfig<
     TTemplate,
     TSchema
   >,
@@ -81,7 +81,7 @@ export default class Serializer<
    */
   serialize(
     model: ModelInstance<TTemplate, TSchema>,
-    options?: Partial<SerializerOptions<TTemplate, TSchema>>,
+    options?: Partial<SerializerConfig<TTemplate, TSchema>>,
   ): TSerializedModel {
     const opts = this._resolveOptions(options);
     const data = this.serializeModel(model, options);
@@ -132,7 +132,7 @@ export default class Serializer<
    */
   serializeCollection(
     collection: ModelCollection<TTemplate, TSchema>,
-    options?: Partial<SerializerOptions<TTemplate, TSchema>>,
+    options?: Partial<SerializerConfig<TTemplate, TSchema>>,
   ): TSerializedCollection {
     const opts = this._resolveOptions(options);
     const data = this.serializeCollectionModels(collection, options);
@@ -213,10 +213,10 @@ export default class Serializer<
    * @returns Resolved options with root auto-enabled for side-load mode
    */
   private _resolveOptions(
-    methodOptions?: Partial<SerializerOptions<TTemplate, TSchema>>,
-  ): SerializerOptions<TTemplate, TSchema> {
+    methodOptions?: Partial<SerializerConfig<TTemplate, TSchema>>,
+  ): SerializerConfig<TTemplate, TSchema> {
     // Merge class-level options with method-level options
-    const merged: SerializerOptions<TTemplate, TSchema> = {
+    const merged: SerializerConfig<TTemplate, TSchema> = {
       select: methodOptions?.select ?? this._options.select,
       with: methodOptions?.with ?? this._options.with,
       relationsMode:
@@ -311,7 +311,7 @@ export default class Serializer<
    */
   serializeModel(
     model: ModelInstance<TTemplate, TSchema>,
-    options?: Partial<SerializerOptions<TTemplate, TSchema>>,
+    options?: Partial<SerializerConfig<TTemplate, TSchema>>,
   ): Record<string, unknown> {
     const opts = this._resolveOptions(options);
     const attrs = this._getAttributes(model, opts);
@@ -465,7 +465,7 @@ export default class Serializer<
    */
   serializeCollectionModels(
     collection: ModelCollection<TTemplate, TSchema>,
-    options?: Partial<SerializerOptions<TTemplate, TSchema>>,
+    options?: Partial<SerializerConfig<TTemplate, TSchema>>,
   ): Record<string, unknown>[] {
     const opts = this._resolveOptions(options);
     const withNames = this._getWithNames(opts.with);
@@ -497,7 +497,7 @@ export default class Serializer<
    */
   private _getAttributes(
     model: ModelInstance<TTemplate, TSchema>,
-    opts: SerializerOptions<TTemplate, TSchema>,
+    opts: SerializerConfig<TTemplate, TSchema>,
   ): Record<string, unknown> {
     const select = opts.select;
 
@@ -567,7 +567,7 @@ export default class Serializer<
    */
   private _getRelationships(
     model: ModelInstance<TTemplate, TSchema>,
-    opts: SerializerOptions<TTemplate, TSchema>,
+    opts: SerializerConfig<TTemplate, TSchema>,
   ): {
     embedded: Record<string, unknown>;
     sideLoaded: Record<string, unknown>;

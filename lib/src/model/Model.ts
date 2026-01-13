@@ -2,7 +2,7 @@ import { Relationships } from '@src/associations';
 import type { DbCollection } from '@src/db';
 import type { SchemaCollections } from '@src/schema';
 import { Serializer } from '@src/serializer';
-import type { SerializerOptions } from '@src/serializer';
+import type { SerializerConfig } from '@src/serializer';
 
 import BaseModel from './BaseModel';
 import RelationshipsManager from './RelationshipsManager';
@@ -447,7 +447,7 @@ export default class Model<
    * @returns A serialized representation of the model
    */
   serialize<TSerialized = SerializedModelFor<TTemplate>>(
-    options?: Partial<SerializerOptions<TTemplate, TSchema>>,
+    options?: Partial<SerializerConfig<TTemplate, TSchema>>,
   ): TSerialized {
     if (this.serializer instanceof Serializer) {
       return this.serializer.serialize(

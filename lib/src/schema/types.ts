@@ -14,7 +14,7 @@ import type {
   RelationshipsByTemplate,
 } from '@src/model';
 import type { ModelRelationships } from '@src/model';
-import type { Serializer, SerializerOptions } from '@src/serializer';
+import type { Serializer, SerializerConfig } from '@src/serializer';
 import type { LoggerConfig } from '@src/utils';
 
 import type Collection from './Collection';
@@ -130,9 +130,9 @@ export interface CollectionConfig<
     | IdentityManager<ModelIdFor<TTemplate>>;
   /**
    * Serializer configuration or instance for this collection.
-   * Can be either a SerializerOptions config object or a Serializer instance.
+   * Can be either a SerializerConfig config object or a Serializer instance.
    */
-  serializer?: SerializerOptions<TTemplate, TSchema> | TSerializer;
+  serializer?: SerializerConfig<TTemplate, TSchema> | TSerializer;
   /**
    * Seeds configuration - can be a function or object with named scenarios
    * Used when collection().seeds(...) is called
