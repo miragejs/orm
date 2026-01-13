@@ -16,8 +16,6 @@ import type {
   RelationsMode,
 } from './types';
 
-// TODO: Review types to make them more precise
-// TODO: Review the serializer logic for potential performance optimization
 /**
  * Serializer class that handles model serialization with custom JSON types
  * @template TTemplate - The model template

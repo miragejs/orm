@@ -19,7 +19,6 @@ import type {
 } from '@src/schema';
 import { MirageError } from '@src/utils';
 
-// TODO: Need to improve type system to make this more type safe and cleaner
 /**
  * Manages factory associations - creates and links related models
  */

@@ -21,7 +21,6 @@ import type {
   RelationshipsByTemplate,
 } from './types';
 
-// TODO: Review types to make them more precise
 /**
  * ModelRelationshipsManager - Handles all relationship operations
  * Separated from core model logic for better maintainability

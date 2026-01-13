@@ -126,7 +126,6 @@ export type Relationships = BelongsTo<any, any> | HasMany<any, any>;
  */
 export type AssociationType = 'create' | 'createMany' | 'link' | 'linkMany';
 
-// TODO: Need to replace these custom query types with DbRecordInput or QueryOptions
 /**
  * Predicate function for filtering models in link/linkMany associations
  * @template TModel - The model type to filter

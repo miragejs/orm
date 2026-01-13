@@ -24,7 +24,6 @@ import type {
   TraitDefinition,
 } from './types';
 
-// TODO: Review types to make them more precise
 /**
  * Factory that builds model attributes with optional schema support.
  * @template TTemplate - The model template (inferred from constructor)
