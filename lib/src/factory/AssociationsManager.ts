@@ -6,6 +6,7 @@ import type {
 } from '@src/associations';
 import {
   ModelCollection,
+  ModelCreateAttrs,
   RelatedModelAttrs,
   RelationshipsByTemplate,
   type ModelInstance,
@@ -15,7 +16,6 @@ import type {
   SchemaInstance,
   Collection,
   SchemaCollections,
-  CollectionCreateAttrs,
 } from '@src/schema';
 import { MirageError } from '@src/utils';
 
@@ -103,7 +103,7 @@ export default class AssociationsManager<
     traitsAndDefaults: AssociationTraitsAndDefaults = [],
   ): ModelInstance<any, TSchema> {
     return collection.create(
-      ...(traitsAndDefaults as CollectionCreateAttrs<TTemplate, TSchema>[]),
+      ...(traitsAndDefaults as ModelCreateAttrs<TTemplate, TSchema>[]),
     );
   }
 
@@ -116,13 +116,13 @@ export default class AssociationsManager<
     if (models) {
       // Array mode: create different models
       return collection.createMany(
-        models as CollectionCreateAttrs<TTemplate, TSchema>[][],
+        models as ModelCreateAttrs<TTemplate, TSchema>[][],
       );
     } else {
       // Count mode: create N identical models
       return collection.createMany(
         count!,
-        ...((traitsAndDefaults ?? []) as CollectionCreateAttrs<
+        ...((traitsAndDefaults ?? []) as ModelCreateAttrs<
           TTemplate,
           TSchema
         >[]),
@@ -160,7 +160,7 @@ export default class AssociationsManager<
     // Create if not found (with traits and defaults) // Create if not found (with traits and defaults)
     if (!model) {
       model = collection.create(
-        ...((traitsAndDefaults ?? []) as CollectionCreateAttrs<
+        ...((traitsAndDefaults ?? []) as ModelCreateAttrs<
           TTemplate,
           TSchema
         >[]),
@@ -197,7 +197,7 @@ export default class AssociationsManager<
     if (needed > 0) {
       const newModels = collection.createMany(
         needed,
-        ...((traitsAndDefaults ?? []) as CollectionCreateAttrs<
+        ...((traitsAndDefaults ?? []) as ModelCreateAttrs<
           TTemplate,
           TSchema
         >[]),

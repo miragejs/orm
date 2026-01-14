@@ -75,17 +75,18 @@ export type { IdentityManagerConfig, IdType, IdGenerator } from './id-manager';
 export { model } from './model';
 export type {
   CollectionNameFor,
-  ModelAttrsFor,
-  ModelNameFor,
-  SerializedCollectionFor,
-  SerializedModelFor,
   ModelAttrs,
+  ModelAttrsFor,
+  ModelCollection,
+  ModelCreateAttrs,
   ModelInstance,
+  ModelNameFor,
   ModelTemplate,
   ModelUpdateAttrs,
   NewModelInstance,
   PartialModelAttrs,
-  ModelCollection,
+  SerializedCollectionFor,
+  SerializedModelFor,
 } from './model';
 
 // ----------------------------------------------------------------------------
@@ -137,17 +138,15 @@ export { collection, schema } from './schema';
 export type {
   Collection,
   CollectionConfig,
-  CollectionCreateAttrs,
   FixtureAttrs,
   FixtureConfig,
   FixtureLoadStrategy,
   SchemaCollections,
-  SchemaInstance,
   SeedFunction,
-  Seeds,
   SeedScenarios,
+  Seeds,
 } from './schema';
-
+export type { SchemaInstance as Schema } from './schema';
 // ----------------------------------------------------------------------------
 // Serializer
 // ----------------------------------------------------------------------------

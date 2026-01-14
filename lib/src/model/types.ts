@@ -472,11 +472,29 @@ export type PartialModelAttrs<
 > = Partial<ModelAttrs<TTemplate, TSchema>>;
 
 /**
- * Type for constructor attributes that includes regular attributes and relationship model instances
+ * Type for create() method attributes - all attributes are optional.
+ * Used for passing attributes to create() methods where factory provides defaults.
+ * @template TTemplate - The model template
+ * @template TSchema - The schema collections type
+ * @template TRelationships - The model relationships
+ */
+export type ModelCreateAttrs<
+  TTemplate extends ModelTemplate,
+  TSchema extends SchemaCollections = SchemaCollections,
+  TRelationships extends ModelRelationships = RelationshipsByTemplate<
+    TTemplate,
+    TSchema
+  >,
+> = Partial<ModelAttrs<TTemplate, TSchema>> &
+  Partial<RelatedModelAttrs<TSchema, TRelationships>>;
+
+/**
+ * Type for new() method attributes that includes regular attributes and relationship model instances.
+ * All template attributes are required (except id which is optional).
  * @template TTemplate - The model template
  * @template TSchema - The schema collections type
  */
-export type ModelCreateAttrs<
+export type ModelNewAttrs<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
   TRelationships extends ModelRelationships = RelationshipsByTemplate<
@@ -527,7 +545,7 @@ export type ModelConfig<
     TSchema
   >,
 > = {
-  attrs: ModelCreateAttrs<TTemplate, TSchema, TRelationships>;
+  attrs: ModelNewAttrs<TTemplate, TSchema, TRelationships>;
   schema: SchemaInstance<TSchema>;
   serializer?: Serializer<TTemplate, TSchema>;
 } & (Record<string, never> extends TRelationships

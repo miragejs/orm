@@ -2,7 +2,7 @@ import { type FactoryAssociations } from '@src/associations';
 import {
   Model,
   type ModelAttrs,
-  type ModelCreateAttrs,
+  type ModelNewAttrs,
   type ModelIdFor,
   type ModelInstance,
   type ModelTemplate,
@@ -76,7 +76,7 @@ export default class Factory<
   build(
     schema: SchemaInstance<TSchema>,
     ...traitsAndDefaults: (TTraits | PartialModelAttrs<TTemplate, TSchema>)[]
-  ): ModelCreateAttrs<TTemplate, TSchema> {
+  ): ModelNewAttrs<TTemplate, TSchema> {
     // 1. Get collection from schema using template's collectionName
     const collection = schema[
       this.template.collectionName as keyof TSchema
@@ -125,7 +125,7 @@ export default class Factory<
     const mergedAttrs = {
       ...evaluatedAttrs,
       ...relationshipValues,
-    } as ModelCreateAttrs<TTemplate, TSchema>;
+    } as ModelNewAttrs<TTemplate, TSchema>;
 
     return mergedAttrs;
   }

@@ -1,8 +1,7 @@
 import type { BelongsTo } from '@src/associations';
-import { model } from '@src/model';
+import { model, type ModelCreateAttrs } from '@src/model';
 import type {
   CollectionConfig,
-  CollectionCreateAttrs,
   FixtureAttrs,
   FixtureConfig,
   FixtureLoadStrategy,
@@ -106,8 +105,8 @@ test('CollectionConfig should work with fixtures', () => {
   expectTypeOf(config).toEqualTypeOf<CollectionConfig<typeof userModel>>();
 });
 
-test('CollectionCreateAttrs should work for basic attributes', () => {
-  const attrs: CollectionCreateAttrs<typeof userModel> = {
+test('ModelCreateAttrs should work for basic attributes', () => {
+  const attrs: ModelCreateAttrs<typeof userModel> = {
     name: 'John',
     email: 'john@example.com',
   };
@@ -116,13 +115,13 @@ test('CollectionCreateAttrs should work for basic attributes', () => {
   expectTypeOf(attrs).toBeObject();
 });
 
-test('CollectionCreateAttrs should work with relationships', () => {
+test('ModelCreateAttrs should work with relationships', () => {
   type TestCollections = {
     users: CollectionConfig<typeof userModel>;
     posts: CollectionConfig<typeof postModel>;
   };
 
-  const attrs: CollectionCreateAttrs<
+  const attrs: ModelCreateAttrs<
     typeof postModel,
     TestCollections,
     { author: BelongsTo<typeof userModel, 'authorId'> }
@@ -132,7 +131,7 @@ test('CollectionCreateAttrs should work with relationships', () => {
   } as any;
 
   expectTypeOf(attrs).toEqualTypeOf<
-    CollectionCreateAttrs<
+    ModelCreateAttrs<
       typeof postModel,
       TestCollections,
       { author: BelongsTo<typeof userModel, 'authorId'> }

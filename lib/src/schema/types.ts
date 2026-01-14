@@ -192,19 +192,3 @@ export type SchemaDbCollections<TCollections extends SchemaCollections> = {
     : never;
 };
 
-/**
- * Type for collection create/factory attributes - all attributes are optional
- * Used for passing attributes to create() methods where factory provides defaults
- * @template TTemplate - The model template
- * @template TSchema - The schema collections type
- * @template TRelationships - The model relationships
- */
-export type CollectionCreateAttrs<
-  TTemplate extends ModelTemplate,
-  TSchema extends SchemaCollections = SchemaCollections,
-  TRelationships extends ModelRelationships = RelationshipsByTemplate<
-    TTemplate,
-    TSchema
-  >,
-> = Partial<ModelAttrs<TTemplate, TSchema>> &
-  Partial<RelatedModelAttrs<TSchema, TRelationships>>;

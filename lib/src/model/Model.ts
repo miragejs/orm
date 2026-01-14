@@ -18,7 +18,7 @@ import type {
   ModelAttrs,
   ModelClass,
   ModelConfig,
-  ModelCreateAttrs,
+  ModelNewAttrs,
   ModelInstance,
   ModelRelationships,
   ModelTemplate,
@@ -164,9 +164,9 @@ export default class Model<
     >,
   >(
     attrs:
-      | ModelCreateAttrs<TTemplate, TSchema, TRelationships>
+      | ModelNewAttrs<TTemplate, TSchema, TRelationships>
       | ModelUpdateAttrs<TTemplate, TSchema, TRelationships>
-      | Partial<ModelCreateAttrs<TTemplate, TSchema, TRelationships>>
+      | Partial<ModelNewAttrs<TTemplate, TSchema, TRelationships>>
       | Record<string, unknown>,
     relationships?: TRelationships,
     includeDefaults: boolean = false,

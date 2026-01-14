@@ -10,7 +10,7 @@ import { IdentityManager, type IdentityManagerConfig } from '@src/id-manager';
 import {
   Model,
   ModelCollection,
-  ModelCreateAttrs,
+  ModelNewAttrs,
   ModelIdFor,
   type SerializedCollectionFor,
   type SerializedModelFor,
@@ -378,7 +378,7 @@ export abstract class BaseCollection<
     record: ModelAttrs<TTemplate, TSchema>,
   ): ModelInstance<TTemplate, TSchema> {
     return new this.Model({
-      attrs: record as ModelCreateAttrs<TTemplate, TSchema>,
+      attrs: record as ModelNewAttrs<TTemplate, TSchema>,
       relationships: this.relationships as unknown as RelationshipsByTemplate<
         TTemplate,
         TSchema

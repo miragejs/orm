@@ -3,6 +3,7 @@ import { Factory, FactoryTraitNames } from '@src/factory';
 import {
   ModelCollection,
   ModelCreateAttrs,
+  ModelNewAttrs,
   PartialModelAttrs,
   type ModelAttrs,
   type ModelConfig,
@@ -16,11 +17,7 @@ import { MirageError } from '@src/utils';
 
 import { BaseCollection } from './BaseCollection';
 import type { SchemaInstance } from './Schema';
-import type {
-  CollectionConfig,
-  CollectionCreateAttrs,
-  SchemaCollections,
-} from './types';
+import type { CollectionConfig, SchemaCollections } from './types';
 
 /**
  * Collection for managing models of a specific type
@@ -46,7 +43,7 @@ export default class Collection<
    * @returns The new model instance.
    */
   new(
-    attrs: ModelCreateAttrs<TTemplate, TSchema>,
+    attrs: ModelNewAttrs<TTemplate, TSchema>,
   ): NewModelInstance<TTemplate, TSchema> {
     return new this.Model({
       attrs: attrs,
@@ -68,7 +65,7 @@ export default class Collection<
   create(
     ...traitsAndDefaults: (
       | FactoryTraitNames<TFactory>
-      | CollectionCreateAttrs<TTemplate, TSchema>
+      | ModelCreateAttrs<TTemplate, TSchema>
     )[]
   ): ModelInstance<TTemplate, TSchema> {
     this._logger?.debug(`Creating model for '${this.collectionName}'`, {
@@ -80,7 +77,7 @@ export default class Collection<
     const attrs = this._factory.build(
       this._schema,
       ...traitsAndDefaults,
-    ) as ModelCreateAttrs<TTemplate, TSchema>;
+    ) as ModelNewAttrs<TTemplate, TSchema>;
     this._logger?.info(`Created model for '${this.collectionName}'`, {
       id: attrs.id,
       attrs,
@@ -116,7 +113,7 @@ export default class Collection<
     count: number,
     ...traitsAndDefaults: (
       | FactoryTraitNames<TFactory>
-      | CollectionCreateAttrs<TTemplate, TSchema>
+      | ModelCreateAttrs<TTemplate, TSchema>
     )[]
   ): ModelCollection<TTemplate, TSchema>;
 
@@ -128,7 +125,7 @@ export default class Collection<
   createMany(
     models: (
       | FactoryTraitNames<TFactory>
-      | CollectionCreateAttrs<TTemplate, TSchema>
+      | ModelCreateAttrs<TTemplate, TSchema>
     )[][],
   ): ModelCollection<TTemplate, TSchema>;
 
@@ -144,11 +141,11 @@ export default class Collection<
       | number
       | (
           | FactoryTraitNames<TFactory>
-          | CollectionCreateAttrs<TTemplate, TSchema>
+          | ModelCreateAttrs<TTemplate, TSchema>
         )[][],
     ...traitsAndDefaults: (
       | FactoryTraitNames<TFactory>
-      | CollectionCreateAttrs<TTemplate, TSchema>
+      | ModelCreateAttrs<TTemplate, TSchema>
     )[]
   ): ModelCollection<TTemplate, TSchema> {
     let models: ModelInstance<TTemplate, TSchema>[];
@@ -178,7 +175,7 @@ export default class Collection<
     query: DbRecordInput<ModelAttrs<TTemplate, TSchema>>,
     ...traitsAndDefaults: (
       | FactoryTraitNames<TFactory>
-      | CollectionCreateAttrs<TTemplate, TSchema>
+      | ModelCreateAttrs<TTemplate, TSchema>
     )[]
   ): ModelInstance<TTemplate, TSchema> {
     const existingModel = this.find(query);
@@ -188,7 +185,7 @@ export default class Collection<
 
     const newModel = this.create(
       ...traitsAndDefaults,
-      query as CollectionCreateAttrs<TTemplate, TSchema>,
+      query as ModelCreateAttrs<TTemplate, TSchema>,
     );
     return newModel;
   }
@@ -207,7 +204,7 @@ export default class Collection<
       | ((model: ModelInstance<TTemplate, TSchema>) => boolean),
     ...traitsAndDefaults: (
       | FactoryTraitNames<TFactory>
-      | CollectionCreateAttrs<TTemplate, TSchema>
+      | ModelCreateAttrs<TTemplate, TSchema>
     )[]
   ): ModelCollection<TTemplate, TSchema> {
     // Find existing models matching the query
@@ -237,7 +234,7 @@ export default class Collection<
     const newModels = Array.from({ length: needed }, () =>
       this.create(
         ...traitsAndDefaults,
-        queryAttrs as CollectionCreateAttrs<TTemplate, TSchema>,
+        queryAttrs as ModelCreateAttrs<TTemplate, TSchema>,
       ),
     );
 
