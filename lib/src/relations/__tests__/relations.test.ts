@@ -1,6 +1,6 @@
 import { model } from '@src/model';
 
-import associations from '../associations';
+import relations from '../relations';
 
 // Define test model attributes
 interface UserAttrs {
@@ -39,17 +39,17 @@ const commentModel = model()
   .attrs<CommentAttrs>()
   .create();
 
-describe('associations', () => {
+describe('relations', () => {
   describe('belongsTo', () => {
     it('should create a belongsTo relationship with default foreign key', () => {
-      const relationship = associations.belongsTo(userModel);
+      const relationship = relations.belongsTo(userModel);
       expect(relationship.type).toBe('belongsTo');
       expect(relationship.targetModel).toBe(userModel);
       expect(relationship.foreignKey).toBe('userId');
     });
 
     it('should create a belongsTo relationship with custom foreign key', () => {
-      const relationship = associations.belongsTo(userModel, {
+      const relationship = relations.belongsTo(userModel, {
         foreignKey: 'authorId',
       });
       expect(relationship.type).toBe('belongsTo');
@@ -58,32 +58,32 @@ describe('associations', () => {
     });
 
     it('should work with different template types', () => {
-      const userRelationship = associations.belongsTo(userModel);
-      const postRelationship = associations.belongsTo(postModel);
+      const userRelationship = relations.belongsTo(userModel);
+      const postRelationship = relations.belongsTo(postModel);
       expect(userRelationship.foreignKey).toBe('userId');
       expect(postRelationship.foreignKey).toBe('postId');
     });
 
     it('should preserve target template information', () => {
-      const relationship = associations.belongsTo(userModel);
+      const relationship = relations.belongsTo(userModel);
       expect(relationship.targetModel.modelName).toBe('user');
       expect(relationship.targetModel.collectionName).toBe('users');
     });
 
     it('should use default collectionName from target model', () => {
-      const relationship = associations.belongsTo(userModel);
+      const relationship = relations.belongsTo(userModel);
       expect(relationship.collectionName).toBe('users');
     });
 
     it('should accept custom collectionName option', () => {
-      const relationship = associations.belongsTo(userModel, {
+      const relationship = relations.belongsTo(userModel, {
         collectionName: 'authors',
       });
       expect(relationship.collectionName).toBe('authors');
     });
 
     it('should accept collectionName with other options', () => {
-      const relationship = associations.belongsTo(userModel, {
+      const relationship = relations.belongsTo(userModel, {
         foreignKey: 'authorId',
         inverse: 'posts',
         collectionName: 'authors',
@@ -96,14 +96,14 @@ describe('associations', () => {
 
   describe('hasMany', () => {
     it('should create a hasMany relationship with default foreign key', () => {
-      const relationship = associations.hasMany(postModel);
+      const relationship = relations.hasMany(postModel);
       expect(relationship.type).toBe('hasMany');
       expect(relationship.targetModel).toBe(postModel);
       expect(relationship.foreignKey).toBe('postIds');
     });
 
     it('should create a hasMany relationship with custom foreign key', () => {
-      const relationship = associations.hasMany(postModel, {
+      const relationship = relations.hasMany(postModel, {
         foreignKey: 'myPostIds',
       });
       expect(relationship.type).toBe('hasMany');
@@ -112,32 +112,32 @@ describe('associations', () => {
     });
 
     it('should work with different template types', () => {
-      const postRelationship = associations.hasMany(postModel);
-      const commentRelationship = associations.hasMany(commentModel);
+      const postRelationship = relations.hasMany(postModel);
+      const commentRelationship = relations.hasMany(commentModel);
       expect(postRelationship.foreignKey).toBe('postIds');
       expect(commentRelationship.foreignKey).toBe('commentIds');
     });
 
     it('should preserve target template information', () => {
-      const relationship = associations.hasMany(postModel);
+      const relationship = relations.hasMany(postModel);
       expect(relationship.targetModel.modelName).toBe('post');
       expect(relationship.targetModel.collectionName).toBe('posts');
     });
 
     it('should use default collectionName from target model', () => {
-      const relationship = associations.hasMany(postModel);
+      const relationship = relations.hasMany(postModel);
       expect(relationship.collectionName).toBe('posts');
     });
 
     it('should accept custom collectionName option', () => {
-      const relationship = associations.hasMany(postModel, {
+      const relationship = relations.hasMany(postModel, {
         collectionName: 'articles',
       });
       expect(relationship.collectionName).toBe('articles');
     });
 
     it('should accept collectionName with other options', () => {
-      const relationship = associations.hasMany(postModel, {
+      const relationship = relations.hasMany(postModel, {
         foreignKey: 'articleIds',
         inverse: 'author',
         collectionName: 'articles',
@@ -151,13 +151,13 @@ describe('associations', () => {
   describe('Integration with relationship definitions', () => {
     it('should create valid relationship configurations', () => {
       const userRelationships = {
-        posts: associations.hasMany(postModel),
-        profile: associations.belongsTo(userModel, { foreignKey: 'profileId' }),
+        posts: relations.hasMany(postModel),
+        profile: relations.belongsTo(userModel, { foreignKey: 'profileId' }),
       };
 
       const postRelationships = {
-        author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
-        comments: associations.hasMany(commentModel),
+        author: relations.belongsTo(userModel, { foreignKey: 'authorId' }),
+        comments: relations.hasMany(commentModel),
       };
 
       expect(userRelationships.posts.type).toBe('hasMany');
@@ -180,12 +180,12 @@ describe('associations', () => {
     it('should work with complex relationship hierarchies', () => {
       const relationships = {
         // Self-referential relationship
-        parent: associations.belongsTo(userModel, { foreignKey: 'parentId' }),
-        children: associations.hasMany(userModel, { foreignKey: 'childIds' }),
+        parent: relations.belongsTo(userModel, { foreignKey: 'parentId' }),
+        children: relations.hasMany(userModel, { foreignKey: 'childIds' }),
 
         // Cross-model relationships
-        posts: associations.hasMany(postModel),
-        favoritePost: associations.belongsTo(postModel, {
+        posts: relations.hasMany(postModel),
+        favoritePost: relations.belongsTo(postModel, {
           foreignKey: 'favoritePostId',
         }),
       };
@@ -204,24 +204,24 @@ describe('associations', () => {
   describe('inverse option', () => {
     describe('belongsTo', () => {
       it('should create relationship without inverse (auto-detect)', () => {
-        const rel = associations.belongsTo(userModel);
+        const rel = relations.belongsTo(userModel);
         expect(rel.inverse).toBeUndefined();
       });
 
       it('should create relationship with explicit inverse', () => {
-        const rel = associations.belongsTo(userModel, {
+        const rel = relations.belongsTo(userModel, {
           inverse: 'authoredPosts',
         });
         expect(rel.inverse).toBe('authoredPosts');
       });
 
       it('should create relationship with inverse disabled', () => {
-        const rel = associations.belongsTo(userModel, { inverse: null });
+        const rel = relations.belongsTo(userModel, { inverse: null });
         expect(rel.inverse).toBe(null);
       });
 
       it('should accept both foreignKey and inverse options', () => {
-        const rel = associations.belongsTo(userModel, {
+        const rel = relations.belongsTo(userModel, {
           foreignKey: 'creatorId',
           inverse: 'createdPosts',
         });
@@ -232,22 +232,22 @@ describe('associations', () => {
 
     describe('hasMany', () => {
       it('should create relationship without inverse (auto-detect)', () => {
-        const rel = associations.hasMany(postModel);
+        const rel = relations.hasMany(postModel);
         expect(rel.inverse).toBeUndefined();
       });
 
       it('should create relationship with explicit inverse', () => {
-        const rel = associations.hasMany(postModel, { inverse: 'author' });
+        const rel = relations.hasMany(postModel, { inverse: 'author' });
         expect(rel.inverse).toBe('author');
       });
 
       it('should create relationship with inverse disabled', () => {
-        const rel = associations.hasMany(postModel, { inverse: null });
+        const rel = relations.hasMany(postModel, { inverse: null });
         expect(rel.inverse).toBe(null);
       });
 
       it('should accept both foreignKey and inverse options', () => {
-        const rel = associations.hasMany(postModel, {
+        const rel = relations.hasMany(postModel, {
           foreignKey: 'articleIds',
           inverse: 'writer',
         });

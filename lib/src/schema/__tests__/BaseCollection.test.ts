@@ -1,5 +1,5 @@
-import { associations } from '@src/associations';
 import { model } from '@src/model';
+import { relations } from '@src/relations';
 
 import { collection } from '../CollectionBuilder';
 import { schema } from '../SchemaBuilder';
@@ -38,13 +38,13 @@ const testSchema = schema()
     users: collection()
       .model(userModel)
       .relationships({
-        posts: associations.hasMany(postModel),
+        posts: relations.hasMany(postModel),
       })
       .create(),
     posts: collection()
       .model(postModel)
       .relationships({
-        author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+        author: relations.belongsTo(userModel, { foreignKey: 'authorId' }),
       })
       .create(),
   })

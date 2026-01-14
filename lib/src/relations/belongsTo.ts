@@ -1,4 +1,4 @@
-import type { ModelNameFor, ModelTemplate } from '../model';
+import type { ModelNameFor, ModelTemplate } from '@src/model';
 
 import type { BelongsTo } from './types';
 

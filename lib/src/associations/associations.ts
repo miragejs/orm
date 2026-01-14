@@ -1,18 +1,16 @@
-import belongsTo from './belongsTo';
 import create from './create';
 import createMany from './createMany';
-import hasMany from './hasMany';
 import link from './link';
 import linkMany from './linkMany';
 
 /**
- * Associations object with all helper functions:
- * - belongsTo, hasMany: for model relationship definitions
- * - create, createMany, link, linkMany: for factory associations
+ * Associations object with helper functions for factory associations:
+ * - create: Always create one new related model
+ * - createMany: Always create N new related models
+ * - link: Try to find existing model, else create one
+ * - linkMany: Try to find N existing models, else create more as needed
  */
 const associations = {
-  belongsTo,
-  hasMany,
   create,
   createMany,
   link,

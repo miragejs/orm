@@ -1,5 +1,5 @@
-import { Relationships } from '@src/associations';
 import type { DbCollection } from '@src/db';
+import { Relationships } from '@src/relations';
 import type { SchemaCollections } from '@src/schema';
 import { Serializer } from '@src/serializer';
 import type { SerializerConfig } from '@src/serializer';

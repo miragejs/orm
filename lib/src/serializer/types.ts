@@ -1,10 +1,10 @@
-import type { RelationshipTargetTemplate } from '@src/associations';
 import type {
   ModelAttrsFor,
   ModelRelationships,
   ModelTemplate,
   RelationshipsByTemplate,
 } from '@src/model';
+import type { RelationshipTargetTemplate } from '@src/relations';
 import type { SchemaCollections } from '@src/schema';
 
 /**

@@ -5,8 +5,8 @@
  * Run: pnpm test:types
  */
 
-import { associations, type BelongsTo, type HasMany } from '@src/associations';
 import { model } from '@src/model';
+import { relations, type BelongsTo, type HasMany } from '@src/relations';
 import { collection, schema, type SchemaCollections } from '@src/schema';
 import {
   Serializer,
@@ -779,7 +779,7 @@ test('SerializerConfig with should infer relationships from schema', () => {
   const userCollection = collection()
     .model(userModel)
     .relationships({
-      posts: associations.hasMany(postModel),
+      posts: relations.hasMany(postModel),
     })
     .serializer({
       with: {
@@ -793,7 +793,7 @@ test('SerializerConfig with should infer relationships from schema', () => {
   const postCollection = collection()
     .model(postModel)
     .relationships({
-      author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+      author: relations.belongsTo(userModel, { foreignKey: 'authorId' }),
     })
     .create();
 

@@ -1,5 +1,5 @@
-import { belongsTo, hasMany } from '@src/associations';
 import { ModelCollection, ModelIdFor } from '@src/model';
+import { belongsTo, hasMany } from '@src/relations';
 
 import { collection } from '../CollectionBuilder';
 import { schema } from '../SchemaBuilder';

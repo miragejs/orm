@@ -1,5 +1,5 @@
-import type { BelongsTo } from '@src/associations';
 import { model, type ModelCreateAttrs } from '@src/model';
+import type { BelongsTo } from '@src/relations';
 import type {
   CollectionConfig,
   FixtureAttrs,

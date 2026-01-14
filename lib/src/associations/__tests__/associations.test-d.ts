@@ -1,16 +1,19 @@
 import type {
   Association,
   AssociationTraitsAndDefaults,
-  BelongsTo,
   CreateAssociation,
   CreateManyAssociation,
   FactoryAssociations,
-  HasMany,
   LinkAssociation,
   LinkManyAssociation,
 } from '@src/associations';
-import { belongsTo, hasMany } from '@src/associations';
 import { model } from '@src/model';
+import {
+  belongsTo,
+  hasMany,
+  type BelongsTo,
+  type HasMany,
+} from '@src/relations';
 import type { CollectionConfig } from '@src/schema';
 import { expectTypeOf, test } from 'vitest';
 

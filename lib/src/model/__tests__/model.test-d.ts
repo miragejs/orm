@@ -5,7 +5,6 @@
  * Run: pnpm test:types
  */
 
-import type { BelongsTo, HasMany } from '@src/associations';
 import type {
   CollectionNameFor,
   ModelAttrsFor,
@@ -21,6 +20,7 @@ import type {
   PartialModelAttrs,
 } from '@src/model';
 import { model, ModelCollection } from '@src/model';
+import type { BelongsTo, HasMany } from '@src/relations';
 import type { CollectionConfig, SchemaCollections } from '@src/schema';
 import Serializer from '@src/serializer/Serializer';
 import { expectTypeOf, test } from 'vitest';

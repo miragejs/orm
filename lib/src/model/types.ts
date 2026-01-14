@@ -1,5 +1,5 @@
-import type { BelongsTo, HasMany, Relationships } from '@src/associations';
 import type { QueryOptions } from '@src/db';
+import type { BelongsTo, HasMany, Relationships } from '@src/relations';
 import type {
   CollectionConfig,
   SchemaCollections,

@@ -30,7 +30,7 @@ const SUPPORTED_RELATIONSHIP_TYPES = ['hasMany', 'belongsTo'];
  * ```typescript
  * const userCollection = collection(UserModel)
  *   .relationships({
- *     posts: associations.hasMany(PostModel),
+ *     posts: relations.hasMany(PostModel),
  *   })
  *   .factory(userFactory)
  *   .identityManager({ initialCounter: '1' })
@@ -170,8 +170,8 @@ export default class CollectionBuilder<
    * ```typescript
    * const builder = collection(UserModel)
    *   .relationships({
-   *     posts: associations.hasMany(PostModel),
-   *     profile: associations.belongsTo(profileTemplate),
+   *     posts: relations.hasMany(PostModel),
+   *     profile: relations.belongsTo(profileTemplate),
    *   });
    * ```
    */

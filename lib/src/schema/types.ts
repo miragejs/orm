@@ -10,8 +10,6 @@ import type {
   ModelForeignKeys,
   ModelIdFor,
   ModelTemplate,
-  RelatedModelAttrs,
-  RelationshipsByTemplate,
 } from '@src/model';
 import type { ModelRelationships } from '@src/model';
 import type { Serializer, SerializerConfig } from '@src/serializer';
@@ -191,4 +189,3 @@ export type SchemaDbCollections<TCollections extends SchemaCollections> = {
       >
     : never;
 };
-

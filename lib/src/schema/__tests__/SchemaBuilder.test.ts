@@ -1,7 +1,7 @@
-import { associations } from '@src/associations';
 import { factory } from '@src/factory';
 import type { IdentityManagerConfig } from '@src/id-manager';
 import { model } from '@src/model';
+import { relations } from '@src/relations';
 import { MirageError } from '@src/utils';
 
 import { collection } from '../CollectionBuilder';
@@ -59,7 +59,7 @@ const userCollection = collection()
   .model(userModel)
   .factory(userFactory)
   .relationships({
-    posts: associations.hasMany(postModel),
+    posts: relations.hasMany(postModel),
   })
   .create();
 
@@ -67,7 +67,7 @@ const postCollection = collection()
   .model(postModel)
   .factory(postFactory)
   .relationships({
-    author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+    author: relations.belongsTo(userModel, { foreignKey: 'authorId' }),
   })
   .identityManager(postIdentityManagerConfig)
   .create();
@@ -183,14 +183,14 @@ describe('SchemaBuilder', () => {
             .model(userModel)
             .factory(userFactory)
             .relationships({
-              posts: associations.hasMany(postModel),
+              posts: relations.hasMany(postModel),
             })
             .create(),
           posts: collection()
             .model(postModel)
             .factory(postFactory)
             .relationships({
-              author: associations.belongsTo(userModel, {
+              author: relations.belongsTo(userModel, {
                 foreignKey: 'authorId',
               }),
             })
@@ -215,13 +215,13 @@ describe('SchemaBuilder', () => {
           users: collection()
             .model(userModel)
             .relationships({
-              posts: associations.hasMany(postModel),
+              posts: relations.hasMany(postModel),
             })
             .create(),
           posts: collection()
             .model(postModel)
             .relationships({
-              author: associations.belongsTo(userModel, {
+              author: relations.belongsTo(userModel, {
                 foreignKey: 'authorId',
               }),
             })

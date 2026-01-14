@@ -1,7 +1,7 @@
-import { associations, hasMany, belongsTo } from '@src/associations';
 import { factory } from '@src/factory';
 import type { IdentityManagerConfig } from '@src/id-manager';
 import { model } from '@src/model';
+import { relations, hasMany, belongsTo } from '@src/relations';
 import { Serializer, type SerializerConfig } from '@src/serializer';
 import { MirageError } from '@src/utils';
 
@@ -74,7 +74,7 @@ describe('CollectionBuilder', () => {
 
     it('should allow method chaining with all configuration methods', () => {
       const relationships = {
-        posts: associations.hasMany(postModel),
+        posts: relations.hasMany(postModel),
       };
       const builder = new CollectionBuilder()
         .model(userModel)
@@ -95,7 +95,7 @@ describe('CollectionBuilder', () => {
 
     it('should create a complete CollectionConfig with all options', () => {
       const relationships = {
-        posts: associations.hasMany(postModel),
+        posts: relations.hasMany(postModel),
       };
       const testCollection = new CollectionBuilder()
         .model(userModel)
@@ -207,7 +207,7 @@ describe('CollectionBuilder', () => {
       const builder = collection()
         .model(userModel)
         .relationships({
-          posts: associations.hasMany(postModel),
+          posts: relations.hasMany(postModel),
         });
 
       expect(builder).toBeInstanceOf(CollectionBuilder);
@@ -215,7 +215,7 @@ describe('CollectionBuilder', () => {
 
     it('should preserve other configurations when setting relationships', () => {
       const relationships = {
-        posts: associations.hasMany(postModel),
+        posts: relations.hasMany(postModel),
       };
       const builder = collection()
         .model(userModel)
@@ -230,8 +230,8 @@ describe('CollectionBuilder', () => {
 
     it('should work with associations helper', () => {
       const relationships = {
-        posts: associations.hasMany(postModel),
-        profile: associations.belongsTo(userModel, { foreignKey: 'profileId' }),
+        posts: relations.hasMany(postModel),
+        profile: relations.belongsTo(userModel, { foreignKey: 'profileId' }),
       };
       const testCollection = collection()
         .model(userModel)
@@ -388,7 +388,7 @@ describe('CollectionBuilder', () => {
 
     it('should work with relationships and serializer together', () => {
       const relationships = {
-        posts: associations.hasMany(postModel),
+        posts: relations.hasMany(postModel),
       };
       const testCollection = collection()
         .model(userModel)
@@ -463,7 +463,7 @@ describe('CollectionBuilder', () => {
   describe('Type safety', () => {
     it('should maintain type information through the builder chain', () => {
       const relationships = {
-        posts: associations.hasMany(postModel),
+        posts: relations.hasMany(postModel),
       };
       const testCollection = collection()
         .model(userModel)
@@ -507,7 +507,7 @@ describe('CollectionBuilder', () => {
   describe('Fluent builder interface', () => {
     it('should support method chaining in different orders', () => {
       const relationships = {
-        posts: associations.hasMany(postModel),
+        posts: relations.hasMany(postModel),
       };
       const serializerConfig: SerializerConfig<typeof userModel> = {
         root: true,

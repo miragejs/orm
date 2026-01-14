@@ -5,7 +5,7 @@
  * relationships, factories, and serialization for testing and development.
  * @example Basic Usage
  * ```typescript
- * import { model, schema, collection } from '@miragejs/orm';
+ * import { model, schema, collection, relations, associations } from '@miragejs/orm';
  *
  * // Define your models
  * const userModel = model('user', 'users')
@@ -36,13 +36,13 @@
  *     users: collection()
  *       .model(userModel)
  *       .relationships({
- *         posts: associations.hasMany(postModel),
+ *         posts: relations.hasMany(postModel),
  *       })
  *       .create(),
  *     posts: collection()
  *       .model(postModel)
  *       .relationships({
- *         author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+ *         author: relations.belongsTo(userModel, { foreignKey: 'authorId' }),
  *       })
  *       .create(),
  *   })
@@ -103,22 +103,22 @@ export type {
 } from './factory';
 
 // ----------------------------------------------------------------------------
-// Associations
+// Relations (schema relationship definitions)
+// ----------------------------------------------------------------------------
+export { relations, belongsTo, hasMany } from './relations';
+export type { BelongsTo, HasMany, Relationships } from './relations';
+
+// ----------------------------------------------------------------------------
+// Associations (factory management)
 // ----------------------------------------------------------------------------
 export {
   associations,
-  belongsTo,
   create,
   createMany,
-  hasMany,
   link,
   linkMany,
 } from './associations';
 export type {
-  // Relationship associations
-  BelongsTo,
-  HasMany,
-  // Factory associations
   Association,
   CreateAssociation,
   CreateManyAssociation,

@@ -1,5 +1,5 @@
-import { associations } from '@src/associations';
 import { model } from '@src/model';
+import { relations } from '@src/relations';
 import { collection, schema } from '@src/schema';
 
 // Define test attribute types
@@ -144,7 +144,7 @@ describe('Serializer - Collection serialization', () => {
           users: collection()
             .model(userModel)
             .relationships({
-              posts: associations.hasMany(postModel),
+              posts: relations.hasMany(postModel),
             })
             .serializer({
               select: ['id', 'name'],
@@ -155,7 +155,7 @@ describe('Serializer - Collection serialization', () => {
           posts: collection()
             .model(postModel)
             .relationships({
-              author: associations.belongsTo(userModel, {
+              author: relations.belongsTo(userModel, {
                 foreignKey: 'authorId',
               }),
             })
@@ -221,7 +221,7 @@ describe('Serializer - Collection serialization', () => {
           users: collection()
             .model(userModel)
             .relationships({
-              posts: associations.hasMany(postModel),
+              posts: relations.hasMany(postModel),
             })
             .serializer({
               select: ['id', 'name'],
@@ -233,7 +233,7 @@ describe('Serializer - Collection serialization', () => {
           posts: collection()
             .model(postModel)
             .relationships({
-              author: associations.belongsTo(userModel, {
+              author: relations.belongsTo(userModel, {
                 foreignKey: 'authorId',
               }),
             })

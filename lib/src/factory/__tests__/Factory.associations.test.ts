@@ -1,11 +1,11 @@
+import { associations } from '@src/associations';
+import { model } from '@src/model';
 import {
-  associations,
   belongsTo,
   hasMany,
   type BelongsTo,
   type HasMany,
-} from '@src/associations';
-import { model } from '@src/model';
+} from '@src/relations';
 import { collection, schema, type CollectionConfig } from '@src/schema';
 
 import type Factory from '../Factory';
@@ -154,7 +154,7 @@ describe('Factory associations', () => {
             .model(postModel)
             .factory(postFactory)
             .relationships({
-              author: associations.belongsTo(userModel, {
+              author: belongsTo(userModel, {
                 foreignKey: 'authorId',
               }),
             })
@@ -191,7 +191,7 @@ describe('Factory associations', () => {
             .model(postModel)
             .factory(postFactory)
             .relationships({
-              author: associations.belongsTo(userModel, {
+              author: belongsTo(userModel, {
                 foreignKey: 'authorId',
               }),
             })
@@ -224,7 +224,7 @@ describe('Factory associations', () => {
             .model(postModel)
             .factory(postFactory)
             .relationships({
-              author: associations.belongsTo(userModel, {
+              author: belongsTo(userModel, {
                 foreignKey: 'authorId',
               }),
             })
@@ -261,7 +261,7 @@ describe('Factory associations', () => {
             .model(postModel)
             .factory(postFactory)
             .relationships({
-              author: associations.belongsTo(userModel, {
+              author: belongsTo(userModel, {
                 foreignKey: 'authorId',
               }),
             })
