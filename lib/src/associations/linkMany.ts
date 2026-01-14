@@ -10,8 +10,8 @@ import type {
 
 /**
  * Try to find N existing models, else create more as needed (with schema type for trait validation)
- * @template TSchema - The schema collections type
  * @template TModel - The model template (inferred from model parameter)
+ * @template TSchema - The schema collections type
  * @param model - Model template to use
  * @param count - Number of models needed
  * @param query - Optional query to filter models (attributes object or predicate function)
@@ -19,8 +19,8 @@ import type {
  * @returns The link many association
  */
 export default function linkMany<
-  TSchema extends SchemaCollections,
   TModel extends ModelTemplate,
+  TSchema extends SchemaCollections,
 >(
   model: TModel,
   count: number,

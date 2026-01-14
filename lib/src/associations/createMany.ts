@@ -9,16 +9,16 @@ import type {
 
 /**
  * Always create N identical related models and link them (with schema type for trait validation)
- * @template TSchema - The schema collections type
  * @template TModel - The model template (inferred from model parameter)
+ * @template TSchema - The schema collections type
  * @param model - Model template to create
  * @param count - Number of models to create
  * @param traitsAndDefaults - Traits and/or defaults to apply (variadic) - trait names are validated against schema
  * @returns The create many association
  */
 export default function createMany<
-  TSchema extends SchemaCollections,
   TModel extends ModelTemplate,
+  TSchema extends SchemaCollections,
 >(
   model: TModel,
   count: number,
@@ -41,15 +41,15 @@ export default function createMany<TModel extends ModelTemplate>(
 
 /**
  * Create multiple different related models and link them (with schema type for trait validation)
- * @template TSchema - The schema collections type
  * @template TModel - The model template (inferred from model parameter)
+ * @template TSchema - The schema collections type
  * @param model - Model template to create
  * @param models - Array of traits/defaults for each model - trait names are validated against schema
  * @returns The create many association
  */
 export default function createMany<
-  TSchema extends SchemaCollections,
   TModel extends ModelTemplate,
+  TSchema extends SchemaCollections,
 >(
   model: TModel,
   models: TypedAssociationTraitsAndDefaults<TSchema, TModel>[],

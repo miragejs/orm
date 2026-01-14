@@ -312,12 +312,12 @@ describe('FactoryBuilder', () => {
         .model(postModel)
         .attrs({ title: 'Article' })
         .associations({
-          author: associations.create<PostTestSchema, UserModel>(userModel, {
+          author: associations.create<UserModel, PostTestSchema>(userModel, {
             name: 'Article Author',
             email: 'author@example.com',
             role: 'author',
           }),
-          editor: associations.create<PostTestSchema, UserModel>(userModel, {
+          editor: associations.create<UserModel, PostTestSchema>(userModel, {
             name: 'Editor',
             email: 'editor@example.com',
             role: 'editor',

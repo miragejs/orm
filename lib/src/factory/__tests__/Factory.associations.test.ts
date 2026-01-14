@@ -177,7 +177,7 @@ describe('Factory associations', () => {
           content: 'Content',
         })
         .associations({
-          author: associations.create<TestSchema, UserModel>(
+          author: associations.create<UserModel, TestSchema>(
             userModel,
             'admin',
           ),
@@ -211,7 +211,7 @@ describe('Factory associations', () => {
           content: 'Content',
         })
         .associations({
-          author: associations.create<TestSchema, UserModel>(userModel, {
+          author: associations.create<UserModel, TestSchema>(userModel, {
             name: 'Jane Doe',
           }),
         })
@@ -244,7 +244,7 @@ describe('Factory associations', () => {
           content: 'Content',
         })
         .associations({
-          author: associations.create<TestSchema, UserModel>(
+          author: associations.create<UserModel, TestSchema>(
             userModel,
             'admin',
             {
@@ -285,7 +285,7 @@ describe('Factory associations', () => {
           content: 'Content',
         })
         .associations({
-          comments: associations.createMany<TestSchema, CommentModel>(
+          comments: associations.createMany<CommentModel, TestSchema>(
             commentModel,
             3,
           ),
@@ -322,7 +322,7 @@ describe('Factory associations', () => {
           content: 'Content',
         })
         .associations({
-          comments: associations.createMany<TestSchema, CommentModel>(
+          comments: associations.createMany<CommentModel, TestSchema>(
             commentModel,
             2,
             'approved',
@@ -365,7 +365,7 @@ describe('Factory associations', () => {
           content: 'Content',
         })
         .associations({
-          comments: associations.createMany<TestSchema, CommentModel>(
+          comments: associations.createMany<CommentModel, TestSchema>(
             commentModel,
             [
               [{ content: 'First comment' }],
@@ -414,7 +414,7 @@ describe('Factory associations', () => {
           content: 'Content',
         })
         .associations({
-          author: associations.link<TestSchema, UserModel>(userModel),
+          author: associations.link<UserModel, TestSchema>(userModel),
         })
         .create();
 
@@ -446,7 +446,7 @@ describe('Factory associations', () => {
           content: 'Content',
         })
         .associations({
-          author: associations.link<TestSchema, UserModel>(userModel),
+          author: associations.link<UserModel, TestSchema>(userModel),
         })
         .create();
 
@@ -477,7 +477,7 @@ describe('Factory associations', () => {
           content: 'Content',
         })
         .associations({
-          author: associations.link<TestSchema, UserModel>(userModel, {
+          author: associations.link<UserModel, TestSchema>(userModel, {
             role: 'admin',
           }),
         })
@@ -512,7 +512,7 @@ describe('Factory associations', () => {
           content: 'Content',
         })
         .associations({
-          author: associations.link<TestSchema, UserModel>(
+          author: associations.link<UserModel, TestSchema>(
             userModel,
             (user) => user.role === 'admin',
           ),
@@ -548,7 +548,7 @@ describe('Factory associations', () => {
           content: 'Content',
         })
         .associations({
-          author: associations.link<TestSchema, UserModel>(
+          author: associations.link<UserModel, TestSchema>(
             userModel,
             { role: 'admin' },
             'verified',
@@ -586,7 +586,7 @@ describe('Factory associations', () => {
           content: 'Content',
         })
         .associations({
-          tags: associations.linkMany<TestSchema, TagModel>(tagModel, 2),
+          tags: associations.linkMany<TagModel, TestSchema>(tagModel, 2),
         })
         .create();
 
@@ -621,7 +621,7 @@ describe('Factory associations', () => {
           content: 'Content',
         })
         .associations({
-          tags: associations.linkMany<TestSchema, TagModel>(tagModel, 3),
+          tags: associations.linkMany<TagModel, TestSchema>(tagModel, 3),
         })
         .create();
 
@@ -654,7 +654,7 @@ describe('Factory associations', () => {
           content: 'Content',
         })
         .associations({
-          tags: associations.linkMany<TestSchema, TagModel>(
+          tags: associations.linkMany<TagModel, TestSchema>(
             tagModel,
             2,
             { featured: true },
@@ -698,7 +698,7 @@ describe('Factory associations', () => {
           content: 'Content',
         })
         .associations({
-          tags: associations.linkMany<TestSchema, TagModel>(tagModel, 2),
+          tags: associations.linkMany<TagModel, TestSchema>(tagModel, 2),
         })
         .create();
 
@@ -743,7 +743,7 @@ describe('Factory associations', () => {
         .traits({
           withAuthor: {
             published: true,
-            author: associations.create<TestSchema, UserModel>(userModel),
+            author: associations.create<UserModel, TestSchema>(userModel),
           },
         })
         .create();
@@ -779,8 +779,8 @@ describe('Factory associations', () => {
         .traits({
           withAuthorAndComments: {
             published: true,
-            author: associations.create<TestSchema, UserModel>(userModel),
-            comments: associations.createMany<TestSchema, CommentModel>(
+            author: associations.create<UserModel, TestSchema>(userModel),
+            comments: associations.createMany<CommentModel, TestSchema>(
               commentModel,
               3,
             ),
@@ -824,14 +824,14 @@ describe('Factory associations', () => {
         })
         .traits({
           withComments: {
-            comments: associations.createMany<TestSchema, CommentModel>(
+            comments: associations.createMany<CommentModel, TestSchema>(
               commentModel,
               2,
             ),
           },
         })
         .associations({
-          author: associations.create<TestSchema, UserModel>(userModel),
+          author: associations.create<UserModel, TestSchema>(userModel),
         })
         .create();
 
@@ -870,7 +870,7 @@ describe('Factory associations', () => {
         })
         .traits({
           withComments: {
-            comments: associations.createMany<TestSchema, CommentModel>(
+            comments: associations.createMany<CommentModel, TestSchema>(
               commentModel,
               2,
             ),
@@ -878,7 +878,7 @@ describe('Factory associations', () => {
         })
         .associations({
           // Factory-level association should override trait association
-          comments: associations.createMany<TestSchema, CommentModel>(
+          comments: associations.createMany<CommentModel, TestSchema>(
             commentModel,
             5,
           ),
@@ -917,10 +917,10 @@ describe('Factory associations', () => {
         })
         .traits({
           withAuthor: {
-            author: associations.create<TestSchema, UserModel>(userModel),
+            author: associations.create<UserModel, TestSchema>(userModel),
           },
           withComments: {
-            comments: associations.createMany<TestSchema, CommentModel>(
+            comments: associations.createMany<CommentModel, TestSchema>(
               commentModel,
               2,
             ),
@@ -971,7 +971,7 @@ describe('Factory associations', () => {
         })
         .traits({
           withAuthor: {
-            author: associations.create<TestSchema, UserModel>(userModel),
+            author: associations.create<UserModel, TestSchema>(userModel),
           },
         })
         .create();

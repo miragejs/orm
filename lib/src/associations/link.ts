@@ -10,16 +10,16 @@ import type {
 
 /**
  * Try to find existing model, else create one (with schema type for trait validation)
- * @template TSchema - The schema collections type
  * @template TModel - The model template (inferred from model parameter)
+ * @template TSchema - The schema collections type
  * @param model - Model template to use
  * @param query - Optional query to filter models (attributes object or predicate function)
  * @param traitsAndDefaults - Traits and/or defaults to apply when creating (variadic) - trait names are validated against schema
  * @returns The link association
  */
 export default function link<
-  TSchema extends SchemaCollections,
   TModel extends ModelTemplate,
+  TSchema extends SchemaCollections,
 >(
   model: TModel,
   query?: AssociationQuery<ModelAttrsFor<TModel>>,
