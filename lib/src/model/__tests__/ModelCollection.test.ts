@@ -17,7 +17,7 @@ const userModel = model()
   .name('user')
   .collection('users')
   .attrs<UserAttrs>()
-  .create();
+  .build();
 
 // Create test model type
 type UserModel = typeof userModel;
@@ -33,9 +33,9 @@ const UserModelClass = Model.define<UserModel, TestSchema>(userModel);
 // Create schema instance
 const testSchema = schema()
   .collections({
-    users: collection().model(userModel).create(),
+    users: collection().model(userModel).build(),
   })
-  .setup();
+  .build();
 
 describe('ModelCollection', () => {
   let user1: ModelInstance<UserModel, TestSchema>;
@@ -526,7 +526,7 @@ describe('ModelCollection', () => {
         .name('comment')
         .collection('comments')
         .attrs<CommentAttrs>()
-        .create();
+        .build();
 
       type CommentSchema = {
         comments: CollectionConfig<typeof CommentModel>;
@@ -539,9 +539,9 @@ describe('ModelCollection', () => {
 
       const commentSchema = schema()
         .collections({
-          comments: collection().model(CommentModel).create(),
+          comments: collection().model(CommentModel).build(),
         })
-        .setup();
+        .build();
 
       const comment1 = new CommentModelClass({
         attrs: { text: 'First comment', userId: '1' },

@@ -10,11 +10,11 @@
  * // Define your models
  * const userModel = model('user', 'users')
  *   .attrs<{ name: string; email: string }>()
- *   .create();
+ *   .build();
  *
  * const postModel = model('post', 'posts')
  *   .attrs<{ title: string; content: string }>()
- *   .create();
+ *   .build();
  *
  * // Define your factories
  * const userFactory = factory()
@@ -28,7 +28,7 @@
  *       posts: associations.createMany(postModel, 2),
  *     },
  *   })
- *   .create();
+ *   .build();
  *
  * // Setup schema
  * const appSchema = schema()
@@ -38,15 +38,15 @@
  *       .relationships({
  *         posts: relations.hasMany(postModel),
  *       })
- *       .create(),
+ *       .build(),
  *     posts: collection()
  *       .model(postModel)
  *       .relationships({
  *         author: relations.belongsTo(userModel, { foreignKey: 'authorId' }),
  *       })
- *       .create(),
+ *       .build(),
  *   })
- *   .setup();
+ *   .build();
  *
  * // Use the schema
  * appSchema.users.create('withPosts');

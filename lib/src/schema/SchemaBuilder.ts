@@ -23,7 +23,7 @@ import type { SchemaCollections, SchemaConfig } from './types';
  *     users: userCollection,
  *     posts: postCollection,
  *   })
- *   .setup();
+ *   .build();
  * ```
  */
 export default class SchemaBuilder<
@@ -175,10 +175,10 @@ export default class SchemaBuilder<
   }
 
   /**
-   * Sets up the final Schema instance with all configured options.
+   * Builds the final Schema instance with all configured options.
    *
    * This method produces the complete schema instance that can be used throughout
-   * your application. Collections must be set before calling setup().
+   * your application. Collections must be set before calling build().
    * @returns The configured Schema instance with collection accessors
    * @throws Error if no collections have been configured
    * @example
@@ -188,17 +188,17 @@ export default class SchemaBuilder<
    *     users: userCollection,
    *     posts: postCollection,
    *   })
-   *   .setup();
+   *   .build();
    *
    * // Use the schema
    * const userCollection = appSchema.getCollection('users');
    * const user = appSchema.users.create({ name: 'John' });
    * ```
    */
-  setup(): SchemaInstance<TCollections> {
+  build(): SchemaInstance<TCollections> {
     if (!this._collections) {
       throw new MirageError(
-        'SchemaBuilder: collections are required. Call .collections() before .setup()',
+        'SchemaBuilder: collections are required. Call .collections() before .build()',
       );
     }
 
@@ -231,7 +231,7 @@ export default class SchemaBuilder<
  *   .collections({
  *     users: userCollection,
  *   })
- *   .setup();
+ *   .build();
  *
  * // With logging
  * const appSchema = schema()
@@ -240,7 +240,7 @@ export default class SchemaBuilder<
  *     users: userCollection,
  *     posts: postCollection,
  *   })
- *   .setup();
+ *   .build();
  * ```
  * @see {@link SchemaBuilder} for available configuration methods
  */

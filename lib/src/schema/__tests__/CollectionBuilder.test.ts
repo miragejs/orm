@@ -27,12 +27,12 @@ const userModel = model()
   .name('user')
   .collection('users')
   .attrs<UserAttrs>()
-  .create();
+  .build();
 const postModel = model()
   .name('post')
   .collection('posts')
   .attrs<PostAttrs>()
-  .create();
+  .build();
 
 // Create test factory
 const userFactory = factory()
@@ -46,7 +46,7 @@ const userFactory = factory()
       status: 'active',
     },
   })
-  .create();
+  .build();
 
 // Create test identity manager config
 const userIdentityManagerConfig: IdentityManagerConfig<string> = {
@@ -85,7 +85,7 @@ describe('CollectionBuilder', () => {
     });
 
     it('should create a CollectionConfig with create()', () => {
-      const testCollection = new CollectionBuilder().model(userModel).create();
+      const testCollection = new CollectionBuilder().model(userModel).build();
 
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.factory).toBeUndefined();
@@ -103,7 +103,7 @@ describe('CollectionBuilder', () => {
         .relationships(relationships)
         .identityManager(userIdentityManagerConfig)
         .serializer({ root: true })
-        .create();
+        .build();
 
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.factory).toBe(userFactory);
@@ -114,9 +114,9 @@ describe('CollectionBuilder', () => {
 
     it('should throw error if model is not set', () => {
       expect(() => {
-        new CollectionBuilder().create();
+        new CollectionBuilder().build();
       }).toThrow(
-        '[Mirage]: Model template must be set before creating collection. Call .model() first.',
+        '[Mirage]: Model template must be set before building collection. Call .model() first.',
       );
     });
 
@@ -126,9 +126,9 @@ describe('CollectionBuilder', () => {
           .factory(userFactory)
           // Cast to any since this test verifies runtime validation, not types
           .identityManager(userIdentityManagerConfig as any)
-          .create();
+          .build();
       }).toThrow(
-        '[Mirage]: Model template must be set before creating collection. Call .model() first.',
+        '[Mirage]: Model template must be set before building collection. Call .model() first.',
       );
     });
   });
@@ -143,14 +143,14 @@ describe('CollectionBuilder', () => {
       const testCollection = collection()
         .model(userModel)
         .factory(userFactory)
-        .create();
+        .build();
 
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.factory).toBe(userFactory);
     });
 
     it('should create collection with only model template', () => {
-      const testCollection = collection().model(userModel).create();
+      const testCollection = collection().model(userModel).build();
 
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.factory).toBeUndefined();
@@ -160,11 +160,11 @@ describe('CollectionBuilder', () => {
       const collection1 = collection()
         .model(userModel)
         .factory(userFactory)
-        .create();
+        .build();
       const collection2 = collection()
         .factory(userFactory)
         .model(userModel)
-        .create();
+        .build();
 
       expect(collection1.model).toBe(userModel);
       expect(collection1.factory).toBe(userFactory);
@@ -182,7 +182,7 @@ describe('CollectionBuilder', () => {
 
     it('should preserve other configurations when setting template', () => {
       const builder = collection().factory(userFactory).model(userModel);
-      const testCollection = builder.create();
+      const testCollection = builder.build();
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.factory).toBe(userFactory);
     });
@@ -196,7 +196,7 @@ describe('CollectionBuilder', () => {
 
     it('should preserve other configurations when setting factory', () => {
       const builder = collection().model(userModel).factory(userFactory);
-      const testCollection = builder.create();
+      const testCollection = builder.build();
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.factory).toBe(userFactory);
     });
@@ -221,7 +221,7 @@ describe('CollectionBuilder', () => {
         .model(userModel)
         .relationships(relationships)
         .factory(userFactory);
-      const testCollection = builder.create();
+      const testCollection = builder.build();
 
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.factory).toBe(userFactory);
@@ -236,7 +236,7 @@ describe('CollectionBuilder', () => {
       const testCollection = collection()
         .model(userModel)
         .relationships(relationships)
-        .create();
+        .build();
       expect(testCollection.relationships).toBe(relationships);
     });
   });
@@ -254,7 +254,7 @@ describe('CollectionBuilder', () => {
         .model(userModel)
         .factory(userFactory)
         .identityManager(userIdentityManagerConfig)
-        .create();
+        .build();
 
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.factory).toBe(userFactory);
@@ -281,7 +281,7 @@ describe('CollectionBuilder', () => {
         .model(userModel)
         .factory(userFactory)
         .serializer({ select: ['id', 'name'] })
-        .create();
+        .build();
 
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.factory).toBe(userFactory);
@@ -296,7 +296,7 @@ describe('CollectionBuilder', () => {
         .model(userModel)
         .factory(userFactory)
         .serializer(customSerializer)
-        .create();
+        .build();
 
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.factory).toBe(userFactory);
@@ -307,7 +307,7 @@ describe('CollectionBuilder', () => {
       const testCollection = collection()
         .model(userModel)
         .serializer({ select: ['id', 'name', 'email'] })
-        .create();
+        .build();
 
       expect(testCollection.serializer).toEqual({
         select: ['id', 'name', 'email'],
@@ -318,7 +318,7 @@ describe('CollectionBuilder', () => {
       const testCollection = collection()
         .model(userModel)
         .serializer({ root: true })
-        .create();
+        .build();
 
       expect(testCollection.serializer).toEqual({ root: true });
     });
@@ -327,7 +327,7 @@ describe('CollectionBuilder', () => {
       const testCollection = collection()
         .model(userModel)
         .serializer({ root: 'customUser' })
-        .create();
+        .build();
 
       expect(testCollection.serializer).toEqual({ root: 'customUser' });
     });
@@ -340,7 +340,7 @@ describe('CollectionBuilder', () => {
           select: ['id', 'name'],
           relationsMode: 'embedded',
         })
-        .create();
+        .build();
 
       expect(testCollection.serializer).toEqual({
         root: 'userData',
@@ -354,7 +354,7 @@ describe('CollectionBuilder', () => {
         .model(userModel)
         .serializer({ root: true })
         .serializer({ root: false, select: ['id'] })
-        .create();
+        .build();
 
       expect(testCollection.serializer).toEqual({
         root: false,
@@ -368,7 +368,7 @@ describe('CollectionBuilder', () => {
         .model(userModel)
         .serializer({ root: true })
         .serializer(customSerializer)
-        .create();
+        .build();
 
       expect(testCollection.serializer).toBe(customSerializer);
     });
@@ -379,7 +379,7 @@ describe('CollectionBuilder', () => {
         .model(userModel)
         .serializer(customSerializer)
         .serializer({ select: ['id', 'name'] })
-        .create();
+        .build();
 
       expect(testCollection.serializer).toEqual({
         select: ['id', 'name'],
@@ -394,7 +394,7 @@ describe('CollectionBuilder', () => {
         .model(userModel)
         .relationships(relationships)
         .serializer({ root: true, with: ['posts'] })
-        .create();
+        .build();
 
       expect(testCollection.relationships).toBe(relationships);
       expect(testCollection.serializer).toEqual({
@@ -416,7 +416,7 @@ describe('CollectionBuilder', () => {
       const testCollection = collection()
         .model(userModel)
         .seeds(seedFn)
-        .create();
+        .build();
       expect(testCollection.seeds).toBe(seedFn);
     });
 
@@ -428,7 +428,7 @@ describe('CollectionBuilder', () => {
       const testCollection = collection()
         .model(userModel)
         .seeds(seedScenarios)
-        .create();
+        .build();
       expect(testCollection.seeds).toBe(seedScenarios);
     });
 
@@ -439,7 +439,7 @@ describe('CollectionBuilder', () => {
         .seeds({
           default: seedFn,
         })
-        .create();
+        .build();
 
       expect(testCollection.seeds).toEqual({ default: seedFn });
     });
@@ -451,7 +451,7 @@ describe('CollectionBuilder', () => {
         .factory(userFactory)
         .identityManager(userIdentityManagerConfig)
         .seeds(seedFn)
-        .create();
+        .build();
 
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.factory).toBe(userFactory);
@@ -470,7 +470,7 @@ describe('CollectionBuilder', () => {
         .relationships(relationships)
         .factory(userFactory)
         .identityManager(userIdentityManagerConfig)
-        .create();
+        .build();
 
       // These should be type-safe (no TypeScript errors)
       expect(testCollection.model).toBe(userModel);
@@ -483,7 +483,7 @@ describe('CollectionBuilder', () => {
       const testCollection = collection()
         .model(userModel)
         .serializer({ root: true, select: ['id', 'name'] })
-        .create();
+        .build();
 
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.serializer).toEqual({
@@ -497,7 +497,7 @@ describe('CollectionBuilder', () => {
       const testCollection = collection()
         .model(userModel)
         .serializer(customSerializer)
-        .create();
+        .build();
 
       expect(testCollection.model).toBe(userModel);
       expect(testCollection.serializer).toBe(customSerializer);
@@ -521,7 +521,7 @@ describe('CollectionBuilder', () => {
         .factory(userFactory)
         .identityManager(userIdentityManagerConfig)
         .serializer(serializerConfig)
-        .create();
+        .build();
 
       // Order 2: serializer -> identityManager -> factory -> relationships
       const collection2 = collection()
@@ -530,7 +530,7 @@ describe('CollectionBuilder', () => {
         .identityManager(userIdentityManagerConfig)
         .factory(userFactory)
         .relationships(relationships)
-        .create();
+        .build();
 
       expect(collection1.model).toBe(userModel);
       expect(collection1.factory).toBe(userFactory);
@@ -553,13 +553,13 @@ describe('CollectionBuilder', () => {
           name: () => 'New User',
           email: () => 'new@example.com',
         })
-        .create();
+        .build();
 
       const testCollection = collection()
         .model(userModel)
         .factory(initialFactory)
         .factory(newFactory)
-        .create();
+        .build();
 
       expect(testCollection.factory).toBe(newFactory);
       expect(testCollection.factory).not.toBe(initialFactory);
@@ -576,11 +576,11 @@ describe('CollectionBuilder', () => {
       const userCollection = collection()
         .model(userModel)
         .identityManager(stringIdConfig)
-        .create();
+        .build();
       const postCollection = collection()
         .model(postModel)
         .identityManager(numberIdConfig)
-        .create();
+        .build();
 
       expect(userCollection.identityManager).toEqual(stringIdConfig);
       expect(postCollection.identityManager).toEqual(numberIdConfig);
@@ -626,7 +626,7 @@ describe('CollectionBuilder', () => {
       });
 
       it('should accept valid model template', () => {
-        const validModel = model().name('user').collection('users').create();
+        const validModel = model().name('user').collection('users').build();
 
         expect(() => {
           collection().model(validModel);
@@ -635,8 +635,8 @@ describe('CollectionBuilder', () => {
     });
 
     describe('relationships()', () => {
-      const testUserModel = model().name('user').collection('users').create();
-      const testPostModel = model().name('post').collection('posts').create();
+      const testUserModel = model().name('user').collection('users').build();
+      const testPostModel = model().name('post').collection('posts').build();
 
       it('should throw error for null relationships', () => {
         expect(() => {
@@ -778,7 +778,7 @@ describe('CollectionBuilder', () => {
         .name('user')
         .collection('users')
         .attrs<TestUserAttrs>()
-        .create();
+        .build();
 
       it('should throw error for non-array fixtures', () => {
         expect(() => {

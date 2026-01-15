@@ -142,13 +142,13 @@ export default class FactoryBuilder<
   }
 
   /**
-   * Build the final factory instance
+   * Builds the final factory instance
    * @returns The factory instance
    */
-  create(): Factory<TTemplate, TTraits, TSchema> {
+  build(): Factory<TTemplate, TTraits, TSchema> {
     if (!this._template) {
       throw new MirageError(
-        'Model template must be set before creating factory. Call .model() first.',
+        'Model template must be set before building factory. Call .model() first.',
       );
     }
 

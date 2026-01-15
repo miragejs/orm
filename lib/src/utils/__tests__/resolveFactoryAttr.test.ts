@@ -22,7 +22,7 @@ const userModel = model()
   .name('user')
   .collection('users')
   .attrs<UserAttrs>()
-  .create();
+  .build();
 
 // Define test model type
 type UserModel = typeof userModel;
@@ -71,9 +71,9 @@ describe('resolveFactoryAttr', () => {
 
     const localSchema = schema()
       .collections({
-        users: collection().model(userModel).factory(factory).create(),
+        users: collection().model(userModel).factory(factory).build(),
       })
-      .setup();
+      .build();
 
     const attrs = factory.build(localSchema);
     expect(attrs.email).toBe('john.doe@example.com');

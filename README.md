@@ -100,11 +100,11 @@ import { model, schema, collection, factory, associations } from 'miragejs-orm';
 // 1. Define your models
 const userModel = model('user', 'users')
   .attrs<{ name: string; email: string }>()
-  .create();
+  .build();
 
 const postModel = model('post', 'posts')
   .attrs<{ title: string; content: string; authorId: string }>()
-  .create();
+  .build();
 
 // 2. Create factories with fake data
 const userFactory = factory()
@@ -113,7 +113,7 @@ const userFactory = factory()
     name: () => 'John Doe',
     email: () => 'john@example.com',
   })
-  .create();
+  .build();
 
 // 3. Setup your schema with relationships
 const appSchema = schema()
@@ -133,7 +133,7 @@ const appSchema = schema()
       })
       .create(),
   })
-  .setup();
+  .build();
 
 // 4. Use it!
 const user = appSchema.users.create({ name: 'Alice' });
@@ -171,7 +171,7 @@ interface UserAttrs {
 // Create a model template
 const userModel = model('user', 'users')
   .attrs<UserAttrs>()
-  .create();
+  .build();
 
 // This template can now be shared across collections and relationships
 ```
@@ -198,13 +198,13 @@ const userCollection = collection()
     posts: associations.hasMany(postModel),
   })
   .serializer(userSerializer)  // Optional
-  .create();
+  .build();
 ```
 
 **Collection Methods:**
 ```typescript
 // Create with factory defaults
-const user = appSchema.users.create();
+const user = appSchema.users.build();
 
 // Create with custom attributes
 const user = appSchema.users.create({ name: 'Alice', email: 'alice@example.com' });
@@ -340,11 +340,11 @@ import { model, schema, collection, associations } from 'miragejs-orm';
 
 const studentModel = model('student', 'students')
   .attrs<{ name: string; courseIds: string[] }>()
-  .create();
+  .build();
 
 const courseModel = model('course', 'courses')
   .attrs<{ title: string; studentIds: string[] }>()
-  .create();
+  .build();
 
 const appSchema = schema()
   .collections({
@@ -366,7 +366,7 @@ const appSchema = schema()
       })
       .create(),
   })
-  .setup();
+  .build();
 
 // Usage - bidirectional access
 const student = appSchema.students.create({ 
@@ -393,7 +393,7 @@ const userFactory = factory()
     email: () => faker.internet.email(),
     role: () => 'user',  // Static default
   })
-  .create();
+  .build();
 ```
 
 #### Traits
@@ -426,7 +426,7 @@ const userFactory = factory()
       posts: associations.createMany(postModel, 3),
     },
   })
-  .create();
+  .build();
 
 // Usage
 appSchema.users.create();  // Regular user
@@ -453,7 +453,7 @@ const userFactory = factory()
       profile: associations.create(profileModel),
     },
   })
-  .create();
+  .build();
 
 // Create multiple different related models
 const authorFactory = factory()
@@ -465,7 +465,7 @@ const authorFactory = factory()
       ['featured'], // Using a trait
     ]),
   })
-  .create();
+  .build();
 
 // Link to existing models (or create if missing)
 const userFactory2 = factory()
@@ -478,7 +478,7 @@ const userFactory2 = factory()
       posts: associations.linkMany(postModel, 3),  // Finds/creates up to 3 posts
     },
   })
-  .create();
+  .build();
 ```
 
 #### Lifecycle Hooks
@@ -502,7 +502,7 @@ const postFactory = factory()
       post.update({ author: user });
     }
   })
-  .create();
+  .build();
 ```
 
 ### 5. Schema
@@ -518,7 +518,7 @@ const appSchema = schema()
     posts: postCollection,
     comments: commentCollection,
   })
-  .setup();
+  .build();
 
 // Now you can use all collections
 appSchema.users.create({ name: 'Alice' });
@@ -545,7 +545,7 @@ const appSchema = schema()
       ])
       .create(),
   })
-  .setup();
+  .build();
 
 // Load fixtures manually when needed
 appSchema.loadFixtures(); // Loads all collection fixtures
@@ -565,7 +565,7 @@ const autoSchema = schema()
       )
       .create(),
   })
-  .setup(); // Fixtures are already loaded!
+  .build(); // Fixtures are already loaded!
 ```
 
 #### Seeds
@@ -603,7 +603,7 @@ const userCollection = collection()
       });
     },
   })
-  .create();
+  .build();
 
 const postCollection = collection()
   .model(postModel)
@@ -623,14 +623,14 @@ const postCollection = collection()
       });
     },
   })
-  .create();
+  .build();
 
 const appSchema = schema()
   .collections({
     users: userCollection,
     posts: postCollection,
   })
-  .setup();
+  .build();
 
 // Load all seeds for all collections
 appSchema.loadSeeds();
@@ -663,7 +663,7 @@ interface UserAttrs {
 
 const userModel = model('user', 'users')
   .attrs<UserAttrs>()
-  .create();
+  .build();
 
 // 2. Define your JSON output structure
 interface UserJSON {
@@ -689,7 +689,7 @@ const appSchema = schema()
       .serializer(userSerializer)
       .create(),
   })
-  .setup();
+  .build();
 
 // 5. Serialize with type safety
 const user = appSchema.users.create({ 
@@ -728,7 +728,7 @@ const appSchema = schema()
       })
       .create(),
   })
-  .setup();
+  .build();
 
 const user = appSchema.users.create({ 
   name: 'Bob',
@@ -762,7 +762,7 @@ const appSchema = schema()
     root: true,  // All models will wrap in their model name
     embed: true,  // All models will include relationships
   })
-  .setup();
+  .build();
 
 const user = appSchema.users.create({ name: 'Alice', email: 'alice@example.com' });
 const post = appSchema.posts.create({ title: 'Hello', content: 'World' });
@@ -849,7 +849,7 @@ const appSchema = schema()
       .factory(userFactory)
       .create(),
   })
-  .setup();
+  .build();
 
 // Seed data
 appSchema.users.createMany(10);
@@ -939,7 +939,7 @@ const setupMockData = (count: number) => {
         .factory(userFactory)
         .create(),
     })
-    .setup();
+    .build();
   
   return appSchema.users.createMany(count);
 };
@@ -988,7 +988,7 @@ import { schema, StringIdentityManager, NumberIdentityManager, type IdentityMana
 // Use number IDs instead of strings
 const appSchema = schema({ identityManager: new NumberIdentityManager() })
   .collections({ users: userCollection })
-  .setup();
+  .build();
 
 const user = appSchema.users.create({ name: 'Alice' });
 console.log(user.id); // 1 (number, not string)
@@ -1010,7 +1010,7 @@ class UUIDIdentityManager implements IdentityManager {
 
 const appSchema = schema({ identityManager: new UUIDIdentityManager() })
   .collections({ users: userCollection })
-  .setup();
+  .build();
 ```
 
 ### Query Methods
@@ -1240,7 +1240,7 @@ const appSchema = schema()
     enabled: true, 
     level: 'debug' 
   })
-  .setup();
+  .build();
 ```
 
 **Log Levels:**
@@ -1278,7 +1278,7 @@ const testSchema = schema()
     level: 'debug',
     prefix: '[MyApp Test]'  // Custom prefix instead of default '[Mirage]'
   })
-  .setup();
+  .build();
 
 // Output: [MyApp Test] DEBUG: Schema initialized
 ```
@@ -1298,7 +1298,7 @@ const appSchema = schema()
       .seeds({ testData: (schema) => schema.users.create({ name: 'Bob' }) })
       .create(),
   })
-  .setup();
+  .build();
 
 // Console output:
 // [Mirage] DEBUG: Registering collections { count: 1, names: ['users'] }
@@ -1333,7 +1333,7 @@ import { schema } from 'miragejs-orm';
 const devSchema = schema()
   .collections({ users: userCollection })
   .logging({ enabled: true, level: 'info' })
-  .setup();
+  .build();
 
 // Testing - Debug failing tests
 const testSchema = schema()
@@ -1342,7 +1342,7 @@ const testSchema = schema()
     enabled: process.env.DEBUG === 'true',  // Enable via env var
     level: 'debug' 
   })
-  .setup();
+  .build();
 ```
 
 ---
@@ -1373,7 +1373,7 @@ export type UserJSON = { user: User; current?: boolean };
 export const userModel = model('user', 'users')
   .attrs<UserAttrs>()
   .json<UserJSON, User[]>()
-  .create();
+  .build();
 
 // Define a shareable user model type
 export type UserModel = typeof userModel;
@@ -1391,7 +1391,7 @@ export type PostAttrs = { title: string; content: string; authorId: string };
 export const postModel = model('post', 'posts')
   .attrs<PostAttrs>()
   .json<Post, Post[]>() // Use existing Post entity type without transformations
-  .create();
+  .build();
 
 // Define shareable post model type
 export type PostModel = typeof postModel;
@@ -1511,7 +1511,7 @@ const userCollection = collection<AppCollections>() // Typing collection isn't n
       schema.users.create({ name: 'Jane', email: 'jane@example.com' });
     },
   })
-  .create();
+  .build();
 ```
 
 ### Typing Factories
@@ -1540,7 +1540,7 @@ export const postFactory = factory<AppCollections>()
       post.update({ author: user });
     }
   })
-  .create();
+  .build();
 ```
 
 **Key Benefits:**
@@ -1567,12 +1567,12 @@ MirageJS ORM is **fully modular** — all components can be created separately a
 // schema/models/user.model.ts
 export const userModel = model('user', 'users')
   .attrs<UserAttrs>()
-  .create();
+  .build();
 
 // schema/models/post.model.ts
 export const postModel = model('post', 'posts')
   .attrs<PostAttrs>()
-  .create();
+  .build();
 
 // schema/collections/users - Collection-specific components
 
@@ -1587,7 +1587,7 @@ export const userFactory = factory()
     email: () => 'john@example.com',
     role: () => 'user',
   })
-  .create();
+  .build();
 
 // schema/collections/users/user.collection.ts - Collection configuration with relationships
 import { collection, associations } from 'miragejs-orm';
@@ -1603,7 +1603,7 @@ export const userCollection = collection<AppCollections>()
     posts: associations.hasMany(postModel),
   })
   .seeds(userSeeds)
-  .create();
+  .build();
 
 // schema/collections/users/user.seeds.ts - Seed scenarios for different contexts
 import type { SeedFunction } from 'miragejs-orm';
@@ -1636,7 +1636,7 @@ export const appSchema = schema()
     users: userCollection,
     posts: postCollection,
   })
-  .setup();
+  .build();
 
 // schema/variations/dev.schema.ts - Development schema with seeds
 import { schema } from 'miragejs-orm';
@@ -1648,7 +1648,7 @@ export const devSchema = schema()
     posts: postCollection,
   })
   .serializer({ root: true, embed: true })
-  .setup();
+  .build();
 
 devSchema.loadSeeds();
 
@@ -1665,7 +1665,7 @@ export const testSchema = schema()
       ])
       .create(),
   })
-  .setup();
+  .build();
 
 testSchema.loadFixtures();
 ```

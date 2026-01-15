@@ -21,7 +21,7 @@ const userCollection = collection()
   .relationships({
     posts: hasMany(postModel),
   })
-  .create();
+  .build();
 
 const postCollection = collection()
   .model(postModel)
@@ -30,7 +30,7 @@ const postCollection = collection()
     author: belongsTo(userModel, { foreignKey: 'authorId' }),
     comments: hasMany(commentModel),
   })
-  .create();
+  .build();
 
 const commentCollection = collection()
   .model(commentModel)
@@ -39,7 +39,7 @@ const commentCollection = collection()
     user: belongsTo(userModel),
     post: belongsTo(postModel),
   })
-  .create();
+  .build();
 
 // Create test schema with collections
 const testSchema = schema()
@@ -48,7 +48,7 @@ const testSchema = schema()
     posts: postCollection,
     comments: commentCollection,
   })
-  .setup();
+  .build();
 
 describe('Schema with Relationships', () => {
   beforeEach(() => {
@@ -690,7 +690,7 @@ describe('Schema with Relationships', () => {
                   inverse: 'reviewer',
                 }),
               })
-              .create(),
+              .build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -703,9 +703,9 @@ describe('Schema with Relationships', () => {
                   inverse: 'reviewedPosts',
                 }),
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const author = testSchema.users.create({
           name: 'Author',
@@ -785,7 +785,7 @@ describe('Schema with Relationships', () => {
               .relationships({
                 posts: hasMany(postModel, { inverse: 'author' }),
               })
-              .create(),
+              .build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -794,9 +794,9 @@ describe('Schema with Relationships', () => {
                   inverse: 'posts',
                 }),
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Alice',
@@ -837,7 +837,7 @@ describe('Schema with Relationships', () => {
                 .relationships({
                   posts: hasMany(postModel, { inverse: 'author' }),
                 })
-                .create(),
+                .build(),
               posts: collection()
                 .model(postModel)
                 .relationships({
@@ -846,9 +846,9 @@ describe('Schema with Relationships', () => {
                     inverse: 'posts',
                   }),
                 })
-                .create(),
+                .build(),
             })
-            .setup();
+            .build();
         }).not.toThrow();
       });
     });
@@ -869,7 +869,7 @@ describe('Schema with Relationships', () => {
                   inverse: null, // This one should NOT sync
                 }),
               })
-              .create(),
+              .build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -882,9 +882,9 @@ describe('Schema with Relationships', () => {
                   inverse: 'reviewedPosts',
                 }),
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Alice',
@@ -947,7 +947,7 @@ describe('Schema with Relationships', () => {
                 .relationships({
                   posts: hasMany(postModel), // Auto-detect
                 })
-                .create(),
+                .build(),
               posts: collection()
                 .model(postModel)
                 .relationships({
@@ -956,9 +956,9 @@ describe('Schema with Relationships', () => {
                     inverse: null,
                   }), // Disabled
                 })
-                .create(),
+                .build(),
             })
-            .setup();
+            .build();
         }).not.toThrow();
       });
     });
@@ -973,15 +973,15 @@ describe('Schema with Relationships', () => {
                 .relationships({
                   posts: hasMany(postModel, { inverse: 'nonexistent' }),
                 })
-                .create(),
+                .build(),
               posts: collection()
                 .model(postModel)
                 .relationships({
                   author: belongsTo(userModel),
                 })
-                .create(),
+                .build(),
             })
-            .setup();
+            .build();
         }).toThrow(/Invalid inverse relationship.*'nonexistent'/);
       });
 
@@ -994,16 +994,16 @@ describe('Schema with Relationships', () => {
                 .relationships({
                   posts: hasMany(postModel, { inverse: 'comments' }),
                 })
-                .create(),
+                .build(),
               posts: collection()
                 .model(postModel)
                 .relationships({
                   comments: hasMany(commentModel),
                 })
-                .create(),
-              comments: collection().model(commentModel).create(),
+                .build(),
+              comments: collection().model(commentModel).build(),
             })
-            .setup();
+            .build();
         }).toThrow(/Invalid inverse relationship/);
       });
 
@@ -1017,15 +1017,15 @@ describe('Schema with Relationships', () => {
                 .relationships({
                   posts: hasMany(postModel, { inverse: 'author' }),
                 })
-                .create(),
+                .build(),
               posts: collection()
                 .model(postModel)
                 .relationships({
                   author: belongsTo(userModel, { inverse: null }),
                 })
-                .create(),
+                .build(),
             })
-            .setup();
+            .build();
         }).not.toThrow();
       });
     });
@@ -1040,15 +1040,15 @@ describe('Schema with Relationships', () => {
               .relationships({
                 posts: hasMany(postModel), // No inverse option = auto-detect
               })
-              .create(),
+              .build(),
             posts: collection()
               .model(postModel)
               .relationships({
                 author: belongsTo(userModel, { foreignKey: 'authorId' }), // No inverse option = auto-detect
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         expect(testSchema).toBeDefined();
       });

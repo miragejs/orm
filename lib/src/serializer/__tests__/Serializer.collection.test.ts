@@ -33,14 +33,14 @@ const userModel = model()
   .name('user')
   .collection('users')
   .attrs<UserAttrs>()
-  .create();
+  .build();
 
 const postModel = model()
   .name('post')
   .collection('posts')
   .attrs<PostAttrs>()
   .json<PostJSON, PostJSON[]>()
-  .create();
+  .build();
 
 describe('Serializer - Collection serialization', () => {
   describe('Basic collection serialization', () => {
@@ -50,9 +50,9 @@ describe('Serializer - Collection serialization', () => {
           posts: collection()
             .model(postModel)
             .serializer({ select: ['id', 'title'] })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       testSchema.posts.create({
         title: 'First Post',
@@ -80,16 +80,16 @@ describe('Serializer - Collection serialization', () => {
         .collection('posts')
         .attrs<PostAttrs>()
         .json<PostJSON, PostsJSON>()
-        .create();
+        .build();
 
       const testSchema = schema()
         .collections({
           posts: collection()
             .model(rootPostModel)
             .serializer({ select: ['id', 'title'], root: true })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       testSchema.posts.create({
         title: 'First Post',
@@ -119,16 +119,16 @@ describe('Serializer - Collection serialization', () => {
         .collection('posts')
         .attrs<PostAttrs>()
         .json<PostJSON, PostsJSON>()
-        .create();
+        .build();
 
       const testSchema = schema()
         .collections({
           posts: collection()
             .model(rootPostModel)
             .serializer({ select: ['id', 'title'], root: true })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       const posts = testSchema.posts.all();
       const json: PostsJSON = posts.toJSON();
@@ -151,7 +151,7 @@ describe('Serializer - Collection serialization', () => {
               with: ['posts'],
               relationsMode: 'embedded',
             })
-            .create(),
+            .build(),
           posts: collection()
             .model(postModel)
             .relationships({
@@ -159,9 +159,9 @@ describe('Serializer - Collection serialization', () => {
                 foreignKey: 'authorId',
               }),
             })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       const user1 = testSchema.users.create({
         name: 'Jack',
@@ -229,7 +229,7 @@ describe('Serializer - Collection serialization', () => {
               relationsMode: 'sideLoaded',
               root: true,
             })
-            .create(),
+            .build(),
           posts: collection()
             .model(postModel)
             .relationships({
@@ -237,9 +237,9 @@ describe('Serializer - Collection serialization', () => {
                 foreignKey: 'authorId',
               }),
             })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       const user = testSchema.users.create({
         name: 'Kate',
@@ -282,9 +282,9 @@ describe('Serializer - Collection serialization', () => {
             users: collection()
               .model(userModel)
               .serializer({ select: ['id', 'name', 'email'] })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         testSchema.users.create({
           name: 'Alice',
@@ -314,9 +314,9 @@ describe('Serializer - Collection serialization', () => {
             users: collection()
               .model(userModel)
               .serializer({ select: ['id', 'name', 'email'] })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         testSchema.users.create({
           name: 'Alice',
@@ -344,9 +344,9 @@ describe('Serializer - Collection serialization', () => {
             users: collection()
               .model(userModel)
               .serializer({ select: ['id', 'name'], root: false })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         testSchema.users.create({
           name: 'Alice',
@@ -376,9 +376,9 @@ describe('Serializer - Collection serialization', () => {
             users: collection()
               .model(userModel)
               .serializer({ select: ['id', 'name'], root: 'users' })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         testSchema.users.create({
           name: 'Alice',
@@ -400,9 +400,9 @@ describe('Serializer - Collection serialization', () => {
             users: collection()
               .model(userModel)
               .serializer({ root: false })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         testSchema.users.create({
           name: 'Alice',
@@ -427,9 +427,9 @@ describe('Serializer - Collection serialization', () => {
       it('should return raw attributes when no serializer is configured', () => {
         const testSchema = schema()
           .collections({
-            users: collection().model(userModel).create(),
+            users: collection().model(userModel).build(),
           })
-          .setup();
+          .build();
 
         testSchema.users.create({
           name: 'Alice',
@@ -464,9 +464,9 @@ describe('Serializer - Collection serialization', () => {
       it('should ignore options when no serializer is configured', () => {
         const testSchema = schema()
           .collections({
-            users: collection().model(userModel).create(),
+            users: collection().model(userModel).build(),
           })
-          .setup();
+          .build();
 
         testSchema.users.create({
           name: 'Alice',
@@ -493,9 +493,9 @@ describe('Serializer - Collection serialization', () => {
             users: collection()
               .model(userModel)
               .serializer({ select: ['id', 'name'], root: true })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const users = testSchema.users.all();
         const json = users.serialize();

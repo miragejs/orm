@@ -43,12 +43,12 @@ const userModel = model()
   .name('user')
   .collection('users')
   .attrs<UserAttrs>()
-  .create();
+  .build();
 const postModel = model()
   .name('post')
   .collection('posts')
   .attrs<PostAttrs>()
-  .create();
+  .build();
 
 // Test model types
 type UserModel = typeof userModel;
@@ -473,7 +473,7 @@ test('FactoryBuilder.traits() should accept schema-defined traits', () => {
 
   // Verify it returns a builder
   expectTypeOf(builderWithAdmin).toBeObject();
-  expectTypeOf(builderWithAdmin.create).toBeFunction();
+  expectTypeOf(builderWithAdmin.build).toBeFunction();
 
   // Should accept schema-defined trait 'premium'
   const builderWithPremium = builder.traits({
@@ -509,7 +509,7 @@ test('FactoryBuilder.traits() should allow custom traits alongside schema traits
   });
 
   expectTypeOf(builderWithCustom).toBeObject();
-  expectTypeOf(builderWithCustom.create).toBeFunction();
+  expectTypeOf(builderWithCustom.build).toBeFunction();
 
   // Should allow mixing schema and custom traits
   const builderWithMixed = builder.traits({
@@ -534,7 +534,7 @@ test('FactoryBuilder.traits() should work without schema-defined traits', () => 
   });
 
   expectTypeOf(builderWithAnyTraits).toBeObject();
-  expectTypeOf(builderWithAnyTraits.create).toBeFunction();
+  expectTypeOf(builderWithAnyTraits.build).toBeFunction();
 });
 
 test('FactoryBuilder.traits() should preserve trait names through chaining', () => {
@@ -555,7 +555,7 @@ test('FactoryBuilder.traits() should preserve trait names through chaining', () 
   // Verify builder has correct methods
   expectTypeOf(builder1).toBeObject();
   expectTypeOf(builder1.traits).toBeFunction();
-  expectTypeOf(builder1.create).toBeFunction();
+  expectTypeOf(builder1.build).toBeFunction();
 
   const builder2 = builder1.traits({
     premium: { role: 'premium' },
@@ -563,10 +563,10 @@ test('FactoryBuilder.traits() should preserve trait names through chaining', () 
 
   // Verify chained builder also has correct methods
   expectTypeOf(builder2).toBeObject();
-  expectTypeOf(builder2.create).toBeFunction();
+  expectTypeOf(builder2.build).toBeFunction();
 });
 
-test('FactoryBuilder.create() should return Factory with correct trait types', () => {
+test('FactoryBuilder.build() should return Factory with correct trait types', () => {
   type SchemaWithTraits = {
     users: CollectionConfig<
       UserModel,
@@ -585,7 +585,7 @@ test('FactoryBuilder.create() should return Factory with correct trait types', (
       admin: { role: 'admin' },
       premium: { role: 'premium' },
     })
-    .create();
+    .build();
 
   // Factory should have the correct trait types
   expectTypeOf(userFactory).toMatchTypeOf<

@@ -40,17 +40,17 @@ const userModel = model()
   .name('user')
   .collection('users')
   .attrs<UserAttrs>()
-  .create();
+  .build();
 const postModel = model()
   .name('post')
   .collection('posts')
   .attrs<PostAttrs>()
-  .create();
+  .build();
 const commentModel = model()
   .name('comment')
   .collection('comments')
   .attrs<CommentAttrs>()
-  .create();
+  .build();
 
 // Test schema type
 type TestSchema = {

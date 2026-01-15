@@ -26,17 +26,17 @@ export const userModel = model()
   .name('user')
   .collection('users')
   .attrs<UserAttrs>()
-  .create();
+  .build();
 export const postModel = model()
   .name('post')
   .collection('posts')
   .attrs<PostAttrs>()
-  .create();
+  .build();
 export const commentModel = model()
   .name('comment')
   .collection('comments')
   .attrs<CommentAttrs>()
-  .create();
+  .build();
 
 // Define test model types
 export type UserModel = typeof userModel;
@@ -55,7 +55,7 @@ export const userFactory = factory()
       email: 'admin@example.com',
     },
   })
-  .create();
+  .build();
 
 export const postFactory = factory()
   .model(postModel)
@@ -63,14 +63,14 @@ export const postFactory = factory()
     content: () => 'This is a test post',
     title: () => 'Hello World',
   })
-  .create();
+  .build();
 
 export const commentFactory = factory()
   .model(commentModel)
   .attrs({
     content: () => 'Great post!',
   })
-  .create();
+  .build();
 
 // Create post identity manager config (reused across tests)
 export const postIdentityManagerConfig: IdentityManagerConfig<number> = {

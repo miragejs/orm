@@ -37,14 +37,14 @@ const userModel = model()
   .collection('users')
   .attrs<UserAttrs>()
   .json<UserJSON>()
-  .create();
+  .build();
 
 const postModel = model()
   .name('post')
   .collection('posts')
   .attrs<PostAttrs>()
   .json<PostJSON>()
-  .create();
+  .build();
 
 // Create test model types
 type UserModel = typeof userModel;
@@ -78,15 +78,15 @@ const testSchema = schema()
       .relationships({
         posts: relations.hasMany(postModel),
       })
-      .create(),
+      .build(),
     posts: collection()
       .model(postModel)
       .relationships({
         author: relations.belongsTo(userModel, { foreignKey: 'authorId' }),
       })
-      .create(),
+      .build(),
   })
-  .setup();
+  .build();
 
 describe('Model', () => {
   beforeEach(() => {

@@ -27,7 +27,7 @@ test('SerializerConfig should accept complete configuration', () => {
       email: string;
       age: number;
     }>()
-    .create();
+    .build();
 
   const options: SerializerConfig<typeof userModel> = {
     select: ['id', 'name', 'email'],
@@ -48,7 +48,7 @@ test('DataSerializerOptions should work with select', () => {
       email: string;
       age: number;
     }>()
-    .create();
+    .build();
 
   const options: DataSerializerOptions<typeof userModel> = {
     select: ['id', 'name', 'email'],
@@ -69,7 +69,7 @@ test('DataSerializerOptions should work with with for relationships', () => {
       content: string;
       published: boolean;
     }>()
-    .create();
+    .build();
 
   const options: DataSerializerOptions<typeof postModel> = {
     select: ['id', 'title', 'content'],
@@ -91,7 +91,7 @@ test('SerializerConfig should work with partial select', () => {
       email: string;
       age: number;
     }>()
-    .create();
+    .build();
 
   const options: SerializerConfig<typeof userModel> = {
     select: ['id', 'name'],
@@ -110,7 +110,7 @@ test('SerializerConfig should work with root and relationsMode options', () => {
       content: string;
       published: boolean;
     }>()
-    .create();
+    .build();
 
   const options: SerializerConfig<typeof postModel> = {
     root: 'data',
@@ -132,10 +132,10 @@ test('Model.toJSON() should return model attrs by default (no serializer)', () =
     .name('user')
     .collection('users')
     .attrs<UserAttrs>()
-    .create();
+    .build();
 
-  const userCollection = collection().model(userModel).create();
-  const testSchema = schema().collections({ users: userCollection }).setup();
+  const userCollection = collection().model(userModel).build();
+  const testSchema = schema().collections({ users: userCollection }).build();
 
   const user = testSchema.users.create({
     name: 'John',
@@ -166,13 +166,13 @@ test('Model.toJSON() should return UserJSON when defined via .json()', () => {
     .collection('users')
     .attrs<UserAttrs>()
     .json<UserJSON>() // Define serialized type
-    .create();
+    .build();
 
   const userCollection = collection()
     .model(userModel)
     .serializer({ select: ['id', 'name', 'email'] })
-    .create();
-  const testSchema = schema().collections({ users: userCollection }).setup();
+    .build();
+  const testSchema = schema().collections({ users: userCollection }).build();
 
   const user = testSchema.users.create({
     name: 'John',
@@ -207,13 +207,13 @@ test('Model.toJSON() should return root-wrapped type when defined via .json()', 
     .collection('users')
     .attrs<UserAttrs>()
     .json<UserRootJSON>() // Define root-wrapped serialized type
-    .create();
+    .build();
 
   const userCollection = collection()
     .model(userModel)
     .serializer({ select: ['id', 'name', 'email'], root: true })
-    .create();
-  const testSchema = schema().collections({ users: userCollection }).setup();
+    .build();
+  const testSchema = schema().collections({ users: userCollection }).build();
 
   const user = testSchema.users.create({
     name: 'John',
@@ -243,13 +243,13 @@ test('ModelCollection.toJSON() should return PostJSON[] when defined via .json()
     .collection('posts')
     .attrs<PostAttrs>()
     .json<PostJSON, PostJSON[]>() // Define serialized types for model and collection
-    .create();
+    .build();
 
   const postCollection = collection()
     .model(postModel)
     .serializer({ select: ['id', 'title'] })
-    .create();
-  const testSchema = schema().collections({ posts: postCollection }).setup();
+    .build();
+  const testSchema = schema().collections({ posts: postCollection }).build();
 
   testSchema.posts.create({
     title: 'Post 1',
@@ -284,13 +284,13 @@ test('ModelCollection.toJSON() should return root-wrapped type when defined via 
     .collection('posts')
     .attrs<PostAttrs>()
     .json<PostJSON, PostsJSON>() // Define serialized types for model and collection with root
-    .create();
+    .build();
 
   const postCollection = collection()
     .model(postModel)
     .serializer({ select: ['id', 'title'], root: true })
-    .create();
-  const testSchema = schema().collections({ posts: postCollection }).setup();
+    .build();
+  const testSchema = schema().collections({ posts: postCollection }).build();
 
   testSchema.posts.create({
     title: 'Post 1',
@@ -322,7 +322,7 @@ test('CollectionBuilder.serializer() should preserve serializer type with instan
     .collection('users')
     .attrs<UserAttrs>()
     .json<UserJSON>()
-    .create();
+    .build();
 
   const serializer = new Serializer<
     typeof userModel,
@@ -334,7 +334,7 @@ test('CollectionBuilder.serializer() should preserve serializer type with instan
 
   const builder = collection().model(userModel).serializer(serializer);
 
-  const config = builder.create();
+  const config = builder.build();
   expectTypeOf(config.serializer).toEqualTypeOf<
     SerializerConfig<typeof userModel> | typeof serializer | undefined
   >();
@@ -352,13 +352,13 @@ test('CollectionBuilder.serializer() should infer Serializer type from config', 
     .name('user')
     .collection('users')
     .attrs<UserAttrs>()
-    .create();
+    .build();
 
   const builder = collection()
     .model(userModel)
     .serializer({ select: ['id', 'name', 'email'] });
 
-  const config = builder.create();
+  const config = builder.build();
 
   expectTypeOf(config.serializer).toEqualTypeOf<
     | SerializerConfig<typeof userModel>
@@ -386,13 +386,13 @@ test('Serializer.serialize() should accept model instances', () => {
     .collection('users')
     .attrs<UserAttrs>()
     .json<UserJSON>()
-    .create();
+    .build();
 
   const userCollection = collection()
     .model(userModel)
     .serializer({ select: ['id', 'name', 'email'] })
-    .create();
-  const testSchema = schema().collections({ users: userCollection }).setup();
+    .build();
+  const testSchema = schema().collections({ users: userCollection }).build();
 
   const user = testSchema.users.create({
     name: 'John',
@@ -423,7 +423,7 @@ test('Serializer instance can serialize models from different collections', () =
     .collection('users')
     .attrs<UserAttrs>()
     .json<UserJSON>()
-    .create();
+    .build();
 
   const serializer = new Serializer<
     typeof userModel,
@@ -436,18 +436,18 @@ test('Serializer instance can serialize models from different collections', () =
   const collection1 = collection()
     .model(userModel)
     .serializer(serializer)
-    .create();
+    .build();
   const collection2 = collection()
     .model(userModel)
     .serializer(serializer)
-    .create();
+    .build();
 
   const testSchema = schema()
     .collections({
       users: collection1,
       admins: collection2,
     })
-    .setup();
+    .build();
 
   const user = testSchema.users.create({
     name: 'John',
@@ -475,13 +475,13 @@ test('Serializer.serializeAttrs() should return Record<string, unknown>', () => 
     .name('user')
     .collection('users')
     .attrs<UserAttrs>()
-    .create();
+    .build();
 
   const userCollection = collection()
     .model(userModel)
     .serializer({ select: ['id', 'name'] })
-    .create();
-  const testSchema = schema().collections({ users: userCollection }).setup();
+    .build();
+  const testSchema = schema().collections({ users: userCollection }).build();
 
   const user = testSchema.users.create({
     name: 'John',
@@ -503,13 +503,13 @@ test('Serializer.serializeCollectionAttrs() should return Record<string, unknown
     .name('user')
     .collection('users')
     .attrs<UserAttrs>()
-    .create();
+    .build();
 
   const userCollection = collection()
     .model(userModel)
     .serializer({ select: ['id', 'name'] })
-    .create();
-  const testSchema = schema().collections({ users: userCollection }).setup();
+    .build();
+  const testSchema = schema().collections({ users: userCollection }).build();
 
   testSchema.users.create({ name: 'John', email: 'john@example.com' });
   testSchema.users.create({ name: 'Jane', email: 'jane@example.com' });
@@ -530,13 +530,13 @@ test('Serializer.serializeModel() should return Record<string, unknown>', () => 
     .name('user')
     .collection('users')
     .attrs<UserAttrs>()
-    .create();
+    .build();
 
   const userCollection = collection()
     .model(userModel)
     .serializer({ select: ['id', 'name'] })
-    .create();
-  const testSchema = schema().collections({ users: userCollection }).setup();
+    .build();
+  const testSchema = schema().collections({ users: userCollection }).build();
 
   const user = testSchema.users.create({
     name: 'John',
@@ -558,13 +558,13 @@ test('Serializer.serializeCollectionModels() should return Record<string, unknow
     .name('user')
     .collection('users')
     .attrs<UserAttrs>()
-    .create();
+    .build();
 
   const userCollection = collection()
     .model(userModel)
     .serializer({ select: ['id', 'name'] })
-    .create();
-  const testSchema = schema().collections({ users: userCollection }).setup();
+    .build();
+  const testSchema = schema().collections({ users: userCollection }).build();
 
   testSchema.users.create({ name: 'John', email: 'john@example.com' });
   testSchema.users.create({ name: 'Jane', email: 'jane@example.com' });
@@ -593,13 +593,13 @@ test('Model instance should have public serializer property', () => {
     .collection('users')
     .attrs<UserAttrs>()
     .json<UserJSON>()
-    .create();
+    .build();
 
   const userCollection = collection()
     .model(userModel)
     .serializer({ select: ['id', 'name'] })
-    .create();
-  const testSchema = schema().collections({ users: userCollection }).setup();
+    .build();
+  const testSchema = schema().collections({ users: userCollection }).build();
 
   const user = testSchema.users.create({
     name: 'John',
@@ -634,13 +634,13 @@ test('ModelCollection should have public serializer property', () => {
     .collection('users')
     .attrs<UserAttrs>()
     .json<UserJSON>()
-    .create();
+    .build();
 
   const userCollection = collection()
     .model(userModel)
     .serializer({ select: ['id', 'name'] })
-    .create();
-  const testSchema = schema().collections({ users: userCollection }).setup();
+    .build();
+  const testSchema = schema().collections({ users: userCollection }).build();
 
   testSchema.users.create({ name: 'John', email: 'john@example.com' });
   const users = testSchema.users.all();
@@ -666,13 +666,13 @@ test('WithOption should infer relationship names from schema', () => {
     .name('post')
     .collection('posts')
     .attrs<PostAttrs>()
-    .create();
+    .build();
 
   const userModel = model()
     .name('user')
     .collection('users')
     .attrs<UserAttrs>()
-    .create();
+    .build();
 
   // Define relationships type for user
   type UserRelationships = {
@@ -708,13 +708,13 @@ test('WithOption should infer target model attributes for nested select', () => 
     .name('user')
     .collection('users')
     .attrs<UserAttrs>()
-    .create();
+    .build();
 
   const postModel = model()
     .name('post')
     .collection('posts')
     .attrs<PostAttrs>()
-    .create();
+    .build();
 
   // Define relationships type for user
   type UserRelationships = {
@@ -742,7 +742,7 @@ test('NestedSerializerOptions should type select based on target model', () => {
     .name('post')
     .collection('posts')
     .attrs<PostAttrs>()
-    .create();
+    .build();
 
   // NestedSerializerOptions for Post model
   type PostNestedOptions = NestedSerializerOptions<typeof postModel>;
@@ -768,13 +768,13 @@ test('SerializerConfig with should infer relationships from schema', () => {
     .name('post')
     .collection('posts')
     .attrs<PostAttrs>()
-    .create();
+    .build();
 
   const userModel = model()
     .name('user')
     .collection('users')
     .attrs<UserAttrs>()
-    .create();
+    .build();
 
   const userCollection = collection()
     .model(userModel)
@@ -788,21 +788,21 @@ test('SerializerConfig with should infer relationships from schema', () => {
       },
       relationsMode: 'embedded',
     })
-    .create();
+    .build();
 
   const postCollection = collection()
     .model(postModel)
     .relationships({
       author: relations.belongsTo(userModel, { foreignKey: 'authorId' }),
     })
-    .create();
+    .build();
 
   const testSchema = schema()
     .collections({
       users: userCollection,
       posts: postCollection,
     })
-    .setup();
+    .build();
 
   // The schema should be set up correctly with typed serializer
   expectTypeOf(testSchema.users.serializer).not.toBeUndefined();
@@ -822,7 +822,7 @@ test('SelectOption should accept array format', () => {
     .name('user')
     .collection('users')
     .attrs<UserAttrs>()
-    .create();
+    .build();
 
   // Array format: include only specified attributes - should type check
   const options: SerializerConfig<typeof userModel> = {
@@ -844,7 +844,7 @@ test('SelectOption should accept object exclusion format', () => {
     .name('user')
     .collection('users')
     .attrs<UserAttrs>()
-    .create();
+    .build();
 
   // Object exclusion format: all false values - should type check
   const options: SerializerConfig<typeof userModel> = {
@@ -866,7 +866,7 @@ test('SelectOption should accept object inclusion format', () => {
     .name('user')
     .collection('users')
     .attrs<UserAttrs>()
-    .create();
+    .build();
 
   // Object inclusion format: include only true keys - should type check
   const options: SerializerConfig<typeof userModel> = {
@@ -888,7 +888,7 @@ test('SelectOption should accept mixed object format', () => {
     .name('user')
     .collection('users')
     .attrs<UserAttrs>()
-    .create();
+    .build();
 
   // Mixed format: include true keys, exclude false keys - should type check
   const options: SerializerConfig<typeof userModel> = {
@@ -932,7 +932,7 @@ test('WithOption should accept object with nested options', () => {
     .name('post')
     .collection('posts')
     .attrs<PostAttrs>()
-    .create();
+    .build();
 
   type UserRelationships = {
     posts: HasMany<typeof postModel, 'postIds'>;
@@ -956,13 +956,13 @@ test('WithOption should accept mixed object values', () => {
     .name('post')
     .collection('posts')
     .attrs<PostAttrs>()
-    .create();
+    .build();
 
   const profileModel = model()
     .name('profile')
     .collection('profiles')
     .attrs<ProfileAttrs>()
-    .create();
+    .build();
 
   type UserRelationships = {
     posts: HasMany<typeof postModel, 'postIds'>;
@@ -984,7 +984,7 @@ test('WithOption nested options should support mode override', () => {
     .name('post')
     .collection('posts')
     .attrs<PostAttrs>()
-    .create();
+    .build();
 
   type UserRelationships = {
     posts: HasMany<typeof postModel, 'postIds'>;

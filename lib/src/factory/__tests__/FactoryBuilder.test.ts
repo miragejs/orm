@@ -22,7 +22,7 @@ const userModel = model()
   .name('user')
   .collection('users')
   .attrs<UserAttrs>()
-  .create();
+  .build();
 
 // Define test model type
 type UserModel = typeof userModel;
@@ -30,9 +30,9 @@ type UserModel = typeof userModel;
 // Create simple test schema for factory.build() calls
 const testSchema = schema()
   .collections({
-    users: collection().model(userModel).create(),
+    users: collection().model(userModel).build(),
   })
-  .setup();
+  .build();
 
 // Define test schema type
 type TestSchema = {
@@ -68,7 +68,7 @@ describe('FactoryBuilder', () => {
         .afterCreate((user) => {
           user.update({ createdAt: new Date('2024-01-01').toISOString() });
         })
-        .create();
+        .build();
 
       expect(userFactory).toBeInstanceOf(Factory);
       expect(userFactory.template).toBe(userModel);
@@ -110,7 +110,7 @@ describe('FactoryBuilder', () => {
       });
       expect(builderWithTraits).toBeInstanceOf(FactoryBuilder);
 
-      const finalFactory = builderWithTraits.create();
+      const finalFactory = builderWithTraits.build();
       expect(finalFactory).toBeInstanceOf(Factory);
     });
 
@@ -119,7 +119,7 @@ describe('FactoryBuilder', () => {
         .model(userModel)
         .attrs({ name: 'John', email: 'john@example.com' })
         .attrs({ role: 'user', createdAt: null })
-        .create();
+        .build();
 
       const attrs = userFactory.build(testSchema);
       expect(attrs).toMatchObject({
@@ -155,7 +155,7 @@ describe('FactoryBuilder', () => {
             createdAt: manager?.email,
           });
         })
-        .create();
+        .build();
 
       const attrs = userFactory.build(testSchema);
       const user = testSchema.users.new(attrs).save();
@@ -189,7 +189,7 @@ describe('FactoryBuilder', () => {
       // Should be different instances
       expect(builder1).not.toBe(builder2);
 
-      const testFactory = builder2.create();
+      const testFactory = builder2.build();
       const adminAttrs = testFactory.build(testSchema, 'admin');
       const premiumAttrs = testFactory.build(testSchema, 'premium');
 
@@ -217,7 +217,7 @@ describe('FactoryBuilder', () => {
           email: 'alice@example.com',
           role: 'user',
         })
-        .create();
+        .build();
 
       const attrs = userFactory.build(testSchema);
       expect(attrs).toMatchObject({
@@ -236,7 +236,7 @@ describe('FactoryBuilder', () => {
           email: (id) => `user${id}@example.com`,
           role: 'member',
         })
-        .create();
+        .build();
 
       const attrs = userFactory.build(testSchema);
       expect(attrs).toMatchObject({
@@ -253,7 +253,7 @@ describe('FactoryBuilder', () => {
         .attrs({ name: 'Charlie' })
         .attrs({ email: 'charlie@example.com' })
         .attrs({ role: 'guest' })
-        .create();
+        .build();
 
       const attrs = userFactory.build(testSchema);
       expect(attrs).toMatchObject({
@@ -271,7 +271,7 @@ describe('FactoryBuilder', () => {
         .name('post')
         .collection('posts')
         .attrs<{ id: string; title: string; authorId?: string }>()
-        .create();
+        .build();
 
       type PostTestSchema = {
         users: CollectionConfig<UserModel>;
@@ -284,7 +284,7 @@ describe('FactoryBuilder', () => {
         .associations({
           author: associations.create(userModel),
         })
-        .create();
+        .build();
 
       expect(postFactory).toBeInstanceOf(Factory);
       expect(postFactory.associations).toBeDefined();
@@ -301,7 +301,7 @@ describe('FactoryBuilder', () => {
           authorId?: string;
           editorId?: string;
         }>()
-        .create();
+        .build();
 
       type PostTestSchema = {
         users: CollectionConfig<UserModel>;
@@ -323,7 +323,7 @@ describe('FactoryBuilder', () => {
             role: 'editor',
           }),
         })
-        .create();
+        .build();
 
       expect(postFactory).toBeInstanceOf(Factory);
       expect(postFactory.associations).toBeDefined();
@@ -346,7 +346,7 @@ describe('FactoryBuilder', () => {
         .traits({
           admin: { role: 'admin', email: (id) => `admin${id}@example.com` },
         })
-        .create();
+        .build();
 
       // Extend using static method
       const extendedBuilder = factory<TestSchema>().extend(baseFactory);
@@ -364,7 +364,7 @@ describe('FactoryBuilder', () => {
         .afterCreate((user) => {
           user.update({ processed: true });
         })
-        .create();
+        .build();
 
       // Test base factory still works
       const basicAttrs = baseFactory.build(testSchema);

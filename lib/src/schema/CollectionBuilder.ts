@@ -34,7 +34,7 @@ const SUPPORTED_RELATIONSHIP_TYPES = ['hasMany', 'belongsTo'];
  *   })
  *   .factory(userFactory)
  *   .identityManager({ initialCounter: '1' })
- *   .create();
+ *   .build();
  * ```
  */
 export default class CollectionBuilder<
@@ -90,7 +90,7 @@ export default class CollectionBuilder<
     // Validate model template structure
     if (!template || typeof template !== 'object') {
       throw new MirageError(
-        'Invalid model template. Expected a ModelTemplate object created with model().name(...).collection(...).create().',
+        'Invalid model template. Expected a ModelTemplate object created with model().name(...).collection(...).build().',
       );
     }
     if (!template.modelName) {
@@ -476,10 +476,10 @@ export default class CollectionBuilder<
   }
 
   /**
-   * Creates the final schema collection configuration.
+   * Builds the final schema collection configuration.
    * @returns The schema collection configuration
    */
-  create(): CollectionConfig<
+  build(): CollectionConfig<
     TTemplate,
     TRelationships,
     TFactory,
@@ -488,7 +488,7 @@ export default class CollectionBuilder<
   > {
     if (!this._template) {
       throw new MirageError(
-        'Model template must be set before creating collection. Call .model() first.',
+        'Model template must be set before building collection. Call .model() first.',
       );
     }
 
@@ -514,12 +514,12 @@ export default class CollectionBuilder<
  * const userCollection = collection<TestSchema>()
  *   .model(UserModel)
  *   .factory(userFactory)
- *   .create();
+ *   .build();
  *
  * // Schema-less collection
  * const userCollection = collection()
  *   .model(UserModel)
- *   .create();
+ *   .build();
  * ```
  */
 export function collection<

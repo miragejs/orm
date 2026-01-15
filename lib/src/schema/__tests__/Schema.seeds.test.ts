@@ -26,10 +26,10 @@ describe('Schema with Seeds', () => {
               schema.users.create({ name: 'John', email: 'john@example.com' });
               schema.users.create({ name: 'Jane', email: 'jane@example.com' });
             })
-            .create(),
-          posts: collection<TestSchema>().model(postModel).create(),
+            .build(),
+          posts: collection<TestSchema>().model(postModel).build(),
         })
-        .setup();
+        .build();
 
       beforeEach(() => {
         testSchema.db.emptyData();
@@ -79,10 +79,10 @@ describe('Schema with Seeds', () => {
                 });
               },
             })
-            .create(),
-          posts: collection<TestSchema>().model(postModel).create(),
+            .build(),
+          posts: collection<TestSchema>().model(postModel).build(),
         })
-        .setup();
+        .build();
 
       beforeEach(() => {
         testSchema.db.emptyData();
@@ -132,10 +132,10 @@ describe('Schema with Seeds', () => {
     describe('with no seeds configured', () => {
       const testSchema = schema()
         .collections({
-          users: collection<TestSchema>().model(userModel).create(),
-          posts: collection<TestSchema>().model(postModel).create(),
+          users: collection<TestSchema>().model(userModel).build(),
+          posts: collection<TestSchema>().model(postModel).build(),
         })
-        .setup();
+        .build();
 
       beforeEach(() => {
         testSchema.db.emptyData();
@@ -170,10 +170,10 @@ describe('Schema with Seeds', () => {
                 });
               },
             })
-            .create(),
-          posts: collection<TestSchema>().model(postModel).create(),
+            .build(),
+          posts: collection<TestSchema>().model(postModel).build(),
         })
-        .setup();
+        .build();
 
       beforeEach(() => {
         testSchema.db.emptyData();
@@ -198,7 +198,7 @@ describe('Schema with Seeds', () => {
             schema.users.create({ name: 'John', email: 'john@example.com' });
             schema.users.create({ name: 'Jane', email: 'jane@example.com' });
           })
-          .create(),
+          .build(),
         posts: collection<TestSchema>()
           .model(postModel)
           .seeds((schema) => {
@@ -206,9 +206,9 @@ describe('Schema with Seeds', () => {
             schema.posts.create({ title: 'Post 2', content: 'Content 2' });
             schema.posts.create({ title: 'Post 3', content: 'Content 3' });
           })
-          .create(),
+          .build(),
       })
-      .setup();
+      .build();
 
     beforeEach(() => {
       testSchema.db.emptyData();
@@ -232,10 +232,10 @@ describe('Schema with Seeds', () => {
             .seeds((schema) => {
               schema.users.create({ name: 'User', email: 'user@example.com' });
             })
-            .create(),
-          posts: collection<TestSchema>().model(postModel).create(),
+            .build(),
+          posts: collection<TestSchema>().model(postModel).build(),
         })
-        .setup();
+        .build();
 
       await mixedSchema.loadSeeds();
 
@@ -308,7 +308,7 @@ describe('Schema with Seeds', () => {
                 });
               },
             })
-            .create(),
+            .build(),
           posts: collection<TestSchema>()
             .model(postModel)
             .seeds({
@@ -325,9 +325,9 @@ describe('Schema with Seeds', () => {
                 });
               },
             })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       // Load only default scenarios using object syntax
       await testSchema.loadSeeds({ onlyDefault: true });
@@ -360,7 +360,7 @@ describe('Schema with Seeds', () => {
                 });
               },
             })
-            .create(),
+            .build(),
           posts: collection<TestSchema>()
             .model(postModel)
             .seeds({
@@ -368,9 +368,9 @@ describe('Schema with Seeds', () => {
                 schema.posts.create({ title: 'Post', content: 'Content' });
               },
             })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       // Load only default scenario for users using object syntax
       await testSchema.loadSeeds({
@@ -398,9 +398,9 @@ describe('Schema with Seeds', () => {
                 email: 'function@example.com',
               });
             })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       // Load with onlyDefault - should work with function seeds (treated as 'default')
       await testSchema.loadSeeds({ onlyDefault: true });
@@ -428,9 +428,9 @@ describe('Schema with Seeds', () => {
                   email: 'jane@example.com',
                 });
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         // Load seeds first time
         await testSchema.users.loadSeeds();
@@ -452,9 +452,9 @@ describe('Schema with Seeds', () => {
                   email: 'john@example.com',
                 });
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         // Load seeds first time
         await testSchema.users.loadSeeds();
@@ -490,9 +490,9 @@ describe('Schema with Seeds', () => {
                   });
                 },
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         // Load basic scenario
         await testSchema.users.loadSeeds('basic');
@@ -526,9 +526,9 @@ describe('Schema with Seeds', () => {
                   });
                 },
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         // Load all scenarios
         await testSchema.users.loadSeeds();
@@ -558,9 +558,9 @@ describe('Schema with Seeds', () => {
                   });
                 },
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         // Load basic scenario only
         await testSchema.users.loadSeeds('basic');
@@ -584,9 +584,9 @@ describe('Schema with Seeds', () => {
                   });
                 },
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         // Load seeds
         await testSchema.users.loadSeeds('basic');
@@ -617,15 +617,15 @@ describe('Schema with Seeds', () => {
                   email: 'user@example.com',
                 });
               })
-              .create(),
+              .build(),
             posts: collection<TestSchema>()
               .model(postModel)
               .seeds((schema) => {
                 schema.posts.create({ title: 'Post', content: 'Content' });
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         // Load all seeds
         await testSchema.loadSeeds();

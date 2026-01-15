@@ -23,7 +23,7 @@ const userModel = model()
   .name('user')
   .collection('users')
   .attrs<UserAttrs>()
-  .create();
+  .build();
 
 // Define test model type
 type UserModel = typeof userModel;
@@ -31,9 +31,9 @@ type UserModel = typeof userModel;
 // Create simple schema for build() method dependency
 const testSchema = schema()
   .collections({
-    users: collection().model(userModel).create(),
+    users: collection().model(userModel).build(),
   })
-  .setup();
+  .build();
 
 type TestSchema = {
   users: CollectionConfig<UserModel>;

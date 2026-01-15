@@ -43,14 +43,14 @@ const userModel = model()
   .collection('users')
   .attrs<UserAttrs>()
   .json<UserJSON>()
-  .create();
+  .build();
 
 const postModel = model()
   .name('post')
   .collection('posts')
   .attrs<PostAttrs>()
   .json<PostJSON, PostJSON[]>()
-  .create();
+  .build();
 
 describe('Serializer', () => {
   describe('Serializer getters', () => {
@@ -74,7 +74,7 @@ describe('Serializer', () => {
         .collection('users')
         .attrs<UserAttrs>()
         .json<UserWithTimestampJSON>()
-        .create();
+        .build();
 
       class TimestampSerializer<
         TSchema extends SchemaCollections = SchemaCollections,
@@ -94,10 +94,10 @@ describe('Serializer', () => {
       const userCollection = collection()
         .model(customUserModel)
         .serializer(serializer)
-        .create();
+        .build();
       const testSchema = schema()
         .collections({ users: userCollection })
-        .setup();
+        .build();
 
       const user = testSchema.users.create({
         name: 'John Doe',
@@ -125,20 +125,20 @@ describe('Serializer', () => {
         .collection('users')
         .attrs<UserAttrs>()
         .json<UserRootJSON>()
-        .create();
+        .build();
 
       const testSchema = schema()
         .collections({
           users: collection()
             .model(rootUserModel)
             .serializer({ select: ['id', 'name', 'email'], root: 'user' })
-            .create(),
+            .build(),
           posts: collection()
             .model(postModel)
             .serializer({ select: ['id', 'title'] })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       const user = testSchema.users.create({
         name: 'John Doe',
@@ -176,11 +176,11 @@ describe('Serializer', () => {
         .name('user')
         .collection('users')
         .attrs<UserAttrs>()
-        .create();
-      const userCollection = collection().model(rawUserModel).create();
+        .build();
+      const userCollection = collection().model(rawUserModel).build();
       const testSchema = schema()
         .collections({ users: userCollection })
-        .setup();
+        .build();
 
       const user = testSchema.users.create({
         name: 'John Doe',
@@ -204,11 +204,11 @@ describe('Serializer', () => {
         .name('post')
         .collection('posts')
         .attrs<PostAttrs>()
-        .create();
-      const postCollection = collection().model(rawPostModel).create();
+        .build();
+      const postCollection = collection().model(rawPostModel).build();
       const testSchema = schema()
         .collections({ posts: postCollection })
-        .setup();
+        .build();
 
       testSchema.posts.create({
         title: 'First Post',
@@ -241,7 +241,7 @@ describe('Serializer', () => {
           .collection('users')
           .attrs<UserAttrs>()
           .json<UserAttrsJSON>()
-          .create();
+          .build();
 
         type TestUserModel = typeof testUserModel;
 
@@ -264,10 +264,10 @@ describe('Serializer', () => {
         const userCollection = collection<TestSchema>()
           .model(testUserModel)
           .serializer(serializer)
-          .create();
+          .build();
         const testSchema = schema()
           .collections({ users: userCollection })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Alice',
@@ -291,7 +291,7 @@ describe('Serializer', () => {
           .collection('users')
           .attrs<UserAttrs>()
           .json<UserAttrsJSON>()
-          .create();
+          .build();
 
         type TestUserModel = typeof testUserModel;
 
@@ -314,10 +314,10 @@ describe('Serializer', () => {
         const userCollection = collection<TestSchema>()
           .model(testUserModel)
           .serializer(serializer)
-          .create();
+          .build();
         const testSchema = schema()
           .collections({ users: userCollection })
-          .setup();
+          .build();
 
         testSchema.users.create({
           name: 'Alice',
@@ -351,7 +351,7 @@ describe('Serializer', () => {
           .collection('users')
           .attrs<UserAttrs>()
           .json<UserAttrsJSON>()
-          .create();
+          .build();
 
         type TestUserModel = typeof testUserModel;
 
@@ -374,10 +374,10 @@ describe('Serializer', () => {
         const userCollection = collection<TestSchema>()
           .model(testUserModel)
           .serializer(serializer)
-          .create();
+          .build();
         const testSchema = schema()
           .collections({ users: userCollection })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Alice',
@@ -405,7 +405,7 @@ describe('Serializer', () => {
           .collection('users')
           .attrs<UserAttrs>()
           .json<UserAttrsJSON>()
-          .create();
+          .build();
 
         type TestUserModel = typeof testUserModel;
 
@@ -428,10 +428,10 @@ describe('Serializer', () => {
         const userCollection = collection<TestSchema>()
           .model(testUserModel)
           .serializer(serializer)
-          .create();
+          .build();
         const testSchema = schema()
           .collections({ users: userCollection })
-          .setup();
+          .build();
 
         testSchema.users.create({
           name: 'Alice',

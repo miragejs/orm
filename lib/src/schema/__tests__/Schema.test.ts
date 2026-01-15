@@ -13,13 +13,13 @@ import {
 const userCollection = collection()
   .model(userModel)
   .factory(userFactory)
-  .create();
+  .build();
 
 const postCollection = collection()
   .model(postModel)
   .factory(postFactory)
   .identityManager(postIdentityManagerConfig)
-  .create();
+  .build();
 
 // Create test schema
 const testSchema = schema()
@@ -27,7 +27,7 @@ const testSchema = schema()
     users: userCollection,
     posts: postCollection,
   })
-  .setup();
+  .build();
 
 describe('Schema', () => {
   beforeEach(() => {
@@ -301,9 +301,9 @@ describe('Schema', () => {
     it('should not wrap when no serializer config is set', () => {
       const testSchema = schema()
         .collections({
-          users: collection().model(userModel).create(),
+          users: collection().model(userModel).build(),
         })
-        .setup();
+        .build();
 
       const user = testSchema.users.create({
         name: 'Charlie',
@@ -323,9 +323,9 @@ describe('Schema', () => {
           users: collection()
             .model(userModel)
             .serializer({ root: true })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       const user = testSchema.users.create({
         name: 'Alice',
@@ -343,9 +343,9 @@ describe('Schema', () => {
           users: collection()
             .model(userModel)
             .serializer({ root: 'userData' })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       const user = testSchema.users.create({
         name: 'Henry',
@@ -363,9 +363,9 @@ describe('Schema', () => {
           users: collection()
             .model(userModel)
             .serializer({ select: ['id', 'name'] })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       const user1 = testSchema.users.create({
         name: 'Kate',
@@ -390,9 +390,9 @@ describe('Schema', () => {
           users: collection()
             .model(userModel)
             .serializer({ select: [] })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       const user = testSchema.users.create({
         name: 'Paul',
@@ -413,9 +413,9 @@ describe('Schema', () => {
           users: collection()
             .model(userModel)
             .serializer({ root: 'userRecord', select: ['id', 'name'] })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       const user = testSchema.users.create({
         name: 'Rachel',

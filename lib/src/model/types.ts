@@ -40,7 +40,7 @@ export type DefaultModelAttrs = { id: string };
  * These hidden properties exist only in TypeScript's type system with zero runtime cost.
  *
  * Note: __attrs and __json are NOT defined in the base interface to avoid type pollution
- * when creating intersections. They are added via intersection types in ModelBuilder.create()
+ * when creating intersections. They are added via intersection types in ModelBuilder.build()
  * @template TModelName - The string literal type for the model name
  * @template TCollectionName - The string literal type for the collection name
  */

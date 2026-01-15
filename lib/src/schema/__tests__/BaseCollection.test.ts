@@ -25,12 +25,12 @@ const userModel = model()
   .name('user')
   .collection('users')
   .attrs<UserAttrs>()
-  .create();
+  .build();
 const postModel = model()
   .name('post')
   .collection('posts')
   .attrs<PostAttrs>()
-  .create();
+  .build();
 
 // Create test schema with collections
 const testSchema = schema()
@@ -40,15 +40,15 @@ const testSchema = schema()
       .relationships({
         posts: relations.hasMany(postModel),
       })
-      .create(),
+      .build(),
     posts: collection()
       .model(postModel)
       .relationships({
         author: relations.belongsTo(userModel, { foreignKey: 'authorId' }),
       })
-      .create(),
+      .build(),
   })
-  .setup();
+  .build();
 
 describe('BaseCollection', () => {
   describe('Records accessor', () => {

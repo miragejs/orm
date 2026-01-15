@@ -25,12 +25,12 @@ const userModel = model()
   .name('user')
   .collection('users')
   .attrs<UserAttrs>()
-  .create();
+  .build();
 const postModel = model()
   .name('post')
   .collection('posts')
   .attrs<PostAttrs>()
-  .create();
+  .build();
 
 // Create test factories
 const userFactory = factory()
@@ -39,7 +39,7 @@ const userFactory = factory()
     name: () => 'Test User',
     email: () => 'test@example.com',
   })
-  .create();
+  .build();
 
 const postFactory = factory()
   .model(postModel)
@@ -47,7 +47,7 @@ const postFactory = factory()
     title: () => 'Test Post',
     content: () => 'Test content',
   })
-  .create();
+  .build();
 
 // Create test identity manager configs
 const postIdentityManagerConfig: IdentityManagerConfig<number> = {
@@ -61,7 +61,7 @@ const userCollection = collection()
   .relationships({
     posts: relations.hasMany(postModel),
   })
-  .create();
+  .build();
 
 const postCollection = collection()
   .model(postModel)
@@ -70,7 +70,7 @@ const postCollection = collection()
     author: relations.belongsTo(userModel, { foreignKey: 'authorId' }),
   })
   .identityManager(postIdentityManagerConfig)
-  .create();
+  .build();
 
 describe('SchemaBuilder', () => {
   describe('Constructor', () => {
@@ -98,7 +98,7 @@ describe('SchemaBuilder', () => {
         .collections({
           users: userCollection,
         })
-        .setup();
+        .build();
 
       expect(schemaInstance).toBeDefined();
       expect(schemaInstance.db).toBeDefined();
@@ -110,7 +110,7 @@ describe('SchemaBuilder', () => {
           users: userCollection,
           posts: postCollection,
         })
-        .setup();
+        .build();
 
       expect(schemaInstance).toBeDefined();
       expect(schemaInstance.db).toBeDefined();
@@ -119,8 +119,8 @@ describe('SchemaBuilder', () => {
     it('should throw error when collections are not set', () => {
       const builder = schema();
 
-      expect(() => builder.setup()).toThrow(
-        'SchemaBuilder: collections are required. Call .collections() before .setup()',
+      expect(() => builder.build()).toThrow(
+        'SchemaBuilder: collections are required. Call .collections() before .build()',
       );
     });
 
@@ -130,7 +130,7 @@ describe('SchemaBuilder', () => {
           users: userCollection,
           posts: postCollection,
         })
-        .setup();
+        .build();
 
       const userSchemaCollection = schemaInstance.getCollection('users');
       const postSchemaCollection = schemaInstance.getCollection('posts');
@@ -145,7 +145,7 @@ describe('SchemaBuilder', () => {
           users: userCollection,
           posts: postCollection,
         })
-        .setup();
+        .build();
 
       expect(schemaInstance.users).toBeDefined();
       expect(schemaInstance.posts).toBeDefined();
@@ -163,12 +163,12 @@ describe('SchemaBuilder', () => {
       const schema1 = schema()
         .collections(collections)
         .logging({ enabled: false, level: 'info' })
-        .setup();
+        .build();
       // Order 2: logging -> collections
       const schema2 = schema()
         .logging({ enabled: false, level: 'info' })
         .collections(collections)
-        .setup();
+        .build();
 
       expect(schema1.db).toBeDefined();
       expect(schema2.db).toBeDefined();
@@ -185,7 +185,7 @@ describe('SchemaBuilder', () => {
             .relationships({
               posts: relations.hasMany(postModel),
             })
-            .create(),
+            .build(),
           posts: collection()
             .model(postModel)
             .factory(postFactory)
@@ -195,9 +195,9 @@ describe('SchemaBuilder', () => {
               }),
             })
             .identityManager(postIdentityManagerConfig)
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       expect(appSchema).toBeDefined();
 
@@ -217,7 +217,7 @@ describe('SchemaBuilder', () => {
             .relationships({
               posts: relations.hasMany(postModel),
             })
-            .create(),
+            .build(),
           posts: collection()
             .model(postModel)
             .relationships({
@@ -225,9 +225,9 @@ describe('SchemaBuilder', () => {
                 foreignKey: 'authorId',
               }),
             })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       expect(complexSchema).toBeDefined();
 
@@ -242,24 +242,24 @@ describe('SchemaBuilder', () => {
   describe('Validation', () => {
     it('should throw error for empty collections', () => {
       expect(() => {
-        schema().collections({}).setup();
+        schema().collections({}).build();
       }).toThrow(MirageError);
 
       expect(() => {
-        schema().collections({}).setup();
+        schema().collections({}).build();
       }).toThrow('Schema must have at least one collection');
     });
 
     it('should throw error for reserved collection name: db', () => {
-      const testModel = model().name('user').collection('users').create();
-      const testCollection = collection().model(testModel).create();
+      const testModel = model().name('user').collection('users').build();
+      const testCollection = collection().model(testModel).build();
 
       expect(() => {
         schema()
           .collections({
             db: testCollection,
           })
-          .setup();
+          .build();
       }).toThrow(MirageError);
 
       expect(() => {
@@ -267,61 +267,61 @@ describe('SchemaBuilder', () => {
           .collections({
             db: testCollection,
           })
-          .setup();
+          .build();
       }).toThrow(
         `Collection name 'db' conflicts with existing Schema property or method`,
       );
     });
 
     it('should throw error for reserved collection name: getCollection', () => {
-      const testModel = model().name('user').collection('users').create();
-      const testCollection = collection().model(testModel).create();
+      const testModel = model().name('user').collection('users').build();
+      const testCollection = collection().model(testModel).build();
 
       expect(() => {
         schema()
           .collections({
             getCollection: testCollection,
           })
-          .setup();
+          .build();
       }).toThrow('getCollection');
     });
 
     it('should throw error for reserved collection name: loadSeeds', () => {
-      const testModel = model().name('user').collection('users').create();
-      const testCollection = collection().model(testModel).create();
+      const testModel = model().name('user').collection('users').build();
+      const testCollection = collection().model(testModel).build();
 
       expect(() => {
         schema()
           .collections({
             loadSeeds: testCollection,
           })
-          .setup();
+          .build();
       }).toThrow('loadSeeds');
     });
 
     it('should throw error for reserved collection name: loadFixtures', () => {
-      const testModel = model().name('user').collection('users').create();
-      const testCollection = collection().model(testModel).create();
+      const testModel = model().name('user').collection('users').build();
+      const testCollection = collection().model(testModel).build();
 
       expect(() => {
         schema()
           .collections({
             loadFixtures: testCollection,
           })
-          .setup();
+          .build();
       }).toThrow('loadFixtures');
     });
 
     it('should throw error for invalid JavaScript identifier', () => {
-      const testModel = model().name('user').collection('users').create();
-      const testCollection = collection().model(testModel).create();
+      const testModel = model().name('user').collection('users').build();
+      const testCollection = collection().model(testModel).build();
 
       expect(() => {
         schema()
           .collections({
             '123invalid': testCollection,
           })
-          .setup();
+          .build();
       }).toThrow(MirageError);
 
       expect(() => {
@@ -329,26 +329,26 @@ describe('SchemaBuilder', () => {
           .collections({
             '123invalid': testCollection,
           })
-          .setup();
+          .build();
       }).toThrow('is not a valid JavaScript identifier');
     });
 
     it('should throw error for collection name with spaces', () => {
-      const testModel = model().name('user').collection('users').create();
-      const testCollection = collection().model(testModel).create();
+      const testModel = model().name('user').collection('users').build();
+      const testCollection = collection().model(testModel).build();
 
       expect(() => {
         schema()
           .collections({
             'user collection': testCollection,
           })
-          .setup();
+          .build();
       }).toThrow('is not a valid JavaScript identifier');
     });
 
     it('should allow valid collection names', () => {
-      const testModel = model().name('user').collection('users').create();
-      const testCollection = collection().model(testModel).create();
+      const testModel = model().name('user').collection('users').build();
+      const testCollection = collection().model(testModel).build();
 
       expect(() => {
         schema()
@@ -359,7 +359,7 @@ describe('SchemaBuilder', () => {
             user_profiles: testCollection,
             $special: testCollection,
           })
-          .setup();
+          .build();
       }).not.toThrow();
     });
   });

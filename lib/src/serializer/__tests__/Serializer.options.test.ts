@@ -43,14 +43,14 @@ const userModel = model()
   .collection('users')
   .attrs<UserAttrs>()
   .json<UserJSON>()
-  .create();
+  .build();
 
 const postModel = model()
   .name('post')
   .collection('posts')
   .attrs<PostAttrs>()
   .json<PostJSON, PostJSON[]>()
-  .create();
+  .build();
 
 describe('Serializer options', () => {
   describe('select option', () => {
@@ -61,9 +61,9 @@ describe('Serializer options', () => {
             users: collection()
               .model(userModel)
               .serializer({ select: ['id', 'name'] })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Alice',
@@ -84,9 +84,9 @@ describe('Serializer options', () => {
             users: collection()
               .model(userModel)
               .serializer({ select: { password: false, role: false } })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Bob',
@@ -113,9 +113,9 @@ describe('Serializer options', () => {
             users: collection()
               .model(userModel)
               .serializer({ select: { id: true, name: true } })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Charlie',
@@ -136,9 +136,9 @@ describe('Serializer options', () => {
               .serializer({
                 select: { id: true, name: true, email: false, password: false },
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Diana',
@@ -169,7 +169,7 @@ describe('Serializer options', () => {
           .collection('users')
           .attrs<UserAttrs>()
           .json<{ user: UserJSON }>()
-          .create();
+          .build();
 
         const testSchema = schema()
           .collections({
@@ -182,10 +182,10 @@ describe('Serializer options', () => {
                 with: ['posts'],
                 relationsMode: 'sideLoaded',
               })
-              .create(),
-            posts: collection().model(postModel).create(),
+              .build(),
+            posts: collection().model(postModel).build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Test User',
@@ -208,10 +208,10 @@ describe('Serializer options', () => {
                 posts: relations.hasMany(postModel),
               })
               .serializer({ with: ['posts'] })
-              .create(),
-            posts: collection().model(postModel).create(),
+              .build(),
+            posts: collection().model(postModel).build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Test User',
@@ -243,10 +243,10 @@ describe('Serializer options', () => {
                 relationsMode: 'sideLoaded',
                 root: false,
               })
-              .create(),
-            posts: collection().model(postModel).create(),
+              .build(),
+            posts: collection().model(postModel).build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Test User',
@@ -285,10 +285,10 @@ describe('Serializer options', () => {
                 relationsMode: 'sideLoaded',
                 root: 'customUser',
               })
-              .create(),
-            posts: collection().model(postModel).create(),
+              .build(),
+            posts: collection().model(postModel).build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Test User',
@@ -311,10 +311,10 @@ describe('Serializer options', () => {
                 posts: relations.hasMany(postModel),
               })
               .serializer({ with: ['posts'], relationsMode: 'embedded' })
-              .create(),
-            posts: collection().model(postModel).create(),
+              .build(),
+            posts: collection().model(postModel).build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Test User',
@@ -341,7 +341,7 @@ describe('Serializer options', () => {
                 posts: relations.hasMany(postModel),
               })
               .serializer({ with: [] })
-              .create(),
+              .build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -349,9 +349,9 @@ describe('Serializer options', () => {
                   foreignKey: 'authorId',
                 }),
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Alice',
@@ -385,10 +385,10 @@ describe('Serializer options', () => {
                 posts: relations.hasMany(postModel),
               })
               .serializer({ with: [] })
-              .create(),
-            posts: collection().model(postModel).create(),
+              .build(),
+            posts: collection().model(postModel).build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Bob',
@@ -428,7 +428,7 @@ describe('Serializer options', () => {
           .collection('users')
           .attrs<UserAttrs>()
           .json<UserJSON>()
-          .create();
+          .build();
 
         const testSchema = schema()
           .collections({
@@ -441,7 +441,7 @@ describe('Serializer options', () => {
                 with: { posts: true },
                 relationsMode: 'embedded',
               })
-              .create(),
+              .build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -449,9 +449,9 @@ describe('Serializer options', () => {
                   foreignKey: 'authorId',
                 }),
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Alice',
@@ -481,7 +481,7 @@ describe('Serializer options', () => {
                 posts: relations.hasMany(postModel),
               })
               .serializer({ with: { posts: false } })
-              .create(),
+              .build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -489,9 +489,9 @@ describe('Serializer options', () => {
                   foreignKey: 'authorId',
                 }),
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Bob',
@@ -526,7 +526,7 @@ describe('Serializer options', () => {
           .collection('users')
           .attrs<UserAttrs>()
           .json<UserJSON>()
-          .create();
+          .build();
 
         const testSchema = schema()
           .collections({
@@ -541,7 +541,7 @@ describe('Serializer options', () => {
                 },
                 relationsMode: 'embedded',
               })
-              .create(),
+              .build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -549,9 +549,9 @@ describe('Serializer options', () => {
                   foreignKey: 'authorId',
                 }),
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Charlie',
@@ -586,7 +586,7 @@ describe('Serializer options', () => {
           .collection('users')
           .attrs<UserAttrs>()
           .json<UserJSON>()
-          .create();
+          .build();
 
         const testSchema = schema()
           .collections({
@@ -601,7 +601,7 @@ describe('Serializer options', () => {
                 },
                 relationsMode: 'embedded',
               })
-              .create(),
+              .build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -609,9 +609,9 @@ describe('Serializer options', () => {
                   foreignKey: 'authorId',
                 }),
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Diana',
@@ -648,7 +648,7 @@ describe('Serializer options', () => {
                 },
                 relationsMode: 'embedded',
               })
-              .create(),
+              .build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -656,9 +656,9 @@ describe('Serializer options', () => {
                   foreignKey: 'authorId',
                 }),
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Eve',
@@ -697,20 +697,20 @@ describe('Serializer options', () => {
           .collection('users')
           .attrs<UserAttrs>()
           .json<UserJSON>()
-          .create();
+          .build();
 
         const testPostModel = model()
           .name('post')
           .collection('posts')
           .attrs<PostAttrs>()
           .json<PostJSON>()
-          .create();
+          .build();
 
         const commentModel = model()
           .name('comment')
           .collection('comments')
           .attrs<CommentAttrs>()
-          .create();
+          .build();
 
         const testSchema = schema()
           .collections({
@@ -728,7 +728,7 @@ describe('Serializer options', () => {
                 },
                 relationsMode: 'embedded',
               })
-              .create(),
+              .build(),
             posts: collection()
               .model(testPostModel)
               .relationships({
@@ -737,10 +737,10 @@ describe('Serializer options', () => {
                 }),
                 comments: relations.hasMany(commentModel),
               })
-              .create(),
-            comments: collection().model(commentModel).create(),
+              .build(),
+            comments: collection().model(commentModel).build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Frank',
@@ -772,11 +772,11 @@ describe('Serializer options', () => {
           .name('comment')
           .collection('comments')
           .attrs<CommentAttrs>()
-          .create();
+          .build();
 
         const testSchema = schema()
           .collections({
-            users: collection().model(userModel).create(),
+            users: collection().model(userModel).build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -786,10 +786,10 @@ describe('Serializer options', () => {
                 comments: relations.hasMany(commentModel),
               })
               .serializer({ with: ['author'] })
-              .create(),
-            comments: collection().model(commentModel).create(),
+              .build(),
+            comments: collection().model(commentModel).build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Emily',
@@ -826,11 +826,11 @@ describe('Serializer options', () => {
           .name('comment')
           .collection('comments')
           .attrs<CommentAttrs>()
-          .create();
+          .build();
 
         const testSchema = schema()
           .collections({
-            users: collection().model(userModel).create(),
+            users: collection().model(userModel).build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -844,10 +844,10 @@ describe('Serializer options', () => {
                 with: ['author'],
                 relationsMode: 'sideLoaded',
               })
-              .create(),
-            comments: collection().model(commentModel).create(),
+              .build(),
+            comments: collection().model(commentModel).build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Frank',
@@ -885,11 +885,11 @@ describe('Serializer options', () => {
           .name('comment')
           .collection('comments')
           .attrs<CommentAttrs>()
-          .create();
+          .build();
 
         const testSchema = schema()
           .collections({
-            users: collection().model(userModel).create(),
+            users: collection().model(userModel).build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -902,10 +902,10 @@ describe('Serializer options', () => {
                 with: ['comments'],
                 relationsMode: 'embedded',
               })
-              .create(),
-            comments: collection().model(commentModel).create(),
+              .build(),
+            comments: collection().model(commentModel).build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Grace',
@@ -949,7 +949,7 @@ describe('Serializer options', () => {
       it('should include foreign keys for relationships in with array', () => {
         const testSchema = schema()
           .collections({
-            users: collection().model(userModel).create(),
+            users: collection().model(userModel).build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -958,9 +958,9 @@ describe('Serializer options', () => {
                 }),
               })
               .serializer({ with: ['author'] })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Alice',
@@ -995,7 +995,7 @@ describe('Serializer options', () => {
                 posts: relations.hasMany(postModel),
               })
               .serializer({ with: ['posts'], relationsMode: 'sideLoaded' })
-              .create(),
+              .build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -1003,9 +1003,9 @@ describe('Serializer options', () => {
                   foreignKey: 'authorId',
                 }),
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Charlie',
@@ -1054,7 +1054,7 @@ describe('Serializer options', () => {
       it('should side-load belongsTo relationships with foreign keys', () => {
         const testSchema = schema()
           .collections({
-            users: collection().model(userModel).create(),
+            users: collection().model(userModel).build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -1067,9 +1067,9 @@ describe('Serializer options', () => {
                 with: ['author'],
                 relationsMode: 'sideLoaded',
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Diana',
@@ -1116,7 +1116,7 @@ describe('Serializer options', () => {
                 with: ['posts'],
                 relationsMode: 'embedded',
               })
-              .create(),
+              .build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -1124,9 +1124,9 @@ describe('Serializer options', () => {
                   foreignKey: 'authorId',
                 }),
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Eve',
@@ -1173,7 +1173,7 @@ describe('Serializer options', () => {
       it('should embed belongsTo relationships without foreign keys', () => {
         const testSchema = schema()
           .collections({
-            users: collection().model(userModel).create(),
+            users: collection().model(userModel).build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -1185,9 +1185,9 @@ describe('Serializer options', () => {
                 with: ['author'],
                 relationsMode: 'embedded',
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Frank',
@@ -1231,7 +1231,7 @@ describe('Serializer options', () => {
                 with: ['posts'],
                 relationsMode: 'embedded',
               })
-              .create(),
+              .build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -1243,9 +1243,9 @@ describe('Serializer options', () => {
               .serializer({
                 select: ['id', 'title', 'content'],
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Eve',
@@ -1309,7 +1309,7 @@ describe('Serializer options', () => {
                 },
                 relationsMode: 'embedded',
               })
-              .create(),
+              .build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -1317,9 +1317,9 @@ describe('Serializer options', () => {
                   foreignKey: 'authorId',
                 }),
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Eve',
@@ -1383,7 +1383,7 @@ describe('Serializer options', () => {
           .collection('users')
           .attrs<UserAttrs>()
           .json<EmbeddedUserJSON>()
-          .create();
+          .build();
 
         const testSchema = schema()
           .collections({
@@ -1396,7 +1396,7 @@ describe('Serializer options', () => {
                 with: ['posts'],
                 relationsMode: 'embedded+foreignKey',
               })
-              .create(),
+              .build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -1404,9 +1404,9 @@ describe('Serializer options', () => {
                   foreignKey: 'authorId',
                 }),
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Alice',
@@ -1447,11 +1447,11 @@ describe('Serializer options', () => {
           .collection('posts')
           .attrs<PostAttrs>()
           .json<EmbeddedPostJSON>()
-          .create();
+          .build();
 
         const testSchema = schema()
           .collections({
-            users: collection().model(userModel).create(),
+            users: collection().model(userModel).build(),
             posts: collection()
               .model(embeddedPostModel)
               .relationships({
@@ -1463,9 +1463,9 @@ describe('Serializer options', () => {
                 with: ['author'],
                 relationsMode: 'embedded+foreignKey',
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Bob',
@@ -1502,11 +1502,11 @@ describe('Serializer options', () => {
           .name('comment')
           .collection('comments')
           .attrs<CommentAttrs>()
-          .create();
+          .build();
 
         const testSchema = schema()
           .collections({
-            users: collection().model(userModel).create(),
+            users: collection().model(userModel).build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -1519,10 +1519,10 @@ describe('Serializer options', () => {
                 with: ['author'],
                 relationsMode: 'embedded+foreignKey',
               })
-              .create(),
-            comments: collection().model(commentModel).create(),
+              .build(),
+            comments: collection().model(commentModel).build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Charlie',
@@ -1561,11 +1561,11 @@ describe('Serializer options', () => {
           .collection('posts')
           .attrs<PostAttrs>()
           .json<SideLoadedPostJSON>()
-          .create();
+          .build();
 
         const testSchema = schema()
           .collections({
-            users: collection().model(userModel).create(),
+            users: collection().model(userModel).build(),
             posts: collection()
               .model(sideLoadedPostModel)
               .relationships({
@@ -1578,9 +1578,9 @@ describe('Serializer options', () => {
                 with: ['author'],
                 relationsMode: 'sideLoaded+foreignKey',
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Dave',
@@ -1617,7 +1617,7 @@ describe('Serializer options', () => {
           .collection('users')
           .attrs<UserAttrs>()
           .json<SideLoadedUserJSON>()
-          .create();
+          .build();
 
         const testSchema = schema()
           .collections({
@@ -1631,7 +1631,7 @@ describe('Serializer options', () => {
                 with: ['posts'],
                 relationsMode: 'sideLoaded+foreignKey',
               })
-              .create(),
+              .build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -1639,9 +1639,9 @@ describe('Serializer options', () => {
                   foreignKey: 'authorId',
                 }),
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Eve',
@@ -1681,7 +1681,7 @@ describe('Serializer options', () => {
           .name('team')
           .collection('teams')
           .attrs<TeamAttrs>()
-          .create();
+          .build();
 
         interface TaskAttrs {
           id: string;
@@ -1700,11 +1700,11 @@ describe('Serializer options', () => {
           .collection('tasks')
           .attrs<TaskAttrs>()
           .json<TaskJSON>()
-          .create();
+          .build();
 
         const testSchema = schema()
           .collections({
-            teams: collection().model(teamModel).create(),
+            teams: collection().model(teamModel).build(),
             tasks: collection()
               .model(taskModel)
               .relationships({
@@ -1717,9 +1717,9 @@ describe('Serializer options', () => {
                 // But per-relation mode override should still work
                 with: { team: { mode: 'embedded' } },
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const team = testSchema.teams.create({ name: 'DevX' });
         const task = testSchema.tasks.create({
@@ -1749,7 +1749,7 @@ describe('Serializer options', () => {
           .collection('users')
           .attrs<UserAttrs>()
           .json<UserJSON>()
-          .create();
+          .build();
 
         const testSchema = schema()
           .collections({
@@ -1762,7 +1762,7 @@ describe('Serializer options', () => {
                 relationsMode: 'embedded',
                 with: { posts: { mode: 'foreignKey' } },
               })
-              .create(),
+              .build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -1770,9 +1770,9 @@ describe('Serializer options', () => {
                   foreignKey: 'authorId',
                 }),
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Alice',
@@ -1809,7 +1809,7 @@ describe('Serializer options', () => {
           .name('comment')
           .collection('comments')
           .attrs<CommentAttrs>()
-          .create();
+          .build();
 
         const testPostModel = model()
           .name('post')
@@ -1820,7 +1820,7 @@ describe('Serializer options', () => {
             comments: CommentAttrs[];
             authors: UserAttrs[];
           }>()
-          .create();
+          .build();
 
         const testSchema = schema()
           .collections({
@@ -1829,7 +1829,7 @@ describe('Serializer options', () => {
               .relationships({
                 posts: relations.hasMany(postModel),
               })
-              .create(),
+              .build(),
             posts: collection()
               .model(testPostModel)
               .relationships({
@@ -1843,10 +1843,10 @@ describe('Serializer options', () => {
                 with: ['author', 'comments'],
                 relationsMode: 'sideLoaded',
               })
-              .create(),
-            comments: collection().model(commentModel).create(),
+              .build(),
+            comments: collection().model(commentModel).build(),
           })
-          .setup();
+          .build();
 
         const user = testSchema.users.create({
           name: 'Grace',
@@ -1896,7 +1896,7 @@ describe('Serializer options', () => {
         .collection('posts')
         .attrs<PostAttrs>()
         .json<PostWithAuthorJSON>()
-        .create();
+        .build();
 
       const testSchema = schema()
         .collections({
@@ -1905,7 +1905,7 @@ describe('Serializer options', () => {
             .serializer({
               select: ['id', 'name'],
             })
-            .create(),
+            .build(),
           posts: collection()
             .model(testPostModel)
             .relationships({
@@ -1917,9 +1917,9 @@ describe('Serializer options', () => {
               with: ['author'],
               relationsMode: 'embedded',
             })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       const user = testSchema.users.create({
         name: 'Bob',

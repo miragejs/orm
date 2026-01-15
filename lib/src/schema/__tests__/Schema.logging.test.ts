@@ -24,12 +24,12 @@ const userModel = model()
   .name('user')
   .collection('users')
   .attrs<UserAttrs>()
-  .create();
+  .build();
 const postModel = model()
   .name('post')
   .collection('posts')
   .attrs<PostAttrs>()
-  .create();
+  .build();
 
 // Create test factories
 const userFactory = factory()
@@ -37,14 +37,14 @@ const userFactory = factory()
   .attrs({
     name: () => 'John Doe',
   })
-  .create();
+  .build();
 
 const postFactory = factory()
   .model(postModel)
   .attrs({
     title: () => 'Test Post',
   })
-  .create();
+  .build();
 
 // Define test schema type
 type TestSchema = {
@@ -74,9 +74,9 @@ describe('Schema with Logging', () => {
       schema()
         .logging({ enabled: true, level: 'debug' })
         .collections({
-          users: collection<TestSchema>().model(userModel).create(),
+          users: collection<TestSchema>().model(userModel).build(),
         })
-        .setup();
+        .build();
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
         '[Mirage] DEBUG: Schema initialized',
@@ -90,9 +90,9 @@ describe('Schema with Logging', () => {
       schema()
         .logging({ enabled: false, level: 'debug' })
         .collections({
-          users: collection<TestSchema>().model(userModel).create(),
+          users: collection<TestSchema>().model(userModel).build(),
         })
-        .setup();
+        .build();
 
       expect(consoleLogSpy).not.toHaveBeenCalled();
     });
@@ -100,9 +100,9 @@ describe('Schema with Logging', () => {
     it('should not log when logging is not configured', () => {
       schema()
         .collections({
-          users: collection<TestSchema>().model(userModel).create(),
+          users: collection<TestSchema>().model(userModel).build(),
         })
-        .setup();
+        .build();
 
       expect(consoleLogSpy).not.toHaveBeenCalled();
     });
@@ -111,10 +111,10 @@ describe('Schema with Logging', () => {
       schema()
         .logging({ enabled: true, level: 'debug' })
         .collections({
-          users: collection<TestSchema>().model(userModel).create(),
-          posts: collection<TestSchema>().model(postModel).create(),
+          users: collection<TestSchema>().model(userModel).build(),
+          posts: collection<TestSchema>().model(postModel).build(),
         })
-        .setup();
+        .build();
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
         '[Mirage] DEBUG: Schema initialized',
@@ -156,9 +156,9 @@ describe('Schema with Logging', () => {
           users: collection<TestSchema>()
             .model(userModel)
             .factory(userFactory)
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       testSchema.users.create({ name: 'Alice' });
 
@@ -197,9 +197,9 @@ describe('Schema with Logging', () => {
           users: collection<TestSchema>()
             .model(userModel)
             .factory(userFactory)
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       // Clear previous logs from schema initialization
       consoleLogSpy.mockClear();
@@ -222,9 +222,9 @@ describe('Schema with Logging', () => {
           users: collection<TestSchema>()
             .model(userModel)
             .factory(userFactory)
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       const user = testSchema.users.create({ name: 'Alice' });
       consoleLogSpy.mockClear();
@@ -246,9 +246,9 @@ describe('Schema with Logging', () => {
           users: collection<TestSchema>()
             .model(userModel)
             .factory(userFactory)
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       testSchema.users.create({ name: 'Alice' });
       testSchema.users.create({ name: 'Bob' });
@@ -278,9 +278,9 @@ describe('Schema with Logging', () => {
           users: collection<TestSchema>()
             .model(userModel)
             .factory(userFactory)
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       testSchema.users.create({ name: 'Alice' });
       testSchema.users.create({ name: 'Bob' });
@@ -310,9 +310,9 @@ describe('Schema with Logging', () => {
           users: collection<TestSchema>()
             .model(userModel)
             .factory(userFactory)
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       testSchema.users.create({ name: 'Alice' });
       consoleLogSpy.mockClear();
@@ -340,9 +340,9 @@ describe('Schema with Logging', () => {
           users: collection<TestSchema>()
             .model(userModel)
             .factory(userFactory)
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       const user = testSchema.users.create({ name: 'Alice' });
       consoleLogSpy.mockClear();
@@ -364,9 +364,9 @@ describe('Schema with Logging', () => {
           users: collection<TestSchema>()
             .model(userModel)
             .factory(userFactory)
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       testSchema.users.create({ name: 'Alice' });
       testSchema.users.create({ name: 'Bob' });
@@ -395,9 +395,9 @@ describe('Schema with Logging', () => {
               { id: '1', name: 'Alice' },
               { id: '2', name: 'Bob' },
             ])
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       // Clear previous logs from schema initialization
       consoleLogSpy.mockClear();
@@ -425,9 +425,9 @@ describe('Schema with Logging', () => {
               { id: '1', name: 'Alice' },
               { id: '2', name: 'Bob' },
             ])
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       // Load fixtures first time
       await testSchema.users.loadFixtures();
@@ -455,9 +455,9 @@ describe('Schema with Logging', () => {
           users: collection<TestSchema>()
             .model(userModel)
             .fixtures([{ id: '1', name: 'Alice' }], { strategy: 'auto' })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
         '[Mirage] INFO: Auto-loading fixtures',
@@ -479,9 +479,9 @@ describe('Schema with Logging', () => {
             .seeds((schema) => {
               schema.users.create({ name: 'Seeded User' });
             })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       // Clear previous logs from schema initialization
       consoleLogSpy.mockClear();
@@ -516,9 +516,9 @@ describe('Schema with Logging', () => {
                 schema.users.create({ name: 'Test User' });
               },
             })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       // Clear previous logs
       consoleLogSpy.mockClear();
@@ -548,9 +548,9 @@ describe('Schema with Logging', () => {
                 schema.users.create({ name: 'Dev User' });
               },
             })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       try {
         await testSchema.users.loadSeeds('nonexistent');
@@ -580,16 +580,16 @@ describe('Schema with Logging', () => {
             .seeds((schema) => {
               schema.users.create({ name: 'User' });
             })
-            .create(),
+            .build(),
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
             .seeds((schema) => {
               schema.posts.create({ title: 'Post' });
             })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       // Clear previous logs
       consoleLogSpy.mockClear();
@@ -619,13 +619,13 @@ describe('Schema with Logging', () => {
           users: collection<TestSchema>()
             .model(userModel)
             .fixtures([{ id: '1', name: 'Alice' }])
-            .create(),
+            .build(),
           posts: collection<TestSchema>()
             .model(postModel)
             .fixtures([{ id: '1', title: 'Post 1' }])
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       // Clear previous logs
       consoleLogSpy.mockClear();
@@ -657,9 +657,9 @@ describe('Schema with Logging', () => {
           users: collection<TestSchema>()
             .model(userModel)
             .factory(userFactory)
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       testSchema.users.create({ name: 'Alice' });
 
@@ -676,9 +676,9 @@ describe('Schema with Logging', () => {
             .model(userModel)
             .factory(userFactory)
             .fixtures([{ id: '1', name: 'Alice' }])
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       // This shouldn't log anything (info level)
       await testSchema.users.loadFixtures();
@@ -703,9 +703,9 @@ describe('Schema with Logging', () => {
       schema()
         .logging({ enabled: true, level: 'debug', prefix: '[MyORM]' })
         .collections({
-          users: collection<TestSchema>().model(userModel).create(),
+          users: collection<TestSchema>().model(userModel).build(),
         })
-        .setup();
+        .build();
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
         '[MyORM] DEBUG: Schema initialized',
