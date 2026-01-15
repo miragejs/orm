@@ -1,16 +1,16 @@
-import { collection, associations } from 'miragejs-orm';
+import { collection, relations } from 'miragejs-orm';
 import { commentModel, userModel, taskModel } from '@test/schema/models';
 import { commentFactory } from './commentFactory';
-import { TestCollections } from '@test/schema/types';
+import type { TestCollections } from '@test/schema/types';
 
 export const commentsCollection = collection<TestCollections>()
   .model(commentModel)
   .factory(commentFactory)
   .relationships({
-    author: associations.belongsTo(userModel, {
+    author: relations.belongsTo(userModel, {
       foreignKey: 'authorId',
     }),
-    task: associations.belongsTo(taskModel),
+    task: relations.belongsTo(taskModel),
   })
   .serializer({
     root: true,
@@ -19,4 +19,4 @@ export const commentsCollection = collection<TestCollections>()
     },
     relationsMode: 'embedded',
   })
-  .create();
+  .build();

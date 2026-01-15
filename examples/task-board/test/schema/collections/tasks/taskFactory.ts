@@ -55,7 +55,7 @@ export const taskFactory = factory<TestCollections>()
   .traits({
     withComments: {
       afterCreate(task, schema) {
-        // Get users for comment authors (current user and manager)
+        // Get members from the same team for comment authors
         const members = schema.users.findMany({ where: { teamId: task.teamId } });
         const commentCount = faker.number.int({ min: 1, max: 4 });
 
@@ -76,4 +76,4 @@ export const taskFactory = factory<TestCollections>()
       task.update({ prefix: getTeamPrefix(task.team.name) });
     }
   })
-  .create();
+  .build();

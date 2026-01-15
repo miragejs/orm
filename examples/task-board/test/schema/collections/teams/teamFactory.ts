@@ -13,8 +13,7 @@ export const teamFactory = factory<TestCollections>()
   })
   .traits({
     withManager: {
-      // TODO: Try to simplify generic type for association methods
-      manager: associations.create<TestCollections, UserModel>(userModel, 'manager'),
+      manager: associations.create<UserModel, TestCollections>(userModel, 'manager'),
     },
     withMembers: {
       afterCreate(team, schema) {
@@ -22,4 +21,4 @@ export const teamFactory = factory<TestCollections>()
       },
     },
   })
-  .create();
+  .build();

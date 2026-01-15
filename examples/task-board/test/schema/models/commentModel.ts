@@ -1,5 +1,5 @@
 import { model } from 'miragejs-orm';
-import { Comment } from '@shared/types';
+import type { Comment } from '@shared/types';
 
 export interface CommentAttrs {
   id: string;
@@ -14,6 +14,6 @@ export const commentModel = model()
   .collection('comments')
   .attrs<CommentAttrs>()
   .json<{ comment: Comment }, { comments: Comment[] }>()
-  .create();
+  .build();
 
 export type CommentModel = typeof commentModel;

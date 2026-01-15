@@ -23,6 +23,6 @@ export const taskModel = model()
   .collection('tasks')
   .attrs<TaskAttrs>()
   .json<{ task: Task }, { tasks: Task[] }>()
-  .create();
+  .build();
 
 export type TaskModel = typeof taskModel;

@@ -1,4 +1,4 @@
-import { associations, collection } from 'miragejs-orm';
+import { collection, relations } from 'miragejs-orm';
 import { commentModel, taskModel, teamModel, userModel } from '@test/schema/models';
 import type { TestCollections } from '@test/schema/types';
 import { userFactory } from './userFactory';
@@ -7,9 +7,9 @@ export const usersCollection = collection<TestCollections>()
   .model(userModel)
   .factory(userFactory)
   .relationships({
-    comments: associations.hasMany(commentModel),
-    tasks: associations.hasMany(taskModel),
-    team: associations.belongsTo(teamModel, {
+    comments: relations.hasMany(commentModel),
+    tasks: relations.hasMany(taskModel),
+    team: relations.belongsTo(teamModel, {
       inverse: 'members',
     }),
   })
@@ -42,4 +42,4 @@ export const usersCollection = collection<TestCollections>()
     });
     devXTeam.update({ manager: managerUser });
   })
-  .create();
+  .build();

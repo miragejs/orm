@@ -40,4 +40,4 @@ export const userFactory = factory<TestCollections>()
   .associations({
     team: associations.create(teamModel),
   })
-  .create();
+  .build();

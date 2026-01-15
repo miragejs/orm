@@ -431,7 +431,7 @@ factory()
     urgent: { priority: TaskPriority.URGENT },
     overdue: { dueDate: () => faker.date.past().toISOString() },
   })
-  .create();
+  .build();
 
 // Usage: Combine traits!
 schema.tasks.create('todo', 'urgent', {

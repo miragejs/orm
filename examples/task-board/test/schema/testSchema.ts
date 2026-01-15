@@ -22,4 +22,4 @@ export const testSchema: TestSchema = schema()
     enabled: process.env.NODE_ENV === 'development',
     level: LogLevel.DEBUG,
   })
-  .setup();
+  .build();

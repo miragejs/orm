@@ -19,6 +19,6 @@ export const userModel = model()
   .collection('users')
   .attrs<UserAttrs>()
   .json<{ user: User }, { users: User[] }>()
-  .create();
+  .build();
 
 export type UserModel = typeof userModel;

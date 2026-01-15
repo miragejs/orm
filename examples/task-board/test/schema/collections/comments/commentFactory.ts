@@ -8,4 +8,4 @@ export const commentFactory = factory()
     content: () => faker.hacker.phrase(),
     createdAt: () => faker.date.recent().toISOString(),
   })
-  .create();
+  .build();

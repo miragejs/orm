@@ -1,10 +1,4 @@
-import type {
-  BelongsTo,
-  CollectionConfig,
-  Factory,
-  HasMany,
-  SchemaInstance,
-} from 'miragejs-orm';
+import type { BelongsTo, CollectionConfig, Factory, HasMany, Schema } from 'miragejs-orm';
 import type { CommentModel, TaskModel, TeamModel, UserModel } from '../models';
 
 /**
@@ -69,4 +63,4 @@ export type TestCollections = {
 /**
  * Test schema instance type
  */
-export type TestSchema = SchemaInstance<TestCollections>;
+export type TestSchema = Schema<TestCollections>;

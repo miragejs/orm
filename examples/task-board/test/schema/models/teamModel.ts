@@ -17,6 +17,6 @@ export const teamModel = model()
   .collection('teams')
   .attrs<TeamAttrs>()
   .json<{ team: Team }, { teams: Team[] }>()
-  .create();
+  .build();
 
 export type TeamModel = typeof teamModel;
