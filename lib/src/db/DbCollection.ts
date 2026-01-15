@@ -32,11 +32,8 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
 
   constructor(name: string, config?: DbCollectionConfig<TRecord>) {
     this.name = name;
-    this.identityManager =
-      config?.identityManager ??
-      new IdentityManager<TRecord['id']>({
-        initialCounter: '1' as TRecord['id'],
-      });
+    this.identityManager = this._resolveIdentityManager(config);
+
     this._logger = config?.logger;
 
     if (config?.initialData) {
@@ -445,6 +442,22 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
   }
 
   // -- PRIVATE METHODS --
+
+  /**
+   * Resolves the identity manager to use for ID generation.
+   * @param config - Optional collection configuration
+   * @returns The identity manager instance
+   */
+  private _resolveIdentityManager(
+    config?: DbCollectionConfig<TRecord>,
+  ): IdentityManager<TRecord['id']> {
+    return (
+      config?.identityManager ??
+      new IdentityManager<TRecord['id']>({
+        initialCounter: '1' as TRecord['id'],
+      })
+    );
+  }
 
   /**
    * Extracts records from findMany result, handling both array and PaginatedResult.
