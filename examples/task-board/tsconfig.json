@@ -26,7 +26,11 @@
       "@shared/*": ["./src/shared/*"],
       "@features/*": ["./src/features/*"],
       "@test/*": ["./test/*"]
-    }
+    },
+
+    /* Type checking */
+    "typeRoots": ["./node_modules", "./node_modules/@types"],
+    "types": ["node", "vitest/globals", "@testing-library/jest-dom"]
   },
   "include": ["src", "test"],
   "references": [{ "path": "./tsconfig.node.json" }]

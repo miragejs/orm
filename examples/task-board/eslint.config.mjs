@@ -42,5 +42,13 @@ export default tseslint.config(
       },
     },
   },
+  // Disable React rules for test files
+  {
+    files: ['test/**/*.{ts,tsx}'],
+    rules: {
+      'react-hooks/rules-of-hooks': 'off',
+      'react-hooks/exhaustive-deps': 'off',
+    },
+  },
   eslintPluginPrettierRecommended,
 );
