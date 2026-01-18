@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router';
-import { Box, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 import type { User } from '@shared/types';
 
 interface MainContentProps {

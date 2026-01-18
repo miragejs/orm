@@ -1,4 +1,4 @@
-import { TaskStatus, TaskPriority } from './enums';
+import { TaskStatus, TaskPriority } from '../enums';
 import type { SimpleTeam } from './team';
 import type { SimpleUser } from './user';
 

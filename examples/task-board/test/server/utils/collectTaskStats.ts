@@ -1,4 +1,5 @@
-import { TaskStatus, type TaskStatistics } from '@shared/types';
+import { TaskStatus } from '@shared/enums';
+import type { TaskStatistics } from '@shared/types';
 import type { ModelCollection } from 'miragejs-orm';
 import { TaskModel } from '@test/schema/models';
 import { TestCollections } from '@test/schema/types';

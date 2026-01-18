@@ -1,5 +1,5 @@
 import { useLoaderData, redirect } from 'react-router';
-import { Box } from '@mui/material';
+import Box from '@mui/material/Box';
 import { getUser } from './api';
 import { Sidebar, Header, MainContent } from './components';
 import type { LoaderFunctionArgs } from 'react-router';

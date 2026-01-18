@@ -1,25 +1,21 @@
+import kebabCase from 'lodash.kebabcase';
 import { useMemo } from 'react';
 import { useNavigate, useLocation, useRouteLoaderData } from 'react-router';
-import {
-  Assignment as AssignmentIcon,
-  Groups as GroupsIcon,
-  Logout as LogoutIcon,
-  Dashboard as DashboardIcon,
-} from '@mui/icons-material';
-import {
-  Box,
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  IconButton,
-  Tooltip,
-} from '@mui/material';
-import kebabCase from 'lodash.kebabcase';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import Box from '@mui/material/Box';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import Drawer from '@mui/material/Drawer';
+import GroupsIcon from '@mui/icons-material/Groups';
+import IconButton from '@mui/material/IconButton';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import LogoutIcon from '@mui/icons-material/Logout';
+import Tooltip from '@mui/material/Tooltip';
 import { logout } from '@features/auth/api';
 import { Logo } from '@shared/components';
-import { UserRole } from '@shared/types';
+import { UserRole } from '@shared/enums';
 import type { AppLoaderData } from '../AppLayout';
 
 const DRAWER_WIDTH = 72;
@@ -84,6 +80,7 @@ export default function Sidebar() {
 
   return (
     <Drawer
+      component="aside"
       variant="permanent"
       sx={{
         width: DRAWER_WIDTH,
@@ -111,6 +108,8 @@ export default function Sidebar() {
 
       {/* Navigation Menu - Centered */}
       <Box
+        component="nav"
+        aria-label="Main navigation"
         sx={{
           flexGrow: 1,
           display: 'flex',

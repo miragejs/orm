@@ -4,7 +4,7 @@ import {
   RateReview as RateReviewIcon,
   Assignment as AssignmentIcon,
 } from '@mui/icons-material';
-import { TaskStatus } from '@shared/types';
+import { TaskStatus } from '@shared/enums';
 
 export interface StatusConfig {
   label: string;

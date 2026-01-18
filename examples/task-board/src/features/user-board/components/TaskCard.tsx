@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Box, Card, CardContent, Chip, Typography } from '@mui/material';
-import { TaskPriority } from '@shared/types';
+import { TaskPriority } from '@shared/enums';
 import type { SimpleTask } from '@shared/types';
 
 interface TaskCardProps {

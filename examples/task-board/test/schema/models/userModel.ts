@@ -1,5 +1,6 @@
 import { model } from 'miragejs-orm';
-import type { User, UserRole } from '@shared/types';
+import type { UserRole } from '@shared/enums';
+import type { User } from '@shared/types';
 
 export interface UserAttrs {
   id: string;

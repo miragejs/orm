@@ -1,6 +1,6 @@
 import { factory, resolveFactoryAttr } from 'miragejs-orm';
 import { faker } from '@faker-js/faker';
-import { TaskStatus, TaskPriority } from '@shared/types';
+import { TaskStatus, TaskPriority } from '@shared/enums';
 import { taskModel } from '@test/schema/models';
 import type { TestCollections } from '@test/schema/types';
 

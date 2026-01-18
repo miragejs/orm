@@ -14,13 +14,9 @@ import {
   Stack,
   Tooltip,
 } from '@mui/material';
-import { Clear as ClearIcon } from '@mui/icons-material';
-import {
-  TaskStatus,
-  TaskPriority,
-  type MemberOption,
-  type TaskFilters,
-} from '@shared/types';
+import ClearIcon from '@mui/icons-material/Clear';
+import { TaskStatus, TaskPriority } from '@shared/enums';
+import type { MemberOption, TaskFilters } from '@shared/types';
 import { statusOptions, priorityOptions } from './tasksTableConfig';
 import type { SelectChangeEvent } from '@mui/material';
 

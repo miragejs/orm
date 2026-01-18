@@ -20,26 +20,35 @@ export const usersCollection = collection<TestCollections>()
     },
     relationsMode: 'embedded',
   })
-  .seeds((schema) => {
-    // Get DevX team
-    const devXTeam = schema.teams.find({ name: 'DevX' })!;
+  .seeds({
+    default(schema) {
+      // Get DevX team
+      const devXTeam = schema.teams.find({ name: 'DevX' })!;
 
-    // Create current user
-    schema.users.create({
-      email: 'john.doe@example.com',
-      name: 'John Doe',
-      bio: 'Software Engineer passionate about building great user experiences',
-      team: devXTeam,
-    });
-    devXTeam.reload();
+      // Create current user
+      schema.users.create({
+        email: 'john.doe@example.com',
+        name: 'John Doe',
+        bio: 'Software Engineer passionate about building great user experiences',
+        team: devXTeam,
+      });
+      devXTeam.reload();
 
-    // Create manager user
-    const managerUser = schema.users.create('manager', {
-      email: 'jane.smith@example.com',
-      name: 'Jane Smith',
-      bio: 'Engineering Team Lead with focus on team growth and delivery',
-      team: devXTeam,
-    });
-    devXTeam.update({ manager: managerUser });
+      // Create manager user
+      const managerUser = schema.users.create('manager', {
+        email: 'jane.smith@example.com',
+        name: 'Jane Smith',
+        bio: 'Engineering Team Lead with focus on team growth and delivery',
+        team: devXTeam,
+      });
+      devXTeam.update({ manager: managerUser });
+    },
+    currentUser(schema) {
+      schema.users.create({
+        email: 'john.doe@example.com',
+        name: 'John Doe',
+        bio: 'Software Engineer passionate about building great user experiences',
+      });
+    },
   })
   .build();

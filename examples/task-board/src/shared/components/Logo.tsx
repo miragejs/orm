@@ -1,5 +1,6 @@
-import { Box, Typography } from '@mui/material';
-import { SpaceDashboard as SpaceDashboardIcon } from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import SpaceDashboardIcon from '@mui/icons-material/SpaceDashboard';
 
 interface LogoProps {
   variant?: 'full' | 'icon';

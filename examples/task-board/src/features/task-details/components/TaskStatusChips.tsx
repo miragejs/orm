@@ -1,5 +1,5 @@
 import { Box, Chip } from '@mui/material';
-import { TaskStatus, TaskPriority } from '@shared/types';
+import { TaskStatus, TaskPriority } from '@shared/enums';
 
 interface TaskStatusChipsProps {
   status: TaskStatus;

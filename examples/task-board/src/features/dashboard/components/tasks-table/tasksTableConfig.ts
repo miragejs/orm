@@ -1,4 +1,5 @@
-import { TaskStatus, TaskPriority, type TaskSortableColumn } from '@shared/types';
+import { TaskStatus, TaskPriority } from '@shared/enums';
+import type { TaskSortableColumn } from '@shared/types';
 
 export interface ColumnConfig {
   id: TaskSortableColumn;

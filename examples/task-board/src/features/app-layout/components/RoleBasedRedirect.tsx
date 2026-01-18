@@ -1,6 +1,6 @@
 import kebabCase from 'lodash.kebabcase';
 import { Navigate, useRouteLoaderData } from 'react-router';
-import { UserRole } from '@shared/types';
+import { UserRole } from '@shared/enums';
 import type { AppLoaderData } from '../AppLayout';
 
 /**

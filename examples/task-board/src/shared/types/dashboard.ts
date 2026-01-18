@@ -1,4 +1,4 @@
-import type { TaskPriority, TaskStatus } from './enums';
+import type { TaskPriority, TaskStatus } from '../enums';
 
 /** Sortable columns for members table */
 export type MemberSortableColumn = 'name' | 'role' | 'email';

@@ -1,6 +1,6 @@
 import { associations, factory } from 'miragejs-orm';
 import { faker } from '@faker-js/faker';
-import { UserRole } from '@shared/types';
+import { UserRole } from '@shared/enums';
 import { teamModel, userModel } from '@test/schema/models';
 import type { TestCollections } from '@test/schema/types';
 

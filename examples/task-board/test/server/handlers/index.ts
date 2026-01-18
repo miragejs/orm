@@ -12,3 +12,5 @@ export const handlers = [
   ...taskHandlers,
   ...teamHandlers,
 ];
+
+export { authHandlers, userHandlers, taskHandlers, teamHandlers };

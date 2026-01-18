@@ -4,14 +4,13 @@ import { parseTableQuery, type TableParams } from '@shared/utils';
 import { ModelAttrs, Where } from 'miragejs-orm';
 import { TaskModel } from '@test/schema/models';
 import { collectTaskStats } from '@test/server/utils';
+import type { TaskStatus, TaskPriority } from '@shared/enums';
 import type {
   MemberOption,
   MemberSortableColumn,
   SimpleUser,
   TaskFilters,
-  TaskPriority,
   TaskSortableColumn,
-  TaskStatus,
   Team,
 } from '@shared/types';
 
