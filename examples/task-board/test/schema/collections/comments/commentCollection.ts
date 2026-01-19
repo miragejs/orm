@@ -13,7 +13,6 @@ export const commentsCollection = collection<TestCollections>()
     task: relations.belongsTo(taskModel),
   })
   .serializer({
-    root: true,
     with: {
       author: { select: ['avatar', 'email', 'id', 'name', 'role'] },
     },

@@ -1,9 +1,5 @@
 import type { User } from '@shared/types';
 
-export interface GetUserResponse {
-  user: User;
-}
-
 /**
  * Get current authenticated user
  */
@@ -19,6 +15,5 @@ export async function getUser(): Promise<User> {
     throw new Error('Failed to fetch user');
   }
 
-  const data: GetUserResponse = await response.json();
-  return data.user;
+  return response.json();
 }

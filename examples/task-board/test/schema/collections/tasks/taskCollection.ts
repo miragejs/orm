@@ -23,7 +23,6 @@ export const tasksCollection = collection<TestCollections>()
     team: relations.belongsTo(teamModel),
   })
   .serializer({
-    root: true,
     with: {
       assignee: { select: ['avatar', 'email', 'id', 'name', 'role'] },
       creator: { select: ['avatar', 'email', 'id', 'name', 'role'] },

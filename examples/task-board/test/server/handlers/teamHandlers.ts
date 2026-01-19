@@ -66,7 +66,7 @@ export const teamHandlers = [
       return HttpResponse.json({ error: 'User has no team' }, { status: 404 });
     }
 
-    const json: { team: Team } = team.toJSON();
+    const json: Team = team.toJSON();
     return HttpResponse.json(json);
   }),
 
@@ -104,8 +104,7 @@ export const teamHandlers = [
     const total = membersCollection.meta?.total ?? 0;
 
     // Serialize team members without relationships
-    const { members } = membersCollection.serialize<{ members: SimpleUser[] }>({
-      root: 'members',
+    const members = membersCollection.serialize<SimpleUser[]>({
       with: [],
     });
 
@@ -193,11 +192,10 @@ export const teamHandlers = [
     const total = tasksCollection.meta?.total ?? 0;
 
     // Convert tasks to JSON
-    const { tasks } = tasksCollection.toJSON();
+    const tasks = tasksCollection.toJSON();
 
     // Serialize simplified team members for the filter dropdown
-    const { memberOptions } = team.members.serialize<{ memberOptions: MemberOption[] }>({
-      root: 'memberOptions',
+    const memberOptions = team.members.serialize<MemberOption[]>({
       select: ['id', 'name', 'avatar'],
       with: { team: false },
     });

@@ -4,14 +4,10 @@
 
 import type { User } from '@shared/types';
 
-export interface LoginResponse {
-  user: User;
-}
-
 /**
  * Login user by email
  */
-export async function login(email: string): Promise<LoginResponse> {
+export async function login(email: string): Promise<User> {
   const response = await fetch('/api/auth/login', {
     method: 'POST',
     headers: {

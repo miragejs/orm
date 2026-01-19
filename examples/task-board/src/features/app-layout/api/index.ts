@@ -1,1 +1,1 @@
-export { getUser, type GetUserResponse } from './getUser';
+export { getUser } from './getUser';

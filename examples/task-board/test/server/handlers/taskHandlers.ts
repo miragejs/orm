@@ -1,6 +1,6 @@
 import { http, HttpResponse, delay } from 'msw';
 import { testSchema } from '@test/schema/testSchema';
-import { Task, Comment, SimpleTask } from '@shared/types';
+import type { Task, Comment, SimpleTask } from '@shared/types';
 
 /** Delay in milliseconds for loading task comments */
 const COMMENTS_DELAY_MS = 1500;
@@ -18,7 +18,7 @@ export const taskHandlers = [
       return HttpResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const json = targetUser.tasks.serialize<{ tasks: SimpleTask[] }>({
+    const json = targetUser.tasks.serialize<SimpleTask[]>({
       select: ['id', 'title', 'status', 'priority', 'dueDate'],
       with: [],
     });
@@ -37,7 +37,7 @@ export const taskHandlers = [
       return HttpResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
-    const json: { task: Task } = task.toJSON();
+    const json: Task = task.toJSON();
     return HttpResponse.json(json);
   }),
 
@@ -53,7 +53,7 @@ export const taskHandlers = [
       return HttpResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
-    const json: { comments: Comment[] } = task.comments.toJSON();
+    const json: Comment[] = task.comments.toJSON();
 
     // Simulate network delay for deferred loading demonstration
     await delay(COMMENTS_DELAY_MS);

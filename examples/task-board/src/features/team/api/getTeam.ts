@@ -1,9 +1,5 @@
 import type { Team } from '@shared/types';
 
-export interface GetTeamResponse {
-  team: Team;
-}
-
 /**
  * Fetch current user's team information
  */
@@ -19,6 +15,5 @@ export async function getTeam(): Promise<Team> {
     throw new Error('Failed to fetch team');
   }
 
-  const data: GetTeamResponse = await response.json();
-  return data.team;
+  return response.json();
 }

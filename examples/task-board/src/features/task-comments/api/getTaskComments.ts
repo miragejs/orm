@@ -1,9 +1,5 @@
 import type { Comment } from '@shared/types';
 
-export interface GetTaskCommentsResponse {
-  comments: Comment[];
-}
-
 /**
  * Fetches comments for a specific task.
  * @param taskId - The ID of the task to fetch comments for
@@ -16,6 +12,5 @@ export async function getTaskComments(taskId: string): Promise<Comment[]> {
     throw new Error('Failed to fetch task comments');
   }
 
-  const data: GetTaskCommentsResponse = await response.json();
-  return data.comments;
+  return response.json();
 }

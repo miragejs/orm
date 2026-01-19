@@ -14,7 +14,6 @@ export const usersCollection = collection<TestCollections>()
     }),
   })
   .serializer({
-    root: true,
     with: {
       team: { select: ['id', 'name', 'description', 'department'] },
     },

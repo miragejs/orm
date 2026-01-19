@@ -18,7 +18,6 @@ export const teamsCollection = collection<TestCollections>()
     tasks: relations.hasMany(taskModel),
   })
   .serializer({
-    root: true,
     with: {
       manager: { select: ['avatar', 'email', 'id', 'name', 'role'] },
       members: { select: ['avatar', 'email', 'id', 'name', 'role'] },

@@ -1,6 +1,6 @@
 import { http, HttpResponse, PathParams } from 'msw';
 import { testSchema } from '@test/schema/testSchema';
-import { User } from '@shared/types';
+import type { User } from '@shared/types';
 
 /**
  * Auth handlers for login and logout endpoints
@@ -17,7 +17,7 @@ export const authHandlers = [
     }
 
     // Store user ID in session cookie
-    const json: { user: User } = user.toJSON();
+    const json: User = user.toJSON();
     return HttpResponse.json(json, {
       status: 200,
       headers: {

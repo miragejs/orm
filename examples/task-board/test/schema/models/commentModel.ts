@@ -13,7 +13,7 @@ export const commentModel = model()
   .name('comment')
   .collection('comments')
   .attrs<CommentAttrs>()
-  .json<{ comment: Comment }, { comments: Comment[] }>()
+  .json<Comment, Comment[]>()
   .build();
 
 export type CommentModel = typeof commentModel;

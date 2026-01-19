@@ -1,9 +1,5 @@
 import type { Task } from '@shared/types';
 
-export interface GetTaskDetailsResponse {
-  task: Task;
-}
-
 /**
  * Fetches detailed information about a specific task including comments.
  * @param taskId - The ID of the task to fetch
@@ -16,6 +12,5 @@ export async function getTaskDetails(taskId: string): Promise<Task> {
     throw new Error('Failed to fetch task details');
   }
 
-  const data: GetTaskDetailsResponse = await response.json();
-  return data.task;
+  return response.json();
 }

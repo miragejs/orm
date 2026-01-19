@@ -1,2 +1,2 @@
-export { login, type LoginResponse } from './login';
+export { login } from './login';
 export { logout, type LogoutResponse } from './logout';

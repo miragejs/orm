@@ -17,13 +17,10 @@ export async function loader({ params }: LoaderFunctionArgs) {
     throw new Response('User ID is required', { status: 400 });
   }
 
-  const data = await getUserTasks(userId);
-  return data;
+  return getUserTasks(userId);
 }
 
-export interface UserBoardLoaderData {
-  tasks: SimpleTask[];
-}
+export type UserBoardLoaderData = SimpleTask[];
 
 /**
  * UserBoard Component - Overview of tasks grouped by status for a specific user
@@ -31,7 +28,7 @@ export interface UserBoardLoaderData {
 export default function UserBoard() {
   const navigate = useNavigate();
   const { teamName, userId } = useParams();
-  const { tasks } = useLoaderData<UserBoardLoaderData>();
+  const tasks = useLoaderData<UserBoardLoaderData>();
   const [expanded, setExpanded] = useState<string>(TaskStatus.IN_PROGRESS);
 
   const tasksByStatus = useMemo(
