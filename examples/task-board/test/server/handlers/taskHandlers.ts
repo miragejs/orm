@@ -1,6 +1,6 @@
 import { http, HttpResponse, delay } from 'msw';
 import { testSchema } from '@test/schema/testSchema';
-import type { Task, Comment, SimpleTask } from '@shared/types';
+import type { Task, Comment, TaskListItem } from '@shared/types';
 
 /** Delay in milliseconds for loading task comments */
 const COMMENTS_DELAY_MS = 1500;
@@ -18,7 +18,7 @@ export const taskHandlers = [
       return HttpResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const json = targetUser.tasks.serialize<SimpleTask[]>({
+    const json = targetUser.tasks.serialize<TaskListItem[]>({
       select: ['id', 'title', 'status', 'priority', 'dueDate'],
       with: [],
     });

@@ -1,24 +1,24 @@
 import { TaskStatus, TaskPriority } from '../enums';
-import type { SimpleTeam } from './team';
-import type { SimpleUser } from './user';
+import type { TeamInfo } from './team';
+import type { UserInfo } from './user';
 
 /**
  * Task entity type
  */
 export interface Task {
   id: string;
-  assignee: SimpleUser;
+  assignee: UserInfo;
   createdAt: string;
-  creator: SimpleUser;
+  creator: UserInfo;
   description: string;
   dueDate: string;
   number: number;
   prefix: string;
   priority: TaskPriority;
   status: TaskStatus;
-  team: SimpleTeam;
+  team: TeamInfo;
   title: string;
   updatedAt: string;
 }
 
-export type SimpleTask = Pick<Task, 'id' | 'title' | 'status' | 'priority' | 'dueDate'>;
+export type TaskListItem = Pick<Task, 'id' | 'title' | 'status' | 'priority' | 'dueDate'>;

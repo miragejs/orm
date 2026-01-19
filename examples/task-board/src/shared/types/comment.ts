@@ -1,11 +1,11 @@
-import type { SimpleUser } from './user';
+import type { UserInfo } from './user';
 
 /**
  * Comment entity type
  */
 export interface Comment {
   id: string;
-  author: SimpleUser;
+  author: UserInfo;
   content: string;
   createdAt: string;
 }

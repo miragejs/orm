@@ -1,9 +1,9 @@
 import { Box, Typography } from '@mui/material';
 import { Groups as GroupsIcon, Business as BusinessIcon } from '@mui/icons-material';
-import type { SimpleTeam } from '@shared/types';
+import type { TeamInfo } from '@shared/types';
 
 interface TaskTeamCardProps {
-  team: SimpleTeam;
+  team: TeamInfo;
 }
 
 export default function TaskTeamCard({ team }: TaskTeamCardProps) {

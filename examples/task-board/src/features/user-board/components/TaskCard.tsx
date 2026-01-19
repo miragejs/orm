@@ -1,10 +1,10 @@
 import { memo } from 'react';
 import { Box, Card, CardContent, Chip, Typography } from '@mui/material';
 import { TaskPriority } from '@shared/enums';
-import type { SimpleTask } from '@shared/types';
+import type { TaskListItem } from '@shared/types';
 
 interface TaskCardProps {
-  task: SimpleTask;
+  task: TaskListItem;
   statusColor: 'default' | 'info' | 'warning' | 'success' | 'error';
   onTaskClick: (taskId: string) => void;
 }

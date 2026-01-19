@@ -8,7 +8,7 @@ import type { TaskStatus, TaskPriority } from '@shared/enums';
 import type {
   MemberOption,
   MemberSortableColumn,
-  SimpleUser,
+  UserInfo,
   TaskFilters,
   TaskSortableColumn,
   Team,
@@ -104,7 +104,7 @@ export const teamHandlers = [
     const total = membersCollection.meta?.total ?? 0;
 
     // Serialize team members without relationships
-    const members = membersCollection.serialize<SimpleUser[]>({
+    const members = membersCollection.serialize<UserInfo[]>({
       with: [],
     });
 

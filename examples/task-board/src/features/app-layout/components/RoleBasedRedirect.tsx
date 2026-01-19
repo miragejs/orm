@@ -1,7 +1,7 @@
 import kebabCase from 'lodash.kebabcase';
 import { Navigate, useRouteLoaderData } from 'react-router';
-import { UserRole } from '@shared/enums';
-import type { AppLoaderData } from '../AppLayout';
+import { isManager } from '@shared/utils';
+import type { User } from '@shared/types';
 
 /**
  * RoleBasedRedirect Component - Redirects users to appropriate route based on role
@@ -9,10 +9,10 @@ import type { AppLoaderData } from '../AppLayout';
  * - Users → /{teamName}/users/{userId}
  */
 export default function RoleBasedRedirect() {
-  const { user } = useRouteLoaderData('root') as AppLoaderData;
+  const user = useRouteLoaderData<User>('root')!;
   const teamSlug = kebabCase(user.team.name);
 
-  if (user.role === UserRole.MANAGER) {
+  if (isManager(user)) {
     return <Navigate to={`/${teamSlug}/dashboard`} replace />;
   }
 

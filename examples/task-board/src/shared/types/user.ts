@@ -1,4 +1,4 @@
-import type { SimpleTeam } from './team';
+import type { TeamInfo } from './team';
 
 /**
  * Shared User type
@@ -10,7 +10,7 @@ export interface User {
   email: string;
   name: string;
   role: string;
-  team: SimpleTeam;
+  team: TeamInfo;
 }
 
-export type SimpleUser = Pick<User, 'avatar' | 'bio' | 'email' | 'id' | 'name' | 'role'>;
+export type UserInfo = Pick<User, 'avatar' | 'bio' | 'email' | 'id' | 'name' | 'role'>;

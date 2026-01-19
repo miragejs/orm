@@ -1,10 +1,10 @@
 import { memo } from 'react';
 import { Card, CardContent, Typography, Box, Avatar, Chip } from '@mui/material';
 import { Groups as GroupsIcon, Assignment as AssignmentIcon } from '@mui/icons-material';
-import type { SimpleUser } from '@shared/types';
+import type { UserInfo } from '@shared/types';
 
 interface TeamStatsCardProps {
-  members: SimpleUser[];
+  members: UserInfo[];
   taskCount: number;
 }
 

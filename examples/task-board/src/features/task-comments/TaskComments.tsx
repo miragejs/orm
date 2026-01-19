@@ -1,9 +1,9 @@
 import { Suspense } from 'react';
-import { useRouteLoaderData, Await } from 'react-router';
+import { useRouteLoaderData, Await, useLocation } from 'react-router';
 import { Box, Skeleton, Alert } from '@mui/material';
 import { CommentsAccordion } from './components';
 import type { TaskDetailsLoaderData } from '@features/task-details/TaskDetails';
-import type { AppLoaderData } from '@features/app-layout/AppLayout';
+import type { User } from '@shared/types';
 
 /**
  * Loading skeleton for task comments
@@ -40,16 +40,13 @@ function TaskCommentsErrorFallback() {
  * Works for both dashboard and user task details routes
  */
 export default function TaskComments() {
-  const rootData = useRouteLoaderData('root') as AppLoaderData;
-  // Both hooks must be called unconditionally per React rules
-  const dashboardTaskData = useRouteLoaderData(
-    'dashboardTaskDetails',
-  ) as TaskDetailsLoaderData | null;
-  const userTaskData = useRouteLoaderData(
-    'userTaskDetails',
-  ) as TaskDetailsLoaderData | null;
-  const taskData = (dashboardTaskData || userTaskData) as TaskDetailsLoaderData;
-  const currentUserId = rootData.user?.id;
+  const { pathname } = useLocation();
+  const isDashboard = pathname.includes('/dashboard');
+
+  const currentUser = useRouteLoaderData<User>('userBoard')!;
+  const taskRouteId = isDashboard ? 'dashboardTaskDetails' : 'userTaskDetails';
+  const taskData = useRouteLoaderData<TaskDetailsLoaderData>(taskRouteId)!;
+  const currentUserId = currentUser.id;
 
   return (
     <Suspense fallback={<TaskCommentsLoadingSkeleton />}>

@@ -6,6 +6,6 @@ export type {
   TaskSortableColumn,
   TaskStatistics,
 } from './dashboard';
-export type { Task, SimpleTask } from './task';
-export type { Team, SimpleTeam } from './team';
-export type { User, SimpleUser } from './user';
+export type { Task, TaskListItem } from './task';
+export type { Team, TeamInfo } from './team';
+export type { User, UserInfo } from './user';

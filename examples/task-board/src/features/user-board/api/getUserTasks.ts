@@ -1,9 +1,9 @@
-import type { SimpleTask } from '@shared/types';
+import type { TaskListItem } from '@shared/types';
 
 /**
  * Fetch all tasks for a specific user
  */
-export async function getUserTasks(userId: string): Promise<SimpleTask[]> {
+export async function getUserTasks(userId: string): Promise<TaskListItem[]> {
   const response = await fetch(`/api/users/${userId}/tasks`);
 
   if (!response.ok) {

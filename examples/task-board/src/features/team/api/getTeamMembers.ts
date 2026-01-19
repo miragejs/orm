@@ -1,8 +1,8 @@
 import type { TableParams } from '@shared/utils';
-import type { MemberSortableColumn, SimpleUser } from '@shared/types';
+import type { MemberSortableColumn, UserInfo } from '@shared/types';
 
 export interface GetTeamMembersResponse extends TableParams<MemberSortableColumn> {
-  members: SimpleUser[];
+  members: UserInfo[];
   total: number;
 }
 

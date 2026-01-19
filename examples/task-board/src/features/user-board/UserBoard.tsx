@@ -6,7 +6,7 @@ import { getUserTasks } from './api';
 import { TaskStatusSection } from './components';
 import { statusConfig, statusOrder } from './config';
 import type { LoaderFunctionArgs } from 'react-router';
-import type { SimpleTask } from '@shared/types';
+import type { TaskListItem } from '@shared/types';
 
 /**
  * UserBoard loader - fetches tasks for specified user
@@ -20,15 +20,13 @@ export async function loader({ params }: LoaderFunctionArgs) {
   return getUserTasks(userId);
 }
 
-export type UserBoardLoaderData = SimpleTask[];
-
 /**
  * UserBoard Component - Overview of tasks grouped by status for a specific user
  */
 export default function UserBoard() {
   const navigate = useNavigate();
   const { teamName, userId } = useParams();
-  const tasks = useLoaderData<UserBoardLoaderData>();
+  const tasks = useLoaderData<Awaited<ReturnType<typeof loader>>>();
   const [expanded, setExpanded] = useState<string>(TaskStatus.IN_PROGRESS);
 
   const tasksByStatus = useMemo(
@@ -41,7 +39,7 @@ export default function UserBoard() {
           acc[task.status].push(task);
           return acc;
         },
-        {} as Record<TaskStatus, SimpleTask[]>,
+        {} as Record<TaskStatus, TaskListItem[]>,
       ),
     [tasks],
   );

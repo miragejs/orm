@@ -9,13 +9,13 @@ import {
   Typography,
 } from '@mui/material';
 import TaskCard from './TaskCard';
-import type { SimpleTask } from '@shared/types';
+import type { TaskListItem } from '@shared/types';
 
 interface TaskStatusSectionProps {
   statusLabel: string;
   statusIcon: React.ComponentType<{ sx?: object }>;
   statusColor: 'default' | 'info' | 'warning' | 'success' | 'error';
-  tasks: SimpleTask[];
+  tasks: TaskListItem[];
   expanded: boolean;
   onExpandChange: (isExpanded: boolean) => void;
   onTaskClick: (taskId: string) => void;

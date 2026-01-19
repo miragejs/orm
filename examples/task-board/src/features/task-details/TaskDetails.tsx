@@ -17,7 +17,6 @@ import {
   TaskTeamCard,
   TaskDatesInfo,
 } from './components';
-import type { Task, Comment } from '@shared/types';
 import type { LoaderFunctionArgs } from 'react-router';
 
 /**
@@ -37,10 +36,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
   return { task, commentsPromise };
 }
 
-export interface TaskDetailsLoaderData {
-  task: Task;
-  commentsPromise: Promise<Comment[]>;
-}
+export type TaskDetailsLoaderData = Awaited<ReturnType<typeof loader>>;
 
 /**
  * Task Details Dialog Component

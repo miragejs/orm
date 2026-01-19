@@ -1,9 +1,9 @@
 import { Box, Typography, Avatar } from '@mui/material';
-import type { SimpleUser } from '@shared/types';
+import type { UserInfo } from '@shared/types';
 
 interface PersonInfoProps {
   label: string;
-  person: SimpleUser | null;
+  person: UserInfo | null;
   fallbackText: string;
 }
 
@@ -41,8 +41,8 @@ function PersonInfo({ label, person, fallbackText }: PersonInfoProps) {
 }
 
 interface TaskPeopleSectionProps {
-  assignee: SimpleUser | null;
-  creator: SimpleUser | null;
+  assignee: UserInfo | null;
+  creator: UserInfo | null;
 }
 
 export default function TaskPeopleSection({ assignee, creator }: TaskPeopleSectionProps) {

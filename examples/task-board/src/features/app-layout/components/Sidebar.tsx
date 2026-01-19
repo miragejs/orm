@@ -15,8 +15,8 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import Tooltip from '@mui/material/Tooltip';
 import { logout } from '@features/auth/api';
 import { Logo } from '@shared/components';
-import { UserRole } from '@shared/enums';
-import type { AppLoaderData } from '../AppLayout';
+import { isManager } from '@shared/utils';
+import type { User } from '@shared/types';
 
 const DRAWER_WIDTH = 72;
 
@@ -32,12 +32,11 @@ interface NavItem {
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useRouteLoaderData('root') as AppLoaderData;
-
-  const teamSlug = useMemo(() => kebabCase(user.team.name), [user.team.name]);
+  const user = useRouteLoaderData<User>('root')!;
+  const teamSlug = kebabCase(user.team.name);
 
   const navItems = useMemo((): NavItem[] => {
-    if (user.role === UserRole.MANAGER) {
+    if (isManager(user)) {
       return [
         {
           label: 'Dashboard',

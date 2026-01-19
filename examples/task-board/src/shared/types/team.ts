@@ -1,4 +1,4 @@
-import type { SimpleUser } from './user';
+import type { UserInfo } from './user';
 
 /**
  * Team entity type
@@ -8,13 +8,13 @@ export interface Team {
   createdAt: string;
   department: string;
   description: string;
-  manager: SimpleUser;
-  members: SimpleUser[];
+  manager: UserInfo;
+  members: UserInfo[];
   name: string;
   taskIds: string[];
 }
 
 /**
- * Simple Team type
+ * Team info type
  */
-export type SimpleTeam = Pick<Team, 'department' | 'description' | 'id' | 'name'>;
+export type TeamInfo = Pick<Team, 'department' | 'description' | 'id' | 'name'>;
