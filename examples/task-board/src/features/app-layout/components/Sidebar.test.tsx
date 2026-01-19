@@ -5,10 +5,9 @@ import Sidebar from './Sidebar';
 
 describe('Sidebar', () => {
   test('renders "My Tasks" and "Team" nav items for regular user', async ({ schema }) => {
-    const user = schema.users.create();
-    const json = user.toJSON();
+    const user = schema.users.create().toJSON();
 
-    renderWithRouter({ element: <Sidebar />, user: json.user });
+    renderWithRouter({ element: <Sidebar />, user });
 
     await waitFor(() => {
       expect(screen.getByRole('complementary')).toBeInTheDocument();
@@ -23,10 +22,9 @@ describe('Sidebar', () => {
   });
 
   test('renders "Dashboard" nav item for manager', async ({ schema }) => {
-    const user = schema.users.create('manager');
-    const json = user.toJSON();
+    const user = schema.users.create('manager').toJSON();
 
-    renderWithRouter({ element: <Sidebar />, user: json.user });
+    renderWithRouter({ element: <Sidebar />, user });
 
     await waitFor(() => {
       expect(screen.getByRole('complementary')).toBeInTheDocument();
@@ -38,10 +36,9 @@ describe('Sidebar', () => {
   });
 
   test('renders logout button', async ({ schema }) => {
-    const user = schema.users.create();
-    const json = user.toJSON();
+    const user = schema.users.create().toJSON();
 
-    renderWithRouter({ element: <Sidebar />, user: json.user });
+    renderWithRouter({ element: <Sidebar />, user });
 
     await waitFor(() => {
       expect(screen.getByRole('complementary')).toBeInTheDocument();

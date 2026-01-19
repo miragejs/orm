@@ -5,10 +5,9 @@ import AppLayout from './AppLayout';
 
 describe('AppLayout', () => {
   test('renders layout with sidebar, header, and main content', async ({ schema }) => {
-    const user = schema.users.create();
-    const json = user.toJSON();
+    const user = schema.users.create().toJSON();
 
-    renderWithRouter({ element: <AppLayout />, user: json.user });
+    renderWithRouter({ element: <AppLayout />, user });
 
     await waitFor(() => {
       expect(screen.getByRole('complementary')).toBeInTheDocument();

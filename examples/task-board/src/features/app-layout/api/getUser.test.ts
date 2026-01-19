@@ -16,12 +16,11 @@ describe('getUser', () => {
   afterAll(() => server.close());
 
   test('gets authenticated user', async ({ schema }) => {
-    const user = schema.users.create();
-    const json = user.toJSON();
+    const user = schema.users.create().toJSON();
     document.cookie = `userId=${user.id}`;
 
     const result = await getUser();
-    expect(result).toEqual(json.user);
+    expect(result).toEqual(user);
   });
 
   test('throws "Not authenticated" when no cookie present', async () => {

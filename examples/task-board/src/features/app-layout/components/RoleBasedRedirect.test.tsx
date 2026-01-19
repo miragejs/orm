@@ -5,8 +5,7 @@ import RoleBasedRedirect from './RoleBasedRedirect';
 
 describe('RoleBasedRedirect', () => {
   test('redirects manager to dashboard', async ({ schema }) => {
-    const user = schema.users.create('manager');
-    const json = user.toJSON();
+    const user = schema.users.create('manager').toJSON();
 
     renderWithRouter({
       element: <RoleBasedRedirect />,
@@ -14,7 +13,7 @@ describe('RoleBasedRedirect', () => {
         { path: '/:teamSlug/dashboard', element: <div>Dashboard</div> },
         { path: '/:teamSlug/users/:userId', element: <div>User Tasks</div> },
       ],
-      user: json.user,
+      user,
     });
 
     await waitFor(() => {
@@ -23,11 +22,10 @@ describe('RoleBasedRedirect', () => {
   });
 
   test('redirects regular user to their tasks page', async ({ schema }) => {
-    const user = schema.users.create();
-    const json = user.toJSON();
+    const user = schema.users.create().toJSON();
 
     renderWithRouter({
-      user: json.user,
+      user,
       element: <RoleBasedRedirect />,
       routes: [
         { path: '/:teamSlug/dashboard', element: <div>Dashboard</div> },

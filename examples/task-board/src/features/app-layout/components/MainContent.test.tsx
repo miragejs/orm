@@ -5,12 +5,11 @@ import MainContent from './MainContent';
 
 describe('MainContent', () => {
   test('renders welcome message with user first name', ({ schema }) => {
-    const user = schema.users.create({ name: 'John Doe' });
-    const json = user.toJSON();
+    const user = schema.users.create({ name: 'John Doe' }).toJSON();
 
     render(
       <MemoryRouter>
-        <MainContent user={json.user} />
+        <MainContent user={user} />
       </MemoryRouter>,
     );
 
@@ -23,7 +22,7 @@ describe('MainContent', () => {
 
     render(
       <MemoryRouter>
-        <MainContent user={json.user} />
+        <MainContent user={json} />
       </MemoryRouter>,
     );
 

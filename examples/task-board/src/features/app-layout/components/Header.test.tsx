@@ -6,20 +6,18 @@ import Header from './Header';
 
 describe('Header', () => {
   test('renders user avatar', ({ schema }) => {
-    const user = schema.users.create();
-    const json = user.toJSON();
+    const user = schema.users.create().toJSON();
 
-    render(<Header user={json.user} />);
+    render(<Header user={user} />);
 
     const avatar = screen.getByRole('img', { name: user.name });
     expect(avatar).toBeInTheDocument();
   });
 
   test('opens menu when avatar is clicked', async ({ schema }) => {
-    const user = schema.users.create('manager');
-    const json = user.toJSON();
+    const user = schema.users.create('manager').toJSON();
 
-    render(<Header user={json.user} />);
+    render(<Header user={user} />);
 
     const avatarButton = screen.getByRole('button');
     await userEvent.click(avatarButton);
@@ -29,10 +27,9 @@ describe('Header', () => {
   });
 
   test('closes menu when pressing Escape', async ({ schema }) => {
-    const user = schema.users.create();
-    const json = user.toJSON();
+    const user = schema.users.create().toJSON();
 
-    render(<Header user={json.user} />);
+    render(<Header user={user} />);
 
     const avatarButton = screen.getByRole('button');
     await userEvent.click(avatarButton);
