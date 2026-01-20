@@ -274,6 +274,171 @@ describe('Factory associations', () => {
       expect(post.author?.name).toBe('Jane Admin');
       expect(post.author?.role).toBe('admin');
     });
+
+    it('should inject inverse FK when creating single related model via hasMany with inverse belongsTo', () => {
+      // Define a schema where User hasMany Posts with inverse 'author' belongsTo
+      type InverseTestSchema = {
+        users: CollectionConfig<
+          UserModel,
+          {
+            posts: HasMany<PostModel>;
+          },
+          Factory<UserModel, 'admin' | 'verified'>
+        >;
+        posts: CollectionConfig<
+          PostModel,
+          {
+            author: BelongsTo<UserModel, 'authorId'>;
+          },
+          Factory<PostModel, 'published'>
+        >;
+      };
+
+      // Post factory with a default 'author' association that would create a NEW user
+      // This association should be overridden by the inverse FK injection
+      const postFactoryWithDefault = factory<InverseTestSchema>()
+        .model(postModel)
+        .attrs({
+          title: 'My Post',
+          content: 'Content',
+        })
+        .associations({
+          author: associations.create(userModel),
+        })
+        .build();
+
+      // User factory that creates a single post via hasMany association using create()
+      const userFactoryWithPost = factory<InverseTestSchema>()
+        .model(userModel)
+        .attrs({
+          name: 'John Doe',
+          email: 'john@example.com',
+        })
+        .traits({
+          withPost: {
+            posts: associations.createMany(postModel, 1),
+          },
+        })
+        .build();
+
+      const testSchema = schema()
+        .collections({
+          users: collection<InverseTestSchema>()
+            .model(userModel)
+            .factory(userFactoryWithPost)
+            .relationships({
+              posts: hasMany(postModel, {
+                inverse: 'author', // Specifies the inverse relationship on Post
+              }),
+            })
+            .build(),
+          posts: collection<InverseTestSchema>()
+            .model(postModel)
+            .factory(postFactoryWithDefault)
+            .relationships({
+              author: belongsTo(userModel, {
+                foreignKey: 'authorId',
+                inverse: 'posts',
+              }),
+            })
+            .build(),
+        })
+        .build();
+
+      // Create a user with a single post using the trait
+      const user = testSchema.users.create('withPost');
+
+      // User should have exactly 1 post
+      expect(user.posts.length).toBe(1);
+
+      const post = user.posts.at(0)!;
+
+      // The post should have authorId set to the parent user's ID
+      // (inverse FK injection should have worked)
+      expect(post.authorId).toBe(user.id);
+      expect(post.author?.id).toBe(user.id);
+
+      // The post factory's default 'author' association should NOT have created
+      // additional users because the inverse FK was injected
+      expect(testSchema.users.all().length).toBe(1);
+      expect(testSchema.posts.all().length).toBe(1);
+    });
+
+    it('should synchronize inverse hasMany when creating related model via belongsTo', () => {
+      // Define a schema where Comment belongsTo Post with inverse 'comments' hasMany
+      type InverseTestSchema = {
+        posts: CollectionConfig<
+          PostModel,
+          {
+            comments: HasMany<CommentModel>;
+          },
+          Factory<PostModel, 'published'>
+        >;
+        comments: CollectionConfig<
+          CommentModel,
+          {
+            post: BelongsTo<PostModel, 'postId'>;
+          },
+          Factory<CommentModel, 'approved'>
+        >;
+      };
+
+      const simplePostFactory = factory<InverseTestSchema>()
+        .model(postModel)
+        .attrs({
+          title: 'My Post',
+          content: 'Content',
+        })
+        .build();
+
+      // Comment factory that creates a post via belongsTo association
+      const commentFactoryWithPost = factory<InverseTestSchema>()
+        .model(commentModel)
+        .attrs({
+          content: 'Great post!',
+        })
+        .associations({
+          post: associations.create<PostModel, InverseTestSchema>(postModel),
+        })
+        .build();
+
+      const testSchema = schema()
+        .collections({
+          posts: collection<InverseTestSchema>()
+            .model(postModel)
+            .factory(simplePostFactory)
+            .relationships({
+              comments: hasMany(commentModel, {
+                inverse: 'post',
+              }),
+            })
+            .build(),
+          comments: collection<InverseTestSchema>()
+            .model(commentModel)
+            .factory(commentFactoryWithPost)
+            .relationships({
+              post: belongsTo(postModel, {
+                foreignKey: 'postId',
+                inverse: 'comments',
+              }),
+            })
+            .build(),
+        })
+        .build();
+
+      // Create a comment which creates a post via belongsTo association
+      const comment = testSchema.comments.create();
+
+      // Comment should have a post
+      expect(comment.post).toBeDefined();
+      expect(comment.postId).toBe(comment.post?.id);
+
+      // The created post should have this comment in its inverse hasMany collection
+      // (relationship synchronization should work)
+      const post = comment.post!;
+      expect(post.comments.length).toBe(1);
+      expect(post.comments.at(0)?.id).toBe(comment.id);
+    });
   });
 
   describe('createMany()', () => {
@@ -402,6 +567,100 @@ describe('Factory associations', () => {
       expect(comments[1].approved).toBe(true); // From trait
       expect(comments[2].content).toBe('Third comment');
       expect(comments[2].approved).toBe(false); // Explicitly set
+    });
+
+    it('should inject inverse FK when creating related models via hasMany with inverse belongsTo', () => {
+      // Define a schema where Post hasMany Comments with inverse 'post' belongsTo
+      type InverseTestSchema = {
+        posts: CollectionConfig<
+          PostModel,
+          {
+            comments: HasMany<CommentModel>;
+          },
+          Factory<PostModel, 'published'>
+        >;
+        comments: CollectionConfig<
+          CommentModel,
+          {
+            post: BelongsTo<PostModel, 'postId'>;
+          },
+          Factory<CommentModel, 'approved'>
+        >;
+      };
+
+      // Comment factory with a default 'post' association that would create a NEW post
+      // This association should be overridden by the inverse FK injection
+      const commentFactoryWithDefault = factory<InverseTestSchema>()
+        .model(commentModel)
+        .attrs({
+          content: 'Great post!',
+        })
+        .associations({
+          post: associations.create(postModel),
+        })
+        .build();
+
+      // Post factory that creates comments via hasMany association
+      const postFactoryWithComments = factory<InverseTestSchema>()
+        .model(postModel)
+        .attrs({
+          title: 'My Post',
+          content: 'Content',
+        })
+        .associations({
+          comments: associations.createMany<CommentModel, InverseTestSchema>(
+            commentModel,
+            3,
+          ),
+        })
+        .build();
+
+      const testSchema = schema()
+        .collections({
+          posts: collection<InverseTestSchema>()
+            .model(postModel)
+            .factory(postFactoryWithComments)
+            .relationships({
+              comments: hasMany(commentModel, {
+                inverse: 'post', // Specifies the inverse relationship on Comment
+              }),
+            })
+            .build(),
+          comments: collection<InverseTestSchema>()
+            .model(commentModel)
+            .factory(commentFactoryWithDefault)
+            .relationships({
+              post: belongsTo(postModel, {
+                foreignKey: 'postId',
+                inverse: 'comments',
+              }),
+            })
+            .build(),
+        })
+        .build();
+
+      // Create a post with 3 comments
+      const post = testSchema.posts.create();
+      const comments = post.comments.models;
+
+      // All 3 comments should be created
+      expect(comments.length).toBe(3);
+
+      // All comments should have postId set to the parent post's ID
+      // (inverse FK injection should have worked)
+      expect(comments[0].postId).toBe(post.id);
+      expect(comments[1].postId).toBe(post.id);
+      expect(comments[2].postId).toBe(post.id);
+
+      // The comment factory's default 'post' association should NOT have created
+      // additional posts because the inverse FK was injected
+      expect(testSchema.posts.all().length).toBe(1);
+
+      // All 3 comments should be linked to the same post
+      expect(testSchema.comments.all().length).toBe(3);
+      testSchema.comments.all().forEach((comment) => {
+        expect(comment.postId).toBe(post.id);
+      });
     });
   });
 

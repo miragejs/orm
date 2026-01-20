@@ -115,10 +115,12 @@ export default class Factory<
     // 7. Get associations that need processing (merge traits + factory, filter user-provided)
     const associations = this._getAssociations(traitNames, relationshipUpdates);
 
-    // 8. Process the filtered associations
+    // 8. Process the filtered associations (pass relationships and parent ID for inverse FK injection)
     const relationshipValues = this._associationsManager.processAssociations(
       schema,
       associations,
+      collection.relationships,
+      nextId,
     );
 
     // 10. Merge: associations override factory attrs, but user-provided relationship values take precedence
