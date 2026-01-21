@@ -230,6 +230,7 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
         .filter(Boolean) as TRecord[];
       this._logger?.debug(`Found ${records.length} records in '${this.name}'`, {
         query: input,
+        total: records.length,
         operation: 'findMany',
       });
       return records;
@@ -265,6 +266,7 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
     );
     this._logger?.debug(`Found ${records.length} records in '${this.name}'`, {
       query: predicate,
+      total: records.length,
       operation: 'findMany',
     });
     return records;
@@ -439,6 +441,9 @@ export default class DbCollection<TRecord extends DbRecord = DbRecord> {
   clear(): void {
     this._records.clear();
     this.identityManager.reset();
+    this._logger?.debug(`Cleared collection '${this.name}'`, {
+      size: this.size,
+    });
   }
 
   // -- PRIVATE METHODS --

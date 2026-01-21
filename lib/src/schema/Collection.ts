@@ -46,7 +46,7 @@ export default class Collection<
   new(
     attrs: ModelNewAttrs<TTemplate, TSchema>,
   ): NewModelInstance<TTemplate, TSchema> {
-    return new this.Model({
+    const model = new this.Model({
       attrs: attrs,
       relationships: this.relationships,
       schema: this._schema,
@@ -56,6 +56,16 @@ export default class Collection<
       TSchema,
       RelationshipsByTemplate<TTemplate, TSchema>
     >);
+
+    this._logger?.debug(
+      `New model instance created for '${this.collectionName}'`,
+      {
+        id: model.id,
+        attrs: model.attrs,
+      },
+    );
+
+    return model;
   }
 
   /**
@@ -69,7 +79,7 @@ export default class Collection<
       | ModelCreateAttrs<TTemplate, TSchema>
     )[]
   ): ModelInstance<TTemplate, TSchema> {
-    this._logger?.info(`Creating model for '${this.collectionName}'`, {
+    this._logger?.log(`Creating model for '${this.collectionName}'`, {
       collection: this.collectionName,
       traitsAndDefaults,
     });
@@ -175,6 +185,11 @@ export default class Collection<
       | ModelCreateAttrs<TTemplate, TSchema>
     )[]
   ): ModelCollection<TTemplate, TSchema> {
+    const count =
+      typeof countOrModels === 'number' ? countOrModels : countOrModels.length;
+
+    this._logger?.log(`Creating ${count} models for '${this.collectionName}'`);
+
     let models: ModelInstance<TTemplate, TSchema>[];
 
     if (typeof countOrModels === 'number') {
@@ -188,6 +203,13 @@ export default class Collection<
         this.create(...modelTraitsAndDefaults),
       );
     }
+
+    this._logger?.info(
+      `Created ${models.length} models for '${this.collectionName}'`,
+      {
+        ids: models.map((m) => m.id),
+      },
+    );
 
     return new ModelCollection(this.template, models, this.serializer);
   }
@@ -244,6 +266,12 @@ export default class Collection<
 
     // If we have enough models, return the requested count
     if (existingModels.length >= count) {
+      this._logger?.info(
+        `Found ${count} existing models for '${this.collectionName}'`,
+        {
+          ids: existingModels.models.slice(0, count).map((m) => m.id),
+        },
+      );
       return new ModelCollection(
         this.template,
         existingModels.models.slice(0, count),
@@ -257,12 +285,21 @@ export default class Collection<
     // Create the remaining models
     // If query is an object, include it in the creation attributes
     const queryAttrs = typeof query === 'function' ? {} : query;
-
     const newModels = Array.from({ length: needed }, () =>
       this.create(
         ...traitsAndDefaults,
         queryAttrs as ModelCreateAttrs<TTemplate, TSchema>,
       ),
+    );
+
+    this._logger?.info(
+      `Found ${existingModels.length} and created ${newModels.length} models for '${this.collectionName}'`,
+      {
+        ids: [
+          ...existingModels.models.map((m) => m.id),
+          ...newModels.map((m) => m.id),
+        ],
+      },
     );
 
     // Combine existing and new models
@@ -294,12 +331,6 @@ export default class Collection<
       return;
     }
 
-    // Check if collection is empty and reset seed tracking if it is
-    if (this.dbCollection.isEmpty && this._loadedSeeds.size > 0) {
-      this._logger?.debug(`Seed tracking reset for '${this.collectionName}'`);
-      this._loadedSeeds.clear();
-    }
-
     // Normalize seeds to always be an object
     const seedScenarios: Record<
       string,
@@ -311,7 +342,7 @@ export default class Collection<
 
     // If no scenarioId provided, run all scenarios
     if (!scenarioId) {
-      this._logger?.info(`Loading seeds for '${this.collectionName}'`, {
+      this._logger?.log(`Loading seeds for '${this.collectionName}'`, {
         scenarios: Object.keys(seedScenarios),
       });
       for (const name in seedScenarios) {
@@ -364,7 +395,7 @@ export default class Collection<
       return;
     }
 
-    this._logger?.info(
+    this._logger?.log(
       `Loading seed scenario '${scenarioId}' for '${this.collectionName}'`,
     );
     await seedScenarios[scenarioId](this._schema);
@@ -398,7 +429,7 @@ export default class Collection<
       return;
     }
 
-    this._logger?.info(`Loading fixtures for '${this.collectionName}'`, {
+    this._logger?.log(`Loading fixtures for '${this.collectionName}'`, {
       count: this._fixtures.records.length,
     });
 

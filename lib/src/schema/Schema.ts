@@ -8,8 +8,8 @@ import { Logger, MirageError } from '@src/utils';
 
 import Collection, { createCollection } from './Collection';
 import type {
-  SchemaCollectionAccessors,
   CollectionConfig,
+  SchemaCollectionAccessors,
   SchemaCollections,
   SchemaConfig,
   SchemaDbCollections,
@@ -139,7 +139,7 @@ export default class Schema<
     }
 
     if (collectionName) {
-      this.logger?.info(
+      this.logger?.log(
         `Loading seeds for '${String(collectionName)}'${onlyDefault ? ' (default only)' : ''}`,
       );
 
@@ -151,7 +151,7 @@ export default class Schema<
         this.db.dump(),
       );
     } else {
-      this.logger?.info(
+      this.logger?.log(
         `Loading all seeds${onlyDefault ? ' (default only)' : ''}`,
         {
           collections: Array.from(this._collections.keys()),
@@ -181,7 +181,7 @@ export default class Schema<
    */
   async loadFixtures(collectionName?: keyof TCollections): Promise<void> {
     if (collectionName) {
-      this.logger?.info(`Loading fixtures for '${String(collectionName)}'`);
+      this.logger?.log(`Loading fixtures for '${String(collectionName)}'`);
 
       const collection = this.getCollection(collectionName);
       await collection.loadFixtures();
@@ -191,7 +191,7 @@ export default class Schema<
         this.db.dump(),
       );
     } else {
-      this.logger?.info('Loading all fixtures', {
+      this.logger?.log('Loading all fixtures', {
         collections: Array.from(this._collections.keys()),
       });
 
@@ -204,11 +204,28 @@ export default class Schema<
   }
 
   /**
+   * Resets seed tracking for all collections, allowing seeds to be reloaded.
+   * Call this after db.emptyData() if you need to reload seeds.
+   * @example
+   * ```typescript
+   * schema.db.emptyData();
+   * schema.resetSeedTracking();
+   * await schema.loadSeeds(); // Seeds can now be loaded again
+   * ```
+   */
+  resetSeedTracking(): void {
+    for (const [_, collection] of this._collections) {
+      collection.resetSeedTracking();
+    }
+    this.logger?.log('Seed tracking reset for all collections');
+  }
+
+  /**
    * Register collections from the configuration
    * @param collections - Collection configurations to register
    */
   private _registerCollections(collections: TCollections): void {
-    this.logger?.debug('Registering collections', {
+    this.logger?.log('Registering collections', {
       count: Object.keys(collections).length,
       names: Object.keys(collections),
     });
@@ -261,8 +278,9 @@ export default class Schema<
       }
     }
 
-    this.logger?.debug('All collections registered', {
-      count: this._collections.size,
+    this.logger?.info('All collections registered', {
+      count: Object.keys(collections).length,
+      names: Object.keys(collections),
     });
 
     // Validate inverse relationships after all collections are registered
@@ -272,7 +290,7 @@ export default class Schema<
     // This is done synchronously after all collections are registered
     // to ensure relationships are set up properly
     if (autoLoadCollections.length > 0) {
-      this.logger?.info('Auto-loading fixtures', {
+      this.logger?.log('Auto-loading fixtures', {
         collections: autoLoadCollections.map((c) => c.collectionName),
       });
 

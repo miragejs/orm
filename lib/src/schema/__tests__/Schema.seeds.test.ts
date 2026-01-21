@@ -33,6 +33,7 @@ describe('Schema with Seeds', () => {
 
       beforeEach(() => {
         testSchema.db.emptyData();
+        testSchema.resetSeedTracking();
       });
 
       it('should load seeds when called without scenarioId', async () => {
@@ -86,6 +87,7 @@ describe('Schema with Seeds', () => {
 
       beforeEach(() => {
         testSchema.db.emptyData();
+        testSchema.resetSeedTracking();
       });
 
       it('should load all scenarios when called without scenarioId', async () => {
@@ -139,6 +141,7 @@ describe('Schema with Seeds', () => {
 
       beforeEach(() => {
         testSchema.db.emptyData();
+        testSchema.resetSeedTracking();
       });
 
       it('should do nothing when loadSeeds is called', async () => {
@@ -177,6 +180,7 @@ describe('Schema with Seeds', () => {
 
       beforeEach(() => {
         testSchema.db.emptyData();
+        testSchema.resetSeedTracking();
       });
 
       it('should handle async seed functions', async () => {
@@ -212,6 +216,7 @@ describe('Schema with Seeds', () => {
 
     beforeEach(() => {
       testSchema.db.emptyData();
+      testSchema.resetSeedTracking();
     });
 
     it('should load all seeds for all collections', async () => {
@@ -462,6 +467,7 @@ describe('Schema with Seeds', () => {
 
         // Empty the collection
         testSchema.db.emptyData();
+        testSchema.resetSeedTracking();
         expect(testSchema.users.all().length).toBe(0);
 
         // Load seeds again - should work because collection is empty
@@ -598,6 +604,7 @@ describe('Schema with Seeds', () => {
 
         // Empty collection
         testSchema.db.emptyData();
+        testSchema.resetSeedTracking();
 
         // Load seeds again - should work because collection is empty
         await testSchema.users.loadSeeds('basic');
