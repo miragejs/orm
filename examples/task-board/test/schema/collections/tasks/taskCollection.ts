@@ -13,13 +13,9 @@ export const tasksCollection = collection<TestCollections>()
   .model(taskModel)
   .factory(taskFactory)
   .relationships({
-    assignee: relations.belongsTo(userModel, {
-      foreignKey: 'assigneeId',
-    }),
+    assignee: relations.belongsTo(userModel, { foreignKey: 'assigneeId' }),
     comments: relations.hasMany(commentModel),
-    creator: relations.belongsTo(userModel, {
-      foreignKey: 'creatorId',
-    }),
+    creator: relations.belongsTo(userModel, { foreignKey: 'creatorId' }),
     team: relations.belongsTo(teamModel),
   })
   .serializer({

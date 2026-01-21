@@ -19,7 +19,7 @@ export const teamFactory = factory<TestCollections>()
       members: associations.createMany<UserModel, TestCollections>(
         userModel,
         10,
-        'withTasks',
+        'withTasksAndComments',
       ),
     },
   })

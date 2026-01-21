@@ -1,13 +1,11 @@
 import { memo } from 'react';
-import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
-import {
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Chip,
-  Stack,
-  Typography,
-} from '@mui/material';
+import Accordion from '@mui/material/Accordion';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import TaskCard from './TaskCard';
 import type { TaskListItem } from '@shared/types';
 

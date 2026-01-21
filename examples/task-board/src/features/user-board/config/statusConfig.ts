@@ -1,9 +1,7 @@
-import {
-  CheckCircle as CheckCircleIcon,
-  Schedule as ScheduleIcon,
-  RateReview as RateReviewIcon,
-  Assignment as AssignmentIcon,
-} from '@mui/icons-material';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import RateReviewIcon from '@mui/icons-material/RateReview';
+import ScheduleIcon from '@mui/icons-material/Schedule';
 import { TaskStatus } from '@shared/enums';
 
 export interface StatusConfig {

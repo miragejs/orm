@@ -1,5 +1,9 @@
 import { memo } from 'react';
-import { Box, Card, CardContent, Chip, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Chip from '@mui/material/Chip';
+import Typography from '@mui/material/Typography';
 import { TaskPriority } from '@shared/enums';
 import type { TaskListItem } from '@shared/types';
 

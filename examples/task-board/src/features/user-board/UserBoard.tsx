@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useLoaderData, useNavigate, useParams, Outlet } from 'react-router';
-import { Box, Typography, Stack } from '@mui/material';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { TaskStatus } from '@shared/enums';
 import { getUserTasks } from './api';
 import { TaskStatusSection } from './components';

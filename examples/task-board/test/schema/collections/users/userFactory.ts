@@ -24,8 +24,23 @@ export const userFactory = factory<TestCollections>()
         for (let i = 0; i < taskCount; i++) {
           const creator = faker.helpers.arrayElement(members.models);
 
-          schema.tasks.createMany(
-            taskCount,
+          schema.tasks.create({
+            assigneeId: user.id,
+            creatorId: creator.id,
+            teamId: user.teamId,
+          });
+        }
+      },
+    },
+    withTasksAndComments: {
+      afterCreate(user, schema) {
+        const members = schema.users.findMany({ where: { teamId: user.teamId } });
+        const taskCount = faker.number.int({ min: 1, max: 5 });
+
+        for (let i = 0; i < taskCount; i++) {
+          const creator = faker.helpers.arrayElement(members.models);
+
+          schema.tasks.create(
             {
               assigneeId: user.id,
               creatorId: creator.id,

@@ -7,9 +7,7 @@ export const commentsCollection = collection<TestCollections>()
   .model(commentModel)
   .factory(commentFactory)
   .relationships({
-    author: relations.belongsTo(userModel, {
-      foreignKey: 'authorId',
-    }),
+    author: relations.belongsTo(userModel, { foreignKey: 'authorId' }),
     task: relations.belongsTo(taskModel),
   })
   .serializer({

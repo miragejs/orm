@@ -9,9 +9,7 @@ export const usersCollection = collection<TestCollections>()
   .relationships({
     comments: relations.hasMany(commentModel),
     tasks: relations.hasMany(taskModel),
-    team: relations.belongsTo(teamModel, {
-      inverse: 'members',
-    }),
+    team: relations.belongsTo(teamModel, { inverse: 'members' }),
   })
   .serializer({
     with: {

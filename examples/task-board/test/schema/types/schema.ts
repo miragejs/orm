@@ -13,7 +13,7 @@ export type TestCollections = {
       tasks: HasMany<TaskModel>;
       team: BelongsTo<TeamModel>;
     },
-    Factory<UserModel, 'manager' | 'withTasks', TestCollections>,
+    Factory<UserModel, 'manager' | 'withTasks' | 'withTasksAndComments', TestCollections>,
     TestCollections
   >;
   teams: CollectionConfig<
