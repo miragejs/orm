@@ -1,5 +1,7 @@
-import { Box, Typography } from '@mui/material';
-import { Groups as GroupsIcon, Business as BusinessIcon } from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import BusinessIcon from '@mui/icons-material/Business';
+import GroupsIcon from '@mui/icons-material/Groups';
 import type { TeamInfo } from '@shared/types';
 
 interface TaskTeamCardProps {

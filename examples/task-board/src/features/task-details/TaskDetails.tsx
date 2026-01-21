@@ -1,13 +1,11 @@
 import { useLoaderData, useNavigate, useParams, Outlet } from 'react-router';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
-  Divider,
-} from '@mui/material';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import Divider from '@mui/material/Divider';
+import Typography from '@mui/material/Typography';
 import { getTaskDetails } from './api';
 import { getTaskComments } from '@features/task-comments/api';
 import { formatTaskTitle } from '@shared/utils';
@@ -62,19 +60,12 @@ export default function TaskDetails() {
 
       <DialogContent>
         <TaskStatusChips status={task.status} priority={task.priority} />
-
         <Typography variant="body2">{task.description}</Typography>
-
         <Divider sx={{ my: 2 }} />
-
         <TaskPeopleSection assignee={task.assignee} creator={task.creator} />
-
         {task.team && <TaskTeamCard team={task.team} />}
-
         <TaskDatesInfo dueDate={task.dueDate} createdAt={task.createdAt} />
-
         <Divider sx={{ my: 2 }} />
-
         {/* Comments Section - Rendered via child route */}
         <Outlet />
       </DialogContent>

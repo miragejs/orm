@@ -1,5 +1,6 @@
-import { Box, Typography } from '@mui/material';
-import { CalendarToday as CalendarIcon } from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import CalendarIcon from '@mui/icons-material/CalendarToday';
 
 interface TaskDatesInfoProps {
   dueDate: string;
