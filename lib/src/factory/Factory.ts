@@ -8,6 +8,7 @@ import {
   type ModelTemplate,
   type PartialModelAttrs,
   type RelationshipsByTemplate,
+  RelatedModelAttrs,
 } from '@src/model';
 import type {
   Collection,
@@ -91,11 +92,11 @@ export default class Factory<
       ...traitsAndDefaults,
     );
 
-    // 3. Extract model attributes and relationship updates
-    const { modelAttrs, relationshipUpdates } = Model.processAttrs<
-      TTemplate,
-      TSchema
-    >(defaults, collection.relationships);
+    // 3. Extract model attributes (relationship updates are processed separately in runAssociations)
+    const { modelAttrs } = Model.processAttrs<TTemplate, TSchema>(
+      defaults,
+      collection.relationships,
+    );
 
     // 4. Evaluate and get ID
     const nextId = modelAttrs.id ?? collection.dbCollection.nextId;
@@ -112,24 +113,8 @@ export default class Factory<
       traitNames,
     );
 
-    // 7. Get associations that need processing (merge traits + factory, filter user-provided)
-    const associations = this._getAssociations(traitNames, relationshipUpdates);
-
-    // 8. Process the filtered associations (pass relationships and parent ID for inverse FK injection)
-    const relationshipValues = this._associationsManager.processAssociations(
-      schema,
-      associations,
-      collection.relationships,
-      nextId,
-    );
-
-    // 10. Merge: associations override factory attrs, but user-provided relationship values take precedence
-    const mergedAttrs = {
-      ...evaluatedAttrs,
-      ...relationshipValues,
-    } as ModelNewAttrs<TTemplate, TSchema>;
-
-    return mergedAttrs;
+    // Return only evaluated attributes (associations are processed separately via runAssociations)
+    return evaluatedAttrs as ModelNewAttrs<TTemplate, TSchema>;
   }
 
   /**
@@ -177,6 +162,53 @@ export default class Factory<
     });
 
     return model;
+  }
+
+  /**
+   * Process factory associations after the model has been saved.
+   * This method should be called after build() and save() to create related models.
+   * @param schema - The schema instance to get collection and create related models
+   * @param model - The saved model instance (used to get ID and relationships)
+   * @param traitsAndDefaults - The trait names and/or default attribute values
+   * @returns Relationship FK values from created associations
+   */
+  runAssociations(
+    schema: SchemaInstance<TSchema>,
+    model: ModelInstance<TTemplate, TSchema>,
+    ...traitsAndDefaults: (TTraits | PartialModelAttrs<TTemplate, TSchema>)[]
+  ): Partial<
+    RelatedModelAttrs<TSchema, RelationshipsByTemplate<TTemplate, TSchema>>
+  > {
+    // 1. Get collection from schema using template's collectionName
+    const collection = schema[
+      this.template.collectionName as keyof TSchema
+    ] as unknown as Collection<
+      TSchema,
+      TTemplate,
+      RelationshipsByTemplate<TTemplate, TSchema>
+    >;
+
+    // 2. Extract trait names and defaults from arguments
+    const { defaults, traitNames } = this._processTraitsAndDefaults(
+      ...traitsAndDefaults,
+    );
+
+    // 3. Extract relationship updates from user-provided defaults
+    const { relationshipUpdates } = Model.processAttrs<TTemplate, TSchema>(
+      defaults,
+      collection.relationships,
+    );
+
+    // 4. Get associations that need processing (merge traits + factory, filter user-provided)
+    const associations = this._getAssociations(traitNames, relationshipUpdates);
+
+    // 5. Process associations - parent model now exists in DB!
+    return this._associationsManager.processAssociations(
+      schema,
+      associations,
+      collection.relationships,
+      model.id,
+    );
   }
 
   // -- PRIVATE METHODS --

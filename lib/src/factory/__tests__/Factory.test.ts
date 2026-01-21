@@ -1,8 +1,16 @@
+import { associations } from '@src/associations';
 import { model, type ModelInstance } from '@src/model';
-import { collection, CollectionConfig, schema } from '@src/schema';
+import { BelongsTo, belongsTo, HasMany, hasMany } from '@src/relations';
+import {
+  collection,
+  CollectionConfig,
+  schema,
+  SchemaInstance,
+} from '@src/schema';
 import { resolveFactoryAttr } from '@src/utils';
 
 import Factory from '../Factory';
+import { factory } from '../FactoryBuilder';
 
 // Define test model attributes
 interface UserAttrs {
@@ -466,6 +474,490 @@ describe('Factory', () => {
       expect(model.role).toBe('admin');
       expect(model.age).toBe(30);
       expect(hooksCalled).toEqual(['trait:admin']);
+    });
+  });
+
+  describe('runAssociations()', () => {
+    // Define models for association testing
+    interface TeamAttrs {
+      id: string;
+      name: string;
+    }
+
+    interface MemberAttrs {
+      id: string;
+      name: string;
+      email: string;
+    }
+
+    const teamModel = model()
+      .name('team')
+      .collection('teams')
+      .attrs<TeamAttrs>()
+      .build();
+
+    type TeamModel = typeof teamModel;
+
+    const memberModel = model()
+      .name('member')
+      .collection('members')
+      .attrs<MemberAttrs>()
+      .build();
+
+    type MemberModel = typeof memberModel;
+
+    const memberFactory = factory()
+      .model(memberModel)
+      .attrs({
+        name: 'Member',
+        email: (id: string) => `member${id}@example.com`,
+      })
+      .build();
+
+    it('should process associations and return relationship values', () => {
+      type AssocSchema = {
+        teams: CollectionConfig<
+          TeamModel,
+          { members: HasMany<MemberModel> },
+          Factory<TeamModel, string, AssocSchema>
+        >;
+        members: CollectionConfig<
+          MemberModel,
+          { team: BelongsTo<TeamModel> },
+          Factory<MemberModel>
+        >;
+      };
+
+      const teamFactory = factory<AssocSchema>()
+        .model(teamModel)
+        .attrs({ name: 'Team Alpha' })
+        .associations({
+          members: associations.createMany(memberModel, 2),
+        })
+        .build();
+
+      const assocSchema: SchemaInstance<AssocSchema> = schema()
+        .collections({
+          teams: collection()
+            .model(teamModel)
+            .factory(teamFactory)
+            .relationships({
+              members: hasMany(memberModel),
+            })
+            .build(),
+          members: collection()
+            .model(memberModel)
+            .factory(memberFactory)
+            .relationships({
+              team: belongsTo(teamModel),
+            })
+            .build(),
+        })
+        .build();
+
+      // 1. Build base attributes (without associations)
+      const attrs = teamFactory.build(assocSchema);
+      expect(attrs).toMatchObject({ name: 'Team Alpha' });
+      expect(attrs).not.toHaveProperty('memberIds');
+
+      // 2. Save model to DB
+      const team = assocSchema.teams.new(attrs).save();
+      expect(team.id).toBe('1');
+
+      // 3. Run associations - should create members and return relationship values
+      const relValues = teamFactory.runAssociations(assocSchema, team);
+
+      // relValues contains the relationship name with model collection
+      expect(relValues).toHaveProperty('members');
+      expect(relValues.members?.length).toBe(2);
+
+      // Verify members were created
+      expect(assocSchema.members.all().length).toBe(2);
+
+      // 4. Update model with relationship values (FK extraction happens here)
+      team.update(relValues);
+      expect(team.memberIds).toHaveLength(2);
+    });
+
+    it('should return empty object when no associations are defined', () => {
+      type SimpleAssocSchema = {
+        teams: CollectionConfig<
+          TeamModel,
+          { members: HasMany<MemberModel> },
+          Factory<TeamModel, string, SimpleAssocSchema>
+        >;
+        members: CollectionConfig<
+          MemberModel,
+          { team: BelongsTo<TeamModel> },
+          Factory<MemberModel>
+        >;
+      };
+
+      const simpleTeamFactory = factory<SimpleAssocSchema>()
+        .model(teamModel)
+        .attrs({ name: 'Simple Team' })
+        .build();
+
+      const assocSchema: SchemaInstance<SimpleAssocSchema> = schema()
+        .collections({
+          teams: collection()
+            .model(teamModel)
+            .factory(simpleTeamFactory)
+            .relationships({
+              members: hasMany(memberModel),
+            })
+            .build(),
+          members: collection()
+            .model(memberModel)
+            .factory(memberFactory)
+            .relationships({
+              team: belongsTo(teamModel),
+            })
+            .build(),
+        })
+        .build();
+
+      const attrs = simpleTeamFactory.build(assocSchema);
+      const team = assocSchema.teams.new(attrs).save();
+      const relValues = simpleTeamFactory.runAssociations(assocSchema, team);
+
+      expect(relValues).toEqual({});
+    });
+
+    it('should skip associations when user provides relationship values', () => {
+      type SkipAssocSchema = {
+        teams: CollectionConfig<
+          TeamModel,
+          { members: HasMany<MemberModel> },
+          Factory<TeamModel, string, SkipAssocSchema>
+        >;
+        members: CollectionConfig<
+          MemberModel,
+          { team: BelongsTo<TeamModel> },
+          Factory<MemberModel>
+        >;
+      };
+
+      const teamFactory = factory<SkipAssocSchema>()
+        .model(teamModel)
+        .attrs({ name: 'Team Beta' })
+        .associations({
+          members: associations.createMany(memberModel, 3),
+        })
+        .build();
+
+      const assocSchema: SchemaInstance<SkipAssocSchema> = schema()
+        .collections({
+          teams: collection()
+            .model(teamModel)
+            .factory(teamFactory)
+            .relationships({
+              members: hasMany(memberModel),
+            })
+            .build(),
+          members: collection()
+            .model(memberModel)
+            .factory(memberFactory)
+            .relationships({
+              team: belongsTo(teamModel),
+            })
+            .build(),
+        })
+        .build();
+
+      // Create an existing member
+      const existingMember = assocSchema.members.create({ name: 'Existing' });
+
+      // Build and save team
+      const attrs = teamFactory.build(assocSchema);
+      const team = assocSchema.teams.new(attrs).save();
+
+      // Run associations with user-provided memberIds - should skip creating new members
+      const relValues = teamFactory.runAssociations(assocSchema, team, {
+        memberIds: [existingMember.id],
+      });
+
+      // Should return empty because user provided the relationship value
+      expect(relValues).toEqual({});
+
+      // No new members should have been created (only the existing one)
+      expect(assocSchema.members.all().length).toBe(1);
+    });
+
+    it('should process trait associations', () => {
+      type TraitAssocSchema = {
+        teams: CollectionConfig<
+          TeamModel,
+          { members: HasMany<MemberModel> },
+          Factory<TeamModel, 'withMembers', TraitAssocSchema>
+        >;
+        members: CollectionConfig<
+          MemberModel,
+          { team: BelongsTo<TeamModel> },
+          Factory<MemberModel>
+        >;
+      };
+
+      const teamFactory = factory<TraitAssocSchema>()
+        .model(teamModel)
+        .attrs({ name: 'Team Gamma' })
+        .traits({
+          withMembers: {
+            members: associations.createMany(memberModel, 5),
+          },
+        })
+        .build();
+
+      const assocSchema: SchemaInstance<TraitAssocSchema> = schema()
+        .collections({
+          teams: collection()
+            .model(teamModel)
+            .factory(teamFactory)
+            .relationships({
+              members: hasMany(memberModel),
+            })
+            .build(),
+          members: collection()
+            .model(memberModel)
+            .factory(memberFactory)
+            .relationships({
+              team: belongsTo(teamModel),
+            })
+            .build(),
+        })
+        .build();
+
+      // Build without trait - no associations
+      const attrs = teamFactory.build(assocSchema);
+      const team = assocSchema.teams.new(attrs).save();
+
+      // Run associations with trait
+      const relValues = teamFactory.runAssociations(
+        assocSchema,
+        team,
+        'withMembers',
+      );
+
+      // relValues contains the relationship name with model collection
+      expect(relValues).toHaveProperty('members');
+      expect(relValues.members?.length).toBe(5);
+
+      // Verify members were created
+      expect(assocSchema.members.all().length).toBe(5);
+
+      // Update model with relationship values (FK extraction happens here)
+      team.update(relValues);
+      expect(team.memberIds).toHaveLength(5);
+    });
+  });
+
+  describe('Complex relationships integration', () => {
+    // Define model attributes
+    interface OrgAttrs {
+      id: string;
+      name: string;
+    }
+
+    interface EmployeeAttrs {
+      id: string;
+      name: string;
+      email: string;
+    }
+
+    interface ProjectAttrs {
+      id: string;
+      title: string;
+    }
+
+    // Create models
+    const orgModel = model()
+      .name('org')
+      .collection('orgs')
+      .attrs<OrgAttrs>()
+      .build();
+
+    const employeeModel = model()
+      .name('employee')
+      .collection('employees')
+      .attrs<EmployeeAttrs>()
+      .build();
+
+    const projectModel = model()
+      .name('project')
+      .collection('projects')
+      .attrs<ProjectAttrs>()
+      .build();
+
+    type OrgModel = typeof orgModel;
+    type EmployeeModel = typeof employeeModel;
+    type ProjectModel = typeof projectModel;
+
+    it('should synchronize all FKs when creating org with members who have projects', () => {
+      // Define schema type with complex relationships
+      type ComplexSchema = {
+        orgs: CollectionConfig<
+          OrgModel,
+          {
+            lead: BelongsTo<EmployeeModel, 'leadId'>; // inverse: null (disabled)
+            members: HasMany<EmployeeModel, 'memberIds'>; // inverse: 'org'
+            projects: HasMany<ProjectModel>;
+          },
+          Factory<OrgModel, 'withMembers', ComplexSchema>
+        >;
+        employees: CollectionConfig<
+          EmployeeModel,
+          {
+            org: BelongsTo<OrgModel>; // inverse: 'members'
+            projects: HasMany<ProjectModel>;
+          },
+          Factory<EmployeeModel, 'withProjects', ComplexSchema>
+        >;
+        projects: CollectionConfig<
+          ProjectModel,
+          {
+            org: BelongsTo<OrgModel>;
+            assignee: BelongsTo<EmployeeModel, 'assigneeId'>;
+            creator: BelongsTo<EmployeeModel, 'creatorId'>;
+          },
+          Factory<ProjectModel, string, ComplexSchema>
+        >;
+      };
+
+      // Create project factory
+      const projectFactory = factory<ComplexSchema>()
+        .model(projectModel)
+        .attrs({
+          title: (id: string) => `Project ${id}`,
+        })
+        .build();
+
+      // Create employee factory with:
+      // - Default org association (creates org if not provided)
+      // - withProjects trait that creates projects using employee.orgId
+      const employeeFactory = factory<ComplexSchema>()
+        .model(employeeModel)
+        .attrs({
+          name: (id: string) => `Employee ${id}`,
+          email: (id: string) => `employee${id}@example.com`,
+        })
+        .traits({
+          withProjects: {
+            afterCreate(employee, testSchema) {
+              // Create 2 projects for each employee using employee.orgId
+              // This tests that orgId is correctly injected via inverse FK
+              testSchema.projects.createMany(2, {
+                orgId: employee.orgId,
+                assigneeId: employee.id,
+                creatorId: employee.id,
+              });
+            },
+          },
+        })
+        .associations({
+          org: associations.create(orgModel),
+        })
+        .build();
+
+      // Create org factory with withMembers trait
+      const orgFactory = factory<ComplexSchema>()
+        .model(orgModel)
+        .attrs({
+          name: (id: string) => `Organization ${id}`,
+        })
+        .traits({
+          withMembers: {
+            members: associations.createMany(employeeModel, 3, 'withProjects'),
+          },
+        })
+        .build();
+
+      // Build schema with all relationships
+      const testSchema: SchemaInstance<ComplexSchema> = schema()
+        .collections({
+          orgs: collection()
+            .model(orgModel)
+            .factory(orgFactory)
+            .relationships({
+              lead: belongsTo(employeeModel, {
+                foreignKey: 'leadId',
+                inverse: null,
+              }),
+              members: hasMany(employeeModel, {
+                foreignKey: 'memberIds',
+                inverse: 'org',
+              }),
+              projects: hasMany(projectModel, {
+                inverse: 'org',
+              }),
+            })
+            .build(),
+          employees: collection()
+            .model(employeeModel)
+            .factory(employeeFactory)
+            .relationships({
+              org: belongsTo(orgModel, {
+                inverse: 'members',
+              }),
+              projects: hasMany(projectModel),
+            })
+            .build(),
+          projects: collection()
+            .model(projectModel)
+            .factory(projectFactory)
+            .relationships({
+              org: belongsTo(orgModel, {
+                inverse: 'projects',
+              }),
+              assignee: belongsTo(employeeModel, { foreignKey: 'assigneeId' }),
+              creator: belongsTo(employeeModel, { foreignKey: 'creatorId' }),
+            })
+            .build(),
+        })
+        .build();
+
+      // ============================================
+      // ACT: Create org with members who have projects
+      // ============================================
+      const org = testSchema.orgs.create('withMembers');
+
+      // ============================================
+      // ASSERT: Verify all relationships are correct
+      // ============================================
+
+      // 1. Org should have 3 members
+      expect(org.memberIds).toHaveLength(3);
+      expect(testSchema.employees.all().length).toBe(3);
+
+      // 2. All employees should have correct orgId (pointing to the created org)
+      const employees = testSchema.employees.all();
+      employees.models.forEach((employee) => {
+        expect(employee.orgId).toBe(org.id);
+      });
+
+      // 3. Each employee created 2 projects = 6 total projects
+      expect(testSchema.projects.all().length).toBe(6);
+
+      // 4. All projects should have correct orgId
+      const projects = testSchema.projects.all();
+      projects.models.forEach((project) => {
+        expect(project.orgId).toBe(org.id);
+      });
+
+      // 5. All projects should have valid assigneeId and creatorId
+      projects.models.forEach((project) => {
+        expect(org.memberIds).toContain(project.assigneeId);
+        expect(org.memberIds).toContain(project.creatorId);
+      });
+
+      // 6. Org should have all project IDs via inverse sync
+      expect(org.projectIds).toHaveLength(6);
+      projects.models.forEach((project) => {
+        expect(org.projectIds).toContain(project.id);
+      });
+
+      // 7. Verify relationship accessors work
+      expect(org.members?.length).toBe(3);
+      expect(org.projects?.length).toBe(6);
     });
   });
 });

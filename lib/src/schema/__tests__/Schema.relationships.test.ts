@@ -27,7 +27,9 @@ const postCollection = collection()
   .model(postModel)
   .factory(postFactory)
   .relationships({
-    author: belongsTo(userModel, { foreignKey: 'authorId' }),
+    author: belongsTo(userModel, {
+      foreignKey: 'authorId',
+    }),
     comments: hasMany(commentModel),
   })
   .build();

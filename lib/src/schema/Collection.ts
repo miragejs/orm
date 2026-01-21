@@ -4,6 +4,7 @@ import {
   ModelCollection,
   ModelCreateAttrs,
   ModelNewAttrs,
+  ModelUpdateAttrs,
   PartialModelAttrs,
   type ModelAttrs,
   type ModelConfig,
@@ -68,29 +69,50 @@ export default class Collection<
       | ModelCreateAttrs<TTemplate, TSchema>
     )[]
   ): ModelInstance<TTemplate, TSchema> {
-    this._logger?.debug(`Creating model for '${this.collectionName}'`, {
+    this._logger?.info(`Creating model for '${this.collectionName}'`, {
       collection: this.collectionName,
       traitsAndDefaults,
     });
 
-    // Build attributes using factory
+    // 1. Build base attributes (no associations)
     const attrs = this._factory.build(
       this._schema,
       ...traitsAndDefaults,
     ) as ModelNewAttrs<TTemplate, TSchema>;
-    this._logger?.info(`Created model for '${this.collectionName}'`, {
+    this._logger?.debug(`Built attributes for '${this.collectionName}'`, {
       id: attrs.id,
       attrs,
     });
 
-    // Create and save model
-    const model = this.new(attrs).save();
+    // 2. Save model to DB (parent now exists!)
+    let model = this.new(attrs).save();
     this._logger?.debug(`Saved model for '${this.collectionName}'`, {
       id: model.id,
-      attrs,
     });
 
-    // Run afterCreate hooks
+    // 3. Process associations (nested models can find parent)
+    const relValues = this._factory.runAssociations(
+      this._schema,
+      model,
+      ...(traitsAndDefaults as (
+        | FactoryTraitNames<TFactory>
+        | PartialModelAttrs<TTemplate, TSchema>
+      )[]),
+    );
+    this._logger?.debug(`Processed associations for '${this.collectionName}'`, {
+      id: model.id,
+      relValues,
+    });
+
+    // 4. Reload model to get latest DB state (includes FKs updated via inverse sync in step 3)
+    model = model.reload();
+
+    // 5. Update model with relationship FKs (triggers inverse sync + re-init accessors)
+    if (Object.keys(relValues).length > 0) {
+      model = model.update(relValues as ModelUpdateAttrs<TTemplate, TSchema>);
+    }
+
+    // 6. Run afterCreate hooks
     this._factory.runAfterCreateHooks(
       this._schema,
       model,
@@ -99,6 +121,11 @@ export default class Collection<
         | PartialModelAttrs<TTemplate, TSchema>
       )[]),
     );
+
+    this._logger?.info(`Created model for '${this.collectionName}'`, {
+      id: model.id,
+      attrs: model.attrs,
+    });
 
     return model;
   }

@@ -163,14 +163,14 @@ describe('Schema with Logging', () => {
       testSchema.users.create({ name: 'Alice' });
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] DEBUG: Creating model for 'users'",
+        "[Mirage] INFO: Creating model for 'users'",
         expect.objectContaining({
           collection: 'users',
         }),
       );
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] INFO: Created model for 'users'",
+        "[Mirage] DEBUG: Built attributes for 'users'",
         expect.objectContaining({
           id: expect.any(String),
           attrs: expect.objectContaining({
@@ -183,9 +183,21 @@ describe('Schema with Logging', () => {
         "[Mirage] DEBUG: Saved model for 'users'",
         expect.objectContaining({
           id: expect.any(String),
-          attrs: expect.objectContaining({
-            name: 'Alice',
-          }),
+        }),
+      );
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        "[Mirage] DEBUG: Processed associations for 'users'",
+        expect.objectContaining({
+          id: expect.any(String),
+          relValues: expect.any(Object),
+        }),
+      );
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        "[Mirage] INFO: Created model for 'users'",
+        expect.objectContaining({
+          id: expect.any(String),
         }),
       );
     });
