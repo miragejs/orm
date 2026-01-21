@@ -5,6 +5,8 @@ import { UserRole } from '@shared/enums';
 import Header from './Header';
 
 describe('Header', () => {
+  const ui = userEvent.setup();
+
   test('renders user avatar', ({ schema }) => {
     const user = schema.users.create().toJSON();
 
@@ -20,7 +22,7 @@ describe('Header', () => {
     render(<Header user={user} />);
 
     const avatarButton = screen.getByRole('button');
-    await userEvent.click(avatarButton);
+    await ui.click(avatarButton);
 
     expect(screen.getByText(user.name)).toBeInTheDocument();
     expect(screen.getByText(UserRole.MANAGER)).toBeInTheDocument();
@@ -32,13 +34,13 @@ describe('Header', () => {
     render(<Header user={user} />);
 
     const avatarButton = screen.getByRole('button');
-    await userEvent.click(avatarButton);
+    await ui.click(avatarButton);
 
     // Menu should be open
     expect(screen.getByRole('menu')).toBeInTheDocument();
 
     // Press Escape to close menu
-    await userEvent.keyboard('{Escape}');
+    await ui.keyboard('{Escape}');
 
     // Menu should be closed
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();

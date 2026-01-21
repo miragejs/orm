@@ -58,7 +58,7 @@ export default function Sidebar() {
         icon: <GroupsIcon />,
       },
     ];
-  }, [user.role, user.id, teamSlug]);
+  }, [user, teamSlug]);
 
   const handleNavigate = (path: string) => {
     navigate(path);

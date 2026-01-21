@@ -20,6 +20,6 @@ export const testSchema: TestSchema = schema()
   })
   .logging({
     enabled: process.env.NODE_ENV === 'development',
-    level: LogLevel.DEBUG,
+    level: LogLevel.INFO,
   })
   .build();

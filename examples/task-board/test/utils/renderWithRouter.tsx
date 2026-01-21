@@ -1,30 +1,39 @@
 import { render } from '@testing-library/react';
-import { createMemoryRouter, RouterProvider, RouteObject } from 'react-router';
+import {
+  createMemoryRouter,
+  RouterProvider,
+  RouteObject,
+  ActionFunction,
+} from 'react-router';
 import type { User } from '@shared/types';
 
 interface RenderWithRouterOptions {
-  user: User;
+  action?: ActionFunction;
   element: React.ReactNode;
-  routes?: RouteObject[];
   initialPath?: string;
+  routes?: RouteObject[];
+  user?: User;
 }
 
 /**
- * Renders a component within a router context with user data loaded
+ * Renders a component within a router context with optional user data and action handler
  */
 export function renderWithRouter({
-  user,
+  action,
   element,
-  routes = [],
   initialPath = '/',
+  routes = [],
+  user,
 }: RenderWithRouterOptions) {
+  const rootLoader = user ? () => user : undefined;
   const router = createMemoryRouter(
     [
       {
         id: 'root',
         path: '/',
         element,
-        loader: () => ({ user }),
+        action,
+        loader: rootLoader,
       },
       ...routes,
     ],

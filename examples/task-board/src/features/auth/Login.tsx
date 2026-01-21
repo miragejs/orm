@@ -1,4 +1,4 @@
-import { Box } from '@mui/material';
+import Box from '@mui/material/Box';
 import { redirect } from 'react-router';
 import type { ActionFunctionArgs } from 'react-router';
 import { login } from './api';
