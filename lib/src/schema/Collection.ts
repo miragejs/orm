@@ -119,7 +119,7 @@ export default class Collection<
 
     // 5. Update model with relationship FKs (triggers inverse sync + re-init accessors)
     if (Object.keys(relValues).length > 0) {
-      model = model.update(relValues as ModelUpdateAttrs<TTemplate, TSchema>);
+      model.update(relValues as ModelUpdateAttrs<TTemplate, TSchema>);
     }
 
     // 6. Run afterCreate hooks
@@ -131,6 +131,8 @@ export default class Collection<
         | PartialModelAttrs<TTemplate, TSchema>
       )[]),
     );
+
+    model = model.reload();
 
     this._logger?.info(`Created model for '${this.collectionName}'`, {
       id: model.id,
