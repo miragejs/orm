@@ -71,6 +71,7 @@ export default function UserBoard() {
               expanded={expanded === status}
               onExpandChange={(isExpanded) => handleAccordionChange(status, isExpanded)}
               onTaskClick={handleTaskClick}
+              status={status}
               statusColor={config.color}
               statusIcon={config.icon}
               statusLabel={config.label}
