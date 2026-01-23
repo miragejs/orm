@@ -1,6 +1,8 @@
 import { Suspense } from 'react';
 import { useRouteLoaderData, Await, useLocation } from 'react-router';
-import { Box, Skeleton, Alert } from '@mui/material';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
+import Skeleton from '@mui/material/Skeleton';
 import { CommentsAccordion } from './components';
 import type { TaskDetailsLoaderData } from '@features/task-details/TaskDetails';
 import type { User } from '@shared/types';

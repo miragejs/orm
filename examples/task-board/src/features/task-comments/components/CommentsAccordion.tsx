@@ -1,14 +1,10 @@
-import {
-  ExpandMore as ExpandMoreIcon,
-  Comment as CommentIcon,
-} from '@mui/icons-material';
-import {
-  Typography,
-  Box,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-} from '@mui/material';
+import Accordion from '@mui/material/Accordion';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import CommentIcon from '@mui/icons-material/Comment';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { CommentsList } from './CommentsList';
 import type { Comment } from '@shared/types';
 

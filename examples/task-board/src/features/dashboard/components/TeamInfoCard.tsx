@@ -1,6 +1,12 @@
 import { memo } from 'react';
-import { Card, CardContent, Typography, Box, Avatar, Chip } from '@mui/material';
-import { Groups as GroupsIcon, Assignment as AssignmentIcon } from '@mui/icons-material';
+import Avatar from '@mui/material/Avatar';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Chip from '@mui/material/Chip';
+import Typography from '@mui/material/Typography';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import GroupsIcon from '@mui/icons-material/Groups';
 import type { MemberOption } from '@shared/types';
 
 interface TeamStatsCardProps {

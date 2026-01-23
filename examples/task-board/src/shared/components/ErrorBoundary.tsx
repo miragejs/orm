@@ -1,4 +1,6 @@
-import { Box, Typography, Button } from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
 import { useRouteError, useNavigate, isRouteErrorResponse } from 'react-router';
 
 // Re-export Logo for easy importing

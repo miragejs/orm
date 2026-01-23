@@ -1,6 +1,11 @@
 import { Suspense } from 'react';
 import { useLoaderData, Await, Outlet } from 'react-router';
-import { Box, Typography, Stack, Skeleton, Card, CardContent } from '@mui/material';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Skeleton from '@mui/material/Skeleton';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { getTaskStatistics, getTeamTasks } from './api';
 import { getTeam } from '@features/team/api';
 import { TeamInfoCard, TeamInfoCardSkeleton } from '@features/team/components';

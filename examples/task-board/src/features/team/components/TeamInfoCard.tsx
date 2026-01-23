@@ -1,6 +1,11 @@
 import { memo } from 'react';
-import { Card, CardContent, Typography, Box, Chip } from '@mui/material';
-import { Groups as GroupsIcon, Business as BusinessIcon } from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Chip from '@mui/material/Chip';
+import Typography from '@mui/material/Typography';
+import BusinessIcon from '@mui/icons-material/Business';
+import GroupsIcon from '@mui/icons-material/Groups';
 import type { Team } from '@shared/types';
 
 interface TeamInfoCardProps {

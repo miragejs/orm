@@ -1,24 +1,22 @@
 import { memo, useCallback } from 'react';
 import { useSearchParams } from 'react-router';
-import {
-  Avatar,
-  Box,
-  Chip,
-  FormControl,
-  IconButton,
-  InputAdornment,
-  InputLabel,
-  MenuItem,
-  OutlinedInput,
-  Select,
-  Stack,
-  Tooltip,
-} from '@mui/material';
+import Avatar from '@mui/material/Avatar';
+import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
+import FormControl from '@mui/material/FormControl';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import OutlinedInput from '@mui/material/OutlinedInput';
+import Select from '@mui/material/Select';
+import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
 import ClearIcon from '@mui/icons-material/Clear';
+import type { SelectChangeEvent } from '@mui/material/Select';
 import { TaskStatus, TaskPriority } from '@shared/enums';
 import type { MemberOption, TaskFilters } from '@shared/types';
 import { statusOptions, priorityOptions } from './tasksTableConfig';
-import type { SelectChangeEvent } from '@mui/material';
 
 interface TasksTableFiltersProps {
   filters: TaskFilters;

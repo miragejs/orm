@@ -1,6 +1,8 @@
 import { Suspense } from 'react';
 import { useLoaderData, Await } from 'react-router';
-import { Box, Typography, Stack } from '@mui/material';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { getTeam, getTeamMembers } from './api';
 import {
   TeamInfoCard,

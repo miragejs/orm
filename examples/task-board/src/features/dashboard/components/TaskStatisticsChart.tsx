@@ -1,5 +1,8 @@
 import { memo } from 'react';
-import { Card, CardContent, Typography, Box } from '@mui/material';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Typography from '@mui/material/Typography';
 import { LineChart } from '@mui/x-charts/LineChart';
 import type { TaskStatistics } from '@shared/types';
 

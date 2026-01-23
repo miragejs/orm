@@ -1,9 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
+import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import lightGreen from '@mui/material/colors/lightGreen';
+import purple from '@mui/material/colors/purple';
 import Root from './Root';
 import { initMockServer } from '@test/server/browser';
-import { lightGreen, purple } from '@mui/material/colors';
 
 // Create Material-UI theme
 const theme = createTheme({

@@ -1,4 +1,7 @@
-import { Card, CardContent, Box, Skeleton } from '@mui/material';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Skeleton from '@mui/material/Skeleton';
 
 /**
  * Skeleton fallback for MembersTable while loading

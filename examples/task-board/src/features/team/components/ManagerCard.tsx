@@ -1,10 +1,12 @@
 import { memo } from 'react';
-import { Card, CardContent, Typography, Box, Avatar } from '@mui/material';
-import {
-  Person as PersonIcon,
-  Email as EmailIcon,
-  Badge as BadgeIcon,
-} from '@mui/icons-material';
+import Avatar from '@mui/material/Avatar';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Typography from '@mui/material/Typography';
+import BadgeIcon from '@mui/icons-material/Badge';
+import EmailIcon from '@mui/icons-material/Email';
+import PersonIcon from '@mui/icons-material/Person';
 import type { UserInfo } from '@shared/types';
 
 interface ManagerCardProps {
