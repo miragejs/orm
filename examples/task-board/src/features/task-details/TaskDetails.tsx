@@ -36,10 +36,6 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
 export type TaskDetailsLoaderData = Awaited<ReturnType<typeof loader>>;
 
-/**
- * Task Details Dialog Component
- * Acts as a layout route - renders task info and Outlet for child routes (comments)
- */
 export default function TaskDetails() {
   const { task } = useLoaderData<TaskDetailsLoaderData>();
   const navigate = useNavigate();
@@ -66,6 +62,7 @@ export default function TaskDetails() {
         {task.team && <TaskTeamCard team={task.team} />}
         <TaskDatesInfo dueDate={task.dueDate} createdAt={task.createdAt} />
         <Divider sx={{ my: 2 }} />
+
         {/* Comments Section - Rendered via child route */}
         <Outlet />
       </DialogContent>

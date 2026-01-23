@@ -1,0 +1,120 @@
+import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { setupServer } from 'msw/node';
+import { describe, expect, test, beforeAll, afterAll, afterEach } from '@test/context';
+import { taskHandlers, userHandlers } from '@test/server/handlers';
+import { formatTaskTitle } from '@shared/utils';
+import { renderApp } from '@test/utils';
+
+const server = setupServer(...userHandlers, ...taskHandlers);
+
+describe('TaskDetails', () => {
+  const ui = userEvent.setup();
+
+  beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+
+  afterEach(() => {
+    server.resetHandlers();
+    document.cookie = 'userId=; Max-Age=0';
+  });
+
+  afterAll(() => server.close());
+
+  test('displays task details', async ({ schema }) => {
+    const creator = schema.users.create();
+    const assignee = schema.users.create({ team: creator.team });
+    const teamSlug = assignee.team!.slug;
+    document.cookie = `userId=${assignee.id}`;
+
+    const task = schema.tasks.create({ assignee, creator }, 'inProgress', 'highPriority');
+    const taskTitle = formatTaskTitle(task.toJSON());
+
+    renderApp(`/${teamSlug}/users/${assignee.id}/${task.id}`);
+
+    const dialog = within(await screen.findByRole('dialog', { name: taskTitle }));
+
+    // Title and description
+    expect(
+      dialog.getByRole('heading', { name: taskTitle, level: 2 }),
+    ).toBeInTheDocument();
+    expect(dialog.getByText(task.description)).toBeInTheDocument();
+
+    // Status and priority chips
+    expect(dialog.getByText('In Progress')).toBeInTheDocument();
+    expect(dialog.getByText('HIGH')).toBeInTheDocument();
+
+    // People info
+    expect(dialog.getByText('Assignee')).toBeInTheDocument();
+    expect(dialog.getByText(assignee.name)).toBeInTheDocument();
+    expect(dialog.getByText('Created by')).toBeInTheDocument();
+    expect(dialog.getByText(creator.name)).toBeInTheDocument();
+
+    // Dates
+    expect(
+      dialog.getByText(new Date(task.dueDate).toLocaleDateString()),
+    ).toBeInTheDocument();
+    expect(
+      dialog.getByText(new Date(task.createdAt).toLocaleDateString()),
+    ).toBeInTheDocument();
+  });
+
+  test('displays team info', async ({ schema }) => {
+    const user = schema.users.create();
+    const team = user.team!;
+    const teamSlug = team.slug;
+    document.cookie = `userId=${user.id}`;
+
+    const task = schema.tasks.create({ creator: user }, 'inProgress');
+    const taskTitle = formatTaskTitle(task.toJSON());
+
+    renderApp(`/${teamSlug}/users/${user.id}/${task.id}`);
+
+    const dialog = await screen.findByRole('dialog', { name: taskTitle });
+
+    expect(within(dialog).getByText(team.name)).toBeInTheDocument();
+    expect(within(dialog).getByText(team.department)).toBeInTheDocument();
+  });
+
+  test('displays comments section', async ({ schema }) => {
+    const creator = schema.users.create();
+    const assignee = schema.users.create({ team: creator.team });
+    const teamSlug = assignee.team!.slug;
+    document.cookie = `userId=${assignee.id}`;
+
+    const task = schema.tasks.create({ assignee, creator }, 'inProgress', 'withComments');
+    const comments = task.comments.toJSON();
+    const taskTitle = formatTaskTitle(task.toJSON());
+
+    renderApp(`/${teamSlug}/users/${assignee.id}/${task.id}`);
+
+    const dialog = within(await screen.findByRole('dialog', { name: taskTitle }));
+
+    await dialog.findByRole('list', { name: `Comments (${comments.length})` });
+
+    for (const comment of comments) {
+      expect(dialog.getByText(comment.content)).toBeInTheDocument();
+    }
+  });
+
+  test('closes dialog and navigates back to user board', async ({ schema }) => {
+    const user = schema.users.create({ name: 'John Doe' });
+    const teamSlug = user.team!.slug;
+    document.cookie = `userId=${user.id}`;
+
+    const task = schema.tasks.create({ assignee: user }, 'inProgress');
+    const taskTitle = formatTaskTitle(task.toJSON());
+
+    renderApp(`/${teamSlug}/users/${user.id}/${task.id}`);
+
+    const dialog = await screen.findByRole('dialog', { name: taskTitle });
+    const closeButton = within(dialog).getByRole('button', { name: 'Close' });
+
+    await ui.click(closeButton);
+
+    expect(dialog).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'My Tasks', level: 2 }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('listitem', { name: task.title })).toBeInTheDocument();
+  });
+});

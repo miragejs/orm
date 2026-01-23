@@ -1,10 +1,14 @@
-import { factory, resolveFactoryAttr } from 'miragejs-orm';
+import { factory, resolveFactoryAttr, type ModelUpdateAttrs } from 'miragejs-orm';
 import { faker } from '@faker-js/faker';
 import { TaskStatus, TaskPriority } from '@shared/enums';
-import { taskModel } from '@test/schema/models';
+import { TaskModel, taskModel } from '@test/schema/models';
 import type { TestCollections } from '@test/schema/types';
 
-const getTeamPrefix = (teamName: string) => {
+const getTeamPrefix = (teamName?: string) => {
+  if (!teamName) {
+    return faker.hacker.abbreviation();
+  }
+
   return teamName
     .split(/\s+/)
     .map((word) => word.charAt(0).toUpperCase())
@@ -14,7 +18,7 @@ const getTeamPrefix = (teamName: string) => {
 export const taskFactory = factory<TestCollections>()
   .model(taskModel)
   .attrs({
-    prefix: () => faker.hacker.abbreviation(),
+    prefix: () => getTeamPrefix(),
     number: () => faker.number.int({ min: 1, max: 100 }),
     title: () =>
       `${faker.hacker.verb()} ${faker.hacker.adjective()} ${faker.hacker.noun()}`,
@@ -72,8 +76,23 @@ export const taskFactory = factory<TestCollections>()
     },
   })
   .afterCreate((task) => {
-    if (task.team) {
-      task.update({ prefix: getTeamPrefix(task.team.name) });
+    const attrs: ModelUpdateAttrs<TaskModel, TestCollections> = {};
+
+    if (task.creator) {
+      if (!task.assignee) {
+        attrs.assignee = task.creator;
+      }
+
+      if (!task.team) {
+        attrs.team = task.creator.team;
+        attrs.prefix = getTeamPrefix(task.creator.team?.name);
+      }
     }
+
+    if (task.team) {
+      attrs.prefix = getTeamPrefix(task.team.name);
+    }
+
+    task.update(attrs);
   })
   .build();

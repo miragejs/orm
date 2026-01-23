@@ -55,8 +55,10 @@ export const taskHandlers = [
 
     const json: Comment[] = task.comments.toJSON();
 
-    // Simulate network delay for deferred loading demonstration
-    await delay(COMMENTS_DELAY_MS);
+    // Simulate network delay for deferred loading demonstration in development
+    if (process.env.NODE_ENV === 'development') {
+      await delay(COMMENTS_DELAY_MS);
+    }
 
     return HttpResponse.json(json);
   }),
