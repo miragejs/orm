@@ -11,10 +11,11 @@ export interface Team {
   manager: UserInfo;
   members: UserInfo[];
   name: string;
+  slug: string;
   taskIds: string[];
 }
 
 /**
  * Team info type
  */
-export type TeamInfo = Pick<Team, 'department' | 'description' | 'id' | 'name'>;
+export type TeamInfo = Pick<Team, 'department' | 'description' | 'id' | 'name' | 'slug'>;

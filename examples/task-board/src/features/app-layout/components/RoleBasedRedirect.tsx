@@ -1,4 +1,3 @@
-import kebabCase from 'lodash.kebabcase';
 import { Navigate, useRouteLoaderData } from 'react-router';
 import { isManager } from '@shared/utils';
 import type { User } from '@shared/types';
@@ -10,7 +9,7 @@ import type { User } from '@shared/types';
  */
 export default function RoleBasedRedirect() {
   const user = useRouteLoaderData<User>('root')!;
-  const teamSlug = kebabCase(user.team.name);
+  const teamSlug = user.team.slug;
 
   if (isManager(user)) {
     return <Navigate to={`/${teamSlug}/dashboard`} replace />;

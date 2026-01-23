@@ -1,4 +1,3 @@
-import kebabCase from 'lodash.kebabcase';
 import { useMemo } from 'react';
 import { useNavigate, useLocation, useRouteLoaderData } from 'react-router';
 import AssignmentIcon from '@mui/icons-material/Assignment';
@@ -33,7 +32,7 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const user = useRouteLoaderData<User>('root')!;
-  const teamSlug = kebabCase(user.team.name);
+  const teamSlug = user.team.slug;
 
   const navItems = useMemo((): NavItem[] => {
     if (isManager(user)) {

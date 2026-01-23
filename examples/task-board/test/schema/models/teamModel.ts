@@ -9,6 +9,7 @@ export interface TeamAttrs {
   managerId: string;
   memberIds: string[];
   name: string;
+  slug: string;
   taskIds: string[];
 }
 
