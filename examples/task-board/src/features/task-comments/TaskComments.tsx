@@ -12,7 +12,7 @@ import type { User } from '@shared/types';
  */
 function TaskCommentsLoadingSkeleton() {
   return (
-    <Box sx={{ py: 1 }}>
+    <Box sx={{ py: 1 }} aria-label="Comments loading">
       {[1, 2].map((i) => (
         <Box key={i} sx={{ display: 'flex', mb: 2, gap: 1 }}>
           <Skeleton variant="circular" width={32} height={32} />

@@ -8,13 +8,13 @@ export interface CommentBubbleProps {
   currentUserId: string | undefined;
 }
 
-/**
- * Comment Bubble Component - Chat-like message display
- */
 export function CommentBubble({ comment, currentUserId }: CommentBubbleProps) {
-  const isCurrentUser = comment.author.id === currentUserId;
+  const { author, content, createdAt } = comment;
+  const isCurrentUser = author.id === currentUserId;
   return (
     <Box
+      component="li"
+      aria-label={`Comment by ${author.name}`}
       sx={{
         display: 'flex',
         justifyContent: isCurrentUser ? 'flex-start' : 'flex-end',
@@ -30,12 +30,8 @@ export function CommentBubble({ comment, currentUserId }: CommentBubbleProps) {
           gap: 1,
         }}
       >
-        <Avatar
-          src={comment.author.avatar}
-          alt={comment.author.name}
-          sx={{ width: 32, height: 32 }}
-        >
-          {comment.author.name.charAt(0)}
+        <Avatar src={author.avatar} alt={author.name} sx={{ width: 32, height: 32 }}>
+          {author.name.charAt(0)}
         </Avatar>
 
         <Box>
@@ -59,9 +55,9 @@ export function CommentBubble({ comment, currentUserId }: CommentBubbleProps) {
                 opacity: 0.9,
               }}
             >
-              {comment.author.name}
+              {author.name}
             </Typography>
-            <Typography variant="body2">{comment.content}</Typography>
+            <Typography variant="body2">{content}</Typography>
           </Box>
           <Typography
             variant="caption"
@@ -73,7 +69,7 @@ export function CommentBubble({ comment, currentUserId }: CommentBubbleProps) {
               textAlign: isCurrentUser ? 'left' : 'right',
             }}
           >
-            {new Date(comment.createdAt).toLocaleString()}
+            {new Date(createdAt).toLocaleString()}
           </Typography>
         </Box>
       </Box>

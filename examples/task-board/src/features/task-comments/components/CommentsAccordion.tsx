@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
@@ -13,10 +14,10 @@ export interface CommentsAccordionProps {
   currentUserId: string | undefined;
 }
 
-/**
- * Comments Accordion Content - Renders once comments are resolved
- */
 export function CommentsAccordion({ comments, currentUserId }: CommentsAccordionProps) {
+  const titleId = useId();
+  const contentId = useId();
+
   return (
     <Accordion
       defaultExpanded={comments.length > 0}
@@ -25,14 +26,22 @@ export function CommentsAccordion({ comments, currentUserId }: CommentsAccordion
         boxShadow: 'none',
       }}
     >
-      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+      <AccordionSummary
+        id={titleId}
+        aria-controls={contentId}
+        expandIcon={<ExpandMoreIcon />}
+      >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <CommentIcon />
+          <CommentIcon aria-hidden />
           <Typography variant="h6">Comments ({comments.length})</Typography>
         </Box>
       </AccordionSummary>
-      <AccordionDetails>
-        <CommentsList comments={comments} currentUserId={currentUserId} />
+      <AccordionDetails id={contentId} role="region" aria-labelledby={titleId}>
+        <CommentsList
+          comments={comments}
+          currentUserId={currentUserId}
+          titleId={titleId}
+        />
       </AccordionDetails>
     </Accordion>
   );
