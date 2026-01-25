@@ -366,8 +366,14 @@ export default class Model<
     TSchema,
     RelationshipsByTemplate<TTemplate, TSchema>,
     K
-  > | null {
-    return this._relationshipsManager?.related(relationshipName) ?? null;
+  > {
+    return this._relationshipsManager?.related(
+      relationshipName,
+    ) as RelationshipTargetModel<
+      TSchema,
+      RelationshipsByTemplate<TTemplate, TSchema>,
+      K
+    >;
   }
 
   /**
@@ -384,7 +390,7 @@ export default class Model<
       TSchema,
       RelationshipsByTemplate<TTemplate, TSchema>,
       K
-    >,
+    > | null,
   ): this & ModelInstance<TTemplate, TSchema> {
     if (this._relationshipsManager) {
       // Get FK updates from manager (which also handles inverse relationships)

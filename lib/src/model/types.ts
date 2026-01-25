@@ -218,12 +218,9 @@ export type RelationshipTargetModel<
   K extends keyof TRelationships = keyof TRelationships,
 > =
   TRelationships[K] extends BelongsTo<infer TTarget, any>
-    ? ModelInstance<TTarget, TSchema> | null
+    ? ModelInstance<TTarget, TSchema>
     : TRelationships[K] extends HasMany<infer TTarget, any>
-      ?
-          | ModelCollection<TTarget, TSchema>
-          | ModelInstance<TTarget, TSchema>[]
-          | null
+      ? ModelCollection<TTarget, TSchema> | ModelInstance<TTarget, TSchema>[]
       : never;
 
 /**
@@ -346,7 +343,7 @@ type RelatedModel<
   TRelationship extends Relationships,
 > =
   TRelationship extends BelongsTo<infer TTarget, any>
-    ? ModelInstance<TTarget, TSchema> | null
+    ? ModelInstance<TTarget, TSchema>
     : TRelationship extends HasMany<infer TTarget, any>
       ? ModelCollection<TTarget, TSchema>
       : never;

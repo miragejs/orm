@@ -792,7 +792,7 @@ describe('Model', () => {
 
         const relatedPosts = author.related('posts');
         expect(relatedPosts).toBeDefined();
-        expect(relatedPosts?.length).toBe(2);
+        expect(relatedPosts.length).toBe(2);
       });
 
       it('should return null for unset belongsTo relationship', () => {
@@ -821,7 +821,7 @@ describe('Model', () => {
 
         const relatedPosts = author.related('posts');
         expect(relatedPosts).toBeDefined();
-        expect(relatedPosts?.length).toBe(0);
+        expect(relatedPosts.length).toBe(0);
       });
     });
   });

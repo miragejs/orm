@@ -201,7 +201,7 @@ export default class RelationshipsManager<
    */
   link<K extends RelationshipNames<TRelationships>>(
     relationshipName: K,
-    targetModel: RelationshipTargetModel<TSchema, TRelationships, K>,
+    targetModel: RelationshipTargetModel<TSchema, TRelationships, K> | null,
   ): RelationshipUpdateResult {
     const foreignKeyUpdates: Record<string, ForeignKeyValue> = {};
     const relationshipNameString = String(relationshipName);
@@ -394,11 +394,23 @@ export default class RelationshipsManager<
    */
   related<K extends RelationshipNames<TRelationships>>(
     relationshipName: K,
-  ): RelationshipTargetModel<TSchema, TRelationships, K> | null {
-    if (!this._schema || !this._relationshipDefs) return null;
+  ): RelationshipTargetModel<TSchema, TRelationships, K> {
+    if (!this._schema || !this._relationshipDefs) {
+      return null as unknown as RelationshipTargetModel<
+        TSchema,
+        TRelationships,
+        K
+      >;
+    }
 
     const relationshipDef = this._getRelationshipDef(relationshipName);
-    if (!relationshipDef) return null;
+    if (!relationshipDef) {
+      return null as unknown as RelationshipTargetModel<
+        TSchema,
+        TRelationships,
+        K
+      >;
+    }
 
     const relationship = relationshipDef.relationship;
     const { type, foreignKey, targetModel } = relationship;
@@ -417,7 +429,11 @@ export default class RelationshipsManager<
       const singleId = this._extractSingleId(foreignKeyValue);
 
       if (singleId === null) {
-        return null;
+        return null as unknown as RelationshipTargetModel<
+          TSchema,
+          TRelationships,
+          K
+        >;
       }
 
       return targetCollection.find(singleId) as RelationshipTargetModel<
@@ -456,7 +472,11 @@ export default class RelationshipsManager<
       ) as RelationshipTargetModel<TSchema, TRelationships, K>;
     }
 
-    return null;
+    return null as unknown as RelationshipTargetModel<
+      TSchema,
+      TRelationships,
+      K
+    >;
   }
 
   // -- PRIVATE HELPER METHODS --
