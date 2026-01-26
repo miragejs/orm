@@ -1258,6 +1258,89 @@ describe('Factory associations', () => {
       expect(post.author?.name).toBe('Specific User');
       expect(testSchema.users.all().length).toBe(1); // Only the one we explicitly created
     });
+
+    it('should process factory associations before trait associations', () => {
+      // Scenario: Task has a creator (factory default link) and assignee (trait create)
+      // Factory's creator link should run first (creating a user if none exist),
+      // then trait's assignee create should run second (creating a new user)
+      type TaskAttrs = {
+        id: string;
+        title: string;
+      };
+
+      const taskModel = model()
+        .name('task')
+        .collection('tasks')
+        .attrs<TaskAttrs>()
+        .build();
+
+      type TaskModel = typeof taskModel;
+
+      type TaskTestSchema = {
+        users: CollectionConfig<
+          UserModel,
+          {},
+          Factory<UserModel, 'admin' | 'verified'>
+        >;
+        tasks: CollectionConfig<
+          TaskModel,
+          {
+            creator: BelongsTo<UserModel, 'creatorId'>;
+            assignee: BelongsTo<UserModel, 'assigneeId'>;
+          },
+          Factory<TaskModel, 'withAssignee'>
+        >;
+      };
+
+      const taskFactory = factory<TaskTestSchema>()
+        .model(taskModel)
+        .attrs({
+          title: 'My Task',
+        })
+        .traits({
+          withAssignee: {
+            // Trait: always creates a NEW user for assignee
+            assignee: associations.create<UserModel, TaskTestSchema>(userModel),
+          },
+        })
+        .associations({
+          // Factory default: link to existing user OR create if none found
+          creator: associations.link<UserModel, TaskTestSchema>(userModel),
+        })
+        .build();
+
+      const testSchema = schema()
+        .collections({
+          users: collection().model(userModel).factory(userFactory).build(),
+          tasks: collection<TaskTestSchema>()
+            .model(taskModel)
+            .factory(taskFactory)
+            .relationships({
+              creator: belongsTo(userModel, { foreignKey: 'creatorId' }),
+              assignee: belongsTo(userModel, { foreignKey: 'assigneeId' }),
+            })
+            .build(),
+        })
+        .build();
+
+      // Collection is empty - no users exist yet
+      expect(testSchema.users.all().length).toBe(0);
+
+      // Create a task with the withAssignee trait
+      const task = testSchema.tasks.create('withAssignee');
+
+      // Factory association (creator link) should be processed FIRST:
+      // - No users exist, so it creates a new user
+      // Trait association (assignee create) should be processed SECOND:
+      // - Always creates a new user, regardless of existing users
+      // Result: 2 different users should exist
+      expect(testSchema.users.all().length).toBe(2);
+
+      // Creator and assignee should be different users
+      expect(task.creator).toBeDefined();
+      expect(task.assignee).toBeDefined();
+      expect(task.creator?.id).not.toBe(task.assignee?.id);
+    });
   });
 
   describe('edge cases', () => {

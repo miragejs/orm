@@ -353,8 +353,8 @@ export default class Factory<
 
   /**
    * Get associations that need processing by:
-   * 1. Extracting associations from traits
-   * 2. Merging with factory associations (factory takes precedence)
+   * 1. Starting with factory associations (processed first due to object insertion order)
+   * 2. Adding trait associations for NEW keys only (factory takes precedence for same keys)
    * 3. Filtering out associations where user provided values
    * @param traitNames - The trait names to extract associations from
    * @param relationshipUpdates - Relationship updates from user (contains FK values for relationships that were provided)
@@ -364,9 +364,11 @@ export default class Factory<
     traitNames: TTraits[],
     relationshipUpdates: Record<string, any>,
   ): FactoryAssociations<TTemplate, TSchema> {
-    const associations: Record<string, any> = {};
+    // 1. Start with factory associations (processed first due to object insertion order)
+    const associations: Record<string, any> = { ...this.associations };
 
-    // 1. Extract associations from traits
+    // 2. Add trait associations only for keys NOT already in factory associations
+    // Factory associations take precedence for same keys (overriding trait values)
     for (const name of traitNames) {
       const trait = this.traits?.[name as TTraits];
 
@@ -377,15 +379,13 @@ export default class Factory<
           const value =
             typedTrait[key as keyof TraitDefinition<TTemplate, TSchema>];
 
-          if (this._isAssociation(value)) {
+          // Only add if factory doesn't already define this association
+          if (this._isAssociation(value) && !(key in associations)) {
             associations[key] = value;
           }
         }
       }
     }
-
-    // 2. Merge with factory associations (factory takes precedence)
-    Object.assign(associations, this.associations || {});
 
     // 3. Filter out associations where user provided values
     const filtered: FactoryAssociations<TTemplate, TSchema> = {};
