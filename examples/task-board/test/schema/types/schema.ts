@@ -44,6 +44,7 @@ export type TestCollections = {
       | 'highPriority'
       | 'urgent'
       | 'overdue'
+      | 'withAssignee'
       | 'withComments',
       TestCollections
     >,

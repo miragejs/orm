@@ -132,7 +132,7 @@ export const teamHandlers = [
       return HttpResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const team = user.team;
+    const team = testSchema.teams.find(user.teamId);
     if (!team) {
       return HttpResponse.json({ error: 'User has no team' }, { status: 404 });
     }
@@ -153,7 +153,7 @@ export const teamHandlers = [
       return HttpResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const team = user.team;
+    const team = testSchema.teams.find(user.teamId);
     if (!team) {
       return HttpResponse.json({ error: 'User has no team' }, { status: 404 });
     }

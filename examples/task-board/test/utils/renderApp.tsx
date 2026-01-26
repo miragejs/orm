@@ -1,5 +1,4 @@
-import { createMemoryRouter } from 'react-router';
-import { RouterProvider } from 'react-router';
+import { createMemoryRouter, RouterProvider } from 'react-router';
 import { render } from '@testing-library/react';
 import { routes } from '@/routes';
 

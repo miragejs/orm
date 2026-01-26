@@ -45,10 +45,9 @@ export default function TaskComments() {
   const { pathname } = useLocation();
   const isDashboard = pathname.includes('/dashboard');
 
-  const currentUser = useRouteLoaderData<User>('userBoard')!;
+  const currentUser = useRouteLoaderData<User>('root')!;
   const taskRouteId = isDashboard ? 'dashboardTaskDetails' : 'userTaskDetails';
   const taskData = useRouteLoaderData<TaskDetailsLoaderData>(taskRouteId)!;
-  const currentUserId = currentUser.id;
 
   return (
     <Suspense fallback={<TaskCommentsLoadingSkeleton />}>
@@ -57,7 +56,7 @@ export default function TaskComments() {
         errorElement={<TaskCommentsErrorFallback />}
       >
         {(comments) => (
-          <CommentsAccordion comments={comments} currentUserId={currentUserId} />
+          <CommentsAccordion comments={comments} currentUserId={currentUser.id} />
         )}
       </Await>
     </Suspense>

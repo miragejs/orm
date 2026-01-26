@@ -11,6 +11,7 @@ export interface CommentBubbleProps {
 export function CommentBubble({ comment, currentUserId }: CommentBubbleProps) {
   const { author, content, createdAt } = comment;
   const isCurrentUser = author.id === currentUserId;
+
   return (
     <Box
       component="li"

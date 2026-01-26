@@ -21,16 +21,15 @@ describe('TaskDetails', () => {
   afterAll(() => server.close());
 
   test('displays task details', async ({ schema }) => {
-    const creator = schema.users.create();
-    const assignee = schema.users.create({ team: creator.team });
-    const teamSlug = assignee.team!.slug;
+    const task = schema.tasks.create('inProgress', 'highPriority', 'withAssignee');
+    const creator = task.creator;
+    const assignee = task.assignee;
+    const team = task.team;
     document.cookie = `userId=${assignee.id}`;
 
-    const task = schema.tasks.create({ assignee, creator }, 'inProgress', 'highPriority');
     const taskTitle = formatTaskTitle(task.toJSON());
 
-    renderApp(`/${teamSlug}/users/${assignee.id}/${task.id}`);
-
+    renderApp(`/${team.slug}/users/${assignee.id}/${task.id}`);
     const dialog = within(await screen.findByRole('dialog', { name: taskTitle }));
 
     // Title and description
@@ -59,15 +58,14 @@ describe('TaskDetails', () => {
   });
 
   test('displays team info', async ({ schema }) => {
-    const user = schema.users.create();
-    const team = user.team!;
-    const teamSlug = team.slug;
-    document.cookie = `userId=${user.id}`;
+    const task = schema.tasks.create('inProgress', 'withAssignee');
+    const assignee = task.assignee;
+    const team = task.team;
+    document.cookie = `userId=${assignee.id}`;
 
-    const task = schema.tasks.create({ creator: user }, 'inProgress');
     const taskTitle = formatTaskTitle(task.toJSON());
 
-    renderApp(`/${teamSlug}/users/${user.id}/${task.id}`);
+    renderApp(`/${team.slug}/users/${assignee.id}/${task.id}`);
 
     const dialog = await screen.findByRole('dialog', { name: taskTitle });
 
@@ -76,16 +74,15 @@ describe('TaskDetails', () => {
   });
 
   test('displays comments section', async ({ schema }) => {
-    const creator = schema.users.create();
-    const assignee = schema.users.create({ team: creator.team });
-    const teamSlug = assignee.team!.slug;
+    const task = schema.tasks.create('inProgress', 'withAssignee', 'withComments');
+    const assignee = task.assignee;
+    const team = task.team;
     document.cookie = `userId=${assignee.id}`;
 
-    const task = schema.tasks.create({ assignee, creator }, 'inProgress', 'withComments');
-    const comments = task.comments.toJSON();
     const taskTitle = formatTaskTitle(task.toJSON());
+    const comments = task.comments.toJSON();
 
-    renderApp(`/${teamSlug}/users/${assignee.id}/${task.id}`);
+    renderApp(`/${team.slug}/users/${assignee.id}/${task.id}`);
 
     const dialog = within(await screen.findByRole('dialog', { name: taskTitle }));
 
@@ -97,14 +94,14 @@ describe('TaskDetails', () => {
   });
 
   test('closes dialog and navigates back to user board', async ({ schema }) => {
-    const user = schema.users.create({ name: 'John Doe' });
-    const teamSlug = user.team!.slug;
-    document.cookie = `userId=${user.id}`;
+    const task = schema.tasks.create('inProgress', 'withAssignee');
+    const assignee = task.assignee;
+    const team = task.team;
+    document.cookie = `userId=${assignee.id}`;
 
-    const task = schema.tasks.create({ assignee: user }, 'inProgress');
     const taskTitle = formatTaskTitle(task.toJSON());
 
-    renderApp(`/${teamSlug}/users/${user.id}/${task.id}`);
+    renderApp(`/${team.slug}/users/${assignee.id}/${task.id}`);
 
     const dialog = await screen.findByRole('dialog', { name: taskTitle });
     const closeButton = within(dialog).getByRole('button', { name: 'Close' });

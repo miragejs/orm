@@ -1,7 +1,13 @@
-import { factory, resolveFactoryAttr, type ModelUpdateAttrs } from 'miragejs-orm';
+import {
+  associations,
+  factory,
+  resolveFactoryAttr,
+  type ModelUpdateAttrs,
+} from 'miragejs-orm';
 import { faker } from '@faker-js/faker';
 import { TaskStatus, TaskPriority } from '@shared/enums';
-import { TaskModel, taskModel } from '@test/schema/models';
+import { taskModel, userModel } from '@test/schema/models';
+import type { TaskModel, UserModel } from '@test/schema/models';
 import type { TestCollections } from '@test/schema/types';
 
 const getTeamPrefix = (teamName?: string) => {
@@ -57,6 +63,11 @@ export const taskFactory = factory<TestCollections>()
     },
   })
   .traits({
+    // Create a new user for the task assignee
+    withAssignee: {
+      assignee: associations.create<UserModel, TestCollections>(userModel),
+    },
+    // Create comments for the task
     withComments: {
       afterCreate(task, schema) {
         // Get members from the same team for comment authors
@@ -75,22 +86,29 @@ export const taskFactory = factory<TestCollections>()
       },
     },
   })
+  .associations({
+    // Link to the current user if found, else create a new one
+    creator: associations.link<UserModel, TestCollections>(userModel),
+  })
   .afterCreate((task) => {
     const attrs: ModelUpdateAttrs<TaskModel, TestCollections> = {};
 
     if (task.creator) {
+      // Assign the creator to the task if no assignee is set
       if (!task.assignee) {
         attrs.assignee = task.creator;
       }
 
+      // Link to the creator's team
       if (!task.team) {
         attrs.team = task.creator.team;
-        attrs.prefix = getTeamPrefix(task.creator.team?.name);
       }
     }
 
-    if (task.team) {
-      attrs.prefix = getTeamPrefix(task.team.name);
+    // Set the team prefix for the current or inherited team
+    const currentTeam = task.team || attrs.team;
+    if (currentTeam) {
+      attrs.prefix = getTeamPrefix(currentTeam.name);
     }
 
     task.update(attrs);

@@ -2,12 +2,14 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { test, describe, expect } from '@test/context';
 import ScheduleIcon from '@mui/icons-material/Schedule';
+import { TaskStatus } from '@shared/enums';
 import TaskStatusSection from './TaskStatusSection';
 
 describe('TaskStatusSection', () => {
   const ui = userEvent.setup();
 
   const defaultProps = {
+    status: TaskStatus.IN_PROGRESS,
     statusLabel: 'In Progress',
     statusIcon: ScheduleIcon,
     statusColor: 'info' as const,

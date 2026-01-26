@@ -1,20 +1,7 @@
-import { useLoaderData, useNavigate, useParams, Outlet } from 'react-router';
-import Button from '@mui/material/Button';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
-import Divider from '@mui/material/Divider';
-import Typography from '@mui/material/Typography';
+import { useLoaderData, useNavigate, useParams, Outlet, useLocation } from 'react-router';
 import { getTaskDetails } from './api';
 import { getTaskComments } from '@features/task-comments/api';
-import { formatTaskTitle } from '@shared/utils';
-import {
-  TaskStatusChips,
-  TaskPeopleSection,
-  TaskTeamCard,
-  TaskDatesInfo,
-} from './components';
+import { TaskDetailsDialog } from './components';
 import type { LoaderFunctionArgs } from 'react-router';
 
 /**
@@ -37,39 +24,24 @@ export async function loader({ params }: LoaderFunctionArgs) {
 export type TaskDetailsLoaderData = Awaited<ReturnType<typeof loader>>;
 
 export default function TaskDetails() {
-  const { task } = useLoaderData<TaskDetailsLoaderData>();
   const navigate = useNavigate();
+  const { search } = useLocation();
   const { teamName, userId } = useParams();
+  const { task } = useLoaderData<TaskDetailsLoaderData>();
 
   const handleClose = () => {
     // Navigate back to the parent route (Dashboard or UserBoard)
     if (userId) {
-      navigate(`/${teamName}/users/${userId}`);
+      navigate({ pathname: `/${teamName}/users/${userId}`, search });
     } else {
-      navigate(`/${teamName}/dashboard`);
+      navigate({ pathname: `/${teamName}/dashboard`, search });
     }
   };
 
   return (
-    <Dialog open={true} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle>{formatTaskTitle(task)}</DialogTitle>
-
-      <DialogContent>
-        <TaskStatusChips status={task.status} priority={task.priority} />
-        <Typography variant="body2">{task.description}</Typography>
-        <Divider sx={{ my: 2 }} />
-        <TaskPeopleSection assignee={task.assignee} creator={task.creator} />
-        {task.team && <TaskTeamCard team={task.team} />}
-        <TaskDatesInfo dueDate={task.dueDate} createdAt={task.createdAt} />
-        <Divider sx={{ my: 2 }} />
-
-        {/* Comments Section - Rendered via child route */}
-        <Outlet />
-      </DialogContent>
-
-      <DialogActions>
-        <Button onClick={handleClose}>Close</Button>
-      </DialogActions>
-    </Dialog>
+    <TaskDetailsDialog task={task} onClose={handleClose}>
+      {/* Comments Section - Rendered via child route */}
+      <Outlet />
+    </TaskDetailsDialog>
   );
 }

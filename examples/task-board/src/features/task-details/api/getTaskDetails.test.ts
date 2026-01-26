@@ -17,13 +17,9 @@ describe('getTaskDetails', () => {
   afterAll(() => server.close());
 
   test('gets task details for authenticated user', async ({ schema }) => {
-    const user = schema.users.create();
-    const task = schema.tasks.create({
-      assignee: user,
-      creator: user,
-      team: user.team,
-    });
-    document.cookie = `userId=${user.id}`;
+    const task = schema.tasks.create('withAssignee');
+    const assignee = task.assignee;
+    document.cookie = `userId=${assignee.id}`;
 
     const result = await getTaskDetails(task.id);
     const expected: Task = task.toJSON();
@@ -32,8 +28,7 @@ describe('getTaskDetails', () => {
   });
 
   test('throws error when not authenticated', async ({ schema }) => {
-    const user = schema.users.create();
-    const task = schema.tasks.create({ teamId: user.teamId });
+    const task = schema.tasks.create();
 
     await expect(getTaskDetails(task.id)).rejects.toThrow('Failed to fetch task details');
   });

@@ -22,7 +22,7 @@ export const tasksCollection = collection<TestCollections>()
     with: {
       assignee: { select: ['avatar', 'email', 'id', 'name', 'role'] },
       creator: { select: ['avatar', 'email', 'id', 'name', 'role'] },
-      team: { select: ['department', 'description', 'id', 'name'] },
+      team: { select: ['department', 'description', 'id', 'name', 'slug'] },
     },
     relationsMode: 'embedded',
   })

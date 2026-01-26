@@ -53,7 +53,12 @@ export const taskHandlers = [
       return HttpResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
-    const json: Comment[] = task.comments.toJSON();
+    const json: Comment[] = testSchema.comments
+      .findMany({
+        where: { taskId: task.id },
+        orderBy: { createdAt: 'desc' },
+      })
+      .toJSON();
 
     // Simulate network delay for deferred loading demonstration in development
     if (process.env.NODE_ENV === 'development') {

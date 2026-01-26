@@ -53,6 +53,6 @@ export const userFactory = factory<TestCollections>()
     },
   })
   .associations({
-    team: associations.create(teamModel),
+    team: associations.link(teamModel), // Link to the current team if found, else create a new one
   })
   .build();
