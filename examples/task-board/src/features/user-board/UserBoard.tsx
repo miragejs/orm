@@ -1,14 +1,8 @@
-import { useState, useMemo } from 'react';
 import { useLoaderData, useNavigate, useParams, Outlet } from 'react-router';
 import Box from '@mui/material/Box';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import { TaskStatus } from '@shared/enums';
 import { getUserTasks } from './api';
-import { TaskStatusSection } from './components';
-import { statusConfig, statusOrder } from './config';
+import { TaskList } from './components';
 import type { LoaderFunctionArgs } from 'react-router';
-import type { TaskListItem } from '@shared/types';
 
 /**
  * UserBoard loader - fetches tasks for specified user
@@ -29,26 +23,6 @@ export default function UserBoard() {
   const navigate = useNavigate();
   const { teamName, userId } = useParams();
   const tasks = useLoaderData<Awaited<ReturnType<typeof loader>>>();
-  const [expanded, setExpanded] = useState<string>(TaskStatus.IN_PROGRESS);
-
-  const tasksByStatus = useMemo(
-    () =>
-      tasks.reduce(
-        (acc, task) => {
-          if (!acc[task.status]) {
-            acc[task.status] = [];
-          }
-          acc[task.status].push(task);
-          return acc;
-        },
-        {} as Record<TaskStatus, TaskListItem[]>,
-      ),
-    [tasks],
-  );
-
-  const handleAccordionChange = (status: TaskStatus, isExpanded: boolean) => {
-    setExpanded(isExpanded ? status : '');
-  };
 
   const handleTaskClick = (taskId: string) => {
     navigate(`/${teamName}/users/${userId}/${taskId}`);
@@ -56,31 +30,7 @@ export default function UserBoard() {
 
   return (
     <Box>
-      <Typography variant="h5" component="h2" gutterBottom sx={{ mb: 3 }}>
-        My Tasks
-      </Typography>
-
-      <Stack spacing={2}>
-        {statusOrder.map((status) => {
-          const config = statusConfig[status];
-          const statusTasks = tasksByStatus[status] || [];
-
-          return (
-            <TaskStatusSection
-              key={status}
-              expanded={expanded === status}
-              onExpandChange={(isExpanded) => handleAccordionChange(status, isExpanded)}
-              onTaskClick={handleTaskClick}
-              status={status}
-              statusColor={config.color}
-              statusIcon={config.icon}
-              statusLabel={config.label}
-              tasks={statusTasks}
-            />
-          );
-        })}
-      </Stack>
-
+      <TaskList tasks={tasks} onTaskClick={handleTaskClick} />
       <Outlet />
     </Box>
   );
