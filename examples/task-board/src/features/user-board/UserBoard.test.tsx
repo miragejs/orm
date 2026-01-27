@@ -39,7 +39,7 @@ describe('UserBoard', () => {
 
     // To Do section - expand to see task
     await ui.click(screen.getByText('To Do'));
-    expect(screen.getByText(todoTask.title)).toBeInTheDocument();
+    expect(screen.getByText(todoTask.title)).toBeVisible();
   });
 
   test('navigates to task details when task is clicked', async ({ schema }) => {

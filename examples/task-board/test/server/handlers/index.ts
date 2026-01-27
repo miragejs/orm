@@ -4,7 +4,7 @@ import { taskHandlers } from './taskHandlers';
 import { teamHandlers } from './teamHandlers';
 
 /**
- * Combined MSW handlers
+ * Combined MSW handlers in a correct order
  */
 export const handlers = [
   ...authHandlers,

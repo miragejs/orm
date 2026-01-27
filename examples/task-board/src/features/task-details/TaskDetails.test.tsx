@@ -22,14 +22,13 @@ describe('TaskDetails', () => {
 
   test('displays task details', async ({ schema }) => {
     const task = schema.tasks.create('inProgress', 'highPriority', 'withAssignee');
-    const creator = task.creator;
-    const assignee = task.assignee;
-    const team = task.team;
+    const { creator, assignee, team } = task;
     document.cookie = `userId=${assignee.id}`;
 
     const taskTitle = formatTaskTitle(task.toJSON());
 
     renderApp(`/${team.slug}/users/${assignee.id}/${task.id}`);
+
     const dialog = within(await screen.findByRole('dialog', { name: taskTitle }));
 
     // Title and description
@@ -59,28 +58,26 @@ describe('TaskDetails', () => {
 
   test('displays team info', async ({ schema }) => {
     const task = schema.tasks.create('inProgress', 'withAssignee');
-    const assignee = task.assignee;
-    const team = task.team;
+    const { assignee, team } = task;
     document.cookie = `userId=${assignee.id}`;
 
     const taskTitle = formatTaskTitle(task.toJSON());
 
     renderApp(`/${team.slug}/users/${assignee.id}/${task.id}`);
 
-    const dialog = await screen.findByRole('dialog', { name: taskTitle });
+    const dialog = within(await screen.findByRole('dialog', { name: taskTitle }));
 
-    expect(within(dialog).getByText(team.name)).toBeInTheDocument();
-    expect(within(dialog).getByText(team.department)).toBeInTheDocument();
+    expect(dialog.getByText(team.name)).toBeInTheDocument();
+    expect(dialog.getByText(team.department)).toBeInTheDocument();
   });
 
   test('displays comments section', async ({ schema }) => {
     const task = schema.tasks.create('inProgress', 'withAssignee', 'withComments');
-    const assignee = task.assignee;
-    const team = task.team;
+    const { assignee, team } = task;
     document.cookie = `userId=${assignee.id}`;
 
-    const taskTitle = formatTaskTitle(task.toJSON());
     const comments = task.comments.toJSON();
+    const taskTitle = formatTaskTitle(task.toJSON());
 
     renderApp(`/${team.slug}/users/${assignee.id}/${task.id}`);
 
@@ -95,8 +92,7 @@ describe('TaskDetails', () => {
 
   test('closes dialog and navigates back to user board', async ({ schema }) => {
     const task = schema.tasks.create('inProgress', 'withAssignee');
-    const assignee = task.assignee;
-    const team = task.team;
+    const { assignee, team } = task;
     document.cookie = `userId=${assignee.id}`;
 
     const taskTitle = formatTaskTitle(task.toJSON());
@@ -104,8 +100,8 @@ describe('TaskDetails', () => {
     renderApp(`/${team.slug}/users/${assignee.id}/${task.id}`);
 
     const dialog = await screen.findByRole('dialog', { name: taskTitle });
-    const closeButton = within(dialog).getByRole('button', { name: 'Close' });
 
+    const closeButton = within(dialog).getByRole('button', { name: 'Close' });
     await ui.click(closeButton);
 
     expect(dialog).not.toBeInTheDocument();

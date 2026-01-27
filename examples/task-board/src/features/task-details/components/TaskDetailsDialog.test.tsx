@@ -42,8 +42,7 @@ describe('TaskDetailsDialog', () => {
 
   test('renders assignee and creator info', ({ schema }) => {
     const task = schema.tasks.create('withAssignee');
-    const creator = task.creator;
-    const assignee = task.assignee;
+    const { creator, assignee } = task;
     const onClose = vi.fn();
 
     render(<TaskDetailsDialog task={task.toJSON()} onClose={onClose} />);
@@ -54,7 +53,7 @@ describe('TaskDetailsDialog', () => {
 
   test('renders team card with team info', ({ schema }) => {
     const task = schema.tasks.create();
-    const team = task.team;
+    const { team } = task;
     const onClose = vi.fn();
 
     render(<TaskDetailsDialog task={task.toJSON()} onClose={onClose} />);

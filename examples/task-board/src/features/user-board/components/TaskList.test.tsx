@@ -106,7 +106,7 @@ describe('TaskList', () => {
 
     // Section should be expanded
     expect(todoButton).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByText(todoTask.title)).toBeInTheDocument();
+    expect(screen.getByText(todoTask.title)).toBeVisible();
   });
 
   test('calls onTaskClick when task is clicked', async ({ schema }) => {
