@@ -43,10 +43,10 @@ function TaskCommentsErrorFallback() {
  */
 export default function TaskComments() {
   const { pathname } = useLocation();
-  const isDashboard = pathname.includes('/dashboard');
+  const isDashboardDomain = pathname.includes('/dashboard');
 
   const currentUser = useRouteLoaderData<User>('root')!;
-  const taskRouteId = isDashboard ? 'dashboardTaskDetails' : 'userTaskDetails';
+  const taskRouteId = isDashboardDomain ? 'dashboardTaskDetails' : 'userTaskDetails';
   const taskData = useRouteLoaderData<TaskDetailsLoaderData>(taskRouteId)!;
 
   return (
