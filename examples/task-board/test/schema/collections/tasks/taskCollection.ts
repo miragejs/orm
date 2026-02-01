@@ -20,8 +20,8 @@ export const tasksCollection = collection<TestCollections>()
   })
   .serializer({
     with: {
-      assignee: { select: ['avatar', 'email', 'id', 'name', 'role'] },
-      creator: { select: ['avatar', 'email', 'id', 'name', 'role'] },
+      assignee: { select: ['avatar', 'bio', 'email', 'id', 'name', 'role'] },
+      creator: { select: ['avatar', 'bio', 'email', 'id', 'name', 'role'] },
       team: { select: ['department', 'description', 'id', 'name', 'slug'] },
     },
     relationsMode: 'embedded',

@@ -12,7 +12,7 @@ export const commentsCollection = collection<TestCollections>()
   })
   .serializer({
     with: {
-      author: { select: ['avatar', 'email', 'id', 'name', 'role'] },
+      author: { select: ['avatar', 'bio', 'email', 'id', 'name', 'role'] },
     },
     relationsMode: 'embedded',
   })

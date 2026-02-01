@@ -19,8 +19,8 @@ export const teamsCollection = collection<TestCollections>()
   })
   .serializer({
     with: {
-      manager: { select: ['avatar', 'email', 'id', 'name', 'role'] },
-      members: { select: ['avatar', 'email', 'id', 'name', 'role'] },
+      manager: { select: ['avatar', 'bio', 'email', 'id', 'name', 'role'] },
+      members: { select: ['avatar', 'bio', 'email', 'id', 'name', 'role'] },
       tasks: { mode: 'foreignKey' },
     },
     relationsMode: 'embedded',
