@@ -18,6 +18,8 @@ interface TeamInfoCardProps {
 function TeamInfoCard({ team }: TeamInfoCardProps) {
   return (
     <Card
+      component="section"
+      aria-labelledby="team-info-title"
       sx={{
         height: '100%',
         display: 'flex',
@@ -27,7 +29,7 @@ function TeamInfoCard({ team }: TeamInfoCardProps) {
       <CardContent sx={{ flexGrow: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
           <GroupsIcon color="primary" />
-          <Typography variant="h6" component="h3">
+          <Typography id="team-info-title" variant="h6" component="h3">
             {team.name}
           </Typography>
         </Box>

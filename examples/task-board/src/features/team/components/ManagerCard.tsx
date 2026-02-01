@@ -13,6 +13,8 @@ interface ManagerCardProps {
   manager: UserInfo | null;
 }
 
+const SECTION_TITLE_ID = 'team-manager-title';
+
 /**
  * Manager Card - Displays team manager information
  */
@@ -20,6 +22,8 @@ function ManagerCard({ manager }: ManagerCardProps) {
   if (!manager) {
     return (
       <Card
+        component="section"
+        aria-labelledby={SECTION_TITLE_ID}
         sx={{
           height: '100%',
           display: 'flex',
@@ -35,6 +39,9 @@ function ManagerCard({ manager }: ManagerCardProps) {
             justifyContent: 'center',
           }}
         >
+          <Typography id={SECTION_TITLE_ID} variant="h6" component="h3" sx={{ mb: 1 }}>
+            Team Manager
+          </Typography>
           <PersonIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
           <Typography variant="body2" color="text.secondary">
             No manager assigned
@@ -46,6 +53,8 @@ function ManagerCard({ manager }: ManagerCardProps) {
 
   return (
     <Card
+      component="section"
+      aria-labelledby={SECTION_TITLE_ID}
       sx={{
         height: '100%',
         display: 'flex',
@@ -54,8 +63,9 @@ function ManagerCard({ manager }: ManagerCardProps) {
     >
       <CardContent sx={{ flexGrow: 1 }}>
         <Typography
-          variant="overline"
-          color="text.secondary"
+          id={SECTION_TITLE_ID}
+          variant="h6"
+          component="h3"
           sx={{ display: 'block', mb: 2 }}
         >
           Team Manager
@@ -66,7 +76,7 @@ function ManagerCard({ manager }: ManagerCardProps) {
             {manager.name.charAt(0)}
           </Avatar>
           <Box>
-            <Typography variant="h6" component="h3">
+            <Typography variant="subtitle1" component="p" fontWeight={600}>
               {manager.name}
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>

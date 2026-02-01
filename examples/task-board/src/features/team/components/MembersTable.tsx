@@ -75,10 +75,10 @@ function MembersTable({ data }: MembersTableProps) {
   };
 
   return (
-    <Card>
+    <Card component="section" aria-labelledby="team-members-title">
       <CardContent>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-          <Typography variant="h6" component="h3">
+          <Typography id="team-members-title" variant="h6" component="h3">
             Team Members ({total})
           </Typography>
         </Box>
