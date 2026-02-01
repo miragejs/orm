@@ -15,6 +15,7 @@ describe('TaskList', () => {
     render(<TaskList tasks={tasks} onTaskClick={vi.fn()} />);
 
     expect(screen.getByRole('heading', { name: 'My Tasks' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'My Tasks' })).toBeInTheDocument();
   });
 
   test('renders all status sections', ({ schema }) => {

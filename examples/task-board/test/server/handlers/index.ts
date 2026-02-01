@@ -9,8 +9,8 @@ import { teamHandlers } from './teamHandlers';
 export const handlers = [
   ...authHandlers,
   ...userHandlers,
-  ...taskHandlers,
   ...teamHandlers,
+  ...taskHandlers,
 ];
 
-export { authHandlers, userHandlers, taskHandlers, teamHandlers };
+export { authHandlers, taskHandlers, teamHandlers, userHandlers };

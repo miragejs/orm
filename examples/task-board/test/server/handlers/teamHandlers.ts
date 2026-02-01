@@ -108,7 +108,10 @@ export const teamHandlers = [
       with: [],
     });
 
-    await delay(DELAY_MS);
+    // Simulate network delay for deferred loading demonstration in development
+    if (process.env.NODE_ENV === 'development') {
+      await delay(DELAY_MS);
+    }
 
     return HttpResponse.json({
       members,
@@ -200,7 +203,10 @@ export const teamHandlers = [
       with: { team: false },
     });
 
-    await delay(DELAY_MS);
+    // Simulate network delay for deferred loading demonstration in development
+    if (process.env.NODE_ENV === 'development') {
+      await delay(DELAY_MS);
+    }
 
     return HttpResponse.json({
       filters,

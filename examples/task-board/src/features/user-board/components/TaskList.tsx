@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useId } from 'react';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
@@ -17,6 +17,7 @@ interface TaskListProps {
  */
 export default function TaskList({ tasks, onTaskClick }: TaskListProps) {
   const [expanded, setExpanded] = useState<string>(TaskStatus.IN_PROGRESS);
+  const titleId = useId();
 
   const tasksByStatus = useMemo(
     () =>
@@ -38,12 +39,12 @@ export default function TaskList({ tasks, onTaskClick }: TaskListProps) {
   };
 
   return (
-    <Box>
-      <Typography variant="h5" component="h2" gutterBottom sx={{ mb: 3 }}>
+    <Box component="section">
+      <Typography id={titleId} variant="h5" component="h2" gutterBottom sx={{ mb: 3 }}>
         My Tasks
       </Typography>
 
-      <Stack spacing={2}>
+      <Stack spacing={2} role="group" aria-labelledby={titleId}>
         {statusOrder.map((status) => {
           const config = statusConfig[status];
           const statusTasks = tasksByStatus[status] || [];

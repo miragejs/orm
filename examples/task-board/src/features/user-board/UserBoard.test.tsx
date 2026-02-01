@@ -31,6 +31,7 @@ describe('UserBoard', () => {
     renderApp(`/${team.slug}/users/${user.id}`);
 
     await screen.findByRole('heading', { name: 'My Tasks' });
+    expect(screen.getByRole('group', { name: 'My Tasks' })).toBeInTheDocument();
 
     // In Progress section shows the task (expanded by default)
     expect(

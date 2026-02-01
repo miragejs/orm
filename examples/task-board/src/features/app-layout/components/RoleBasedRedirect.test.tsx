@@ -25,12 +25,12 @@ describe('RoleBasedRedirect', () => {
     const user = schema.users.create().toJSON();
 
     renderWithRouter({
-      user,
       element: <RoleBasedRedirect />,
       routes: [
         { path: '/:teamSlug/dashboard', element: <div>Dashboard</div> },
         { path: '/:teamSlug/users/:userId', element: <div>User Tasks</div> },
       ],
+      user,
     });
 
     await waitFor(() => {

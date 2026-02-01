@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { test, describe, expect } from '@test/context';
 import { renderWithRouter } from '@test/utils';
 import Sidebar from './Sidebar';
@@ -9,9 +9,7 @@ describe('Sidebar', () => {
 
     renderWithRouter({ element: <Sidebar />, user });
 
-    await waitFor(() => {
-      expect(screen.getByRole('complementary')).toBeInTheDocument();
-    });
+    await screen.findByRole('complementary');
 
     expect(
       screen.getByRole('navigation', { name: 'Main navigation' }),
@@ -26,9 +24,7 @@ describe('Sidebar', () => {
 
     renderWithRouter({ element: <Sidebar />, user });
 
-    await waitFor(() => {
-      expect(screen.getByRole('complementary')).toBeInTheDocument();
-    });
+    await screen.findByRole('complementary');
 
     expect(screen.getByRole('button', { name: 'Dashboard' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'My Tasks' })).not.toBeInTheDocument();
@@ -40,9 +36,7 @@ describe('Sidebar', () => {
 
     renderWithRouter({ element: <Sidebar />, user });
 
-    await waitFor(() => {
-      expect(screen.getByRole('complementary')).toBeInTheDocument();
-    });
+    await screen.findByRole('complementary');
 
     expect(screen.getByRole('button', { name: 'Logout' })).toBeInTheDocument();
   });

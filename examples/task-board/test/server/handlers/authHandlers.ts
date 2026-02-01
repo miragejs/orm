@@ -20,7 +20,7 @@ export const authHandlers = [
     const json: User = user.toJSON();
     return HttpResponse.json(json, {
       status: 200,
-      headers: { 'Set-Cookie': `userId=${user.id}; Path=/;` },
+      headers: { 'Set-Cookie': `userId=${user.id}; Path=/; HttpOnly` },
     });
   }),
 
