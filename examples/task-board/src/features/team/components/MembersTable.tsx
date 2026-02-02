@@ -84,21 +84,31 @@ function MembersTable({ data }: MembersTableProps) {
         </Box>
 
         <TableContainer>
-          <Table>
+          <Table aria-label="Team Members">
             <TableHead>
               <TableRow>
                 <TableCell width={60}></TableCell>
-                {columns.map((column) => (
-                  <TableCell key={column.id}>
-                    <TableSortLabel
-                      active={sortBy === column.id}
-                      direction={sortBy === column.id ? sortOrder : 'asc'}
-                      onClick={() => handleSort(column.id)}
-                    >
-                      {column.label}
-                    </TableSortLabel>
-                  </TableCell>
-                ))}
+                {columns.map((column) => {
+                  const isSorted = sortBy === column.id;
+                  const direction = isSorted ? sortOrder : 'asc';
+                  const ariaSort = isSorted
+                    ? direction === 'asc'
+                      ? 'ascending'
+                      : 'descending'
+                    : undefined;
+
+                  return (
+                    <TableCell key={column.id} aria-sort={ariaSort}>
+                      <TableSortLabel
+                        active={isSorted}
+                        direction={direction}
+                        onClick={() => handleSort(column.id)}
+                      >
+                        {column.label}
+                      </TableSortLabel>
+                    </TableCell>
+                  );
+                })}
               </TableRow>
             </TableHead>
             <TableBody>

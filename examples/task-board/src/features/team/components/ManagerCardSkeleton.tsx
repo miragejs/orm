@@ -9,6 +9,7 @@ import Skeleton from '@mui/material/Skeleton';
 export default function ManagerCardSkeleton() {
   return (
     <Card
+      aria-label="Loading manager info"
       sx={{
         height: '100%',
         display: 'flex',

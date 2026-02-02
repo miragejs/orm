@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { useLoaderData, Await } from 'react-router';
+import { useLoaderData, Await, useAsyncError } from 'react-router';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
@@ -7,12 +7,30 @@ import { getTeam, getTeamMembers } from './api';
 import {
   TeamInfoCard,
   TeamInfoCardSkeleton,
+  TeamInfoCardError,
   ManagerCard,
   ManagerCardSkeleton,
+  ManagerCardError,
   MembersTable,
   MembersTableSkeleton,
+  MembersTableError,
 } from './components';
 import type { LoaderFunctionArgs } from 'react-router';
+
+function TeamInfoErrorBoundary() {
+  const error = useAsyncError() as Error;
+  return <TeamInfoCardError error={error} />;
+}
+
+function ManagerErrorBoundary() {
+  const error = useAsyncError() as Error;
+  return <ManagerCardError error={error} />;
+}
+
+function MembersErrorBoundary() {
+  const error = useAsyncError() as Error;
+  return <MembersTableError error={error} />;
+}
 
 /**
  * Team page loader - returns deferred promises for parallel loading
@@ -51,7 +69,7 @@ export default function Team() {
           {/* Team Info Card */}
           <Box sx={{ flex: 1 }}>
             <Suspense fallback={<TeamInfoCardSkeleton />}>
-              <Await resolve={teamPromise}>
+              <Await resolve={teamPromise} errorElement={<TeamInfoErrorBoundary />}>
                 {(team) => <TeamInfoCard team={team} />}
               </Await>
             </Suspense>
@@ -60,7 +78,7 @@ export default function Team() {
           {/* Manager Card */}
           <Box sx={{ flex: 1 }}>
             <Suspense fallback={<ManagerCardSkeleton />}>
-              <Await resolve={teamPromise}>
+              <Await resolve={teamPromise} errorElement={<ManagerErrorBoundary />}>
                 {(team) => <ManagerCard manager={team.manager} />}
               </Await>
             </Suspense>
@@ -70,7 +88,7 @@ export default function Team() {
         {/* Members Table */}
         <Box>
           <Suspense fallback={<MembersTableSkeleton />}>
-            <Await resolve={membersPromise}>
+            <Await resolve={membersPromise} errorElement={<MembersErrorBoundary />}>
               {(data) => <MembersTable data={data} />}
             </Await>
           </Suspense>

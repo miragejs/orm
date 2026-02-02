@@ -8,7 +8,7 @@ import Skeleton from '@mui/material/Skeleton';
  */
 export default function MembersTableSkeleton() {
   return (
-    <Card>
+    <Card aria-label="Loading team members">
       <CardContent>
         {/* Title with loading indicator space */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>

@@ -9,6 +9,7 @@ import Skeleton from '@mui/material/Skeleton';
 export default function TeamInfoCardSkeleton() {
   return (
     <Card
+      aria-label="Loading team info"
       sx={{
         height: '100%',
         display: 'flex',
