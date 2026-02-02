@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import { testSchema } from '@test/schema';
+import { parseCookieUserId } from '@test/server/utils';
 import type { User } from '@shared/types';
 
 /**
@@ -7,8 +8,8 @@ import type { User } from '@shared/types';
  */
 export const userHandlers = [
   // GET /api/users/me - Get current user
-  http.get('/api/users/me', ({ cookies }) => {
-    const userId = cookies.userId;
+  http.get('/api/users/me', ({ cookies, request }) => {
+    const userId = parseCookieUserId(cookies, request);
     if (!userId) {
       return HttpResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }

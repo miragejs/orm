@@ -3,7 +3,7 @@ import { testSchema } from '@test/schema/testSchema';
 import { parseTableQuery, type TableParams } from '@shared/utils';
 import { ModelAttrs, Where } from 'miragejs-orm';
 import { TaskModel } from '@test/schema/models';
-import { collectTaskStats } from '@test/server/utils';
+import { collectTaskStats, parseCookieUserId } from '@test/server/utils';
 import type { TaskStatus, TaskPriority } from '@shared/enums';
 import type {
   MemberOption,
@@ -50,8 +50,8 @@ function parseFilters(url: string): TaskFilters {
  */
 export const teamHandlers = [
   // GET /api/teams/me - Get current user's team
-  http.get('/api/teams/me', ({ cookies }) => {
-    const userId = cookies.userId;
+  http.get('/api/teams/me', ({ cookies, request }) => {
+    const userId = parseCookieUserId(cookies, request);
     if (!userId) {
       return HttpResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
@@ -72,7 +72,7 @@ export const teamHandlers = [
 
   // GET /api/teams/me/members - Get current user's team members with pagination and sorting
   http.get('/api/teams/me/members', async ({ cookies, request }) => {
-    const userId = cookies.userId;
+    const userId = parseCookieUserId(cookies, request);
     if (!userId) {
       return HttpResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
@@ -124,8 +124,8 @@ export const teamHandlers = [
   }),
 
   // GET /api/teams/me/statistics - Task statistics aggregated by date
-  http.get('/api/teams/me/statistics', ({ cookies }) => {
-    const userId = cookies.userId;
+  http.get('/api/teams/me/statistics', ({ cookies, request }) => {
+    const userId = parseCookieUserId(cookies, request);
     if (!userId) {
       return HttpResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
@@ -146,7 +146,7 @@ export const teamHandlers = [
 
   // GET /api/teams/me/tasks - Team tasks with pagination, sorting, and filters
   http.get('/api/teams/me/tasks', async ({ cookies, request }) => {
-    const userId = cookies.userId;
+    const userId = parseCookieUserId(cookies, request);
     if (!userId) {
       return HttpResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
