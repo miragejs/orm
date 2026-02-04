@@ -1,12 +1,10 @@
 import { useLoaderData, useNavigate, useParams, Outlet, useLocation } from 'react-router';
 import { getTaskDetails } from './api';
-import { getTaskComments } from '@features/task-comments/api';
 import { TaskDetailsDialog } from './components';
 import type { LoaderFunctionArgs } from 'react-router';
 
 /**
  * Loader for task details page
- * Task is loaded synchronously (blocking), comments are deferred (streaming)
  */
 export async function loader({ params }: LoaderFunctionArgs) {
   const taskId = params.taskId || params.id;
@@ -16,9 +14,8 @@ export async function loader({ params }: LoaderFunctionArgs) {
   }
 
   const task = await getTaskDetails(taskId);
-  const commentsPromise = getTaskComments(taskId);
 
-  return { task, commentsPromise };
+  return { task };
 }
 
 export type TaskDetailsLoaderData = Awaited<ReturnType<typeof loader>>;

@@ -6,15 +6,21 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import CommentIcon from '@mui/icons-material/Comment';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { CommentForm } from './CommentForm';
 import { CommentsList } from './CommentsList';
 import type { Comment } from '@shared/types';
 
 export interface CommentsAccordionProps {
   comments: Comment[];
   currentUserId: string | undefined;
+  taskId: string;
 }
 
-export function CommentsAccordion({ comments, currentUserId }: CommentsAccordionProps) {
+export function CommentsAccordion({
+  comments,
+  currentUserId,
+  taskId,
+}: CommentsAccordionProps) {
   const titleId = useId();
   const contentId = useId();
 
@@ -42,6 +48,7 @@ export function CommentsAccordion({ comments, currentUserId }: CommentsAccordion
           currentUserId={currentUserId}
           titleId={titleId}
         />
+        <CommentForm taskId={taskId} />
       </AccordionDetails>
     </Accordion>
   );

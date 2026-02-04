@@ -74,4 +74,42 @@ export const taskHandlers = [
       return HttpResponse.json(json);
     },
   ),
+
+  // Add a comment to a specific task
+  http.post<{ id: string }>(
+    '/api/tasks/:id/comments',
+    async ({ params, cookies, request }) => {
+      const userId = parseCookieUserId(cookies, request);
+      if (!userId) {
+        return HttpResponse.json({ error: 'Not authenticated' }, { status: 401 });
+      }
+
+      const task = testSchema.tasks.find(params.id);
+      if (!task) {
+        return HttpResponse.json({ error: 'Task not found' }, { status: 404 });
+      }
+
+      const author = testSchema.users.find(userId);
+      if (!author) {
+        return HttpResponse.json({ error: 'User not found' }, { status: 404 });
+      }
+
+      const body = (await request.json()) as { content: string };
+      const content = body.content.trim();
+      const comment = testSchema.comments.create({
+        author,
+        content: content,
+        createdAt: new Date().toISOString(),
+        task,
+      });
+
+      // Simulate network delay for deferred loading demonstration in development
+      if (process.env.NODE_ENV === 'development') {
+        await delay(500);
+      }
+
+      const json: Comment = comment.toJSON();
+      return HttpResponse.json(json, { status: 201 });
+    },
+  ),
 ];

@@ -6,7 +6,10 @@ import UserBoard, { loader as userBoardLoader } from './features/user-board/User
 import TaskDetails, {
   loader as taskDetailsLoader,
 } from './features/task-details/TaskDetails';
-import TaskComments from './features/task-comments/TaskComments';
+import TaskComments, {
+  action as taskCommentsAction,
+  loader as taskCommentsLoader,
+} from './features/task-comments/TaskComments';
 import Team, { loader as teamLoader } from './features/team/Team';
 import ErrorBoundary from './shared/components/ErrorBoundary';
 import type { RouteObject } from 'react-router';
@@ -68,6 +71,8 @@ export const routes: RouteObject[] = [
                   {
                     index: true,
                     element: <TaskComments />,
+                    loader: taskCommentsLoader,
+                    action: taskCommentsAction,
                   },
                 ],
               },
@@ -96,6 +101,8 @@ export const routes: RouteObject[] = [
                   {
                     index: true,
                     element: <TaskComments />,
+                    loader: taskCommentsLoader,
+                    action: taskCommentsAction,
                   },
                 ],
               },
