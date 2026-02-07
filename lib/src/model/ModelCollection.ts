@@ -342,16 +342,54 @@ export default class ModelCollection<
   // -- SERIALIZATION --
 
   /**
-   * Serialize the collection with optional runtime options
-   * @template TSerialized - Custom return type for manual serialization (defaults to collection's JSON type)
+   * Serialize the collection with a custom serializer instance
+   * @template TSerializedCollection - The serialized collection type inferred from the serializer
+   * @param serializer - A Serializer instance to use for serialization
+   * @returns A serialized representation of the collection with the type inferred from the serializer
+   */
+  serialize<TSerializedCollection>(
+    serializer: Serializer<TTemplate, TSchema, any, TSerializedCollection>,
+  ): TSerializedCollection;
+
+  /**
+   * Serialize the collection with optional runtime options and explicit return type
+   * @template TSerialized - Custom return type for manual type assertion
    * @param options - Optional serializer options to override class-level settings
    * @returns A serialized representation of the collection
    */
-  serialize<TSerialized = SerializedCollectionFor<TTemplate>>(
+  serialize<TSerialized>(
     options?: Partial<SerializerConfig<TTemplate, TSchema>>,
+  ): TSerialized;
+
+  /**
+   * Serialize the collection with optional runtime options
+   * @param options - Optional serializer options to override class-level settings
+   * @returns A serialized representation of the collection
+   */
+  serialize(
+    options?: Partial<SerializerConfig<TTemplate, TSchema>>,
+  ): SerializedCollectionFor<TTemplate>;
+
+  /**
+   * Serialize the collection with optional runtime options or a custom serializer
+   * @param optionsOrSerializer - Optional serializer options or a Serializer instance
+   * @returns A serialized representation of the collection
+   */
+  serialize<TSerialized = SerializedCollectionFor<TTemplate>>(
+    optionsOrSerializer?:
+      | Partial<SerializerConfig<TTemplate, TSchema>>
+      | Serializer<TTemplate, TSchema>,
   ): TSerialized {
+    // If a Serializer instance is passed, use it directly
+    if (optionsOrSerializer instanceof Serializer) {
+      return optionsOrSerializer.serializeCollection(this) as TSerialized;
+    }
+    // Otherwise, use the collection's configured serializer with options
     if (this.serializer instanceof Serializer) {
-      return this.serializer.serializeCollection(this, options) as TSerialized;
+      return this.serializer.serializeCollection(
+        this,
+        optionsOrSerializer,
+      ) as TSerialized;
     }
     // Type assertion needed: Array of attrs may not exactly match conditional return type
     return this.models.map((model) => model.attrs) as TSerialized;

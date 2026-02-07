@@ -927,6 +927,116 @@ describe('Model', () => {
         expect(json).not.toHaveProperty('content');
         expect(json).not.toHaveProperty('authorId');
       });
+
+      it('should accept Serializer instance in serialize() method', () => {
+        const user = new UserModelClass({
+          attrs: { name: 'John Doe', email: 'john@example.com' },
+          relationships: {
+            posts: relations.hasMany(postModel),
+          },
+          schema: testSchema,
+        }).save();
+
+        type CustomUserJSON = {
+          user: {
+            id: string;
+            name: string;
+          };
+        };
+
+        // Create a custom serializer instance
+        const customSerializer = new Serializer<
+          UserModel,
+          TestSchema,
+          CustomUserJSON,
+          CustomUserJSON[]
+        >(userModel, {
+          select: ['id', 'name'],
+          root: 'user',
+        });
+
+        // Use the serializer instance in serialize() method
+        const json: CustomUserJSON = user.serialize(customSerializer);
+        expect(json).toEqual({
+          user: {
+            id: user.id,
+            name: 'John Doe',
+          },
+        });
+        expect(json.user).not.toHaveProperty('email');
+        expect(json.user).not.toHaveProperty('postIds');
+      });
+
+      it('should use passed Serializer instance instead of configured serializer', () => {
+        type OverrideUserJSON = {
+          user: {
+            id: string;
+            name: string;
+          };
+        };
+
+        // Configure model with a default serializer (uses default types)
+        const defaultSerializer = new Serializer<UserModel, TestSchema>(
+          userModel,
+          { select: ['id', 'email'] },
+        );
+
+        const user = new UserModelClass({
+          attrs: { name: 'John Doe', email: 'john@example.com' },
+          relationships: {
+            posts: relations.hasMany(postModel),
+          },
+          schema: testSchema,
+          serializer: defaultSerializer,
+        }).save();
+
+        // Create a different serializer with custom type to pass to serialize()
+        const overrideSerializer = new Serializer<
+          UserModel,
+          TestSchema,
+          OverrideUserJSON,
+          OverrideUserJSON[]
+        >(userModel, {
+          select: ['id', 'name'],
+          root: 'user',
+        });
+
+        // The passed serializer should override the configured one
+        const json: OverrideUserJSON = user.serialize(overrideSerializer);
+        expect(json).toEqual({
+          user: {
+            id: user.id,
+            name: 'John Doe',
+          },
+        });
+        expect(json).not.toHaveProperty('email');
+      });
+
+      it('should still accept options when no Serializer instance is passed', () => {
+        const defaultSerializer = new Serializer<UserModel, TestSchema>(
+          userModel,
+          {
+            select: ['id', 'name', 'email'],
+          },
+        );
+
+        const user = new UserModelClass({
+          attrs: { name: 'John Doe', email: 'john@example.com' },
+          relationships: {
+            posts: relations.hasMany(postModel),
+          },
+          schema: testSchema,
+          serializer: defaultSerializer,
+        }).save();
+
+        // Pass options instead of serializer instance
+        const json = user.serialize({ select: ['id'] });
+        expect(json).toEqual({
+          id: user.id,
+        });
+        expect(json).not.toHaveProperty('name');
+        expect(json).not.toHaveProperty('email');
+      });
     });
   });
 

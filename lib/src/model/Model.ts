@@ -447,18 +447,55 @@ export default class Model<
   // -- SERIALIZATION --
 
   /**
-   * Serialize the model with optional runtime options
-   * @template TSerialized - Custom return type for manual serialization (defaults to model's JSON type)
+   * Serialize the model with a custom serializer instance
+   * @template TSerializedModel - The serialized model type inferred from the serializer
+   * @param serializer - A Serializer instance to use for serialization
+   * @returns A serialized representation of the model with the type inferred from the serializer
+   */
+  serialize<TSerializedModel>(
+    serializer: Serializer<TTemplate, TSchema, TSerializedModel, any>,
+  ): TSerializedModel;
+
+  /**
+   * Serialize the model with optional runtime options and explicit return type
+   * @template TSerialized - Custom return type for manual type assertion
    * @param options - Optional serializer options to override class-level settings
    * @returns A serialized representation of the model
    */
-  serialize<TSerialized = SerializedModelFor<TTemplate>>(
+  serialize<TSerialized>(
     options?: Partial<SerializerConfig<TTemplate, TSchema>>,
+  ): TSerialized;
+
+  /**
+   * Serialize the model with optional runtime options
+   * @param options - Optional serializer options to override class-level settings
+   * @returns A serialized representation of the model
+   */
+  serialize(
+    options?: Partial<SerializerConfig<TTemplate, TSchema>>,
+  ): SerializedModelFor<TTemplate>;
+
+  /**
+   * Serialize the model with optional runtime options or a custom serializer
+   * @param optionsOrSerializer - Optional serializer options or a Serializer instance
+   * @returns A serialized representation of the model
+   */
+  serialize<TSerialized = SerializedModelFor<TTemplate>>(
+    optionsOrSerializer?:
+      | Partial<SerializerConfig<TTemplate, TSchema>>
+      | Serializer<TTemplate, TSchema>,
   ): TSerialized {
+    // If a Serializer instance is passed, use it directly
+    if (optionsOrSerializer instanceof Serializer) {
+      return optionsOrSerializer.serialize(
+        this as unknown as ModelInstance<TTemplate, TSchema>,
+      ) as TSerialized;
+    }
+    // Otherwise, use the model's configured serializer with options
     if (this.serializer instanceof Serializer) {
       return this.serializer.serialize(
         this as unknown as ModelInstance<TTemplate, TSchema>,
-        options,
+        optionsOrSerializer,
       ) as TSerialized;
     }
     return { ...this._attrs } as TSerialized;

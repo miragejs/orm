@@ -1,4 +1,5 @@
 import { collection, schema, type CollectionConfig } from '@src/schema';
+import { Serializer } from '@src/serializer';
 
 import Model from '../Model';
 import { model } from '../ModelBuilder';
@@ -466,6 +467,130 @@ describe('ModelCollection', () => {
 
       const concatenated = collectionWithMeta.concat([user3]);
       expect(concatenated.meta).toBeUndefined();
+    });
+  });
+
+  describe('Serialization', () => {
+    it('should serialize collection to array of attributes', () => {
+      const json = userCollection.serialize();
+
+      expect(json).toEqual([
+        { id: user1.id, name: 'John', email: 'john@example.com' },
+        { id: user2.id, name: 'Jane', email: 'jane@example.com' },
+      ]);
+    });
+
+    it('should accept Serializer instance in serialize() method', () => {
+      type CustomUserJSON = {
+        id: string;
+        name: string;
+      };
+
+      // Create a custom serializer instance
+      const customSerializer = new Serializer<
+        UserModel,
+        TestSchema,
+        CustomUserJSON,
+        CustomUserJSON[]
+      >(userModel, { select: ['id', 'name'] });
+
+      // Use the serializer instance in serialize() method
+      const json: CustomUserJSON[] = userCollection.serialize(customSerializer);
+      expect(json).toEqual([
+        { id: user1.id, name: 'John' },
+        { id: user2.id, name: 'Jane' },
+      ]);
+      // Should not include email
+      expect(json[0]).not.toHaveProperty('email');
+      expect(json[1]).not.toHaveProperty('email');
+    });
+
+    it('should use passed Serializer instance instead of configured serializer', () => {
+      type OverrideUserJSON = {
+        id: string;
+        name: string;
+      };
+
+      type OverrideUsersJSON = {
+        users: OverrideUserJSON[];
+      };
+
+      // Configure collection with a default serializer (uses default types)
+      const defaultSerializer = new Serializer<UserModel, TestSchema>(
+        userModel,
+        { select: ['id', 'email'] },
+      );
+
+      const collectionWithSerializer = new ModelCollection<
+        UserModel,
+        TestSchema
+      >(userModel, [user1, user2], defaultSerializer);
+
+      // Create a different serializer with custom type to pass to serialize()
+      const overrideSerializer = new Serializer<
+        UserModel,
+        TestSchema,
+        OverrideUserJSON,
+        OverrideUsersJSON
+      >(userModel, {
+        select: ['id', 'name'],
+        root: 'users',
+      });
+
+      // The passed serializer should override the configured one
+      const json: OverrideUsersJSON =
+        collectionWithSerializer.serialize(overrideSerializer);
+      expect(json).toEqual({
+        users: [
+          { id: user1.id, name: 'John' },
+          { id: user2.id, name: 'Jane' },
+        ],
+      });
+    });
+
+    it('should still accept options when no Serializer instance is passed', () => {
+      const defaultSerializer = new Serializer<UserModel, TestSchema>(
+        userModel,
+        { select: ['id', 'name', 'email'] },
+      );
+
+      const collectionWithSerializer = new ModelCollection<
+        UserModel,
+        TestSchema
+      >(userModel, [user1, user2], defaultSerializer);
+
+      // Pass options instead of serializer instance
+      const json = collectionWithSerializer.serialize({ select: ['id'] });
+      expect(json).toEqual([{ id: user1.id }, { id: user2.id }]);
+    });
+
+    it('should serialize with root wrapping using custom serializer', () => {
+      type CustomUserJSON = {
+        id: string;
+        name: string;
+      };
+
+      type CustomUsersJSON = {
+        users: CustomUserJSON[];
+      };
+
+      const customSerializer = new Serializer<
+        UserModel,
+        TestSchema,
+        CustomUserJSON,
+        CustomUsersJSON
+      >(userModel, {
+        select: ['id', 'name'],
+        root: true,
+      });
+
+      const json: CustomUsersJSON = userCollection.serialize(customSerializer);
+      expect(json).toEqual({
+        users: [
+          { id: user1.id, name: 'John' },
+          { id: user2.id, name: 'Jane' },
+        ],
+      });
     });
   });
 
