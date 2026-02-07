@@ -1,16 +1,13 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, test } from '@test/context';
+import { userInfoSerializer } from '@test/schema/collections/users';
 import ManagerCard from './ManagerCard';
 import ManagerCardSkeleton from './ManagerCardSkeleton';
 import ManagerCardError from './ManagerCardError';
-import type { UserInfo } from '@shared/types';
 
 describe('ManagerCard', () => {
   test('renders as a section with accessible name and title', ({ schema }) => {
-    const manager = schema.users.create().serialize<UserInfo>({
-      select: ['id', 'name', 'email', 'role', 'avatar', 'bio'],
-      with: [],
-    });
+    const manager = schema.users.create().serialize(userInfoSerializer);
 
     render(<ManagerCard manager={manager} />);
 
@@ -22,10 +19,7 @@ describe('ManagerCard', () => {
   });
 
   test('renders manager information', ({ schema }) => {
-    const manager = schema.users.create('manager').serialize<UserInfo>({
-      select: ['id', 'name', 'email', 'role', 'avatar', 'bio'],
-      with: [],
-    });
+    const manager = schema.users.create('manager').serialize(userInfoSerializer);
 
     render(<ManagerCard manager={manager} />);
 
@@ -35,10 +29,7 @@ describe('ManagerCard', () => {
   });
 
   test('renders manager avatar image', ({ schema }) => {
-    const manager = schema.users.create().serialize<UserInfo>({
-      select: ['id', 'name', 'email', 'role', 'avatar', 'bio'],
-      with: [],
-    });
+    const manager = schema.users.create().serialize(userInfoSerializer);
 
     render(<ManagerCard manager={manager} />);
 
@@ -47,10 +38,9 @@ describe('ManagerCard', () => {
   });
 
   test('renders manager bio when available', ({ schema }) => {
-    const manager = schema.users.create({ bio: 'Test bio' }).serialize<UserInfo>({
-      select: ['id', 'name', 'email', 'role', 'avatar', 'bio'],
-      with: [],
-    });
+    const manager = schema.users
+      .create({ bio: 'Test bio' })
+      .serialize(userInfoSerializer);
 
     render(<ManagerCard manager={manager} />);
 

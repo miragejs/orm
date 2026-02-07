@@ -1,5 +1,9 @@
 import { delay, http, HttpResponse } from 'msw';
 import { testSchema } from '@test/schema/testSchema';
+import {
+  memberOptionSerializer,
+  userInfoSerializer,
+} from '@test/schema/collections/users';
 import { parseTableQuery, type TableParams } from '@shared/utils';
 import { ModelAttrs, Where } from 'miragejs-orm';
 import { TaskModel } from '@test/schema/models';
@@ -8,10 +12,10 @@ import type { TaskStatus, TaskPriority } from '@shared/enums';
 import type {
   MemberOption,
   MemberSortableColumn,
-  UserInfo,
   TaskFilters,
   TaskSortableColumn,
   Team,
+  UserInfo,
 } from '@shared/types';
 
 /** Default pagination/sorting params for team members */
@@ -104,9 +108,7 @@ export const teamHandlers = [
     const total = membersCollection.meta?.total ?? 0;
 
     // Serialize team members without relationships
-    const members = membersCollection.serialize<UserInfo[]>({
-      with: [],
-    });
+    const members: UserInfo[] = membersCollection.serialize(userInfoSerializer);
 
     // Simulate network delay for deferred loading demonstration in development
     if (process.env.NODE_ENV === 'development') {
@@ -198,10 +200,7 @@ export const teamHandlers = [
     const tasks = tasksCollection.toJSON();
 
     // Serialize simplified team members for the filter dropdown
-    const memberOptions = team.members.serialize<MemberOption[]>({
-      select: ['id', 'name', 'avatar'],
-      with: { team: false },
-    });
+    const memberOptions: MemberOption[] = team.members.serialize(memberOptionSerializer);
 
     // Simulate network delay for deferred loading demonstration in development
     if (process.env.NODE_ENV === 'development') {

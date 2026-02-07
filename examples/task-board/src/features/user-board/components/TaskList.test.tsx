@@ -1,16 +1,14 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { test, describe, expect } from '@test/context';
+import { taskItemSerializer } from '@test/schema/collections/tasks';
 import TaskList from './TaskList';
 
 describe('TaskList', () => {
   const ui = userEvent.setup();
 
   test('renders "My Tasks" heading', ({ schema }) => {
-    const tasks = schema.tasks.createMany(1).serialize({
-      select: ['id', 'title', 'status', 'priority', 'dueDate'],
-      with: [],
-    });
+    const tasks = schema.tasks.createMany(1).serialize(taskItemSerializer);
 
     render(<TaskList tasks={tasks} onTaskClick={vi.fn()} />);
 
@@ -19,10 +17,7 @@ describe('TaskList', () => {
   });
 
   test('renders all status sections', ({ schema }) => {
-    const tasks = schema.tasks.createMany(1).serialize({
-      select: ['id', 'title', 'status', 'priority', 'dueDate'],
-      with: [],
-    });
+    const tasks = schema.tasks.createMany(1).serialize(taskItemSerializer);
 
     render(<TaskList tasks={tasks} onTaskClick={vi.fn()} />);
 
@@ -36,10 +31,7 @@ describe('TaskList', () => {
     schema.tasks.create('inProgress');
     schema.tasks.create('todo');
 
-    const tasks = schema.tasks.all().serialize({
-      select: ['id', 'title', 'status', 'priority', 'dueDate'],
-      with: [],
-    });
+    const tasks = schema.tasks.all().serialize(taskItemSerializer);
 
     render(<TaskList tasks={tasks} onTaskClick={vi.fn()} />);
 
@@ -58,10 +50,7 @@ describe('TaskList', () => {
     schema.tasks.create('inProgress');
     schema.tasks.create('todo');
 
-    const tasks = schema.tasks.all().serialize({
-      select: ['id', 'title', 'status', 'priority', 'dueDate'],
-      with: [],
-    });
+    const tasks = schema.tasks.all().serialize(taskItemSerializer);
     const [inProgressTask, todoTask] = tasks;
 
     render(<TaskList tasks={tasks} onTaskClick={vi.fn()} />);
@@ -72,10 +61,7 @@ describe('TaskList', () => {
   });
 
   test('collapses section when clicking expanded section header', async ({ schema }) => {
-    const task = schema.tasks.create('inProgress').serialize({
-      select: ['id', 'title', 'status', 'priority', 'dueDate'],
-      with: [],
-    });
+    const task = schema.tasks.create('inProgress').serialize(taskItemSerializer);
 
     render(<TaskList tasks={[task]} onTaskClick={vi.fn()} />);
 
@@ -91,10 +77,7 @@ describe('TaskList', () => {
   });
 
   test('expands different section when clicked', async ({ schema }) => {
-    const todoTask = schema.tasks.create('todo').serialize({
-      select: ['id', 'title', 'status', 'priority', 'dueDate'],
-      with: [],
-    });
+    const todoTask = schema.tasks.create('todo').serialize(taskItemSerializer);
 
     render(<TaskList tasks={[todoTask]} onTaskClick={vi.fn()} />);
 
@@ -111,10 +94,7 @@ describe('TaskList', () => {
   });
 
   test('calls onTaskClick when task is clicked', async ({ schema }) => {
-    const task = schema.tasks.create('inProgress').serialize({
-      select: ['id', 'title', 'status', 'priority', 'dueDate'],
-      with: [],
-    });
+    const task = schema.tasks.create('inProgress').serialize(taskItemSerializer);
     const onTaskClick = vi.fn();
 
     render(<TaskList tasks={[task]} onTaskClick={onTaskClick} />);

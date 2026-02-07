@@ -1,8 +1,8 @@
 import { setupServer } from 'msw/node';
 import { test, describe, expect, beforeAll, afterAll, afterEach } from '@test/context';
+import { taskItemSerializer } from '@test/schema/collections/tasks';
 import { taskHandlers } from '@test/server/handlers';
 import { getUserTasks } from './getUserTasks';
-import { TaskListItem } from '@shared/types';
 
 const server = setupServer(...taskHandlers);
 
@@ -18,10 +18,7 @@ describe('getUserTasks', () => {
 
   test('gets tasks for authenticated user', async ({ schema }) => {
     const user = schema.users.create('withTasks');
-    const tasks = user.tasks.serialize<TaskListItem[]>({
-      select: ['id', 'title', 'status', 'priority', 'dueDate'],
-      with: [],
-    });
+    const tasks = user.tasks.serialize(taskItemSerializer);
     document.cookie = `userId=${user.id}`;
 
     const result = await getUserTasks(user.id);

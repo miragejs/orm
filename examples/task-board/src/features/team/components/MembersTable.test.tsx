@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, test } from '@test/context';
+import { userInfoSerializer } from '@test/schema/collections/users';
 import { renderWithRouter } from '@test/utils';
 import MembersTable from './MembersTable';
 import MembersTableSkeleton from './MembersTableSkeleton';
@@ -10,10 +11,7 @@ import { TestSchema } from '@test/schema/types';
 
 describe('MembersTable', () => {
   function createMembers(schema: TestSchema) {
-    return schema.users.createMany(3).serialize<UserInfo[]>({
-      select: ['id', 'name', 'email', 'role', 'avatar', 'bio'],
-      with: [],
-    });
+    return schema.users.createMany(3).serialize(userInfoSerializer);
   }
 
   function createResponse(

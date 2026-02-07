@@ -7,8 +7,8 @@ import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import TaskCard from './TaskCard';
-import type { TaskListItem } from '@shared/types';
 import { TaskStatus } from '@/shared/enums';
+import type { TaskItem } from '@shared/types';
 
 interface TaskStatusSectionProps {
   expanded: boolean;
@@ -16,7 +16,7 @@ interface TaskStatusSectionProps {
   statusColor: 'default' | 'info' | 'warning' | 'success' | 'error';
   statusIcon: React.ComponentType<{ sx?: object }>;
   statusLabel: string;
-  tasks: TaskListItem[];
+  tasks: TaskItem[];
   onExpandChange: (isExpanded: boolean) => void;
   onTaskClick: (taskId: string) => void;
 }

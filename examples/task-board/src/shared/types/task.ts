@@ -21,4 +21,4 @@ export interface Task {
   updatedAt: string;
 }
 
-export type TaskListItem = Pick<Task, 'id' | 'title' | 'status' | 'priority' | 'dueDate'>;
+export type TaskItem = Pick<Task, 'id' | 'title' | 'status' | 'priority' | 'dueDate'>;

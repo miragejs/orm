@@ -5,10 +5,10 @@ import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
 import { TaskPriority } from '@shared/enums';
-import type { TaskListItem } from '@shared/types';
+import type { TaskItem } from '@shared/types';
 
 interface TaskCardProps {
-  task: TaskListItem;
+  task: TaskItem;
   statusColor: 'default' | 'info' | 'warning' | 'success' | 'error';
   onTaskClick: (taskId: string) => void;
 }

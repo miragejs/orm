@@ -5,10 +5,10 @@ import Typography from '@mui/material/Typography';
 import { TaskStatus } from '@shared/enums';
 import { statusConfig, statusOrder } from '../config';
 import TaskStatusSection from './TaskStatusSection';
-import type { TaskListItem } from '@shared/types';
+import type { TaskItem } from '@shared/types';
 
 interface TaskListProps {
-  tasks: TaskListItem[];
+  tasks: TaskItem[];
   onTaskClick: (taskId: string) => void;
 }
 
@@ -29,7 +29,7 @@ export default function TaskList({ tasks, onTaskClick }: TaskListProps) {
           acc[task.status].push(task);
           return acc;
         },
-        {} as Record<TaskStatus, TaskListItem[]>,
+        {} as Record<TaskStatus, TaskItem[]>,
       ),
     [tasks],
   );

@@ -1,7 +1,8 @@
 import { http, HttpResponse, delay } from 'msw';
 import { testSchema } from '@test/schema/testSchema';
 import { parseCookieUserId } from '@test/server/utils';
-import type { Task, Comment, TaskListItem } from '@shared/types';
+import type { Task, Comment, TaskItem } from '@shared/types';
+import { taskItemSerializer } from '@test/schema/collections/tasks';
 
 /** Delay in milliseconds for loading task comments */
 const COMMENTS_DELAY_MS = 1500;
@@ -21,10 +22,7 @@ export const taskHandlers = [
         return HttpResponse.json({ error: 'User not found' }, { status: 404 });
       }
 
-      const json = targetUser.tasks.serialize<TaskListItem[]>({
-        select: ['id', 'title', 'status', 'priority', 'dueDate'],
-        with: [],
-      });
+      const json: TaskItem[] = targetUser.tasks.serialize(taskItemSerializer);
       return HttpResponse.json(json);
     },
   ),

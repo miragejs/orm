@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { test, describe, expect } from '@test/context';
+import { taskItemSerializer } from '@test/schema/collections/tasks';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import { TaskStatus } from '@shared/enums';
 import TaskStatusSection from './TaskStatusSection';
@@ -19,10 +20,7 @@ describe('TaskStatusSection', () => {
   };
 
   test('renders status label and task count', ({ schema }) => {
-    const tasks = schema.tasks.createMany(3).serialize({
-      select: ['id', 'title', 'status', 'priority', 'dueDate'],
-      with: [],
-    });
+    const tasks = schema.tasks.createMany(3).serialize(taskItemSerializer);
 
     render(<TaskStatusSection {...defaultProps} tasks={tasks} />);
 
@@ -37,10 +35,7 @@ describe('TaskStatusSection', () => {
   });
 
   test('renders task cards when expanded', ({ schema }) => {
-    const tasks = schema.tasks.createMany(2).serialize({
-      select: ['id', 'title', 'status', 'priority', 'dueDate'],
-      with: [],
-    });
+    const tasks = schema.tasks.createMany(2).serialize(taskItemSerializer);
 
     render(<TaskStatusSection {...defaultProps} tasks={tasks} expanded={true} />);
 
@@ -61,10 +56,7 @@ describe('TaskStatusSection', () => {
   });
 
   test('calls onTaskClick when task card is clicked', async ({ schema }) => {
-    const tasks = schema.tasks.createMany(1).serialize({
-      select: ['id', 'title', 'status', 'priority', 'dueDate'],
-      with: [],
-    });
+    const tasks = schema.tasks.createMany(1).serialize(taskItemSerializer);
     const onTaskClick = vi.fn();
 
     render(
