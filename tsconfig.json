@@ -23,7 +23,8 @@
   "include": [
     "lib/src/**/*",
     "tsup.config.ts",
-    "vitest.config.mts"
+    "vitest.config.mts",
+    "vitest.lib.config.mts"
   ],
   "exclude": [
     "node_modules",

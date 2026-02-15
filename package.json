@@ -33,8 +33,12 @@
       "default": "./lib/dist/index.js"
     }
   },
-  "files": ["lib/dist/"],
-  "engines": { "node": ">=18" },
+  "files": [
+    "lib/dist/"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "sideEffects": false,
   "scripts": {
     "check:lint": "eslint lib/src --ext .ts",
@@ -44,11 +48,12 @@
     "fix:lint": "pnpm check:lint --fix",
     "fix:format": "prettier --write \"lib/src/**/*.ts\"",
     "fix:all": "pnpm fix:lint && pnpm fix:format",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "test:types": "vitest run --typecheck",
+    "test": "vitest run --project lib",
+    "test:coverage": "vitest run --project lib --coverage",
+    "test:types": "vitest run --project lib --typecheck",
+    "test:watch": "vitest --project lib",
     "test:all": "pnpm test:types && pnpm test",
-    "test:watch": "vitest",
+    "test:projects": "vitest run",
     "build": "tsup lib/src/index.ts --dts --out-dir lib/dist",
     "build:checks": "pnpm check:all && pnpm test:all && pnpm build",
     "prepack": "pnpm build",
@@ -66,6 +71,7 @@
     "@types/node": "^22.15.21",
     "@typescript-eslint/eslint-plugin": "^8.32.1",
     "@typescript-eslint/parser": "^8.32.1",
+    "@vitejs/plugin-react": "^5.1.4",
     "@vitest/coverage-v8": "^4.0.4",
     "eslint": "^9.27.0",
     "eslint-config-prettier": "^10.1.5",
@@ -74,6 +80,7 @@
     "eslint-plugin-prettier": "^5.4.0",
     "eslint-plugin-unused-imports": "^4.3.0",
     "globals": "^16.1.0",
+    "happy-dom": "^20.6.1",
     "prettier": "^3.5.3",
     "tsup": "^8.5.0",
     "typescript": "^5.8.3",
