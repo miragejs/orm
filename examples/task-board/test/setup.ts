@@ -1,5 +1,4 @@
 import '@testing-library/jest-dom/vitest';
-import { vi } from 'vitest';
 
 // Mock @mui/x-charts to avoid ESM resolution issues in tests
 vi.mock('@mui/x-charts/LineChart', () => ({

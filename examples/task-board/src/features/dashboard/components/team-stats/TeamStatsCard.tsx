@@ -7,10 +7,11 @@ import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import GroupsIcon from '@mui/icons-material/Groups';
-import type { MemberOption } from '@shared/types';
+import type { UserInfo } from '@shared/types';
+import StatItem from './StatItem';
 
 interface TeamStatsCardProps {
-  members: MemberOption[];
+  members: UserInfo[];
   taskCount: number;
 }
 
@@ -19,44 +20,31 @@ interface TeamStatsCardProps {
  */
 function TeamStatsCard({ members, taskCount }: TeamStatsCardProps) {
   return (
-    <Card>
-      <CardContent>
+    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <CardContent sx={{ flexGrow: 1 }}>
         <Typography variant="h6" component="h3" gutterBottom>
           Team Overview
         </Typography>
 
         <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-          {/* Stats Section */}
           <Box sx={{ display: 'flex', gap: 4 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <GroupsIcon color="action" />
-              <Box>
-                <Typography variant="h5" component="span">
-                  {members.length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                  Members
-                </Typography>
-              </Box>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <AssignmentIcon color="action" />
-              <Box>
-                <Typography variant="h5" component="span">
-                  {taskCount}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                  Tasks
-                </Typography>
-              </Box>
-            </Box>
+            <StatItem
+              icon={<GroupsIcon color="action" />}
+              count={members.length}
+              label="Members"
+            />
+            <StatItem
+              icon={<AssignmentIcon color="action" />}
+              count={taskCount}
+              label="Tasks"
+            />
           </Box>
 
-          {/* Members Preview */}
           <Box sx={{ flex: '1 1 300px' }}>
             <Typography
-              variant="overline"
+              component="h4"
               color="text.secondary"
+              variant="overline"
               sx={{ display: 'block', mb: 1 }}
             >
               Team Members

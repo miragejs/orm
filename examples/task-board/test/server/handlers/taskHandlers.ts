@@ -5,7 +5,7 @@ import type { Task, Comment, TaskItem } from '@shared/types';
 import { taskItemSerializer } from '@test/schema/collections/tasks';
 
 /** Delay in milliseconds for loading task comments */
-const COMMENTS_DELAY_MS = 1500;
+const COMMENTS_DELAY_MS = 500;
 
 export const taskHandlers = [
   // Get all tasks for a specific user
@@ -103,7 +103,7 @@ export const taskHandlers = [
 
       // Simulate network delay for deferred loading demonstration in development
       if (process.env.NODE_ENV === 'development') {
-        await delay(500);
+        await delay(250);
       }
 
       const json: Comment = comment.toJSON();

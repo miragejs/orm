@@ -46,6 +46,7 @@ function TasksTable({ data }: TasksTableProps) {
   } = data;
   const { teamName } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
+  console.log({ total });
 
   const updateParams = useCallback(
     (updates: Record<string, string | number | undefined>) => {
@@ -85,7 +86,12 @@ function TasksTable({ data }: TasksTableProps) {
           onSubmit={(e) => e.preventDefault()}
         >
           {/* Title */}
-          <Typography variant="h6" component="h3" sx={{ flexGrow: 1 }}>
+          <Typography
+            id="team-tasks-title"
+            variant="h6"
+            component="h3"
+            sx={{ flexGrow: 1 }}
+          >
             Team Tasks ({total})
           </Typography>
 
@@ -95,21 +101,31 @@ function TasksTable({ data }: TasksTableProps) {
 
         {/* Table */}
         <TableContainer>
-          <Table>
+          <Table aria-labelledby="team-tasks-title">
             <TableHead>
               <TableRow>
                 <TableCell width={60}>Assignee</TableCell>
-                {columns.map((column) => (
-                  <TableCell key={column.id}>
-                    <TableSortLabel
-                      active={sortBy === column.id}
-                      direction={sortBy === column.id ? sortOrder : 'asc'}
-                      onClick={() => handleSort(column.id)}
-                    >
-                      {column.label}
-                    </TableSortLabel>
-                  </TableCell>
-                ))}
+                {columns.map((column) => {
+                  const isSorted = sortBy === column.id;
+                  const direction = isSorted ? sortOrder : 'asc';
+                  const ariaSort = isSorted
+                    ? direction === 'asc'
+                      ? 'ascending'
+                      : 'descending'
+                    : undefined;
+
+                  return (
+                    <TableCell key={column.id} aria-sort={ariaSort}>
+                      <TableSortLabel
+                        active={isSorted}
+                        direction={direction}
+                        onClick={() => handleSort(column.id)}
+                      >
+                        {column.label}
+                      </TableSortLabel>
+                    </TableCell>
+                  );
+                })}
               </TableRow>
             </TableHead>
             <TableBody>

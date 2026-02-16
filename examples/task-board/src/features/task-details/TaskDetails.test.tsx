@@ -2,11 +2,11 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { setupServer } from 'msw/node';
 import { describe, expect, test, beforeAll, afterAll, afterEach } from '@test/context';
-import { taskHandlers, userHandlers } from '@test/server/handlers';
+import { handlers } from '@test/server/handlers';
 import { formatTaskTitle } from '@shared/utils';
 import { renderApp } from '@test/utils';
 
-const server = setupServer(...userHandlers, ...taskHandlers);
+const server = setupServer(...handlers);
 
 describe('TaskDetails', () => {
   const ui = userEvent.setup();

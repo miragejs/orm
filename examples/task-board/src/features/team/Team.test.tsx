@@ -2,10 +2,10 @@ import { screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { setupServer } from 'msw/node';
 import { describe, expect, test, beforeAll, afterAll, afterEach } from '@test/context';
-import { userHandlers, teamHandlers } from '@test/server/handlers';
+import { handlers } from '@test/server/handlers';
 import { renderApp } from '@test/utils';
 
-const server = setupServer(...userHandlers, ...teamHandlers);
+const server = setupServer(...handlers);
 
 describe('Team', () => {
   const ui = userEvent.setup();

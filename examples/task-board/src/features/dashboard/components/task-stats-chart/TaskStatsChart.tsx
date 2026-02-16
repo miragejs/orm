@@ -6,14 +6,14 @@ import Typography from '@mui/material/Typography';
 import { LineChart } from '@mui/x-charts/LineChart';
 import type { TaskStatistics } from '@shared/types';
 
-interface TaskStatisticsChartProps {
+interface TaskStatsChartProps {
   statistics: TaskStatistics;
 }
 
 /**
- * TaskStatisticsChart Component - Line chart showing task trends over time
+ * TaskStatsChart Component - Line chart showing task trends over time
  */
-function TaskStatisticsChart({ statistics }: TaskStatisticsChartProps) {
+function TaskStatsChart({ statistics }: TaskStatsChartProps) {
   const { dates, created, completed, inProgress } = statistics;
 
   // Format dates for display
@@ -72,4 +72,4 @@ function TaskStatisticsChart({ statistics }: TaskStatisticsChartProps) {
   );
 }
 
-export default memo(TaskStatisticsChart);
+export default memo(TaskStatsChart);

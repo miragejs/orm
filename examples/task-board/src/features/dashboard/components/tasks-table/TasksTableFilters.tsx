@@ -104,12 +104,16 @@ function TasksTableFilters({ filters, memberOptions }: TasksTableFiltersProps) {
   return (
     <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
       <FormControl size="small" sx={{ minWidth: 180 }}>
-        <InputLabel>Assignee</InputLabel>
+        <InputLabel id="assignee-filter-label" htmlFor="assignee-filter">
+          Assignee
+        </InputLabel>
         <Select
+          input={<OutlinedInput id="assignee-filter" label="Assignee" />}
+          labelId="assignee-filter-label"
           multiple
-          value={assigneeFilter}
+          name="assignee-filter"
           onChange={handleAssigneeFilterChange}
-          input={<OutlinedInput label="Assignee" />}
+          value={assigneeFilter}
           endAdornment={
             assigneeFilter.length > 0 && (
               <InputAdornment position="end" sx={{ mr: 2 }}>
@@ -148,12 +152,16 @@ function TasksTableFilters({ filters, memberOptions }: TasksTableFiltersProps) {
       </FormControl>
 
       <FormControl size="small" sx={{ minWidth: 150 }}>
-        <InputLabel>Status</InputLabel>
+        <InputLabel id="status-filter-label" htmlFor="status-filter">
+          Status
+        </InputLabel>
         <Select
+          input={<OutlinedInput id="status-filter" label="Status" />}
+          labelId="status-filter-label"
           multiple
-          value={statusFilter}
+          name="status-filter"
           onChange={handleStatusFilterChange}
-          input={<OutlinedInput label="Status" />}
+          value={statusFilter}
           renderValue={(selected) => (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
               {selected.map((value) => (
@@ -171,12 +179,16 @@ function TasksTableFilters({ filters, memberOptions }: TasksTableFiltersProps) {
       </FormControl>
 
       <FormControl size="small" sx={{ minWidth: 150 }}>
-        <InputLabel>Priority</InputLabel>
+        <InputLabel id="priority-filter-label" htmlFor="priority-filter">
+          Priority
+        </InputLabel>
         <Select
+          input={<OutlinedInput id="priority-filter" label="Priority" />}
+          labelId="priority-filter-label"
           multiple
-          value={priorityFilter}
+          name="priority-filter"
           onChange={handlePriorityFilterChange}
-          input={<OutlinedInput label="Priority" />}
+          value={priorityFilter}
           renderValue={(selected) => (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
               {selected.map((value) => (

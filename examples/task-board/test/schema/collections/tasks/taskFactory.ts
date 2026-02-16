@@ -14,7 +14,6 @@ const getTeamPrefix = (teamName?: string) => {
   if (!teamName) {
     return faker.hacker.abbreviation();
   }
-
   return teamName
     .split(/\s+/)
     .map((word) => word.charAt(0).toUpperCase())

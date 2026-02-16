@@ -104,6 +104,7 @@ export const teamHandlers = [
       limit: pageSize,
       offset: page * pageSize,
     });
+
     // Get total count for pagination using collection metadata
     const total = membersCollection.meta?.total ?? 0;
 

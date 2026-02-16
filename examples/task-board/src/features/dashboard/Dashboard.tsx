@@ -1,15 +1,19 @@
 import { Suspense } from 'react';
 import { useLoaderData, Await, Outlet } from 'react-router';
 import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { getTaskStatistics, getTeamTasks } from './api';
 import { getTeam } from '@features/team/api';
 import { TeamInfoCard, TeamInfoCardSkeleton } from '@features/team/components';
-import { TaskStatisticsChart, TasksTable, TeamStatsCard } from './components';
+import {
+  TaskStatsChart,
+  TaskStatsChartSkeleton,
+  TasksTable,
+  TasksTableSkeleton,
+  TeamStatsCard,
+  TeamStatsCardSkeleton,
+} from './components';
 import type { LoaderFunctionArgs } from 'react-router';
 
 /**
@@ -23,65 +27,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
     tasksPromise: getTeamTasks(url.searchParams),
     teamPromise: getTeam(),
   };
-}
-
-/**
- * Chart Loading Skeleton
- */
-function ChartSkeleton() {
-  return (
-    <Card>
-      <CardContent>
-        <Skeleton variant="text" width={120} height={32} sx={{ mb: 2 }} />
-        <Skeleton variant="rectangular" height={280} />
-      </CardContent>
-    </Card>
-  );
-}
-
-/**
- * Team Stats Loading Skeleton
- */
-function TeamStatsSkeleton() {
-  return (
-    <Card>
-      <CardContent>
-        <Skeleton variant="text" width={150} height={32} sx={{ mb: 2 }} />
-        <Box sx={{ display: 'flex', gap: 3 }}>
-          <Box sx={{ flex: 1 }}>
-            <Skeleton variant="text" width={80} height={40} />
-            <Skeleton variant="text" width={80} height={40} />
-          </Box>
-          <Box sx={{ flex: 2 }}>
-            <Skeleton variant="text" width={200} />
-            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} variant="rounded" width={80} height={24} />
-              ))}
-            </Box>
-          </Box>
-        </Box>
-      </CardContent>
-    </Card>
-  );
-}
-
-/**
- * Table Loading Skeleton
- */
-function TableSkeleton() {
-  return (
-    <Card>
-      <CardContent>
-        <Skeleton variant="text" width={180} height={32} sx={{ mb: 2 }} />
-        <Stack spacing={1}>
-          {[1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={i} variant="rectangular" height={52} />
-          ))}
-        </Stack>
-      </CardContent>
-    </Card>
-  );
 }
 
 /**
@@ -116,7 +61,7 @@ export default function Dashboard() {
 
           {/* Team Stats Card with Members Preview */}
           <Box sx={{ flex: 1 }}>
-            <Suspense fallback={<TeamStatsSkeleton />}>
+            <Suspense fallback={<TeamStatsCardSkeleton />}>
               <Await resolve={teamPromise}>
                 {(data) => (
                   <TeamStatsCard members={data.members} taskCount={data.taskIds.length} />
@@ -127,14 +72,14 @@ export default function Dashboard() {
         </Box>
 
         {/* Statistics Chart */}
-        <Suspense fallback={<ChartSkeleton />}>
+        <Suspense fallback={<TaskStatsChartSkeleton />}>
           <Await resolve={statisticsPromise}>
-            {(data) => <TaskStatisticsChart statistics={data.statistics} />}
+            {(data) => <TaskStatsChart statistics={data.statistics} />}
           </Await>
         </Suspense>
 
         {/* Tasks Table */}
-        <Suspense fallback={<TableSkeleton />}>
+        <Suspense fallback={<TasksTableSkeleton />}>
           <Await resolve={tasksPromise}>{(data) => <TasksTable data={data} />}</Await>
         </Suspense>
       </Stack>

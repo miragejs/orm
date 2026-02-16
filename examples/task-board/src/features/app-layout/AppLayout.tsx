@@ -1,21 +1,19 @@
 import { useLoaderData, redirect } from 'react-router';
 import Box from '@mui/material/Box';
 import { getUser } from './api';
-import { Sidebar, Header, MainContent } from './components';
-import type { LoaderFunctionArgs } from 'react-router';
+import { Header, MainContent, Sidebar } from './components';
 import type { User } from '@shared/types';
 
 /**
  * Loader for app layout - fetches current user and protects route
  */
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader() {
   try {
     const user = await getUser();
     return user;
   } catch {
     // If not authenticated, redirect to auth page
-    const url = new URL(request.url);
-    return redirect(`/auth?redirectTo=${url.pathname}`);
+    return redirect('/auth');
   }
 }
 
