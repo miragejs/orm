@@ -46,7 +46,6 @@ function TasksTable({ data }: TasksTableProps) {
   } = data;
   const { teamName } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  console.log({ total });
 
   const updateParams = useCallback(
     (updates: Record<string, string | number | undefined>) => {

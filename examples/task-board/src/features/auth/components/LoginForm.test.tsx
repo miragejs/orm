@@ -8,7 +8,7 @@ describe('LoginForm', () => {
   const ui = userEvent.setup();
 
   test('renders login form with email input and submit button', () => {
-    renderWithRouter({ element: <LoginForm /> });
+    renderWithRouter(<LoginForm />);
 
     expect(screen.getByRole('heading', { name: 'Welcome Back' })).toBeInTheDocument();
     expect(screen.getByLabelText('Email Address')).toBeInTheDocument();
@@ -16,14 +16,14 @@ describe('LoginForm', () => {
   });
 
   test('submit button is disabled when email is empty', () => {
-    renderWithRouter({ element: <LoginForm /> });
+    renderWithRouter(<LoginForm />);
 
     const submitButton = screen.getByRole('button', { name: 'Sign In' });
     expect(submitButton).toBeDisabled();
   });
 
   test('submit button is enabled when email is entered', async () => {
-    renderWithRouter({ element: <LoginForm /> });
+    renderWithRouter(<LoginForm />);
 
     const emailInput = screen.getByLabelText('Email Address');
     await ui.type(emailInput, 'test@example.com');
@@ -33,7 +33,7 @@ describe('LoginForm', () => {
   });
 
   test('copies demo email to input when copy button is clicked', async () => {
-    renderWithRouter({ element: <LoginForm /> });
+    renderWithRouter(<LoginForm />);
 
     const emailInput = screen.getByLabelText('Email Address');
     const copyButtons = screen.getAllByRole('button', { name: 'Copy email' });

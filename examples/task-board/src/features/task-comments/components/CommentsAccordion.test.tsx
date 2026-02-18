@@ -8,19 +8,17 @@ describe('CommentsAccordion', () => {
   test('renders accordion with comment count', ({ schema }) => {
     const comments = schema.comments.createMany(3).toJSON();
 
-    renderWithRouter({
-      element: (
-        <CommentsAccordion comments={comments} currentUserId="user-1" taskId="task-1" />
-      ),
-    });
+    renderWithRouter(
+      <CommentsAccordion comments={comments} currentUserId="user-1" taskId="task-1" />,
+    );
 
     expect(screen.getByText(`Comments (${comments.length})`)).toBeInTheDocument();
   });
 
   test('displays zero count when no comments', () => {
-    renderWithRouter({
-      element: <CommentsAccordion comments={[]} currentUserId="user-1" taskId="task-1" />,
-    });
+    renderWithRouter(
+      <CommentsAccordion comments={[]} currentUserId="user-1" taskId="task-1" />,
+    );
 
     expect(screen.getByText('Comments (0)')).toBeInTheDocument();
   });
@@ -28,11 +26,9 @@ describe('CommentsAccordion', () => {
   test('is expanded by default when there are comments', ({ schema }) => {
     const comments = schema.comments.createMany(1).toJSON();
 
-    renderWithRouter({
-      element: (
-        <CommentsAccordion comments={comments} currentUserId="user-1" taskId="task-1" />
-      ),
-    });
+    renderWithRouter(
+      <CommentsAccordion comments={comments} currentUserId="user-1" taskId="task-1" />,
+    );
 
     // When expanded, the button should have aria-expanded="true"
     const button = screen.getByRole('button', { name: 'Comments (1)' });
@@ -40,9 +36,9 @@ describe('CommentsAccordion', () => {
   });
 
   test('is collapsed by default when there are no comments', () => {
-    renderWithRouter({
-      element: <CommentsAccordion comments={[]} currentUserId="user-1" taskId="task-1" />,
-    });
+    renderWithRouter(
+      <CommentsAccordion comments={[]} currentUserId="user-1" taskId="task-1" />,
+    );
 
     // When collapsed, the button should have aria-expanded="false"
     const button = screen.getByRole('button', { name: 'Comments (0)' });
@@ -53,11 +49,9 @@ describe('CommentsAccordion', () => {
     const ui = userEvent.setup();
     const comments = schema.comments.createMany(1).toJSON();
 
-    renderWithRouter({
-      element: (
-        <CommentsAccordion comments={comments} currentUserId="user-1" taskId="task-1" />
-      ),
-    });
+    renderWithRouter(
+      <CommentsAccordion comments={comments} currentUserId="user-1" taskId="task-1" />,
+    );
     const button = screen.getByRole('button', { name: `Comments (${comments.length})` });
 
     // Initially expanded
@@ -75,9 +69,9 @@ describe('CommentsAccordion', () => {
   test('shows empty state message when no comments and expanded', async () => {
     const ui = userEvent.setup();
 
-    renderWithRouter({
-      element: <CommentsAccordion comments={[]} currentUserId="user-1" taskId="task-1" />,
-    });
+    renderWithRouter(
+      <CommentsAccordion comments={[]} currentUserId="user-1" taskId="task-1" />,
+    );
 
     // Expand the accordion first (collapsed by default when empty)
     const button = screen.getByRole('button', { name: 'Comments (0)' });
@@ -89,11 +83,9 @@ describe('CommentsAccordion', () => {
   test('renders all comments in the list', ({ schema }) => {
     const comments = schema.comments.createMany(3).toJSON();
 
-    renderWithRouter({
-      element: (
-        <CommentsAccordion comments={comments} currentUserId="user-1" taskId="task-1" />
-      ),
-    });
+    renderWithRouter(
+      <CommentsAccordion comments={comments} currentUserId="user-1" taskId="task-1" />,
+    );
 
     for (const comment of comments) {
       expect(screen.getByText(comment.content)).toBeInTheDocument();
@@ -104,15 +96,13 @@ describe('CommentsAccordion', () => {
     const author = schema.users.create();
     const comments = schema.comments.createMany(1, { author }).toJSON();
 
-    renderWithRouter({
-      element: (
-        <CommentsAccordion
-          comments={comments}
-          currentUserId={author.id}
-          taskId="task-1"
-        />
-      ),
-    });
+    renderWithRouter(
+      <CommentsAccordion
+        comments={comments}
+        currentUserId={author.id}
+        taskId="task-1"
+      />,
+    );
 
     // Current user's comment should have flex-start styling
     const listItem = screen.getByRole('listitem');
@@ -122,11 +112,9 @@ describe('CommentsAccordion', () => {
   test('has accessible structure with aria controls', ({ schema }) => {
     const comments = schema.comments.createMany(1).toJSON();
 
-    renderWithRouter({
-      element: (
-        <CommentsAccordion comments={comments} currentUserId="user-1" taskId="task-1" />
-      ),
-    });
+    renderWithRouter(
+      <CommentsAccordion comments={comments} currentUserId="user-1" taskId="task-1" />,
+    );
 
     const button = screen.getByRole('button', { name: 'Comments (1)' });
 
@@ -139,9 +127,9 @@ describe('CommentsAccordion', () => {
   });
 
   test('renders comment icon', () => {
-    renderWithRouter({
-      element: <CommentsAccordion comments={[]} currentUserId="user-1" taskId="task-1" />,
-    });
+    renderWithRouter(
+      <CommentsAccordion comments={[]} currentUserId="user-1" taskId="task-1" />,
+    );
 
     expect(screen.getByTestId('CommentIcon')).toBeInTheDocument();
   });

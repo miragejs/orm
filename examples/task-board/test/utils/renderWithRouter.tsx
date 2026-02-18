@@ -3,21 +3,17 @@ import {
   createMemoryRouter,
   RouterProvider,
   RouteObject,
-  ActionFunction,
   LoaderFunction,
 } from 'react-router';
 import type { User } from '@shared/types';
 
 interface RenderWithRouterOptions {
-  action?: ActionFunction;
-  element: React.ReactNode;
   initialPath?: string;
   routes?: RouteObject[];
   user?: User;
 }
 
 interface CreateTestRouterOptions {
-  action?: ActionFunction;
   element: React.ReactNode;
   initialPath?: string;
   loader?: LoaderFunction;
@@ -25,7 +21,6 @@ interface CreateTestRouterOptions {
 }
 
 const createTestRouter = ({
-  action,
   element,
   initialPath = '/',
   loader,
@@ -37,7 +32,6 @@ const createTestRouter = ({
         id: 'root',
         path: '/',
         element,
-        action,
         loader,
       },
       ...routes,
@@ -50,23 +44,20 @@ const createTestRouter = ({
 /**
  * Renders a component within a router context with optional user data and action handler
  */
-export function renderWithRouter({
-  action,
-  element,
-  initialPath = '/',
-  routes = [],
-  user,
-}: RenderWithRouterOptions) {
+export function renderWithRouter(
+  element: React.ReactNode,
+  { initialPath = '/', routes = [], user }: RenderWithRouterOptions = {},
+) {
   const loader = user ? () => user : undefined;
   const result = render(
     <RouterProvider
-      router={createTestRouter({ action, element, initialPath, loader, routes })}
+      router={createTestRouter({ element, initialPath, loader, routes })}
     />,
   );
   const rerender = (element: React.ReactNode) => {
     result.rerender(
       <RouterProvider
-        router={createTestRouter({ action, element, initialPath, loader, routes })}
+        router={createTestRouter({ element, initialPath, loader, routes })}
       />,
     );
   };

@@ -7,7 +7,7 @@ describe('MainContent', () => {
   test('renders welcome message with user first name', ({ schema }) => {
     const user = schema.users.create({ name: 'John Doe' }).toJSON();
 
-    renderWithRouter({ element: <MainContent user={user} /> });
+    renderWithRouter(<MainContent user={user} />);
 
     expect(screen.getByText('Hello, John!')).toBeInTheDocument();
   });
@@ -15,7 +15,7 @@ describe('MainContent', () => {
   test('handles single-word names', ({ schema }) => {
     const user = schema.users.create({ name: 'Alice' }).toJSON();
 
-    renderWithRouter({ element: <MainContent user={user} /> });
+    renderWithRouter(<MainContent user={user} />);
 
     expect(screen.getByText('Hello, Alice!')).toBeInTheDocument();
   });

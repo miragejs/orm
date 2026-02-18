@@ -32,7 +32,7 @@ describe('MembersTable', () => {
     const members = createMembers(schema);
     const data = createResponse(members);
 
-    renderWithRouter({ element: <MembersTable data={data} /> });
+    renderWithRouter(<MembersTable data={data} />);
 
     const section = screen.getByRole('region', {
       name: `Team Members (${members.length})`,
@@ -47,7 +47,7 @@ describe('MembersTable', () => {
     const members = createMembers(schema);
     const data = createResponse(members);
 
-    renderWithRouter({ element: <MembersTable data={data} /> });
+    renderWithRouter(<MembersTable data={data} />);
 
     expect(screen.getByRole('columnheader', { name: 'Name' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Role' })).toBeInTheDocument();
@@ -58,7 +58,7 @@ describe('MembersTable', () => {
     const members = createMembers(schema);
     const data = createResponse(members);
 
-    renderWithRouter({ element: <MembersTable data={data} /> });
+    renderWithRouter(<MembersTable data={data} />);
 
     for (const member of members) {
       expect(screen.getByText(member.name)).toBeInTheDocument();
@@ -70,7 +70,7 @@ describe('MembersTable', () => {
     const members = createMembers(schema);
     const data = createResponse(members);
 
-    renderWithRouter({ element: <MembersTable data={data} /> });
+    renderWithRouter(<MembersTable data={data} />);
 
     for (const member of members) {
       const avatar = screen.getByRole('img', { name: member.name });
@@ -82,7 +82,7 @@ describe('MembersTable', () => {
     const members = createMembers(schema);
     const data = createResponse(members, { total: 15 });
 
-    renderWithRouter({ element: <MembersTable data={data} /> });
+    renderWithRouter(<MembersTable data={data} />);
 
     expect(screen.getByText('1–5 of 15')).toBeInTheDocument();
     expect(
@@ -96,7 +96,7 @@ describe('MembersTable', () => {
     const members = createMembers(schema);
     const ascData = createResponse(members, { sortBy: 'name', sortOrder: 'asc' });
 
-    renderWithRouter({ element: <MembersTable data={ascData} /> });
+    renderWithRouter(<MembersTable data={ascData} />);
 
     const nameColumnHeader = screen.getByRole('columnheader', { name: 'Name' });
     expect(nameColumnHeader).toHaveAttribute('aria-sort', 'ascending');
@@ -107,15 +107,13 @@ describe('MembersTable', () => {
 
     // First page - previous disabled
     const firstPageData = createResponse(members, { page: 0, total: 15 });
-    const { unmount } = renderWithRouter({
-      element: <MembersTable data={firstPageData} />,
-    });
+    const { unmount } = renderWithRouter(<MembersTable data={firstPageData} />);
     expect(screen.getByRole('button', { name: 'Go to previous page' })).toBeDisabled();
     unmount();
 
     // Last page - next disabled
     const lastPageData = createResponse(members, { page: 2, pageSize: 5, total: 15 });
-    renderWithRouter({ element: <MembersTable data={lastPageData} /> });
+    renderWithRouter(<MembersTable data={lastPageData} />);
     expect(screen.getByRole('button', { name: 'Go to next page' })).toBeDisabled();
   });
 
@@ -123,7 +121,7 @@ describe('MembersTable', () => {
     const members = createMembers(schema);
     const data = createResponse(members);
 
-    renderWithRouter({ element: <MembersTable data={data} /> });
+    renderWithRouter(<MembersTable data={data} />);
 
     const section = screen.getByRole('region', {
       name: `Team Members (${members.length})`,

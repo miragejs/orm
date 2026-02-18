@@ -23,7 +23,7 @@ describe('TasksTable', () => {
       total: 2,
     };
 
-    renderWithRouter({ element: <TasksTable data={data} /> });
+    renderWithRouter(<TasksTable data={data} />);
 
     expect(await screen.findByRole('table')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Team Tasks (2)' })).toBeInTheDocument();
@@ -47,7 +47,7 @@ describe('TasksTable', () => {
       total: 1,
     };
 
-    renderWithRouter({ element: <TasksTable data={data} /> });
+    renderWithRouter(<TasksTable data={data} />);
 
     // Column headers
     const columnNames = ['Assignee', 'Task', 'Status', 'Priority', 'Due Date'];
@@ -78,7 +78,7 @@ describe('TasksTable', () => {
       total: 1,
     };
 
-    renderWithRouter({ element: <TasksTable data={data} /> });
+    renderWithRouter(<TasksTable data={data} />);
 
     expect(screen.getByText(task.status)).toBeInTheDocument();
     expect(screen.getByText(task.priority)).toBeInTheDocument();
@@ -103,7 +103,7 @@ describe('TasksTable', () => {
       total: 25,
     };
 
-    renderWithRouter({ element: <TasksTable data={data} /> });
+    renderWithRouter(<TasksTable data={data} />);
 
     expect(screen.getByRole('button', { name: /next page/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /previous page/i })).toBeInTheDocument();
@@ -123,7 +123,7 @@ describe('TasksTable', () => {
       total: 0,
     };
 
-    renderWithRouter({ element: <TasksTable data={data} /> });
+    renderWithRouter(<TasksTable data={data} />);
 
     expect(screen.getByRole('table')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Team Tasks (0)' })).toBeInTheDocument();

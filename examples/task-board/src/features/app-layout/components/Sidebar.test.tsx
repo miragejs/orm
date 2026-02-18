@@ -7,7 +7,7 @@ describe('Sidebar', () => {
   test('renders "My Tasks" and "Team" nav items for regular user', async ({ schema }) => {
     const user = schema.users.create().toJSON();
 
-    renderWithRouter({ element: <Sidebar />, user });
+    renderWithRouter(<Sidebar />, { user });
 
     await screen.findByRole('complementary');
 
@@ -22,7 +22,7 @@ describe('Sidebar', () => {
   test('renders "Dashboard" nav item for manager', async ({ schema }) => {
     const user = schema.users.create('manager').toJSON();
 
-    renderWithRouter({ element: <Sidebar />, user });
+    renderWithRouter(<Sidebar />, { user });
 
     await screen.findByRole('complementary');
 
@@ -34,7 +34,7 @@ describe('Sidebar', () => {
   test('renders logout button', async ({ schema }) => {
     const user = schema.users.create().toJSON();
 
-    renderWithRouter({ element: <Sidebar />, user });
+    renderWithRouter(<Sidebar />, { user });
 
     await screen.findByRole('complementary');
 

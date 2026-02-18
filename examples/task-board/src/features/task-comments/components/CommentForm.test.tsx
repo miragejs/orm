@@ -6,26 +6,20 @@ import { CommentForm } from './CommentForm';
 
 describe('CommentForm', () => {
   test('renders text field with label', () => {
-    renderWithRouter({
-      element: <CommentForm taskId="task-1" />,
-    });
+    renderWithRouter(<CommentForm taskId="task-1" />);
 
     expect(screen.getByLabelText('Add a comment')).toBeInTheDocument();
   });
 
   test('renders send and cancel buttons', () => {
-    renderWithRouter({
-      element: <CommentForm taskId="task-1" />,
-    });
+    renderWithRouter(<CommentForm taskId="task-1" />);
 
     expect(screen.getByRole('button', { name: 'Send' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
   });
 
   test('buttons are disabled when text field is empty', () => {
-    renderWithRouter({
-      element: <CommentForm taskId="task-1" />,
-    });
+    renderWithRouter(<CommentForm taskId="task-1" />);
 
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
@@ -34,9 +28,7 @@ describe('CommentForm', () => {
   test('buttons are enabled when text is entered', async () => {
     const ui = userEvent.setup();
 
-    renderWithRouter({
-      element: <CommentForm taskId="task-1" />,
-    });
+    renderWithRouter(<CommentForm taskId="task-1" />);
 
     const textField = screen.getByLabelText('Add a comment');
     await ui.type(textField, 'Test comment');
@@ -48,9 +40,7 @@ describe('CommentForm', () => {
   test('cancel button clears the text field', async () => {
     const ui = userEvent.setup();
 
-    renderWithRouter({
-      element: <CommentForm taskId="task-1" />,
-    });
+    renderWithRouter(<CommentForm taskId="task-1" />);
 
     const textField = screen.getByLabelText('Add a comment');
     await ui.type(textField, 'Test comment');
@@ -63,9 +53,7 @@ describe('CommentForm', () => {
   });
 
   test('includes hidden taskId input', () => {
-    renderWithRouter({
-      element: <CommentForm taskId="task-123" />,
-    });
+    renderWithRouter(<CommentForm taskId="task-123" />);
 
     const hiddenInput = document.querySelector('input[name="taskId"]');
     expect(hiddenInput).toHaveValue('task-123');
@@ -74,9 +62,7 @@ describe('CommentForm', () => {
   test('buttons remain disabled with only whitespace', async () => {
     const ui = userEvent.setup();
 
-    renderWithRouter({
-      element: <CommentForm taskId="task-1" />,
-    });
+    renderWithRouter(<CommentForm taskId="task-1" />);
 
     const textField = screen.getByLabelText('Add a comment');
     await ui.type(textField, '   ');

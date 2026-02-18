@@ -21,14 +21,12 @@ describe('TasksTableFilters', () => {
   ];
 
   test('renders all three filter dropdowns', async () => {
-    renderWithRouter({
-      element: (
-        <TasksTableFilters
-          filters={defaultFilters}
-          memberOptions={defaultMemberOptions}
-        />
-      ),
-    });
+    renderWithRouter(
+      <TasksTableFilters
+        filters={defaultFilters}
+        memberOptions={defaultMemberOptions}
+      />,
+    );
 
     expect(screen.getByRole('combobox', { name: 'Assignee' })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Status' })).toBeInTheDocument();
@@ -36,14 +34,12 @@ describe('TasksTableFilters', () => {
   });
 
   test('displays member options in assignee dropdown', async () => {
-    renderWithRouter({
-      element: (
-        <TasksTableFilters
-          filters={defaultFilters}
-          memberOptions={defaultMemberOptions}
-        />
-      ),
-    });
+    renderWithRouter(
+      <TasksTableFilters
+        filters={defaultFilters}
+        memberOptions={defaultMemberOptions}
+      />,
+    );
 
     const assigneeSelect = screen.getByRole('combobox', { name: 'Assignee' });
     await ui.click(assigneeSelect);
@@ -54,14 +50,12 @@ describe('TasksTableFilters', () => {
   });
 
   test('displays all status options in status dropdown', async () => {
-    renderWithRouter({
-      element: (
-        <TasksTableFilters
-          filters={defaultFilters}
-          memberOptions={defaultMemberOptions}
-        />
-      ),
-    });
+    renderWithRouter(
+      <TasksTableFilters
+        filters={defaultFilters}
+        memberOptions={defaultMemberOptions}
+      />,
+    );
 
     const statusSelect = screen.getByRole('combobox', { name: 'Status' });
     await ui.click(statusSelect);
@@ -76,14 +70,12 @@ describe('TasksTableFilters', () => {
   });
 
   test('displays all priority options in priority dropdown', async () => {
-    renderWithRouter({
-      element: (
-        <TasksTableFilters
-          filters={defaultFilters}
-          memberOptions={defaultMemberOptions}
-        />
-      ),
-    });
+    renderWithRouter(
+      <TasksTableFilters
+        filters={defaultFilters}
+        memberOptions={defaultMemberOptions}
+      />,
+    );
 
     const prioritySelect = screen.getByRole('combobox', { name: 'Priority' });
     await ui.click(prioritySelect);
@@ -106,11 +98,9 @@ describe('TasksTableFilters', () => {
       status: [TaskStatus.IN_PROGRESS, TaskStatus.REVIEW],
     };
 
-    renderWithRouter({
-      element: (
-        <TasksTableFilters filters={filters} memberOptions={defaultMemberOptions} />
-      ),
-    });
+    renderWithRouter(
+      <TasksTableFilters filters={filters} memberOptions={defaultMemberOptions} />,
+    );
 
     expect(screen.getByText('John Doe')).toBeInTheDocument();
     expect(screen.getByText('Jane Smith')).toBeInTheDocument();
@@ -126,24 +116,20 @@ describe('TasksTableFilters', () => {
       assigneeId: ['user-1'],
     };
 
-    renderWithRouter({
-      element: (
-        <TasksTableFilters filters={filters} memberOptions={defaultMemberOptions} />
-      ),
-    });
+    renderWithRouter(
+      <TasksTableFilters filters={filters} memberOptions={defaultMemberOptions} />,
+    );
 
     expect(screen.getByRole('button', { name: 'Clear filter' })).toBeInTheDocument();
   });
 
   test('does not show clear button when no assignee filter', () => {
-    renderWithRouter({
-      element: (
-        <TasksTableFilters
-          filters={defaultFilters}
-          memberOptions={defaultMemberOptions}
-        />
-      ),
-    });
+    renderWithRouter(
+      <TasksTableFilters
+        filters={defaultFilters}
+        memberOptions={defaultMemberOptions}
+      />,
+    );
 
     expect(
       screen.queryByRole('button', { name: 'Clear filter' }),
@@ -151,14 +137,12 @@ describe('TasksTableFilters', () => {
   });
 
   test('renders member avatars in assignee dropdown', async () => {
-    renderWithRouter({
-      element: (
-        <TasksTableFilters
-          filters={defaultFilters}
-          memberOptions={defaultMemberOptions}
-        />
-      ),
-    });
+    renderWithRouter(
+      <TasksTableFilters
+        filters={defaultFilters}
+        memberOptions={defaultMemberOptions}
+      />,
+    );
 
     const assigneeSelect = screen.getByRole('combobox', { name: 'Assignee' });
     await ui.click(assigneeSelect);
@@ -169,9 +153,9 @@ describe('TasksTableFilters', () => {
   });
 
   test('handles empty member options', () => {
-    renderWithRouter({
-      element: <TasksTableFilters filters={defaultFilters} memberOptions={[]} />,
-    });
+    renderWithRouter(
+      <TasksTableFilters filters={defaultFilters} memberOptions={[]} />,
+    );
 
     expect(screen.getByRole('combobox', { name: 'Assignee' })).toBeInTheDocument();
   });
