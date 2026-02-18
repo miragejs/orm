@@ -1,6 +1,7 @@
 import { setupServer } from 'msw/node';
 import { test, describe, expect, beforeAll, afterAll, afterEach } from '@test/context';
 import { taskHandlers } from '@test/server/handlers';
+import { clearUserCookie, setUserCookie } from '@test/utils';
 import { getTaskDetails } from './getTaskDetails';
 import type { Task } from '@shared/types';
 
@@ -11,7 +12,7 @@ describe('getTaskDetails', () => {
 
   afterEach(() => {
     server.resetHandlers();
-    document.cookie = 'userId=; Max-Age=0';
+    clearUserCookie();
   });
 
   afterAll(() => server.close());
@@ -19,7 +20,7 @@ describe('getTaskDetails', () => {
   test('gets task details for authenticated user', async ({ schema }) => {
     const task = schema.tasks.create('withAssignee');
     const assignee = task.assignee;
-    document.cookie = `userId=${assignee.id}`;
+    setUserCookie(assignee.id);
 
     const result = await getTaskDetails(task.id);
     const expected: Task = task.toJSON();
@@ -35,7 +36,7 @@ describe('getTaskDetails', () => {
 
   test('throws error when task not found', async ({ schema }) => {
     const user = schema.users.create();
-    document.cookie = `userId=${user.id}`;
+    setUserCookie(user.id);
 
     await expect(getTaskDetails('non-existent-id')).rejects.toThrow(
       'Failed to fetch task details',

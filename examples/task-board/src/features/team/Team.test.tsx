@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { setupServer } from 'msw/node';
 import { describe, expect, test, beforeAll, afterAll, afterEach } from '@test/context';
 import { handlers } from '@test/server/handlers';
-import { renderApp } from '@test/utils';
+import { clearUserCookie, renderApp, setUserCookie } from '@test/utils';
 
 const server = setupServer(...handlers);
 
@@ -14,7 +14,7 @@ describe('Team', () => {
 
   afterEach(() => {
     server.resetHandlers();
-    document.cookie = 'userId=""; Max-Age=-1';
+    clearUserCookie();
   });
 
   afterAll(() => server.close());
@@ -22,7 +22,7 @@ describe('Team', () => {
   test('displays team info section with team name and department', async ({ schema }) => {
     const user = schema.users.create();
     const { team } = user;
-    document.cookie = `userId=${user.id}`;
+    setUserCookie(user.id);
     const formattedDate = new Date(team.createdAt).toLocaleDateString();
 
     renderApp(`/${team.slug}/users/${user.id}/team`);
@@ -43,7 +43,7 @@ describe('Team', () => {
     const { team } = manager;
     // Link manager to team
     team.update({ managerId: manager.id });
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     renderApp(`/${team.slug}/users/${manager.id}/team`);
 
@@ -62,7 +62,7 @@ describe('Team', () => {
     const user = schema.users.create();
     const { team } = user;
     // Team has no manager by default (managerId is empty string)
-    document.cookie = `userId=${user.id}`;
+    setUserCookie(user.id);
 
     renderApp(`/${team.slug}/users/${user.id}/team`);
 
@@ -78,7 +78,7 @@ describe('Team', () => {
   test('displays team members table with headers and pagination', async ({ schema }) => {
     const team = schema.teams.create('withMembers');
     const user = schema.users.create({ team });
-    document.cookie = `userId=${user.id}`;
+    setUserCookie(user.id);
 
     renderApp(`/${team.slug}/users/${user.id}/team`);
 
@@ -105,7 +105,7 @@ describe('Team', () => {
   test('supports pagination in members table', async ({ schema }) => {
     const team = schema.teams.create('withMembers');
     const user = schema.users.create({ team });
-    document.cookie = `userId=${user.id}`;
+    setUserCookie(user.id);
 
     renderApp(`/${team.slug}/users/${user.id}/team`);
 
@@ -131,7 +131,7 @@ describe('Team', () => {
   test('supports sorting in members table', async ({ schema }) => {
     const user = schema.users.create({ name: 'John' });
     const { team } = user;
-    document.cookie = `userId=${user.id}`;
+    setUserCookie(user.id);
 
     schema.users.create({ name: 'Alice', team });
     schema.users.create({ name: 'Bob', team });
@@ -178,7 +178,7 @@ describe('Team', () => {
     const { team } = manager;
     // Link manager to team
     team.update({ managerId: manager.id });
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     renderApp(`/${team.slug}/users/${manager.id}/team`);
 

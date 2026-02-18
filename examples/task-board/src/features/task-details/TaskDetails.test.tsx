@@ -4,7 +4,7 @@ import { setupServer } from 'msw/node';
 import { describe, expect, test, beforeAll, afterAll, afterEach } from '@test/context';
 import { handlers } from '@test/server/handlers';
 import { formatTaskTitle } from '@shared/utils';
-import { renderApp } from '@test/utils';
+import { clearUserCookie, renderApp, setUserCookie } from '@test/utils';
 
 const server = setupServer(...handlers);
 
@@ -15,7 +15,7 @@ describe('TaskDetails', () => {
 
   afterEach(() => {
     server.resetHandlers();
-    document.cookie = 'userId=; Max-Age=0';
+    clearUserCookie();
   });
 
   afterAll(() => server.close());
@@ -23,7 +23,7 @@ describe('TaskDetails', () => {
   test('displays task details', async ({ schema }) => {
     const task = schema.tasks.create('inProgress', 'highPriority', 'withAssignee');
     const { creator, assignee, team } = task;
-    document.cookie = `userId=${assignee.id}`;
+    setUserCookie(assignee.id);
 
     const taskTitle = formatTaskTitle(task.toJSON());
 
@@ -59,7 +59,7 @@ describe('TaskDetails', () => {
   test('displays team info', async ({ schema }) => {
     const task = schema.tasks.create('inProgress', 'withAssignee');
     const { assignee, team } = task;
-    document.cookie = `userId=${assignee.id}`;
+    setUserCookie(assignee.id);
 
     const taskTitle = formatTaskTitle(task.toJSON());
 
@@ -74,7 +74,7 @@ describe('TaskDetails', () => {
   test('displays comments section', async ({ schema }) => {
     const task = schema.tasks.create('inProgress', 'withAssignee', 'withComments');
     const { assignee, team } = task;
-    document.cookie = `userId=${assignee.id}`;
+    setUserCookie(assignee.id);
 
     const comments = task.comments.toJSON();
     const taskTitle = formatTaskTitle(task.toJSON());
@@ -93,7 +93,7 @@ describe('TaskDetails', () => {
   test('closes dialog and navigates back to user board', async ({ schema }) => {
     const task = schema.tasks.create('inProgress', 'withAssignee');
     const { assignee, team } = task;
-    document.cookie = `userId=${assignee.id}`;
+    setUserCookie(assignee.id);
 
     const taskTitle = formatTaskTitle(task.toJSON());
 

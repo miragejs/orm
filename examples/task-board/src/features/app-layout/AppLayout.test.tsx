@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react';
 import { setupServer } from 'msw/node';
 import { test, describe, expect, beforeAll, afterAll, afterEach } from '@test/context';
 import { handlers } from '@test/server/handlers';
-import { renderApp } from '@test/utils';
+import { clearUserCookie, renderApp, setUserCookie } from '@test/utils';
 
 const server = setupServer(...handlers);
 
@@ -11,7 +11,7 @@ describe('AppLayout', () => {
 
   afterEach(() => {
     server.resetHandlers();
-    document.cookie = 'userId=; Max-Age=0';
+    clearUserCookie();
   });
 
   afterAll(() => server.close());
@@ -19,7 +19,7 @@ describe('AppLayout', () => {
   test('renders layout with sidebar, header, and main content', async ({ schema }) => {
     const user = schema.users.create();
     const team = user.team;
-    document.cookie = `userId=${user.id}`;
+    setUserCookie(user.id);
 
     renderApp(`/${team.slug}/users/${user.id}`);
 

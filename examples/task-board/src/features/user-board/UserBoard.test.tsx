@@ -4,7 +4,7 @@ import { setupServer } from 'msw/node';
 import { describe, expect, test, beforeAll, afterAll, afterEach } from '@test/context';
 import { handlers } from '@test/server/handlers';
 import { formatTaskTitle } from '@shared/utils';
-import { renderApp } from '@test/utils';
+import { clearUserCookie, renderApp, setUserCookie } from '@test/utils';
 
 const server = setupServer(...handlers);
 
@@ -15,7 +15,7 @@ describe('UserBoard', () => {
 
   afterEach(() => {
     server.resetHandlers();
-    document.cookie = 'userId=; Max-Age=0';
+    clearUserCookie();
   });
 
   afterAll(() => server.close());
@@ -23,7 +23,7 @@ describe('UserBoard', () => {
   test('displays user tasks grouped by status', async ({ schema }) => {
     const user = schema.users.create();
     const team = user.team;
-    document.cookie = `userId=${user.id}`;
+    setUserCookie(user.id);
 
     const inProgressTask = schema.tasks.create('inProgress');
     const todoTask = schema.tasks.create('todo');
@@ -46,7 +46,7 @@ describe('UserBoard', () => {
   test('navigates to task details when task is clicked', async ({ schema }) => {
     const user = schema.users.create();
     const team = user.team;
-    document.cookie = `userId=${user.id}`;
+    setUserCookie(user.id);
 
     const task = schema.tasks.create('inProgress');
 
@@ -62,7 +62,7 @@ describe('UserBoard', () => {
   test('returns to user board after closing task details', async ({ schema }) => {
     const user = schema.users.create();
     const team = user.team;
-    document.cookie = `userId=${user.id}`;
+    setUserCookie(user.id);
 
     const task = schema.tasks.create('inProgress');
 
@@ -87,7 +87,7 @@ describe('UserBoard', () => {
   test('shows task details with comments from user board', async ({ schema }) => {
     const user = schema.users.create();
     const team = user.team;
-    document.cookie = `userId=${user.id}`;
+    setUserCookie(user.id);
 
     const task = schema.tasks.create('inProgress', 'withComments');
     const comments = task.comments.toJSON();
@@ -112,7 +112,7 @@ describe('UserBoard', () => {
   test('shows empty sections when user has no tasks', async ({ schema }) => {
     const user = schema.users.create();
     const team = user.team;
-    document.cookie = `userId=${user.id}`;
+    setUserCookie(user.id);
 
     renderApp(`/${team.slug}/users/${user.id}`);
 

@@ -22,10 +22,7 @@ describe('TasksTableFilters', () => {
 
   test('renders all three filter dropdowns', async () => {
     renderWithRouter(
-      <TasksTableFilters
-        filters={defaultFilters}
-        memberOptions={defaultMemberOptions}
-      />,
+      <TasksTableFilters filters={defaultFilters} memberOptions={defaultMemberOptions} />,
     );
 
     expect(screen.getByRole('combobox', { name: 'Assignee' })).toBeInTheDocument();
@@ -35,10 +32,7 @@ describe('TasksTableFilters', () => {
 
   test('displays member options in assignee dropdown', async () => {
     renderWithRouter(
-      <TasksTableFilters
-        filters={defaultFilters}
-        memberOptions={defaultMemberOptions}
-      />,
+      <TasksTableFilters filters={defaultFilters} memberOptions={defaultMemberOptions} />,
     );
 
     const assigneeSelect = screen.getByRole('combobox', { name: 'Assignee' });
@@ -51,10 +45,7 @@ describe('TasksTableFilters', () => {
 
   test('displays all status options in status dropdown', async () => {
     renderWithRouter(
-      <TasksTableFilters
-        filters={defaultFilters}
-        memberOptions={defaultMemberOptions}
-      />,
+      <TasksTableFilters filters={defaultFilters} memberOptions={defaultMemberOptions} />,
     );
 
     const statusSelect = screen.getByRole('combobox', { name: 'Status' });
@@ -71,10 +62,7 @@ describe('TasksTableFilters', () => {
 
   test('displays all priority options in priority dropdown', async () => {
     renderWithRouter(
-      <TasksTableFilters
-        filters={defaultFilters}
-        memberOptions={defaultMemberOptions}
-      />,
+      <TasksTableFilters filters={defaultFilters} memberOptions={defaultMemberOptions} />,
     );
 
     const prioritySelect = screen.getByRole('combobox', { name: 'Priority' });
@@ -125,10 +113,7 @@ describe('TasksTableFilters', () => {
 
   test('does not show clear button when no assignee filter', () => {
     renderWithRouter(
-      <TasksTableFilters
-        filters={defaultFilters}
-        memberOptions={defaultMemberOptions}
-      />,
+      <TasksTableFilters filters={defaultFilters} memberOptions={defaultMemberOptions} />,
     );
 
     expect(
@@ -138,10 +123,7 @@ describe('TasksTableFilters', () => {
 
   test('renders member avatars in assignee dropdown', async () => {
     renderWithRouter(
-      <TasksTableFilters
-        filters={defaultFilters}
-        memberOptions={defaultMemberOptions}
-      />,
+      <TasksTableFilters filters={defaultFilters} memberOptions={defaultMemberOptions} />,
     );
 
     const assigneeSelect = screen.getByRole('combobox', { name: 'Assignee' });
@@ -153,9 +135,7 @@ describe('TasksTableFilters', () => {
   });
 
   test('handles empty member options', () => {
-    renderWithRouter(
-      <TasksTableFilters filters={defaultFilters} memberOptions={[]} />,
-    );
+    renderWithRouter(<TasksTableFilters filters={defaultFilters} memberOptions={[]} />);
 
     expect(screen.getByRole('combobox', { name: 'Assignee' })).toBeInTheDocument();
   });

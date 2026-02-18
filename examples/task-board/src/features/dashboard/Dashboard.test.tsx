@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { setupServer } from 'msw/node';
 import { describe, expect, test, beforeAll, afterAll, afterEach } from '@test/context';
 import { handlers } from '@test/server/handlers';
-import { renderApp } from '@test/utils';
+import { clearUserCookie, renderApp, setUserCookie } from '@test/utils';
 import { TaskStatus } from '@/shared/enums';
 import { formatTaskTitle } from '@/shared/utils';
 
@@ -36,7 +36,7 @@ describe('Dashboard', () => {
 
   afterEach(() => {
     server.resetHandlers();
-    document.cookie = 'userId=; Max-Age=0';
+    clearUserCookie();
   });
 
   afterAll(() => server.close());
@@ -44,7 +44,7 @@ describe('Dashboard', () => {
   test('displays dashboard page', async ({ schema }) => {
     const manager = schema.users.create('manager');
     const { team } = manager;
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     renderApp(`/${team.slug}/dashboard`);
 
@@ -54,7 +54,7 @@ describe('Dashboard', () => {
   test('displays team info card with team name and department', async ({ schema }) => {
     const manager = schema.users.create('manager');
     const { team } = manager;
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     renderApp(`/${team.slug}/dashboard`);
 
@@ -69,7 +69,7 @@ describe('Dashboard', () => {
     const manager = schema.users.create('manager');
     const { team } = manager;
     schema.tasks.createMany(10, { creator: manager }, 'withAssignee');
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     renderApp(`/${team.slug}/dashboard`);
 
@@ -84,7 +84,7 @@ describe('Dashboard', () => {
     const manager = schema.users.create('manager');
     const { team } = manager;
     const user = schema.users.create({ team });
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     renderApp(`/${team.slug}/dashboard`);
 
@@ -100,7 +100,7 @@ describe('Dashboard', () => {
     const manager = schema.users.create('manager');
     const { team } = manager;
     schema.tasks.createMany(1, { creator: manager });
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     renderApp(`/${team.slug}/dashboard`);
 
@@ -113,7 +113,7 @@ describe('Dashboard', () => {
   test('displays empty chart state when no tasks', async ({ schema }) => {
     const manager = schema.users.create('manager');
     const { team } = manager;
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     renderApp(`/${team.slug}/dashboard`);
 
@@ -128,7 +128,7 @@ describe('Dashboard', () => {
     const { team } = manager;
     schema.users.createMany(5, { team });
     schema.tasks.createMany(5);
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     renderApp(`/${team.slug}/dashboard`);
 
@@ -142,7 +142,7 @@ describe('Dashboard', () => {
     const manager = schema.users.create('manager');
     const { team } = manager;
     schema.tasks.create({ creator: manager, team });
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     renderApp(`/${team.slug}/dashboard`);
 
@@ -160,7 +160,7 @@ describe('Dashboard', () => {
     const manager = schema.users.create('manager');
     const { team } = manager;
     schema.tasks.create({ creator: manager, team });
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     renderApp(`/${team.slug}/dashboard`);
 
@@ -177,7 +177,7 @@ describe('Dashboard', () => {
     const { team } = manager;
     const task = schema.tasks.create('inProgress', { creator: manager }, 'withAssignee');
     const { assignee } = task;
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     renderApp(`/${team.slug}/dashboard`);
 
@@ -199,7 +199,7 @@ describe('Dashboard', () => {
     const manager = schema.users.create('manager');
     const { team } = manager;
     schema.tasks.createMany(15, { creator: manager });
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     const tasks = schema.tasks.findMany({ orderBy: { createdAt: 'desc' } });
     const taskA = tasks.first()!;
@@ -230,7 +230,7 @@ describe('Dashboard', () => {
   test('supports task table sorting', async ({ schema }) => {
     const manager = schema.users.create('manager');
     const { team } = manager;
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     const taskA = schema.tasks.create({
       creator: manager,
@@ -268,7 +268,7 @@ describe('Dashboard', () => {
   test('supports task table filtering by status', async ({ schema }) => {
     const manager = schema.users.create('manager');
     const { team } = manager;
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     const todoTask = schema.tasks.create('todo', { creator: manager });
     const doneTask = schema.tasks.create('done', { creator: manager });
@@ -304,7 +304,7 @@ describe('Dashboard', () => {
   test('navigates to task details when clicking task', async ({ schema }) => {
     const manager = schema.users.create('manager');
     const { team } = manager;
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     const task = schema.tasks.create('inProgress', { creator: manager, team }).toJSON();
 

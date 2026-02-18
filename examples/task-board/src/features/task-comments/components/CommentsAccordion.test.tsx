@@ -97,11 +97,7 @@ describe('CommentsAccordion', () => {
     const comments = schema.comments.createMany(1, { author }).toJSON();
 
     renderWithRouter(
-      <CommentsAccordion
-        comments={comments}
-        currentUserId={author.id}
-        taskId="task-1"
-      />,
+      <CommentsAccordion comments={comments} currentUserId={author.id} taskId="task-1" />,
     );
 
     // Current user's comment should have flex-start styling

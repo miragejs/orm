@@ -2,6 +2,7 @@ import { setupServer } from 'msw/node';
 import { describe, expect, test, beforeAll, afterAll, afterEach } from '@test/context';
 import { teamHandlers } from '@test/server/handlers';
 import { memberOptionSerializer } from '@test/schema/collections/users';
+import { clearUserCookie, setUserCookie } from '@test/utils';
 import { TaskPriority, TaskStatus } from '@shared/enums';
 import { getTeamTasks } from './getTeamTasks';
 
@@ -12,7 +13,7 @@ describe('getTeamTasks', () => {
 
   afterEach(() => {
     server.resetHandlers();
-    document.cookie = 'userId=; Max-Age=0';
+    clearUserCookie();
   });
 
   afterAll(() => server.close());
@@ -22,7 +23,7 @@ describe('getTeamTasks', () => {
   }) => {
     const team = schema.teams.create('withManager');
     const { manager } = team;
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     // Create tasks for the team
     const assignee = schema.users.create({ team });
@@ -59,7 +60,7 @@ describe('getTeamTasks', () => {
   test('returns team members as filter options', async ({ schema }) => {
     const team = schema.teams.create('withManager');
     const { manager } = team;
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     schema.users.createMany(2);
     team.reload();

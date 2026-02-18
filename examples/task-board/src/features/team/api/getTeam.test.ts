@@ -1,6 +1,7 @@
 import { setupServer } from 'msw/node';
 import { describe, expect, test, beforeAll, afterAll, afterEach } from '@test/context';
 import { teamHandlers } from '@test/server/handlers';
+import { clearUserCookie, setUserCookie } from '@test/utils';
 import { getTeam } from './getTeam';
 
 const server = setupServer(...teamHandlers);
@@ -10,7 +11,7 @@ describe('getTeam', () => {
 
   afterEach(() => {
     server.resetHandlers();
-    document.cookie = 'userId=; Max-Age=0';
+    clearUserCookie();
   });
 
   afterAll(() => server.close());
@@ -18,7 +19,7 @@ describe('getTeam', () => {
   test('returns team information for authenticated user', async ({ schema }) => {
     const manager = schema.users.create('manager');
     const { team } = manager;
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     const result = await getTeam();
 

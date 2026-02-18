@@ -1,6 +1,7 @@
 import { setupServer } from 'msw/node';
 import { test, describe, expect, beforeAll, afterAll, afterEach } from '@test/context';
 import { taskHandlers } from '@test/server/handlers';
+import { clearUserCookie, setUserCookie } from '@test/utils';
 import { addTaskComment } from './addTaskComment';
 
 const server = setupServer(...taskHandlers);
@@ -10,7 +11,7 @@ describe('addTaskComment', () => {
 
   afterEach(() => {
     server.resetHandlers();
-    document.cookie = 'userId=; Max-Age=0';
+    clearUserCookie();
   });
 
   afterAll(() => server.close());
@@ -18,7 +19,7 @@ describe('addTaskComment', () => {
   test('creates a new comment for a task', async ({ schema }) => {
     const task = schema.tasks.create();
     const { assignee } = task;
-    document.cookie = `userId=${assignee.id}`;
+    setUserCookie(assignee.id);
 
     const content = 'This is a test comment';
     const comment = await addTaskComment(task.id, content);
@@ -29,7 +30,7 @@ describe('addTaskComment', () => {
 
   test('throws error when task not found', async ({ schema }) => {
     const user = schema.users.create();
-    document.cookie = `userId=${user.id}`;
+    setUserCookie(user.id);
 
     await expect(addTaskComment('non-existent-task', 'Test')).rejects.toThrow(
       'Failed to add comment',

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { setupServer } from 'msw/node';
 import { test, describe, expect, beforeAll, afterAll, afterEach } from '@test/context';
 import { handlers } from '@test/server/handlers';
-import { renderApp } from '@test/utils';
+import { clearUserCookie, renderApp, setUserCookie } from '@test/utils';
 
 const server = setupServer(...handlers);
 
@@ -14,7 +14,7 @@ describe('TaskComments', () => {
 
   afterEach(() => {
     server.resetHandlers();
-    document.cookie = 'userId=; Max-Age=0';
+    clearUserCookie();
   });
 
   afterAll(() => server.close());
@@ -23,7 +23,7 @@ describe('TaskComments', () => {
     const user = schema.users.create();
     const { team } = user;
     const task = schema.tasks.create('inProgress', 'withComments');
-    document.cookie = `userId=${user.id}`;
+    setUserCookie(user.id);
 
     renderApp(`/${team.slug}/users/${user.id}`);
 
@@ -51,7 +51,7 @@ describe('TaskComments', () => {
     const user = schema.users.create();
     const { team } = user;
     const task = schema.tasks.create('inProgress', 'withComments');
-    document.cookie = `userId=${user.id}`;
+    setUserCookie(user.id);
 
     renderApp(`/${team.slug}/users/${user.id}`);
 
@@ -76,7 +76,7 @@ describe('TaskComments', () => {
     const user = schema.users.create();
     const { team } = user;
     const task = schema.tasks.create('inProgress');
-    document.cookie = `userId=${user.id}`;
+    setUserCookie(user.id);
 
     renderApp(`/${team.slug}/users/${user.id}`);
 
@@ -98,7 +98,7 @@ describe('TaskComments', () => {
     const user = schema.users.create();
     const { team } = user;
     const task = schema.tasks.create('inProgress');
-    document.cookie = `userId=${user.id}`;
+    setUserCookie(user.id);
 
     renderApp(`/${team.slug}/users/${user.id}`);
 

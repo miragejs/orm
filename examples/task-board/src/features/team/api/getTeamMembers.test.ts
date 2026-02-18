@@ -1,6 +1,7 @@
 import { setupServer } from 'msw/node';
 import { describe, expect, test, beforeAll, afterAll, afterEach } from '@test/context';
 import { teamHandlers } from '@test/server/handlers';
+import { clearUserCookie, setUserCookie } from '@test/utils';
 import { getTeamMembers } from './getTeamMembers';
 
 const server = setupServer(...teamHandlers);
@@ -10,7 +11,7 @@ describe('getTeamMembers', () => {
 
   afterEach(() => {
     server.resetHandlers();
-    document.cookie = 'userId=; Max-Age=0';
+    clearUserCookie();
   });
 
   afterAll(() => server.close());
@@ -19,7 +20,7 @@ describe('getTeamMembers', () => {
     const manager = schema.users.create('manager');
     const { team } = manager;
     schema.users.createMany(4, { team });
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     const result = await getTeamMembers();
 
@@ -35,7 +36,7 @@ describe('getTeamMembers', () => {
     const manager = schema.users.create('manager');
     const { team } = manager;
     schema.users.createMany(10, { team });
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     const params = new URLSearchParams();
     params.set('page', '1');
@@ -54,7 +55,7 @@ describe('getTeamMembers', () => {
     const { team } = manager;
     schema.users.create({ team, name: 'Alice' });
     schema.users.create({ team, name: 'Zoe' });
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     const params = new URLSearchParams();
     params.set('sortBy', 'name');

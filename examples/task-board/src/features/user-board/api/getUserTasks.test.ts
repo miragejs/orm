@@ -2,6 +2,7 @@ import { setupServer } from 'msw/node';
 import { test, describe, expect, beforeAll, afterAll, afterEach } from '@test/context';
 import { taskItemSerializer } from '@test/schema/collections/tasks';
 import { taskHandlers } from '@test/server/handlers';
+import { clearUserCookie, setUserCookie } from '@test/utils';
 import { getUserTasks } from './getUserTasks';
 
 const server = setupServer(...taskHandlers);
@@ -11,7 +12,7 @@ describe('getUserTasks', () => {
 
   afterEach(() => {
     server.resetHandlers();
-    document.cookie = 'userId=; Max-Age=0';
+    clearUserCookie();
   });
 
   afterAll(() => server.close());
@@ -19,7 +20,7 @@ describe('getUserTasks', () => {
   test('gets tasks for authenticated user', async ({ schema }) => {
     const user = schema.users.create('withTasks');
     const tasks = user.tasks.serialize(taskItemSerializer);
-    document.cookie = `userId=${user.id}`;
+    setUserCookie(user.id);
 
     const result = await getUserTasks(user.id);
 
@@ -35,7 +36,7 @@ describe('getUserTasks', () => {
 
   test('throws error when user not found', async ({ schema }) => {
     const user = schema.users.create();
-    document.cookie = `userId=${user.id}`;
+    setUserCookie(user.id);
 
     await expect(getUserTasks('non-existent-id')).rejects.toThrow(
       'Failed to fetch user tasks',

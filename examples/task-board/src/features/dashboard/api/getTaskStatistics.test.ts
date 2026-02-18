@@ -1,6 +1,7 @@
 import { setupServer } from 'msw/node';
 import { describe, expect, test, beforeAll, afterAll, afterEach } from '@test/context';
 import { teamHandlers } from '@test/server/handlers';
+import { clearUserCookie, setUserCookie } from '@test/utils';
 import { getTaskStatistics } from './getTaskStatistics';
 
 const server = setupServer(...teamHandlers);
@@ -10,7 +11,7 @@ describe('getTaskStatistics', () => {
 
   afterEach(() => {
     server.resetHandlers();
-    document.cookie = 'userId=; Max-Age=0';
+    clearUserCookie();
   });
 
   afterAll(() => server.close());
@@ -18,7 +19,7 @@ describe('getTaskStatistics', () => {
   test('returns statistics with tasks aggregated by date', async ({ schema }) => {
     const manager = schema.users.create('manager');
     const { team } = manager;
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     // Create tasks on specific dates
     const date1 = '2024-01-15T10:00:00.000Z';
@@ -52,7 +53,7 @@ describe('getTaskStatistics', () => {
 
   test('returns empty statistics when team has no tasks', async ({ schema }) => {
     const manager = schema.users.create('manager');
-    document.cookie = `userId=${manager.id}`;
+    setUserCookie(manager.id);
 
     const result = await getTaskStatistics();
 

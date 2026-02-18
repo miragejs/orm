@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { setupServer } from 'msw/node';
 import { test, describe, expect, beforeAll, afterAll, afterEach } from '@test/context';
 import { handlers } from '@test/server/handlers';
-import { renderApp } from '@test/utils';
+import { clearUserCookie, renderApp } from '@test/utils';
 
 const server = setupServer(...handlers);
 
@@ -14,7 +14,7 @@ describe('Login', () => {
 
   afterEach(() => {
     server.resetHandlers();
-    document.cookie = 'userId=; Max-Age=0';
+    clearUserCookie();
   });
 
   afterAll(() => server.close());

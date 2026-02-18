@@ -1,6 +1,7 @@
 import { setupServer } from 'msw/node';
 import { test, describe, expect, beforeAll, afterAll, afterEach } from '@test/context';
 import { taskHandlers } from '@test/server/handlers';
+import { clearUserCookie, setUserCookie } from '@test/utils';
 import { getTaskComments } from './getTaskComments';
 
 const server = setupServer(...taskHandlers);
@@ -10,7 +11,7 @@ describe('getTaskComments', () => {
 
   afterEach(() => {
     server.resetHandlers();
-    document.cookie = 'userId=; Max-Age=0';
+    clearUserCookie();
   });
 
   afterAll(() => server.close());
@@ -18,7 +19,7 @@ describe('getTaskComments', () => {
   test('fetches comments for a task', async ({ schema }) => {
     const task = schema.tasks.create('withComments');
     const { assignee } = task;
-    document.cookie = `userId=${assignee.id}`;
+    setUserCookie(assignee.id);
 
     const taskComments = schema.comments
       .findMany({
@@ -36,7 +37,7 @@ describe('getTaskComments', () => {
   test('returns empty array when task has no comments', async ({ schema }) => {
     const task = schema.tasks.create();
     const { assignee } = task;
-    document.cookie = `userId=${assignee.id}`;
+    setUserCookie(assignee.id);
 
     const comments = await getTaskComments(task.id);
 
@@ -45,7 +46,7 @@ describe('getTaskComments', () => {
 
   test('throws error when task not found', async ({ schema }) => {
     const user = schema.users.create();
-    document.cookie = `userId=${user.id}`;
+    setUserCookie(user.id);
 
     await expect(getTaskComments('non-existent-task')).rejects.toThrow(
       'Failed to fetch task comments',

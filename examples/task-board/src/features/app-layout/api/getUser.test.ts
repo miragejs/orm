@@ -1,6 +1,7 @@
 import { setupServer } from 'msw/node';
 import { test, describe, expect, beforeAll, afterAll, afterEach } from '@test/context';
 import { userHandlers } from '@test/server/handlers';
+import { clearUserCookie, setUserCookie } from '@test/utils';
 import { getUser } from './getUser';
 
 const server = setupServer(...userHandlers);
@@ -10,14 +11,14 @@ describe('getUser', () => {
 
   afterEach(() => {
     server.resetHandlers();
-    document.cookie = 'userId=; Max-Age=0';
+    clearUserCookie();
   });
 
   afterAll(() => server.close());
 
   test('gets authenticated user', async ({ schema }) => {
     const user = schema.users.create().toJSON();
-    document.cookie = `userId=${user.id}`;
+    setUserCookie(user.id);
 
     const result = await getUser();
     expect(result).toEqual(user);
@@ -28,7 +29,7 @@ describe('getUser', () => {
   });
 
   test('throws "Failed to fetch user" when user not found', async () => {
-    document.cookie = 'userId=non-existent-id';
+    setUserCookie('non-existent-id');
     await expect(getUser()).rejects.toThrow('Failed to fetch user');
   });
 });
