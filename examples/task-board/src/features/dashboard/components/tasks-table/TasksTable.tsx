@@ -5,6 +5,7 @@ import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
+import IconButton from '@mui/material/IconButton';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -15,6 +16,8 @@ import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import { formatTaskTitle } from '@shared/utils';
 import type { TaskSortableColumn } from '@shared/types';
 import type { GetTeamTasksResponse } from '@features/dashboard/api';
@@ -28,12 +31,14 @@ import TasksTableFilters from './TasksTableFilters';
 
 interface TasksTableProps {
   data: GetTeamTasksResponse;
+  onEditClick: (taskId: string) => void;
+  onDeleteClick?: (taskId: string) => void;
 }
 
 /**
  * TasksTable - Team tasks table with filters, sorting, and pagination
  */
-function TasksTable({ data }: TasksTableProps) {
+function TasksTable({ data, onEditClick, onDeleteClick }: TasksTableProps) {
   const {
     filters,
     memberOptions,
@@ -125,11 +130,19 @@ function TasksTable({ data }: TasksTableProps) {
                     </TableCell>
                   );
                 })}
+                <TableCell width={onDeleteClick ? 96 : 56} />
               </TableRow>
             </TableHead>
             <TableBody>
               {tasks.map((task) => (
-                <TableRow key={task.id} hover>
+                <TableRow
+                  key={task.id}
+                  hover
+                  sx={{
+                    '& .edit-action-cell button': { opacity: 0 },
+                    '&:hover .edit-action-cell button': { opacity: 1 },
+                  }}
+                >
                   <TableCell>
                     {task.assignee ? (
                       <Tooltip title={task.assignee.name}>
@@ -188,6 +201,38 @@ function TasksTable({ data }: TasksTableProps) {
                     <Typography variant="body2" color="text.secondary">
                       {new Date(task.dueDate).toLocaleDateString()}
                     </Typography>
+                  </TableCell>
+                  <TableCell
+                    className="edit-action-cell"
+                    width={onDeleteClick ? 96 : 56}
+                    padding="checkbox"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Tooltip title="Edit task">
+                        <IconButton
+                          size="small"
+                          aria-label="Edit task"
+                          onClick={() => onEditClick(task.id)}
+                          sx={{ transition: 'opacity 0.2s ease-in-out' }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      {onDeleteClick && (
+                        <Tooltip title="Delete task">
+                          <IconButton
+                            size="small"
+                            aria-label="Delete task"
+                            color="error"
+                            onClick={() => onDeleteClick(task.id)}
+                            sx={{ transition: 'opacity 0.2s ease-in-out' }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </Box>
                   </TableCell>
                 </TableRow>
               ))}

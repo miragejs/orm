@@ -3,13 +3,18 @@ import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
+import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import { TaskPriority } from '@shared/enums';
 import type { TaskItem } from '@shared/types';
 
 interface TaskCardProps {
   task: TaskItem;
   statusColor: 'default' | 'info' | 'warning' | 'success' | 'error';
+  onEditClick?: (taskId: string) => void;
+  onDeleteClick?: (taskId: string) => void;
   onTaskClick: (taskId: string) => void;
 }
 
@@ -23,7 +28,13 @@ const priorityConfig = {
 /**
  * TaskCard Component - Displays a single task card
  */
-function TaskCard({ task, statusColor, onTaskClick }: TaskCardProps) {
+function TaskCard({
+  task,
+  statusColor,
+  onTaskClick,
+  onEditClick,
+  onDeleteClick,
+}: TaskCardProps) {
   return (
     <Box component="li" aria-label={task.title}>
       <Card
@@ -53,7 +64,44 @@ function TaskCard({ task, statusColor, onTaskClick }: TaskCardProps) {
             <Typography variant="h6" sx={{ flexGrow: 1 }}>
               {task.title}
             </Typography>
-            <Chip label={task.status} color={statusColor} size="small" />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              {onEditClick && (
+                <IconButton
+                  size="small"
+                  aria-label="Edit task"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditClick(task.id);
+                  }}
+                  sx={{
+                    opacity: 0,
+                    transition: 'opacity 0.2s ease-in-out',
+                    '.MuiCard-root:hover &': { opacity: 1 },
+                  }}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              )}
+              {onDeleteClick && (
+                <IconButton
+                  size="small"
+                  aria-label="Delete task"
+                  color="error"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteClick(task.id);
+                  }}
+                  sx={{
+                    opacity: 0,
+                    transition: 'opacity 0.2s ease-in-out',
+                    '.MuiCard-root:hover &': { opacity: 1 },
+                  }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              )}
+              <Chip label={task.status} color={statusColor} size="small" />
+            </Box>
           </Box>
           <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
             <Chip

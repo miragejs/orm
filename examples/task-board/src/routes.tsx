@@ -11,6 +11,17 @@ import TaskComments, {
   loader as taskCommentsLoader,
 } from './features/task-comments/TaskComments';
 import Team, { loader as teamLoader } from './features/team/Team';
+import {
+  TaskForm,
+  action as taskFormAction,
+  loader as taskFormLoader,
+} from './features/task-form';
+import {
+  TaskRoutesLayout,
+  DeleteTask,
+  deleteTaskLoader,
+  deleteTaskAction,
+} from './features/delete-task';
 import ErrorBoundary from './shared/components/ErrorBoundary';
 import type { RouteObject } from 'react-router';
 
@@ -60,6 +71,28 @@ export const routes: RouteObject[] = [
             },
             children: [
               {
+                path: 'tasks/:taskId',
+                element: <TaskRoutesLayout />,
+                children: [
+                  {
+                    id: 'dashboardTaskForm',
+                    index: true,
+                    element: <TaskForm />,
+                    loader: taskFormLoader,
+                    action: taskFormAction,
+                    handle: { title: 'Task Form' },
+                  },
+                  {
+                    id: 'dashboardDeleteTask',
+                    path: 'delete',
+                    element: <DeleteTask />,
+                    loader: deleteTaskLoader,
+                    action: deleteTaskAction,
+                    handle: { title: 'Delete Task' },
+                  },
+                ],
+              },
+              {
                 id: 'dashboardTaskDetails',
                 path: ':taskId',
                 element: <TaskDetails />,
@@ -89,6 +122,28 @@ export const routes: RouteObject[] = [
               requiresRole: 'USER',
             },
             children: [
+              {
+                path: 'tasks/:taskId',
+                element: <TaskRoutesLayout />,
+                children: [
+                  {
+                    id: 'userTaskForm',
+                    index: true,
+                    element: <TaskForm />,
+                    loader: taskFormLoader,
+                    action: taskFormAction,
+                    handle: { title: 'Task Form' },
+                  },
+                  {
+                    id: 'userDeleteTask',
+                    path: 'delete',
+                    element: <DeleteTask />,
+                    loader: deleteTaskLoader,
+                    action: deleteTaskAction,
+                    handle: { title: 'Delete Task' },
+                  },
+                ],
+              },
               {
                 id: 'userTaskDetails',
                 path: ':taskId',

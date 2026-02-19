@@ -17,6 +17,8 @@ interface TaskStatusSectionProps {
   statusIcon: React.ComponentType<{ sx?: object }>;
   statusLabel: string;
   tasks: TaskItem[];
+  onEditClick?: (taskId: string) => void;
+  onDeleteClick?: (taskId: string) => void;
   onExpandChange: (isExpanded: boolean) => void;
   onTaskClick: (taskId: string) => void;
 }
@@ -31,6 +33,8 @@ function TaskStatusSection({
   statusIcon: Icon,
   statusLabel,
   tasks,
+  onEditClick,
+  onDeleteClick,
   onExpandChange,
   onTaskClick,
 }: TaskStatusSectionProps) {
@@ -82,9 +86,11 @@ function TaskStatusSection({
             {tasks.map((task) => (
               <TaskCard
                 key={task.id}
-                task={task}
-                statusColor={statusColor}
+                onEditClick={onEditClick}
+                onDeleteClick={onDeleteClick}
                 onTaskClick={onTaskClick}
+                statusColor={statusColor}
+                task={task}
               />
             ))}
           </Box>

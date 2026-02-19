@@ -1,7 +1,7 @@
 import { http, HttpResponse, delay } from 'msw';
 import { testSchema } from '@test/schema/testSchema';
 import { parseCookieUserId } from '@test/server/utils';
-import type { Task, Comment, TaskItem } from '@shared/types';
+import type { Task, Comment, TaskItem, TaskFormValues } from '@shared/types';
 import { taskItemSerializer } from '@test/schema/collections/tasks';
 
 /** Delay in milliseconds for loading task comments */
@@ -110,4 +110,63 @@ export const taskHandlers = [
       return HttpResponse.json(json, { status: 201 });
     },
   ),
+
+  // Create task
+  http.post('/api/tasks', async ({ cookies, request }) => {
+    const currentUserId = parseCookieUserId(cookies, request);
+    if (!currentUserId) {
+      return HttpResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    const currentUser = testSchema.users.find(currentUserId);
+    if (!currentUser) {
+      return HttpResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const teamId = currentUser.teamId;
+    if (!teamId) {
+      return HttpResponse.json({ error: 'User has no team' }, { status: 400 });
+    }
+
+    const values = (await request.json()) as TaskFormValues;
+    const task = testSchema.tasks.create({ ...values, teamId });
+
+    const json: Task = task.toJSON();
+    return HttpResponse.json(json, { status: 201 });
+  }),
+
+  // Update task
+  http.patch<{ id: string }>('/api/tasks/:id', async ({ params, cookies, request }) => {
+    const currentUserId = parseCookieUserId(cookies, request);
+    if (!currentUserId) {
+      return HttpResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    const task = testSchema.tasks.find(params.id);
+    if (!task) {
+      return HttpResponse.json({ error: 'Task not found' }, { status: 404 });
+    }
+
+    const values = (await request.json()) as TaskFormValues;
+    task.update({ ...values, updatedAt: new Date().toISOString() });
+
+    const json: Task = task.toJSON();
+    return HttpResponse.json(json);
+  }),
+
+  // Delete task
+  http.delete<{ id: string }>('/api/tasks/:id', ({ params, cookies, request }) => {
+    const currentUserId = parseCookieUserId(cookies, request);
+    if (!currentUserId) {
+      return HttpResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    const task = testSchema.tasks.find(params.id);
+    if (!task) {
+      return HttpResponse.json({ error: 'Task not found' }, { status: 404 });
+    }
+
+    testSchema.tasks.delete(params.id);
+    return new HttpResponse(null, { status: 204 });
+  }),
 ];

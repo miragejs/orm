@@ -22,3 +22,15 @@ export interface Task {
 }
 
 export type TaskItem = Pick<Task, 'id' | 'title' | 'status' | 'priority' | 'dueDate'>;
+
+/**
+ * Form values for create/edit task – single state shape
+ */
+export interface TaskFormValues {
+  assigneeId: string;
+  description: string;
+  dueDate: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  title: string;
+}
