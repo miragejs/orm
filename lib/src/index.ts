@@ -142,11 +142,11 @@ export type {
   FixtureConfig,
   FixtureLoadStrategy,
   SchemaCollections,
+  SchemaInstance,
   SeedFunction,
   SeedScenarios,
   Seeds,
 } from './schema';
-export type { SchemaInstance as Schema } from './schema';
 // ----------------------------------------------------------------------------
 // Serializer
 // ----------------------------------------------------------------------------
