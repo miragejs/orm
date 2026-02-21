@@ -4,9 +4,6 @@ import { parseCookieUserId } from '@test/server/utils';
 import type { Task, Comment, TaskItem, TaskFormValues } from '@shared/types';
 import { taskItemSerializer } from '@test/schema/collections/tasks';
 
-/** Delay in milliseconds for loading task comments */
-const COMMENTS_DELAY_MS = 500;
-
 export const taskHandlers = [
   // Get all tasks for a specific user
   http.get<{ userId: string }>(
@@ -66,7 +63,7 @@ export const taskHandlers = [
 
       // Simulate network delay for deferred loading demonstration in development
       if (process.env.NODE_ENV === 'development') {
-        await delay(COMMENTS_DELAY_MS);
+        await delay(250);
       }
 
       return HttpResponse.json(json);
@@ -129,7 +126,12 @@ export const taskHandlers = [
     }
 
     const values = (await request.json()) as TaskFormValues;
-    const task = testSchema.tasks.create({ ...values, teamId });
+    const task = testSchema.tasks.create({ ...values, creatorId: currentUserId, teamId });
+
+    // Simulate network delay for deferred loading demonstration in development
+    if (process.env.NODE_ENV === 'development') {
+      await delay(250);
+    }
 
     const json: Task = task.toJSON();
     return HttpResponse.json(json, { status: 201 });

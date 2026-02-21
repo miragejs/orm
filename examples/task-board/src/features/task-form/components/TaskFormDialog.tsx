@@ -34,8 +34,8 @@ export default function TaskFormDialog({
         <Button onClick={onClose} disabled={submitting}>
           Cancel
         </Button>
-        <Button type="submit" form="task-form" variant="contained" disabled={submitting}>
-          {submitting ? 'Saving…' : submitLabel}
+        <Button type="submit" form="task-form" variant="contained" loading={submitting}>
+          {submitLabel}
         </Button>
       </DialogActions>
     </Dialog>

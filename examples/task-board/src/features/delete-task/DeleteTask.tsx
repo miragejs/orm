@@ -8,8 +8,9 @@ import DialogTitle from '@mui/material/DialogTitle';
 import { getTaskDetails } from '@features/task-details/api';
 import { getUser } from '@features/app-layout/api';
 import { isManager } from '@shared/utils';
-import { deleteTask } from '@features/task-form/api';
+import { deleteTask } from './api';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
+import { Task } from '@/shared/types';
 
 function getRedirectTo(params: { teamName?: string; userId?: string }): string {
   const { teamName = '', userId } = params;
@@ -43,7 +44,10 @@ export async function loader({ params }: LoaderFunctionArgs) {
   return { task, redirectTo };
 }
 
-export type DeleteTaskLoaderData = Awaited<ReturnType<typeof loader>>;
+export type DeleteTaskLoaderData = {
+  task: Task;
+  redirectTo: string;
+};
 
 /**
  * Action – deletes the task and redirects

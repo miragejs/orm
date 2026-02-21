@@ -13,15 +13,11 @@ import TaskComments, {
 import Team, { loader as teamLoader } from './features/team/Team';
 import {
   TaskForm,
+  TaskRoutesLayout,
   action as taskFormAction,
   loader as taskFormLoader,
 } from './features/task-form';
-import {
-  TaskRoutesLayout,
-  DeleteTask,
-  deleteTaskLoader,
-  deleteTaskAction,
-} from './features/delete-task';
+import { DeleteTask, deleteTaskLoader, deleteTaskAction } from './features/delete-task';
 import ErrorBoundary from './shared/components/ErrorBoundary';
 import type { RouteObject } from 'react-router';
 

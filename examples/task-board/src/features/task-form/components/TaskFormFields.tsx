@@ -67,7 +67,7 @@ export default function TaskFormFields({
   };
 
   return (
-    <Form id="task-form" onSubmit={handleSubmit}>
+    <Form aria-label="Task form" id="task-form" onSubmit={handleSubmit}>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
         {actionData?.error && <Alert severity="error">{actionData.error}</Alert>}
 
@@ -90,9 +90,12 @@ export default function TaskFormFields({
           value={values.description}
         />
         <FormControl fullWidth>
-          <InputLabel>Status</InputLabel>
+          <InputLabel id="status-label" htmlFor="status">
+            Status
+          </InputLabel>
           <Select
             label="Status"
+            labelId="status-label"
             name="status"
             onChange={(e) => updateValues({ status: e.target.value as TaskStatus })}
             value={values.status}
@@ -105,9 +108,12 @@ export default function TaskFormFields({
           </Select>
         </FormControl>
         <FormControl fullWidth>
-          <InputLabel>Priority</InputLabel>
+          <InputLabel id="priority-label" htmlFor="priority">
+            Priority
+          </InputLabel>
           <Select
             label="Priority"
+            labelId="priority-label"
             name="priority"
             onChange={(e) => updateValues({ priority: e.target.value as TaskPriority })}
             value={values.priority}
@@ -130,9 +136,12 @@ export default function TaskFormFields({
           value={values.dueDate}
         />
         <FormControl fullWidth>
-          <InputLabel>Assignee</InputLabel>
+          <InputLabel id="assignee-label" htmlFor="assigneeId">
+            Assignee
+          </InputLabel>
           <Select
             label="Assignee"
+            labelId="assignee-label"
             name="assigneeId"
             onChange={(e) => updateValues({ assigneeId: e.target.value })}
             value={values.assigneeId}

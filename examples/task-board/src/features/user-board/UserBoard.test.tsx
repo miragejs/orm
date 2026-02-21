@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { setupServer } from 'msw/node';
 import { describe, expect, test, beforeAll, afterAll, afterEach } from '@test/context';
@@ -121,5 +121,81 @@ describe('UserBoard', () => {
     // All sections should show 0 count
     const zeroChips = screen.getAllByText('0');
     expect(zeroChips.length).toBe(4); // 4 status sections
+  });
+
+  test('updates task and shows updated task when manager edits from user board', async ({
+    schema,
+  }) => {
+    const manager = schema.users.create('manager');
+    const { team } = manager;
+    const user = schema.users.create({ team });
+    const task = schema.tasks.create('inProgress', {
+      creator: user,
+      team,
+      assignee: user,
+      title: 'Original title',
+    });
+    setUserCookie(manager.id);
+
+    renderApp(`/${team.slug}/users/${user.id}`);
+
+    await screen.findByRole('heading', { name: task.title });
+
+    await ui.click(screen.getByRole('button', { name: 'Edit task' }));
+
+    const editDialog = within(await screen.findByRole('dialog', { name: 'Edit Task' }));
+    const titleInput = editDialog.getByLabelText(/Title/);
+    await ui.clear(titleInput);
+    await ui.type(titleInput, 'Updated title');
+    await ui.click(editDialog.getByRole('button', { name: 'Save' }));
+
+    const detailsDialog = await screen.findByRole('dialog', {
+      name: /Updated title/,
+    });
+
+    await ui.click(within(detailsDialog).getByRole('button', { name: 'Close' }));
+    await waitFor(() => {
+      expect(detailsDialog).not.toBeInTheDocument();
+    });
+
+    const updatedTask = task.reload().toJSON();
+    expect(
+      screen.getByRole('heading', { name: updatedTask.title }),
+    ).toBeInTheDocument();
+  });
+
+  test('removes task from user board when manager deletes', async ({ schema }) => {
+    const manager = schema.users.create('manager');
+    const { team } = manager;
+    const user = schema.users.create({ team });
+    const task = schema.tasks.create('inProgress', {
+      creator: user,
+      team,
+      assignee: user,
+      title: 'Task to delete',
+    });
+    setUserCookie(manager.id);
+
+    renderApp(`/${team.slug}/users/${user.id}`);
+
+    await screen.findByRole('heading', { name: task.title });
+
+    await ui.click(screen.getByRole('button', { name: 'Delete task' }));
+
+    const deleteDialog = await screen.findByRole('dialog', { name: 'Delete task?' });
+
+    await ui.click(within(deleteDialog).getByRole('button', { name: 'Delete' }));
+    await waitFor(
+      () => {
+        expect(
+          screen.queryByRole('dialog', { name: 'Delete task?' }),
+        ).not.toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    expect(
+      screen.queryByRole('heading', { name: task.title }),
+    ).not.toBeInTheDocument();
   });
 });

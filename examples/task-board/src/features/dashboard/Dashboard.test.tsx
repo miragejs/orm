@@ -1,4 +1,9 @@
-import { screen, within, waitFor } from '@testing-library/react';
+import {
+  screen,
+  waitFor,
+  waitForElementToBeRemoved,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { setupServer } from 'msw/node';
 import { describe, expect, test, beforeAll, afterAll, afterEach } from '@test/context';
@@ -320,5 +325,74 @@ describe('Dashboard', () => {
     expect(
       dialog.getByRole('heading', { name: formatTaskTitle(task) }),
     ).toBeInTheDocument();
+  });
+
+  test('updates task and shows updated task when editing from dashboard', async ({
+    schema,
+  }) => {
+    const manager = schema.users.create('manager');
+    const { team } = manager;
+    const task = schema.tasks.create('inProgress', {
+      creator: manager,
+      title: 'Original title',
+    });
+    setUserCookie(manager.id);
+
+    renderApp(`/${team.slug}/dashboard`);
+
+    await screen.findByLabelText('Loading tasks table');
+    await screen.findByRole('table', { name: /Team Tasks/ });
+
+    await ui.click(screen.getByRole('button', { name: 'Edit task' }));
+
+    const editDialog = within(await screen.findByRole('dialog', { name: 'Edit Task' }));
+
+    const titleInput = editDialog.getByLabelText(/Title/);
+    await ui.clear(titleInput);
+    await ui.type(titleInput, 'Updated title');
+
+    await ui.click(editDialog.getByRole('button', { name: 'Save' }));
+
+    const detailsDialog = await screen.findByRole('dialog', {
+      name: /Updated title/,
+    });
+
+    await ui.click(within(detailsDialog).getByRole('button', { name: 'Close' }));
+    await waitFor(() => {
+      expect(detailsDialog).not.toBeInTheDocument();
+    });
+
+    const updatedTask = task.reload().toJSON();
+    const updatedTitle = formatTaskTitle(updatedTask);
+
+    expect(screen.getByRole('link', { name: updatedTitle })).toBeInTheDocument();
+  });
+
+  test('removes task from dashboard when deleting', async ({ schema }) => {
+    const manager = schema.users.create('manager');
+    const { team } = manager;
+    const task = schema.tasks.create('inProgress', {
+      creator: manager,
+      title: 'Task to delete',
+    });
+    setUserCookie(manager.id);
+
+    renderApp(`/${team.slug}/dashboard`);
+
+    await screen.findByLabelText('Loading tasks table');
+    await screen.findByRole('table', { name: /Team Tasks/ });
+    expect(
+      screen.getByRole('link', { name: new RegExp(task.title, 'i') }),
+    ).toBeInTheDocument();
+
+    await ui.click(screen.getByRole('button', { name: 'Delete task' }));
+
+    const deleteDialog = await screen.findByRole('dialog', { name: 'Delete task?' });
+
+    await ui.click(within(deleteDialog).getByRole('button', { name: 'Delete' }));
+    await waitForElementToBeRemoved(deleteDialog);
+
+    const taskTitle = formatTaskTitle(task.toJSON());
+    expect(screen.queryByRole('link', { name: taskTitle })).not.toBeInTheDocument();
   });
 });

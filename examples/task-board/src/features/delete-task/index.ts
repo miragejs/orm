@@ -1,4 +1,3 @@
-export { default as TaskRoutesLayout } from './TaskRoutesLayout';
 export {
   default as DeleteTask,
   loader as deleteTaskLoader,
