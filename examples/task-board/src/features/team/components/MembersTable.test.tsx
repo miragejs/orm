@@ -7,7 +7,7 @@ import MembersTableSkeleton from './MembersTableSkeleton';
 import MembersTableError from './MembersTableError';
 import type { GetTeamMembersResponse } from '../api';
 import type { UserInfo } from '@shared/types';
-import { TestSchema } from '@test/schema/types';
+import type { TestSchema } from '@test/schema';
 
 describe('MembersTable', () => {
   function createMembers(schema: TestSchema) {

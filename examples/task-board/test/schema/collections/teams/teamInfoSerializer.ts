@@ -1,7 +1,7 @@
 import { TeamInfo } from '@/shared/types';
 import { teamModel, TeamModel } from '@test/schema/models/teamModel';
-import { TestCollections } from '@test/schema/types';
 import { Serializer } from 'miragejs-orm';
+import type { TestCollections } from '@test/schema';
 
 export const teamInfoSerializer = new Serializer<
   TeamModel,

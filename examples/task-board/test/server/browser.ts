@@ -1,11 +1,11 @@
 import { setupWorker } from 'msw/browser';
 import { handlers } from './handlers';
-import { testSchema } from '@test/schema/testSchema';
+import { testSchema } from '@test/schema';
 
 /**
  * MSW browser worker for intercepting API requests in development
  */
-export const worker = setupWorker(...handlers);
+const worker = setupWorker(...handlers);
 
 /**
  * Initialize the mock server with seed data

@@ -1,8 +1,8 @@
 import { TaskStatus } from '@shared/enums';
-import type { TaskStatistics } from '@shared/types';
-import type { ModelCollection } from 'miragejs-orm';
 import { TaskModel } from '@test/schema/models';
-import { TestCollections } from '@test/schema/types';
+import type { ModelCollection } from 'miragejs-orm';
+import type { TaskStatistics } from '@shared/types';
+import type { TestCollections } from '@test/schema';
 
 /**
  * Collects task statistics aggregated by date from a list of tasks.

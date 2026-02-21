@@ -6,8 +6,8 @@ import {
   commentModel,
   type TaskModel,
 } from '@test/schema/models';
-import type { TestCollections } from '@test/schema/types';
 import { taskFactory } from './taskFactory';
+import type { TestCollections } from '@test/schema';
 
 export const tasksCollection = collection<TestCollections>()
   .model(taskModel)

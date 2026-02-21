@@ -1,5 +1,5 @@
 import { delay, http, HttpResponse } from 'msw';
-import { testSchema } from '@test/schema/testSchema';
+import { testSchema } from '@test/schema';
 import {
   memberOptionSerializer,
   userInfoSerializer,

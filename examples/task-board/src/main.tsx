@@ -5,7 +5,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import lightGreen from '@mui/material/colors/lightGreen';
 import purple from '@mui/material/colors/purple';
 import Root from './Root';
-import { initMockServer } from '@test/server/browser';
+import { initMockServer } from '@test/server';
 
 // Create Material-UI theme
 const theme = createTheme({

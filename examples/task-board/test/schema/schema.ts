@@ -1,5 +1,40 @@
-import type { BelongsTo, CollectionConfig, Factory, HasMany, Schema } from 'miragejs-orm';
-import type { CommentModel, TaskModel, TeamModel, UserModel } from '../models';
+import { LogLevel, schema } from 'miragejs-orm';
+import {
+  commentsCollection,
+  tasksCollection,
+  teamsCollection,
+  usersCollection,
+} from './collections';
+import type {
+  BelongsTo,
+  CollectionConfig,
+  Factory,
+  HasMany,
+  SchemaInstance,
+} from 'miragejs-orm';
+import type { CommentModel, TaskModel, TeamModel, UserModel } from './models';
+
+/**
+ * Test schema instance with logging disabled
+ * Global serializer configured with root wrapping for all collections
+ */
+export const testSchema: TestSchema = schema()
+  .collections({
+    teams: teamsCollection,
+    users: usersCollection,
+    tasks: tasksCollection,
+    comments: commentsCollection,
+  })
+  .logging({
+    enabled: process.env.NODE_ENV === 'development',
+    level: LogLevel.INFO,
+  })
+  .build();
+
+/**
+ * Test schema instance type
+ */
+export type TestSchema = SchemaInstance<TestCollections>;
 
 /**
  * Test schema collections configuration
@@ -60,8 +95,3 @@ export type TestCollections = {
     TestCollections
   >;
 };
-
-/**
- * Test schema instance type
- */
-export type TestSchema = Schema<TestCollections>;

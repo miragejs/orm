@@ -1,7 +1,7 @@
 import { collection, relations } from 'miragejs-orm';
 import { taskModel, teamModel, userModel } from '@test/schema/models';
-import type { TestCollections } from '@test/schema/types';
 import { teamFactory } from './teamFactory';
+import type { TestCollections } from '@test/schema';
 
 export const teamsCollection = collection<TestCollections>()
   .model(teamModel)

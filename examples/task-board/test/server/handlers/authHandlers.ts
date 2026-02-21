@@ -1,5 +1,5 @@
 import { http, HttpResponse, PathParams } from 'msw';
-import { testSchema } from '@test/schema/testSchema';
+import { testSchema } from '@test/schema';
 import type { User } from '@shared/types';
 
 /**

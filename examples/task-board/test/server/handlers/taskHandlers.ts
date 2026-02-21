@@ -1,8 +1,8 @@
 import { http, HttpResponse, delay } from 'msw';
-import { testSchema } from '@test/schema/testSchema';
+import { testSchema } from '@test/schema';
 import { parseCookieUserId } from '@test/utils';
-import type { Task, Comment, TaskItem, TaskFormValues } from '@shared/types';
 import { taskItemSerializer } from '@test/schema/collections/tasks';
+import type { Task, Comment, TaskItem, TaskFormValues } from '@shared/types';
 
 export const taskHandlers = [
   // Get all tasks for a specific user

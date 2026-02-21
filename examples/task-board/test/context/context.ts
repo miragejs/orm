@@ -1,6 +1,6 @@
 import { test as baseTest } from 'vitest';
 
-import { testSchema } from '../schema/testSchema';
+import { testSchema } from '../schema';
 
 export const test = baseTest.extend<{ schema: typeof testSchema }>({
   // eslint-disable-next-line no-empty-pattern

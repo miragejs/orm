@@ -8,7 +8,7 @@ import { faker } from '@faker-js/faker';
 import { TaskStatus, TaskPriority } from '@shared/enums';
 import { taskModel, userModel } from '@test/schema/models';
 import type { TaskModel, UserModel } from '@test/schema/models';
-import type { TestCollections } from '@test/schema/types';
+import type { TestCollections } from '@test/schema';
 
 const getTeamPrefix = (teamName?: string) => {
   if (!teamName) {
