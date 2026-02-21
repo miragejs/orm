@@ -31,7 +31,7 @@ export const teamsCollection = collection<TestCollections>()
       {
         department: 'Engineering',
         description: 'Cross-functional development team building innovative solutions',
-        name: 'DevX',
+        name: 'DevX Tools',
       },
       'withMembers',
     );

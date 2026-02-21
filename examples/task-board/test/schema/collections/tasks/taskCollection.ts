@@ -28,18 +28,18 @@ export const tasksCollection = collection<TestCollections>()
   })
   .seeds((schema) => {
     // Get users and DevX team
-    const devXTeam = schema.teams.find({ name: 'DevX' });
+    const currentTeam = schema.teams.first()!;
     const currentUser = schema.users.find({ email: 'john.doe@example.com' });
     const managerUser = schema.users.find({ email: 'jane.smith@example.com' });
 
-    if (!currentUser || !managerUser || !devXTeam) {
+    if (!currentUser || !managerUser || !currentTeam) {
       throw new Error('Users and DevX team must be created before loading task seeds');
     }
 
     const associationAttrs: PartialModelAttrs<TaskModel> = {
       assigneeId: currentUser.id,
       creatorId: managerUser.id,
-      teamId: devXTeam.id,
+      teamId: currentTeam.id,
     };
 
     // Create a variety of tasks using factory traits

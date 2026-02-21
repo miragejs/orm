@@ -34,9 +34,6 @@ const defaultTasksParams: TableParams<TaskSortableColumn> = {
   sortOrder: 'desc',
 };
 
-/** Delay in milliseconds for loading */
-const DELAY_MS = 500;
-
 /**
  * Parse filter arrays from URL search params
  */
@@ -113,7 +110,7 @@ export const teamHandlers = [
 
     // Simulate network delay for deferred loading demonstration in development
     if (process.env.NODE_ENV === 'development') {
-      await delay(DELAY_MS);
+      await delay(250);
     }
 
     return HttpResponse.json({
@@ -205,7 +202,7 @@ export const teamHandlers = [
 
     // Simulate network delay for deferred loading demonstration in development
     if (process.env.NODE_ENV === 'development') {
-      await delay(DELAY_MS);
+      await delay(250);
     }
 
     return HttpResponse.json({

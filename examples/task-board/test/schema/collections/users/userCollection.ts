@@ -19,24 +19,24 @@ export const usersCollection = collection<TestCollections>()
   })
   .seeds((schema) => {
     // Get DevX team
-    const devXTeam = schema.teams.find({ name: 'DevX' })!;
+    const currentTeam = schema.teams.first()!;
 
     // Create current user
     schema.users.create({
       email: 'john.doe@example.com',
       name: 'John Doe',
       bio: 'Software Engineer passionate about building great user experiences',
-      team: devXTeam,
+      team: currentTeam,
     });
-    devXTeam.reload();
+    currentTeam.reload();
 
     // Create manager user
     const managerUser = schema.users.create('manager', {
       email: 'jane.smith@example.com',
       name: 'Jane Smith',
       bio: 'Engineering Team Lead with focus on team growth and delivery',
-      team: devXTeam,
+      team: currentTeam,
     });
-    devXTeam.update({ manager: managerUser });
+    currentTeam.update({ manager: managerUser });
   })
   .build();
