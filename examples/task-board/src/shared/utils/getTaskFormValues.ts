@@ -1,11 +1,11 @@
 import type { Task, TaskFormValues } from '@shared/types';
-import { formatDateForInput } from './formatDateForInput';
+import { formatTaskDueDate } from './formatTaskDueDate';
 
-export function formValuesFromTask(task: Task): TaskFormValues {
+export function getTaskFormValues(task: Task): TaskFormValues {
   return {
     assigneeId: task.assignee?.id ?? '',
     description: task.description ?? '',
-    dueDate: formatDateForInput(task.dueDate),
+    dueDate: formatTaskDueDate(task.dueDate),
     priority: task.priority,
     status: task.status,
     title: task.title,

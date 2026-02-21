@@ -9,11 +9,11 @@ import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import { TaskPriority, TaskStatus } from '@shared/enums';
 import {
-  defaultFormValues,
-  formValuesFromTask,
+  getDefaultTaskFormValues,
+  getTaskFormValues,
   PRIORITY_OPTIONS,
   STATUS_OPTIONS,
-} from '../utils';
+} from '@shared/utils';
 import type { Task, TaskFormValues, UserInfo } from '@shared/types';
 
 interface TaskFormFieldsProps {
@@ -39,7 +39,7 @@ export default function TaskFormFields({
   const submit = useSubmit();
 
   const [values, setValues] = useState<TaskFormValues>(() =>
-    task ? formValuesFromTask(task) : defaultFormValues(members, defaultAssigneeId),
+    task ? getTaskFormValues(task) : getDefaultTaskFormValues(members, defaultAssigneeId),
   );
 
   const updateValues = (patch: Partial<TaskFormValues>) => {

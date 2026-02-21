@@ -159,9 +159,7 @@ describe('UserBoard', () => {
     });
 
     const updatedTask = task.reload().toJSON();
-    expect(
-      screen.getByRole('heading', { name: updatedTask.title }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: updatedTask.title })).toBeInTheDocument();
   });
 
   test('removes task from user board when manager deletes', async ({ schema }) => {
@@ -194,8 +192,6 @@ describe('UserBoard', () => {
       { timeout: 3000 },
     );
 
-    expect(
-      screen.queryByRole('heading', { name: task.title }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: task.title })).not.toBeInTheDocument();
   });
 });

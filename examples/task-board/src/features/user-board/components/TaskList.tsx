@@ -5,8 +5,8 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import AddIcon from '@mui/icons-material/Add';
 import { TaskStatus } from '@shared/enums';
-import { statusConfig, statusOrder } from '../config';
 import TaskStatusSection from './TaskStatusSection';
+import { statusConfig, statusOrder } from './taskStatusSectionConfig';
 import type { TaskItem } from '@shared/types';
 
 interface TaskListProps {

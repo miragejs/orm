@@ -4,47 +4,13 @@ import {
   memberOptionSerializer,
   userInfoSerializer,
 } from '@test/schema/collections/users';
-import { parseTableQuery, type TableParams } from '@shared/utils';
+import { parseTableQuery } from '@shared/utils';
 import { ModelAttrs, Where } from 'miragejs-orm';
 import { TaskModel } from '@test/schema/models';
-import { collectTaskStats, parseCookieUserId } from '@test/server/utils';
-import type { TaskStatus, TaskPriority } from '@shared/enums';
-import type {
-  MemberOption,
-  MemberSortableColumn,
-  TaskFilters,
-  TaskSortableColumn,
-  Team,
-  UserInfo,
-} from '@shared/types';
-
-/** Default pagination/sorting params for team members */
-const defaultMembersParams: TableParams<MemberSortableColumn> = {
-  page: 0,
-  pageSize: 5,
-  sortBy: 'name',
-  sortOrder: 'asc',
-};
-
-/** Default pagination/sorting params for team tasks */
-const defaultTasksParams: TableParams<TaskSortableColumn> = {
-  page: 0,
-  pageSize: 10,
-  sortBy: 'createdAt',
-  sortOrder: 'desc',
-};
-
-/**
- * Parse filter arrays from URL search params
- */
-function parseFilters(url: string): TaskFilters {
-  const searchParams = new URL(url).searchParams;
-  return {
-    assigneeId: searchParams.getAll('assigneeId'),
-    priority: searchParams.getAll('priority') as TaskPriority[],
-    status: searchParams.getAll('status') as TaskStatus[],
-  };
-}
+import { parseCookieUserId } from '@test/utils';
+import { collectTaskStats } from './collectTaskStats';
+import { defaultMembersParams, defaultTasksParams, parseFilters } from './parseFilters';
+import type { MemberOption, Team, UserInfo } from '@shared/types';
 
 /**
  * Team handlers for /teams endpoints

@@ -1,8 +1,8 @@
 import { TaskPriority, TaskStatus } from '@shared/enums';
 import type { TaskFormValues, UserInfo } from '@shared/types';
-import { formatDateForInput } from './formatDateForInput';
+import { formatTaskDueDate } from './formatTaskDueDate';
 
-export function defaultFormValues(
+export function getDefaultTaskFormValues(
   members: UserInfo[],
   defaultAssigneeId?: string,
 ): TaskFormValues {
@@ -15,7 +15,7 @@ export function defaultFormValues(
   return {
     assigneeId,
     description: '',
-    dueDate: formatDateForInput(defaultDue.toISOString()),
+    dueDate: formatTaskDueDate(defaultDue.toISOString()),
     priority: TaskPriority.MEDIUM,
     status: TaskStatus.TODO,
     title: '',
