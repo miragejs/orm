@@ -2,7 +2,7 @@ import Box from '@mui/material/Box';
 import { redirect } from 'react-router';
 import type { ActionFunctionArgs } from 'react-router';
 import { login } from './api';
-import { LoginForm } from './components';
+import { LoginForm, LoginHelp } from './components';
 
 /**
  * Login action handler
@@ -31,6 +31,7 @@ export default function Login() {
   return (
     <Box
       sx={{
+        position: 'relative',
         width: '100vw',
         height: '100vh',
         display: 'flex',
@@ -42,6 +43,7 @@ export default function Login() {
       }}
     >
       <LoginForm />
+      <LoginHelp />
     </Box>
   );
 }
