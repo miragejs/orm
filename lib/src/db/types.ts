@@ -1,4 +1,5 @@
 import type { IdentityManager, IdType } from '@src/id-manager';
+import type { Logger } from '@src/utils';
 
 import type DbCollection from './DbCollection';
 
@@ -36,7 +37,9 @@ export type DbQuery<TRecord extends DbRecord> =
  * Type for update operations
  * @template TRecord - The type of the record's attributes
  */
-export type DbUpdateInput<TRecord extends DbRecord> = TRecord['id'] | DbRecordInput<TRecord>;
+export type DbUpdateInput<TRecord extends DbRecord> =
+  | TRecord['id']
+  | DbRecordInput<TRecord>;
 
 /**
  * Type for database collections
@@ -66,15 +69,21 @@ export type DbCollectionsFromStaticData<TData> = {
  * Gets the data of a collection
  * @template T - The type of the collection
  */
-export type DbCollectionData<T> = T extends DbCollection<infer TAttrs> ? TAttrs[] : never;
+export type DbCollectionData<T> =
+  T extends DbCollection<infer TAttrs> ? TAttrs[] : never;
 
 /**
  * Configuration for creating a database collection
  * @template TRecord - The type of the record's attributes
  */
 export interface DbCollectionConfig<TRecord extends DbRecord> {
+  /**
+   * Identity manager instance for ID generation.
+   * If not provided, a default manager with string IDs starting from "1" will be used.
+   */
   identityManager?: IdentityManager<TRecord['id']>;
   initialData?: TRecord[];
+  logger?: Logger;
 }
 
 /**
@@ -91,6 +100,7 @@ export type DbData<TCollections extends Record<string, DbCollection<any>>> = {
  */
 export type DbConfig<TCollections extends Record<string, DbCollection<any>>> = {
   initialData?: DbData<TCollections>;
+  logger?: Logger;
 };
 
 // -- QUERY API TYPES --
@@ -273,7 +283,9 @@ export type WhereHelperFns<TRecord> = {
  */
 export interface QueryOptions<TRecord> {
   /** Filter criteria - object DSL or callback function */
-  where?: Where<TRecord> | ((record: TRecord, helpers: WhereHelperFns<TRecord>) => boolean);
+  where?:
+    | Where<TRecord>
+    | ((record: TRecord, helpers: WhereHelperFns<TRecord>) => boolean);
   /** Sorting specification */
   orderBy?: OrderBy<TRecord>;
   /** Number of records to skip (offset pagination) */
@@ -282,4 +294,15 @@ export interface QueryOptions<TRecord> {
   limit?: number;
   /** Cursor for keyset pagination (must align with orderBy fields) */
   cursor?: Partial<TRecord>;
+}
+
+/**
+ * Result type for paginated queries
+ * @template TRecord - The record type
+ */
+export interface PaginatedResult<TRecord> {
+  /** The matching records (after pagination applied) */
+  records: TRecord[];
+  /** Total count of records matching the where clause (before pagination) */
+  total: number;
 }

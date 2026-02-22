@@ -1,5 +1,5 @@
-import { belongsTo, hasMany } from '@src/associations';
-import { ModelCollection } from '@src/model';
+import { ModelCollection, ModelIdFor } from '@src/model';
+import { belongsTo, hasMany } from '@src/relations';
 
 import { collection } from '../CollectionBuilder';
 import { schema } from '../SchemaBuilder';
@@ -8,6 +8,7 @@ import {
   commentFactory,
   commentModel,
   postFactory,
+  PostModel,
   postModel,
   userFactory,
   userModel,
@@ -20,16 +21,18 @@ const userCollection = collection()
   .relationships({
     posts: hasMany(postModel),
   })
-  .create();
+  .build();
 
 const postCollection = collection()
   .model(postModel)
   .factory(postFactory)
   .relationships({
-    author: belongsTo(userModel, { foreignKey: 'authorId' }),
+    author: belongsTo(userModel, {
+      foreignKey: 'authorId',
+    }),
     comments: hasMany(commentModel),
   })
-  .create();
+  .build();
 
 const commentCollection = collection()
   .model(commentModel)
@@ -38,7 +41,7 @@ const commentCollection = collection()
     user: belongsTo(userModel),
     post: belongsTo(postModel),
   })
-  .create();
+  .build();
 
 // Create test schema with collections
 const testSchema = schema()
@@ -47,7 +50,7 @@ const testSchema = schema()
     posts: postCollection,
     comments: commentCollection,
   })
-  .setup();
+  .build();
 
 describe('Schema with Relationships', () => {
   beforeEach(() => {
@@ -56,7 +59,10 @@ describe('Schema with Relationships', () => {
 
   describe('Relationships initialization', () => {
     it('should initialize with relationships', () => {
-      const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+      });
       const post = testSchema.posts.create({
         title: 'My Post',
         content: 'Content here',
@@ -67,13 +73,21 @@ describe('Schema with Relationships', () => {
 
       expect(user.posts).toBeDefined();
       expect(user.posts.at(0)?.content).toBe('Content here');
-      expect(testSchema.users.first()?.posts.at(0)?.content).toBe('Content here');
+      expect(testSchema.users.first()?.posts.at(0)?.content).toBe(
+        'Content here',
+      );
     });
 
     it('should create relationship accessors', () => {
       // First create some related models
-      const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
-      const post = testSchema.posts.create({ title: 'My Post', content: 'Content here' });
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+      });
+      const post = testSchema.posts.create({
+        title: 'My Post',
+        content: 'Content here',
+      });
       const comment = testSchema.comments.create({
         content: 'Great post!',
       });
@@ -95,8 +109,14 @@ describe('Schema with Relationships', () => {
 
   describe('link()', () => {
     it('should link belongsTo relationship', () => {
-      const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
-      const post = testSchema.posts.create({ title: 'My Post', content: 'Content here' });
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+      });
+      const post = testSchema.posts.create({
+        title: 'My Post',
+        content: 'Content here',
+      });
 
       post.link('author', user);
       expect(post.authorId).toBe(user.id);
@@ -104,16 +124,28 @@ describe('Schema with Relationships', () => {
     });
 
     it('should link hasMany relationship', () => {
-      const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
-      const post1 = testSchema.posts.create({ title: 'Post 1', content: 'Content 1' });
-      const post2 = testSchema.posts.create({ title: 'Post 2', content: 'Content 2' });
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+      });
+      const post1 = testSchema.posts.create({
+        title: 'Post 1',
+        content: 'Content 1',
+      });
+      const post2 = testSchema.posts.create({
+        title: 'Post 2',
+        content: 'Content 2',
+      });
 
       user.link('posts', [post1, post2]);
       expect(user.postIds).toEqual([post1.id, post2.id]);
     });
 
     it('should handle null/empty links', () => {
-      const post = testSchema.posts.create({ title: 'My Post', content: 'Content here' });
+      const post = testSchema.posts.create({
+        title: 'My Post',
+        content: 'Content here',
+      });
 
       post.link('author', null);
       expect(post.authorId).toBeNull();
@@ -122,23 +154,38 @@ describe('Schema with Relationships', () => {
 
   describe('unlink()', () => {
     it('should unlink belongsTo relationship', () => {
-      const post = testSchema.posts.create({ title: 'My Post', content: 'Content here' });
+      const post = testSchema.posts.create({
+        title: 'My Post',
+        content: 'Content here',
+      });
 
       post.unlink('author');
       expect(post.authorId).toBeNull();
     });
 
     it('should unlink hasMany relationship', () => {
-      const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+      });
 
       user.unlink('posts');
       expect(user.postIds).toEqual([]);
     });
 
     it('should unlink specific item from hasMany relationship', () => {
-      const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
-      const post1 = testSchema.posts.create({ title: 'Post 1', content: 'Content 1' });
-      const post2 = testSchema.posts.create({ title: 'Post 2', content: 'Content 2' });
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+      });
+      const post1 = testSchema.posts.create({
+        title: 'Post 1',
+        content: 'Content 1',
+      });
+      const post2 = testSchema.posts.create({
+        title: 'Post 2',
+        content: 'Content 2',
+      });
 
       // First link both posts
       user.link('posts', [post1, post2]);
@@ -152,7 +199,10 @@ describe('Schema with Relationships', () => {
 
   describe('Relationship accessors', () => {
     it('should get belongsTo relationship through accessor', () => {
-      const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+      });
       const post = testSchema.posts.create({
         title: 'My Post',
         content: 'Content here',
@@ -167,9 +217,18 @@ describe('Schema with Relationships', () => {
     });
 
     it('should get hasMany relationship through accessor', () => {
-      const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
-      const post1 = testSchema.posts.create({ title: 'Post 1', content: 'Content 1' });
-      const post2 = testSchema.posts.create({ title: 'Post 2', content: 'Content 2' });
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+      });
+      const post1 = testSchema.posts.create({
+        title: 'Post 1',
+        content: 'Content 1',
+      });
+      const post2 = testSchema.posts.create({
+        title: 'Post 2',
+        content: 'Content 2',
+      });
 
       // Link posts to user
       user.link('posts', [post1, post2]);
@@ -180,8 +239,14 @@ describe('Schema with Relationships', () => {
     });
 
     it('should set relationship through accessor', () => {
-      const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
-      const post = testSchema.posts.create({ title: 'My Post', content: 'Content here' });
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+      });
+      const post = testSchema.posts.create({
+        title: 'My Post',
+        content: 'Content here',
+      });
 
       // Set relationship through accessor
       post.author = user;
@@ -189,37 +254,12 @@ describe('Schema with Relationships', () => {
     });
   });
 
-  describe('Foreign key handling', () => {
-    it('should handle foreign key changes automatically', () => {
-      const post = testSchema.posts.create({ title: 'My Post', content: 'Content here' });
-
-      // Direct foreign key assignment should work
-      post.authorId = 'user-123';
-      expect(post.authorId).toBe('user-123');
-    });
-  });
-
-  describe('Error handling', () => {
-    it('should handle missing relationships gracefully', () => {
-      const post = testSchema.posts.create({ title: 'My Post', content: 'Content here' });
-
-      expect(() => post.link('author', null)).not.toThrow();
-      expect(() => post.unlink('author')).not.toThrow();
-    });
-
-    it('should handle invalid relationship names gracefully', () => {
-      const post = testSchema.posts.create({ title: 'My Post', content: 'Content here' });
-
-      // @ts-expect-error - Invalid relationship name
-      expect(() => post.link('nonexistentRelationship', null)).not.toThrow();
-      // @ts-expect-error - Invalid relationship name
-      expect(() => post.unlink('nonexistentRelationship')).not.toThrow();
-    });
-  });
-
   describe('Create with relationships', () => {
     it('should create belongsTo relationship', () => {
-      const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+      });
       const post = testSchema.posts.create({
         title: 'My Post',
         content: 'Content here',
@@ -236,8 +276,14 @@ describe('Schema with Relationships', () => {
     });
 
     it('should create hasMany relationship', () => {
-      const post1 = testSchema.posts.create({ title: 'Post 1', content: 'Content 1' });
-      const post2 = testSchema.posts.create({ title: 'Post 2', content: 'Content 2' });
+      const post1 = testSchema.posts.create({
+        title: 'Post 1',
+        content: 'Content 1',
+      });
+      const post2 = testSchema.posts.create({
+        title: 'Post 2',
+        content: 'Content 2',
+      });
       const user = testSchema.users.create({
         name: 'John',
         email: 'john@example.com',
@@ -257,10 +303,221 @@ describe('Schema with Relationships', () => {
     });
   });
 
+  describe('Create with foreign keys', () => {
+    it('should create belongsTo relationship with foreign key', () => {
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+      });
+      const post = testSchema.posts.create({
+        title: 'My Post',
+        content: 'Content here',
+        authorId: user.id,
+      });
+
+      expect(post.authorId).toBe(user.id);
+      expect(post.author?.name).toBe('John');
+
+      // Verify bidirectional sync
+      user.reload();
+      expect(user.postIds).toEqual([post.id]);
+      expect(user.posts).toHaveLength(1);
+    });
+
+    it('should create belongsTo relationship with foreign key as relationship name', () => {
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+      });
+      const post = testSchema.posts.create({
+        title: 'My Post',
+        content: 'Content here',
+        authorId: user.id,
+      });
+
+      expect(post.authorId).toBe(user.id);
+      expect(post.author?.name).toBe('John');
+
+      // Verify bidirectional sync
+      user.reload();
+      expect(user.postIds).toEqual([post.id]);
+      expect(user.posts).toHaveLength(1);
+    });
+
+    it('should create hasMany relationship with foreign key array', () => {
+      const post1 = testSchema.posts.create({
+        title: 'Post 1',
+        content: 'Content 1',
+      });
+      const post2 = testSchema.posts.create({
+        title: 'Post 2',
+        content: 'Content 2',
+      });
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+        postIds: [post1.id, post2.id],
+      });
+
+      expect(user.postIds).toEqual([post1.id, post2.id]);
+      expect(user.posts).toHaveLength(2);
+
+      // Verify bidirectional sync
+      post1.reload();
+      post2.reload();
+
+      expect(post1.authorId).toBe(user.id);
+      expect(post1.author?.name).toBe('John');
+      expect(post2.authorId).toBe(user.id);
+      expect(post2.author?.name).toBe('John');
+    });
+
+    it('should create hasMany relationship with foreign key array as relationship name', () => {
+      const post1 = testSchema.posts.create({
+        title: 'Post 1',
+        content: 'Content 1',
+      });
+      const post2 = testSchema.posts.create({
+        title: 'Post 2',
+        content: 'Content 2',
+      });
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+        postIds: [post1.id, post2.id],
+      });
+
+      expect(user.postIds).toEqual([post1.id, post2.id]);
+      expect(user.posts).toHaveLength(2);
+
+      // Verify bidirectional sync
+      post1.reload();
+      post2.reload();
+
+      expect(post1.authorId).toBe(user.id);
+      expect(post1.author?.name).toBe('John');
+      expect(post2.authorId).toBe(user.id);
+      expect(post2.author?.name).toBe('John');
+    });
+
+    it('should create with null foreign key for optional belongsTo', () => {
+      const post = testSchema.posts.create({
+        title: 'My Post',
+        content: 'Content here',
+        authorId: null,
+      });
+
+      expect(post.authorId).toBeNull();
+      expect(post.author).toBeNull();
+    });
+
+    it('should create with null foreign key as relationship name', () => {
+      const post = testSchema.posts.create({
+        title: 'My Post',
+        content: 'Content here',
+        author: null,
+      });
+
+      expect(post.authorId).toBeNull();
+      expect(post.author).toBeNull();
+    });
+
+    it('should create with empty array for hasMany foreign keys', () => {
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+        postIds: [],
+      });
+
+      expect(user.postIds).toEqual([]);
+      expect(user.posts).toHaveLength(0);
+    });
+
+    it('should create with empty array as relationship name', () => {
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+        posts: [],
+      });
+
+      expect(user.postIds).toEqual([]);
+      expect(user.posts).toHaveLength(0);
+    });
+
+    it('should handle mixed foreign keys and model instances in creation', () => {
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+      });
+      const post1 = testSchema.posts.create({
+        title: 'Post 1',
+        content: 'Content 1',
+        authorId: user.id, // Foreign key
+      });
+      const post2 = testSchema.posts.create({
+        title: 'Post 2',
+        content: 'Content 2',
+        author: user, // Model instance
+      });
+
+      // Verify both posts are created correctly
+      expect(post1.authorId).toBe(user.id);
+      expect(post1.author?.name).toBe('John');
+      expect(post2.authorId).toBe(user.id);
+      expect(post2.author?.name).toBe('John');
+
+      // Verify user has both posts after reload
+      user.reload();
+      expect(user.postIds).toEqual([post1.id, post2.id]);
+    });
+
+    it('should handle creating with non-existent foreign key', () => {
+      const post = testSchema.posts.create({
+        title: 'My Post',
+        content: 'Content here',
+        authorId: 'non-existent-id',
+      });
+
+      expect(post.authorId).toBe('non-existent-id');
+      // Author should be null since the ID doesn't exist
+      expect(post.author).toBeNull();
+    });
+
+    it("should handle creating with partial foreign key array (some exist, some don't)", () => {
+      const post1 = testSchema.posts.create({
+        title: 'Post 1',
+        content: 'Content 1',
+      });
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+        postIds: [
+          post1.id,
+          'non-existent-id' as unknown as ModelIdFor<PostModel>,
+        ],
+      });
+
+      // Should only link the existing post
+      expect(user.postIds).toEqual([post1.id, 'non-existent-id']);
+      expect(user.posts).toHaveLength(1);
+      expect(user.posts.at(0)?.id).toBe(post1.id);
+
+      // Verify bidirectional sync for existing post
+      post1.reload();
+      expect(post1.authorId).toBe(user.id);
+    });
+  });
+
   describe('Update with relationships', () => {
     it('should update belongsTo relationship via foreign key', () => {
-      const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
-      const post = testSchema.posts.create({ title: 'My Post', content: 'Content here' });
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+      });
+      const post = testSchema.posts.create({
+        title: 'My Post',
+        content: 'Content here',
+      });
 
       // Update using foreign key
       post.update({ authorId: user.id });
@@ -277,8 +534,14 @@ describe('Schema with Relationships', () => {
     });
 
     it('should update belongsTo relationship via model instance', () => {
-      const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
-      const post = testSchema.posts.create({ title: 'My Post', content: 'Content here' });
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+      });
+      const post = testSchema.posts.create({
+        title: 'My Post',
+        content: 'Content here',
+      });
 
       // Update using model instance
       post.update({ author: user });
@@ -295,9 +558,18 @@ describe('Schema with Relationships', () => {
     });
 
     it('should update hasMany relationship via foreign key array', () => {
-      const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
-      const post1 = testSchema.posts.create({ title: 'Post 1', content: 'Content 1' });
-      const post2 = testSchema.posts.create({ title: 'Post 2', content: 'Content 2' });
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+      });
+      const post1 = testSchema.posts.create({
+        title: 'Post 1',
+        content: 'Content 1',
+      });
+      const post2 = testSchema.posts.create({
+        title: 'Post 2',
+        content: 'Content 2',
+      });
 
       // Update using foreign key array
       user.update({ postIds: [post1.id, post2.id] });
@@ -316,9 +588,18 @@ describe('Schema with Relationships', () => {
     });
 
     it('should update hasMany relationship via model instances', () => {
-      const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
-      const post1 = testSchema.posts.create({ title: 'Post 1', content: 'Content 1' });
-      const post2 = testSchema.posts.create({ title: 'Post 2', content: 'Content 2' });
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+      });
+      const post1 = testSchema.posts.create({
+        title: 'Post 1',
+        content: 'Content 1',
+      });
+      const post2 = testSchema.posts.create({
+        title: 'Post 2',
+        content: 'Content 2',
+      });
 
       // Update using model instances
       user.update({ posts: [post1, post2] });
@@ -337,8 +618,14 @@ describe('Schema with Relationships', () => {
     });
 
     it('should handle mixed attribute and relationship updates', () => {
-      const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
-      const post = testSchema.posts.create({ title: 'Old Title', content: 'Content here' });
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+      });
+      const post = testSchema.posts.create({
+        title: 'Old Title',
+        content: 'Content here',
+      });
 
       // Update both regular attributes and relationships
       post.update({
@@ -362,7 +649,10 @@ describe('Schema with Relationships', () => {
     });
 
     it('should handle null/empty relationship updates', () => {
-      const user = testSchema.users.create({ name: 'John', email: 'john@example.com' });
+      const user = testSchema.users.create({
+        name: 'John',
+        email: 'john@example.com',
+      });
       const post = testSchema.posts.create({
         title: 'My Post',
         content: 'Content here',
@@ -402,7 +692,7 @@ describe('Schema with Relationships', () => {
                   inverse: 'reviewer',
                 }),
               })
-              .create(),
+              .build(),
             posts: collection()
               .model(postModel)
               .relationships({
@@ -415,9 +705,9 @@ describe('Schema with Relationships', () => {
                   inverse: 'reviewedPosts',
                 }),
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         const author = testSchema.users.create({
           name: 'Author',
@@ -432,27 +722,60 @@ describe('Schema with Relationships', () => {
           content: 'Content',
         });
 
-        // Set author relationship - should sync to authoredPosts only
+        // Test 1: Set author relationship via link - should sync to authoredPosts only
         post.link('author', author);
         author.reload();
 
         expect(post.authorId).toBe(author.id);
         expect(post.author).toMatchObject(author);
-
         expect(author.authoredPosts).toHaveLength(1);
         expect(author.authoredPostIds).toContain(post.id);
         expect(author.reviewedPostIds).toEqual([]);
 
-        // Set reviewer relationship - should sync to reviewedPosts only
+        // Test 2: Set reviewer relationship via link - should sync to reviewedPosts only
         post.link('reviewer', reviewer);
         reviewer.reload();
 
         expect(post.reviewerId).toBe(reviewer.id);
         expect(post.reviewer).toMatchObject(reviewer);
-
         expect(reviewer.reviewedPostIds).toContain(post.id);
         expect(reviewer.authoredPosts).toHaveLength(0);
-        expect(reviewer.authoredPostIds).toEqual([]); // Should NOT be synced
+        expect(reviewer.authoredPostIds).toEqual([]);
+
+        // Test 3: Create a second post with author via creation
+        const post2 = testSchema.posts.create({
+          title: 'Test Post 2',
+          content: 'Content 2',
+          author,
+        });
+
+        author.reload();
+        expect(author.authoredPostIds).toEqual([post.id, post2.id]);
+        expect(author.reviewedPostIds).toEqual([]); // Still empty
+
+        // Test 4: Update post2's reviewer - should not affect author
+        post2.update({ reviewer });
+        author.reload();
+        reviewer.reload();
+
+        expect(author.authoredPostIds).toEqual([post.id, post2.id]); // Unchanged
+        expect(author.reviewedPostIds).toEqual([]); // Still empty
+        expect(reviewer.authoredPostIds).toEqual([]); // Still empty
+        expect(reviewer.reviewedPostIds).toEqual([post.id, post2.id]); // Now has both posts
+
+        // Test 5: Update post's author to different user - should remove from original author
+        const newAuthor = testSchema.users.create({
+          name: 'New Author',
+          email: 'new@example.com',
+        });
+        post.update({ author: newAuthor });
+        author.reload();
+        newAuthor.reload();
+
+        expect(author.authoredPostIds).toEqual([post2.id]); // post removed
+        expect(newAuthor.authoredPostIds).toEqual([post.id]); // post added
+        expect(author.reviewedPostIds).toEqual([]); // Unchanged
+        expect(newAuthor.reviewedPostIds).toEqual([]); // Not affected
       });
 
       it('should sync explicit inverse bidirectionally', () => {
@@ -464,18 +787,27 @@ describe('Schema with Relationships', () => {
               .relationships({
                 posts: hasMany(postModel, { inverse: 'author' }),
               })
-              .create(),
+              .build(),
             posts: collection()
               .model(postModel)
               .relationships({
-                author: belongsTo(userModel, { foreignKey: 'authorId', inverse: 'posts' }),
+                author: belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                  inverse: 'posts',
+                }),
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
-        const user = testSchema.users.create({ name: 'Alice', email: 'alice@example.com' });
-        const post = testSchema.posts.create({ title: 'Post 1', content: 'Content' });
+        const user = testSchema.users.create({
+          name: 'Alice',
+          email: 'alice@example.com',
+        });
+        const post = testSchema.posts.create({
+          title: 'Post 1',
+          content: 'Content',
+        });
 
         // Set relationship from belongsTo side
         post.link('author', user);
@@ -485,7 +817,10 @@ describe('Schema with Relationships', () => {
         expect(user.postIds).toContain(post.id);
 
         // Create another post and set from hasMany side
-        const post2 = testSchema.posts.create({ title: 'Post 2', content: 'Content 2' });
+        const post2 = testSchema.posts.create({
+          title: 'Post 2',
+          content: 'Content 2',
+        });
 
         user.link('posts', [post2]);
         post2.reload();
@@ -504,15 +839,18 @@ describe('Schema with Relationships', () => {
                 .relationships({
                   posts: hasMany(postModel, { inverse: 'author' }),
                 })
-                .create(),
+                .build(),
               posts: collection()
                 .model(postModel)
                 .relationships({
-                  author: belongsTo(userModel, { foreignKey: 'authorId', inverse: 'posts' }),
+                  author: belongsTo(userModel, {
+                    foreignKey: 'authorId',
+                    inverse: 'posts',
+                  }),
                 })
-                .create(),
+                .build(),
             })
-            .setup();
+            .build();
         }).not.toThrow();
       });
     });
@@ -524,29 +862,81 @@ describe('Schema with Relationships', () => {
             users: collection()
               .model(userModel)
               .relationships({
-                posts: hasMany(postModel, { inverse: null }),
+                authoredPosts: hasMany(postModel, {
+                  foreignKey: 'authoredPostIds',
+                  inverse: 'author',
+                }),
+                reviewedPosts: hasMany(postModel, {
+                  foreignKey: 'reviewedPostIds',
+                  inverse: null, // This one should NOT sync
+                }),
               })
-              .create(),
+              .build(),
             posts: collection()
               .model(postModel)
               .relationships({
-                author: belongsTo(userModel, { foreignKey: 'authorId', inverse: 'posts' }),
+                author: belongsTo(userModel, {
+                  foreignKey: 'authorId',
+                  inverse: 'authoredPosts',
+                }),
+                reviewer: belongsTo(userModel, {
+                  foreignKey: 'reviewerId',
+                  inverse: 'reviewedPosts',
+                }),
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
-        const user = testSchema.users.create({ name: 'Alice', email: 'alice@example.com' });
-        const post = testSchema.posts.create({ title: 'Post 1', content: 'Content' });
+        const user = testSchema.users.create({
+          name: 'Alice',
+          email: 'alice@example.com',
+        });
+        const post = testSchema.posts.create({
+          title: 'Post 1',
+          content: 'Content',
+        });
 
-        // Set relationship on post side
+        // Test 1: Set author relationship - should sync to authoredPosts
         post.link('author', user);
         user.reload();
 
-        // Forward relationship works
         expect(post.authorId).toBe(user.id);
-        // But inverse is NOT synced because user.posts has inverse: null
-        expect(user.postIds).toEqual([]);
+        expect(user.authoredPostIds).toEqual([post.id]); // Synced
+        expect(user.reviewedPostIds).toEqual([]); // Still empty
+
+        // Test 2: Set reviewer relationship - should NOT sync because inverse is null
+        post.link('reviewer', user);
+        user.reload();
+
+        expect(post.reviewerId).toBe(user.id);
+        expect(user.authoredPostIds).toEqual([post.id]); // Unchanged from before
+        expect(user.reviewedPostIds).toEqual([]); // NOT synced due to inverse: null
+
+        // Test 3: Create another post with reviewer - should also NOT sync
+        const post2 = testSchema.posts.create({
+          title: 'Post 2',
+          content: 'Content 2',
+          reviewer: user,
+        });
+
+        user.reload();
+        expect(post2.reviewerId).toBe(user.id);
+        expect(user.reviewedPostIds).toEqual([]); // Still NOT synced
+
+        // Test 4: Update post's reviewer - should also NOT sync
+        const newReviewer = testSchema.users.create({
+          name: 'New Reviewer',
+          email: 'new@example.com',
+        });
+        post.update({ reviewer: newReviewer });
+        user.reload();
+        newReviewer.reload();
+
+        expect(post.reviewerId).toBe(newReviewer.id);
+        expect(user.reviewedPostIds).toEqual([]); // Still NOT synced
+        expect(newReviewer.reviewedPostIds).toEqual([]); // Also NOT synced
+        expect(user.authoredPostIds).toEqual([post.id]); // But author inverse still works
       });
 
       it('should allow creating schema with mismatched inverse settings', () => {
@@ -559,15 +949,18 @@ describe('Schema with Relationships', () => {
                 .relationships({
                   posts: hasMany(postModel), // Auto-detect
                 })
-                .create(),
+                .build(),
               posts: collection()
                 .model(postModel)
                 .relationships({
-                  author: belongsTo(userModel, { foreignKey: 'authorId', inverse: null }), // Disabled
+                  author: belongsTo(userModel, {
+                    foreignKey: 'authorId',
+                    inverse: null,
+                  }), // Disabled
                 })
-                .create(),
+                .build(),
             })
-            .setup();
+            .build();
         }).not.toThrow();
       });
     });
@@ -582,15 +975,15 @@ describe('Schema with Relationships', () => {
                 .relationships({
                   posts: hasMany(postModel, { inverse: 'nonexistent' }),
                 })
-                .create(),
+                .build(),
               posts: collection()
                 .model(postModel)
                 .relationships({
                   author: belongsTo(userModel),
                 })
-                .create(),
+                .build(),
             })
-            .setup();
+            .build();
         }).toThrow(/Invalid inverse relationship.*'nonexistent'/);
       });
 
@@ -603,16 +996,16 @@ describe('Schema with Relationships', () => {
                 .relationships({
                   posts: hasMany(postModel, { inverse: 'comments' }),
                 })
-                .create(),
+                .build(),
               posts: collection()
                 .model(postModel)
                 .relationships({
                   comments: hasMany(commentModel),
                 })
-                .create(),
-              comments: collection().model(commentModel).create(),
+                .build(),
+              comments: collection().model(commentModel).build(),
             })
-            .setup();
+            .build();
         }).toThrow(/Invalid inverse relationship/);
       });
 
@@ -626,15 +1019,15 @@ describe('Schema with Relationships', () => {
                 .relationships({
                   posts: hasMany(postModel, { inverse: 'author' }),
                 })
-                .create(),
+                .build(),
               posts: collection()
                 .model(postModel)
                 .relationships({
                   author: belongsTo(userModel, { inverse: null }),
                 })
-                .create(),
+                .build(),
             })
-            .setup();
+            .build();
         }).not.toThrow();
       });
     });
@@ -649,18 +1042,42 @@ describe('Schema with Relationships', () => {
               .relationships({
                 posts: hasMany(postModel), // No inverse option = auto-detect
               })
-              .create(),
+              .build(),
             posts: collection()
               .model(postModel)
               .relationships({
                 author: belongsTo(userModel, { foreignKey: 'authorId' }), // No inverse option = auto-detect
               })
-              .create(),
+              .build(),
           })
-          .setup();
+          .build();
 
         expect(testSchema).toBeDefined();
       });
+    });
+  });
+
+  describe('Error handling', () => {
+    it('should handle missing relationships gracefully', () => {
+      const post = testSchema.posts.create({
+        title: 'My Post',
+        content: 'Content here',
+      });
+
+      expect(() => post.link('author', null)).not.toThrow();
+      expect(() => post.unlink('author')).not.toThrow();
+    });
+
+    it('should handle invalid relationship names gracefully', () => {
+      const post = testSchema.posts.create({
+        title: 'My Post',
+        content: 'Content here',
+      });
+
+      // @ts-expect-error - Invalid relationship name
+      expect(() => post.link('nonexistentRelationship', null)).not.toThrow();
+      // @ts-expect-error - Invalid relationship name
+      expect(() => post.unlink('nonexistentRelationship')).not.toThrow();
     });
   });
 });

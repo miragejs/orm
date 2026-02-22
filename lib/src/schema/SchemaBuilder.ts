@@ -1,5 +1,4 @@
-import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
-import type { StructuralSerializerOptions } from '@src/serializer';
+import type { IdentityManagerConfig, IdType } from '@src/id-manager';
 import { MirageError, type LoggerConfig } from '@src/utils';
 
 import Schema, { type SchemaInstance } from './Schema';
@@ -9,31 +8,30 @@ import type { SchemaCollections, SchemaConfig } from './types';
  * A fluent builder for creating schema instances.
  *
  * The SchemaBuilder provides a type-safe way to construct Schema instances with
- * configurable collections, identity manager, and global serializer. It follows the builder
- * pattern, allowing method chaining to progressively configure the schema.
+ * configurable collections. It follows the builder pattern, allowing method
+ * chaining to progressively configure the schema.
+ *
+ * You can set a default identity manager configuration at the schema level,
+ * which individual collections can override with their own configuration.
  * @template TCollections - The schema collections configuration type
- * @template TIdentityManager - The global identity manager type
- * @template TGlobalConfig - The global serializer configuration type
+ * @template TIdType - The default ID type for collections (defaults to string)
  * @example
  * ```typescript
  * const appSchema = schema()
+ *   .identityManager({ initialCounter: '1' }) // Default for all collections
  *   .collections({
  *     users: userCollection,
  *     posts: postCollection,
  *   })
- *   .serializer({ root: true })
- *   .identityManager(appIdentityManager)
- *   .setup();
+ *   .build();
  * ```
  */
 export default class SchemaBuilder<
   TCollections extends SchemaCollections = SchemaCollections,
-  TIdentityManager extends IdentityManager<any> = StringIdentityManager,
-  TGlobalConfig extends StructuralSerializerOptions | undefined = undefined,
+  TIdType extends IdType = string,
 > {
   private _collections?: TCollections;
-  private _identityManager?: TIdentityManager;
-  private _globalSerializerConfig?: StructuralSerializerOptions;
+  private _identityManagerConfig?: IdentityManagerConfig<TIdType>;
   private _loggingConfig?: LoggerConfig;
 
   /**
@@ -61,7 +59,7 @@ export default class SchemaBuilder<
    */
   collections<C extends SchemaCollections>(
     collections: C,
-  ): SchemaBuilder<C, TIdentityManager, TGlobalConfig> {
+  ): SchemaBuilder<C, TIdType> {
     // Validate collections is not empty
     if (Object.keys(collections).length === 0) {
       throw new MirageError(
@@ -72,10 +70,10 @@ export default class SchemaBuilder<
     // Validate collection names don't conflict with reserved Schema properties
     const RESERVED_SCHEMA_PROPS = [
       'db',
-      'identityManager',
       'getCollection',
       'loadSeeds',
       'loadFixtures',
+      'logger',
     ];
 
     for (const name of Object.keys(collections)) {
@@ -84,7 +82,7 @@ export default class SchemaBuilder<
           `Collection name '${name}' conflicts with existing Schema property or method.\n\n` +
             `The Schema instance has the following built-in properties and methods:\n` +
             `  - schema.db: Database instance\n` +
-            `  - schema.identityManager: ID generation manager\n` +
+            `  - schema.logger: Logger instance (if logging enabled)\n` +
             `  - schema.getCollection(): Method to access collections\n` +
             `  - schema.loadSeeds(): Method to load seed data\n` +
             `  - schema.loadFixtures(): Method to load fixture data\n\n` +
@@ -99,64 +97,49 @@ export default class SchemaBuilder<
       }
     }
 
-    const builder = new SchemaBuilder<C, TIdentityManager, TGlobalConfig>();
+    const builder = new SchemaBuilder<C, TIdType>();
     builder._collections = collections;
-    builder._identityManager = this._identityManager;
-    builder._globalSerializerConfig = this._globalSerializerConfig;
+    builder._identityManagerConfig = this._identityManagerConfig;
     builder._loggingConfig = this._loggingConfig;
     return builder;
   }
 
   /**
-   * Sets the global identity manager for this schema.
+   * Sets the default identity manager configuration for all collections.
    *
-   * The identity manager handles ID generation and management for model instances
-   * across all collections in the schema. Individual collections can override this
-   * with their own identity managers.
-   * @template I - The identity manager type
-   * @param identityManager - The identity manager instance
-   * @returns A new SchemaBuilder instance with the specified identity manager
+   * The identity manager handles ID generation for model instances.
+   * Individual collections can override this with their own configuration.
+   * The ID type is inferred from the initialCounter value.
+   * @template T - The ID type (inferred from initialCounter)
+   * @param config - The identity manager configuration
+   * @returns A new SchemaBuilder instance with the specified identity manager config
    * @example
    * ```typescript
+   * // String IDs (default)
    * const builder = schema()
-   *   .collections({ users: userCollection })
-   *   .identityManager(new StringIdentityManager());
-   * ```
-   */
-  identityManager<I extends IdentityManager<any>>(
-    identityManager: I,
-  ): SchemaBuilder<TCollections, I, TGlobalConfig> {
-    const builder = new SchemaBuilder<TCollections, I, TGlobalConfig>();
-    builder._collections = this._collections;
-    builder._identityManager = identityManager;
-    builder._globalSerializerConfig = this._globalSerializerConfig;
-    builder._loggingConfig = this._loggingConfig;
-    return builder;
-  }
-
-  /**
-   * Sets the global serializer configuration for this schema.
+   *   .identityManager({ initialCounter: '1' })
+   *   .collections({ users: userCollection });
    *
-   * The global serializer config defines structural serialization options (root, embed)
-   * that apply to all collections by default. Individual collections can override
-   * these settings or provide model-specific configuration (attrs, include).
-   * @template TConfig - The global serializer configuration type
-   * @param config - The global serializer configuration (only root and embed)
-   * @returns A new SchemaBuilder instance with the specified global serializer config
-   * @example
-   * ```typescript
+   * // Number IDs
    * const builder = schema()
-   *   .serializer({ root: true, embed: false })
+   *   .identityManager({ initialCounter: 1 })
+   *   .collections({ users: userCollection });
+   *
+   * // Custom ID generator
+   * const builder = schema()
+   *   .identityManager({
+   *     initialCounter: 'uuid-1',
+   *     idGenerator: (current) => `uuid-${parseInt(current.split('-')[1]) + 1}`
+   *   })
    *   .collections({ users: userCollection });
    * ```
    */
-  serializer<TConfig extends StructuralSerializerOptions>(
-    config: TConfig,
-  ): SchemaBuilder<TCollections, TIdentityManager, TConfig> {
-    const builder = new SchemaBuilder<TCollections, TIdentityManager, TConfig>();
+  identityManager<T extends IdType>(
+    config: IdentityManagerConfig<T>,
+  ): SchemaBuilder<TCollections, T> {
+    const builder = new SchemaBuilder<TCollections, T>();
     builder._collections = this._collections;
-    builder._identityManager = this._identityManager;
-    builder._globalSerializerConfig = config;
+    builder._identityManagerConfig = config;
     builder._loggingConfig = this._loggingConfig;
     return builder;
   }
@@ -167,29 +150,35 @@ export default class SchemaBuilder<
    * The logging config enables debug output for database operations, validations,
    * and other schema behavior. This is useful for debugging test setup and understanding
    * how the ORM is behaving.
-   * @param config - The logging configuration (enabled, level, prefix)
+   * @param config - The logging configuration (enabled, level, prefix), or undefined to skip
    * @returns A new SchemaBuilder instance with the specified logging config
    * @example
    * ```typescript
    * const builder = schema()
    *   .logging({ enabled: true, level: 'debug' })
    *   .collections({ users: userCollection });
+   *
+   * // Conditional logging - ignores undefined
+   * const builder = schema()
+   *   .logging(process.env.DEBUG ? { enabled: true, level: 'debug' } : undefined)
+   *   .collections({ users: userCollection });
    * ```
    */
-  logging(config: LoggerConfig): SchemaBuilder<TCollections, TIdentityManager, TGlobalConfig> {
-    const builder = new SchemaBuilder<TCollections, TIdentityManager, TGlobalConfig>();
+  logging(
+    config: LoggerConfig | undefined,
+  ): SchemaBuilder<TCollections, TIdType> {
+    const builder = new SchemaBuilder<TCollections, TIdType>();
     builder._collections = this._collections;
-    builder._identityManager = this._identityManager;
-    builder._globalSerializerConfig = this._globalSerializerConfig;
-    builder._loggingConfig = config;
+    builder._identityManagerConfig = this._identityManagerConfig;
+    builder._loggingConfig = config ?? this._loggingConfig;
     return builder;
   }
 
   /**
-   * Sets up the final Schema instance with all configured options.
+   * Builds the final Schema instance with all configured options.
    *
    * This method produces the complete schema instance that can be used throughout
-   * your application. Collections must be set before calling setup().
+   * your application. Collections must be set before calling build().
    * @returns The configured Schema instance with collection accessors
    * @throws Error if no collections have been configured
    * @example
@@ -199,32 +188,29 @@ export default class SchemaBuilder<
    *     users: userCollection,
    *     posts: postCollection,
    *   })
-   *   .serializer({ root: true })
-   *   .identityManager(appIdentityManager)
-   *   .setup();
+   *   .build();
    *
    * // Use the schema
    * const userCollection = appSchema.getCollection('users');
    * const user = appSchema.users.create({ name: 'John' });
    * ```
    */
-  setup(): SchemaInstance<TCollections, SchemaConfig<TIdentityManager, TGlobalConfig>> {
+  build(): SchemaInstance<TCollections> {
     if (!this._collections) {
       throw new MirageError(
-        'SchemaBuilder: collections are required. Call .collections() before .setup()',
+        'SchemaBuilder: collections are required. Call .collections() before .build()',
       );
     }
 
-    const config = {
-      identityManager: this._identityManager,
-      globalSerializerConfig: this._globalSerializerConfig,
+    const config: SchemaConfig<TIdType> = {
+      identityManager: this._identityManagerConfig,
       logging: this._loggingConfig,
-    } as SchemaConfig<TIdentityManager, TGlobalConfig>;
+    };
 
-    return new Schema(this._collections, config) as SchemaInstance<
-      TCollections,
-      SchemaConfig<TIdentityManager, TGlobalConfig>
-    >;
+    return new Schema(
+      this._collections,
+      config,
+    ) as SchemaInstance<TCollections>;
   }
 }
 
@@ -232,8 +218,11 @@ export default class SchemaBuilder<
  * Creates a new SchemaBuilder instance for building schema configurations.
  *
  * This is the main entry point for creating schemas in the builder-based API.
- * The returned SchemaBuilder can be configured with collections and identity manager
- * before setting up the final schema instance.
+ * The returned SchemaBuilder can be configured with collections before setting
+ * up the final schema instance.
+ *
+ * Each collection manages its own identity manager - configure them using
+ * `collection().identityManager()` when building individual collections.
  * @returns A new SchemaBuilder instance ready for configuration
  * @example
  * ```typescript
@@ -242,16 +231,16 @@ export default class SchemaBuilder<
  *   .collections({
  *     users: userCollection,
  *   })
- *   .setup();
+ *   .build();
  *
- * // Full schema configuration
+ * // With logging
  * const appSchema = schema()
+ *   .logging({ enabled: true, level: 'debug' })
  *   .collections({
  *     users: userCollection,
  *     posts: postCollection,
  *   })
- *   .identityManager(new StringIdentityManager())
- *   .setup();
+ *   .build();
  * ```
  * @see {@link SchemaBuilder} for available configuration methods
  */

@@ -1,6 +1,16 @@
 import type { SchemaCollections } from '@src/schema';
+import { Serializer } from '@src/serializer';
+import type { SerializerConfig } from '@src/serializer';
 
-import type { ModelAttrs, ModelInstance, ModelTemplate, ModelUpdateAttrs } from './types';
+import type {
+  ModelAttrs,
+  QueryMeta,
+  SerializedCollectionFor,
+  SerializedModelFor,
+  ModelInstance,
+  ModelTemplate,
+  ModelUpdateAttrs,
+} from './types';
 
 /**
  * A collection of models with array-like interface
@@ -11,23 +21,48 @@ import type { ModelAttrs, ModelInstance, ModelTemplate, ModelUpdateAttrs } from 
 export default class ModelCollection<
   TTemplate extends ModelTemplate = ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
-  TSerializer = undefined,
 > {
-  private readonly _template: TTemplate;
+  public models: Array<ModelInstance<TTemplate, TSchema>>;
   public readonly collectionName: string;
-  public models: Array<ModelInstance<TTemplate, TSchema, TSerializer>>;
-  protected _serializer?: TSerializer;
+  public readonly serializer?: Serializer<
+    TTemplate,
+    TSchema,
+    SerializedModelFor<TTemplate>,
+    SerializedCollectionFor<TTemplate>
+  >;
+  /**
+   * Query metadata containing the original query options and total count.
+   * Only present when the collection was created from a paginated query.
+   */
+  public readonly meta?: QueryMeta<ModelAttrs<TTemplate, TSchema>>;
+
+  private readonly _template: TTemplate;
 
   constructor(
     template: TTemplate,
-    models?: Array<ModelInstance<TTemplate, TSchema, TSerializer>>,
-    serializer?: TSerializer,
+    models?: Array<ModelInstance<TTemplate, TSchema>>,
+    serializer?: Serializer<
+      TTemplate,
+      TSchema,
+      SerializedModelFor<TTemplate>,
+      SerializedCollectionFor<TTemplate>
+    >,
+    meta?: QueryMeta<ModelAttrs<TTemplate, TSchema>>,
   ) {
-    this._template = template;
-    this._serializer = serializer;
-
     this.collectionName = template.collectionName;
     this.models = [...(models ?? [])];
+    this.serializer = serializer;
+    this.meta = meta;
+
+    this._template = template;
+  }
+
+  /**
+   * Make the collection iterable
+   * @returns An iterator for the models
+   */
+  [Symbol.iterator](): Iterator<ModelInstance<TTemplate, TSchema>> {
+    return this.models[Symbol.iterator]();
   }
 
   // -- GETTERS --
@@ -48,12 +83,14 @@ export default class ModelCollection<
     return this.models.length === 0;
   }
 
+  // -- INDEX ACCESSORS --
+
   /**
    * Get a model by index
    * @param index - The index of the model to get
    * @returns The model at the given index or undefined
    */
-  at(index: number): ModelInstance<TTemplate, TSchema, TSerializer> | undefined {
+  at(index: number): ModelInstance<TTemplate, TSchema> | undefined {
     return this.models[index];
   }
 
@@ -61,7 +98,7 @@ export default class ModelCollection<
    * Get the first model in the collection
    * @returns The first model or null if the collection is empty
    */
-  first(): ModelInstance<TTemplate, TSchema, TSerializer> | null {
+  first(): ModelInstance<TTemplate, TSchema> | null {
     return this.models[0] || null;
   }
 
@@ -69,7 +106,7 @@ export default class ModelCollection<
    * Get the last model in the collection
    * @returns The last model or null if the collection is empty
    */
-  last(): ModelInstance<TTemplate, TSchema, TSerializer> | null {
+  last(): ModelInstance<TTemplate, TSchema> | null {
     return this.models[this.models.length - 1] || null;
   }
 
@@ -81,7 +118,7 @@ export default class ModelCollection<
    */
   forEach(
     cb: (
-      model: ModelInstance<TTemplate, TSchema, TSerializer>,
+      model: ModelInstance<TTemplate, TSchema>,
       index: number,
       collection: this,
     ) => void,
@@ -96,13 +133,15 @@ export default class ModelCollection<
    */
   map(
     cb: (
-      model: ModelInstance<TTemplate, TSchema, TSerializer>,
+      model: ModelInstance<TTemplate, TSchema>,
       index: number,
       collection: this,
-    ) => ModelInstance<TTemplate, TSchema, TSerializer>,
-  ): ModelCollection<TTemplate, TSchema, TSerializer> {
-    const mappedModels = this.models.map((model, index) => cb(model, index, this));
-    return new ModelCollection(this._template, mappedModels, this._serializer);
+    ) => ModelInstance<TTemplate, TSchema>,
+  ): ModelCollection<TTemplate, TSchema> {
+    const mappedModels = this.models.map((model, index) =>
+      cb(model, index, this),
+    );
+    return new ModelCollection(this._template, mappedModels, this.serializer);
   }
 
   /**
@@ -112,13 +151,15 @@ export default class ModelCollection<
    */
   filter(
     cb: (
-      model: ModelInstance<TTemplate, TSchema, TSerializer>,
+      model: ModelInstance<TTemplate, TSchema>,
       index: number,
       collection: this,
     ) => boolean,
-  ): ModelCollection<TTemplate, TSchema, TSerializer> {
-    const filteredModels = this.models.filter((model, index) => cb(model, index, this));
-    return new ModelCollection(this._template, filteredModels, this._serializer);
+  ): ModelCollection<TTemplate, TSchema> {
+    const filteredModels = this.models.filter((model, index) =>
+      cb(model, index, this),
+    );
+    return new ModelCollection(this._template, filteredModels, this.serializer);
   }
 
   /**
@@ -128,11 +169,11 @@ export default class ModelCollection<
    */
   find(
     cb: (
-      model: ModelInstance<TTemplate, TSchema, TSerializer>,
+      model: ModelInstance<TTemplate, TSchema>,
       index: number,
       collection: this,
     ) => boolean,
-  ): ModelInstance<TTemplate, TSchema, TSerializer> | undefined {
+  ): ModelInstance<TTemplate, TSchema> | undefined {
     return this.models.find((model, index) => cb(model, index, this));
   }
 
@@ -143,7 +184,7 @@ export default class ModelCollection<
    */
   some(
     cb: (
-      model: ModelInstance<TTemplate, TSchema, TSerializer>,
+      model: ModelInstance<TTemplate, TSchema>,
       index: number,
       collection: this,
     ) => boolean,
@@ -158,7 +199,7 @@ export default class ModelCollection<
    */
   every(
     cb: (
-      model: ModelInstance<TTemplate, TSchema, TSerializer>,
+      model: ModelInstance<TTemplate, TSchema>,
       index: number,
       collection: this,
     ) => boolean,
@@ -175,15 +216,17 @@ export default class ModelCollection<
    */
   concat(
     ...others: (
-      | ModelCollection<TTemplate, TSchema, TSerializer>
-      | ModelInstance<TTemplate, TSchema, TSerializer>[]
+      | ModelCollection<TTemplate, TSchema>
+      | ModelInstance<TTemplate, TSchema>[]
     )[]
-  ): ModelCollection<TTemplate, TSchema, TSerializer> {
+  ): ModelCollection<TTemplate, TSchema> {
     const allModels = [
       ...this.models,
-      ...others.flatMap((other) => (Array.isArray(other) ? other : other.models)),
+      ...others.flatMap((other) =>
+        Array.isArray(other) ? other : other.models,
+      ),
     ];
-    return new ModelCollection(this._template, allModels, this._serializer);
+    return new ModelCollection(this._template, allModels, this.serializer);
   }
 
   /**
@@ -191,7 +234,7 @@ export default class ModelCollection<
    * @param model - The model to check for
    * @returns True if the model is in the collection
    */
-  includes(model: ModelInstance<TTemplate, TSchema, TSerializer>): boolean {
+  includes(model: ModelInstance<TTemplate, TSchema>): boolean {
     return this.models.includes(model);
   }
 
@@ -200,7 +243,7 @@ export default class ModelCollection<
    * @param model - The model to find
    * @returns The index of the model, or -1 if not found
    */
-  indexOf(model: ModelInstance<TTemplate, TSchema, TSerializer>): number {
+  indexOf(model: ModelInstance<TTemplate, TSchema>): number {
     return this.models.indexOf(model);
   }
 
@@ -211,21 +254,21 @@ export default class ModelCollection<
    */
   sort(
     compareFn?: (
-      a: ModelInstance<TTemplate, TSchema, TSerializer>,
-      b: ModelInstance<TTemplate, TSchema, TSerializer>,
+      a: ModelInstance<TTemplate, TSchema>,
+      b: ModelInstance<TTemplate, TSchema>,
     ) => number,
-  ): ModelCollection<TTemplate, TSchema, TSerializer> {
+  ): ModelCollection<TTemplate, TSchema> {
     const sortedModels = [...this.models].sort(compareFn);
-    return new ModelCollection(this._template, sortedModels, this._serializer);
+    return new ModelCollection(this._template, sortedModels, this.serializer);
   }
 
   /**
    * Reverse the order of models in the collection
    * @returns A new reversed ModelCollection
    */
-  reverse(): ModelCollection<TTemplate, TSchema, TSerializer> {
+  reverse(): ModelCollection<TTemplate, TSchema> {
     const reversedModels = [...this.models].reverse();
-    return new ModelCollection(this._template, reversedModels, this._serializer);
+    return new ModelCollection(this._template, reversedModels, this.serializer);
   }
 
   // -- CRUD OPERATIONS --
@@ -234,7 +277,7 @@ export default class ModelCollection<
    * Add a model to the end of the collection (alias for push)
    * @param model - The model to add
    */
-  add(model: ModelInstance<TTemplate, TSchema, TSerializer>): void {
+  add(model: ModelInstance<TTemplate, TSchema>): void {
     this.models.push(model);
   }
 
@@ -243,7 +286,7 @@ export default class ModelCollection<
    * @param model - The model to remove
    * @returns True if the model was removed, false if not found
    */
-  remove(model: ModelInstance<TTemplate, TSchema, TSerializer>): boolean {
+  remove(model: ModelInstance<TTemplate, TSchema>): boolean {
     const index = this.indexOf(model);
     if (index !== -1) {
       this.models.splice(index, 1);
@@ -258,7 +301,7 @@ export default class ModelCollection<
    */
   save(): this {
     this.models = this.models.map(
-      (model) => model.save() as ModelInstance<TTemplate, TSchema, TSerializer>,
+      (model) => model.save() as ModelInstance<TTemplate, TSchema>,
     );
     return this;
   }
@@ -279,7 +322,7 @@ export default class ModelCollection<
    */
   reload(): this {
     this.models = this.models.map(
-      (model) => model.reload() as ModelInstance<TTemplate, TSchema, TSerializer>,
+      (model) => model.reload() as ModelInstance<TTemplate, TSchema>,
     );
     return this;
   }
@@ -291,7 +334,7 @@ export default class ModelCollection<
    */
   update(attrs: ModelUpdateAttrs<TTemplate, TSchema>): this {
     this.models = this.models.map(
-      (model) => model.update(attrs) as ModelInstance<TTemplate, TSchema, TSerializer>,
+      (model) => model.update(attrs) as ModelInstance<TTemplate, TSchema>,
     );
     return this;
   }
@@ -299,10 +342,64 @@ export default class ModelCollection<
   // -- SERIALIZATION --
 
   /**
+   * Serialize the collection with a custom serializer instance
+   * @template TSerializedCollection - The serialized collection type inferred from the serializer
+   * @param serializer - A Serializer instance to use for serialization
+   * @returns A serialized representation of the collection with the type inferred from the serializer
+   */
+  serialize<TSerializedCollection>(
+    serializer: Serializer<TTemplate, TSchema, any, TSerializedCollection>,
+  ): TSerializedCollection;
+
+  /**
+   * Serialize the collection with optional runtime options and explicit return type
+   * @template TSerialized - Custom return type for manual type assertion
+   * @param options - Optional serializer options to override class-level settings
+   * @returns A serialized representation of the collection
+   */
+  serialize<TSerialized>(
+    options?: Partial<SerializerConfig<TTemplate, TSchema>>,
+  ): TSerialized;
+
+  /**
+   * Serialize the collection with optional runtime options
+   * @param options - Optional serializer options to override class-level settings
+   * @returns A serialized representation of the collection
+   */
+  serialize(
+    options?: Partial<SerializerConfig<TTemplate, TSchema>>,
+  ): SerializedCollectionFor<TTemplate>;
+
+  /**
+   * Serialize the collection with optional runtime options or a custom serializer
+   * @param optionsOrSerializer - Optional serializer options or a Serializer instance
+   * @returns A serialized representation of the collection
+   */
+  serialize<TSerialized = SerializedCollectionFor<TTemplate>>(
+    optionsOrSerializer?:
+      | Partial<SerializerConfig<TTemplate, TSchema>>
+      | Serializer<TTemplate, TSchema>,
+  ): TSerialized {
+    // If a Serializer instance is passed, use it directly
+    if (optionsOrSerializer instanceof Serializer) {
+      return optionsOrSerializer.serializeCollection(this) as TSerialized;
+    }
+    // Otherwise, use the collection's configured serializer with options
+    if (this.serializer instanceof Serializer) {
+      return this.serializer.serializeCollection(
+        this,
+        optionsOrSerializer,
+      ) as TSerialized;
+    }
+    // Type assertion needed: Array of attrs may not exactly match conditional return type
+    return this.models.map((model) => model.attrs) as TSerialized;
+  }
+
+  /**
    * Convert the collection to a plain array
    * @returns An array of the models
    */
-  toArray(): ModelInstance<TTemplate, TSchema, TSerializer>[] {
+  toArray(): ModelInstance<TTemplate, TSchema>[] {
     return [...this.models];
   }
 
@@ -319,28 +416,7 @@ export default class ModelCollection<
    * Uses serializer if configured, otherwise returns array of raw attributes
    * @returns A serialized representation of the collection
    */
-  toJSON(): TSerializer extends {
-    serializeCollection(collection: any): infer TSerializedCollection;
-  }
-    ? TSerializedCollection
-    : ModelAttrs<TTemplate, TSchema>[] {
-    if (
-      this._serializer &&
-      typeof this._serializer === 'object' &&
-      'serializeCollection' in this._serializer &&
-      typeof this._serializer.serializeCollection === 'function'
-    ) {
-      return this._serializer.serializeCollection(this);
-    }
-    // Type assertion needed: Array of attrs may not exactly match conditional return type
-    return this.models.map((model) => model.attrs) as any;
-  }
-
-  /**
-   * Make the collection iterable
-   * @returns An iterator for the models
-   */
-  [Symbol.iterator](): Iterator<ModelInstance<TTemplate, TSchema, TSerializer>> {
-    return this.models[Symbol.iterator]();
+  toJSON(): SerializedCollectionFor<TTemplate> {
+    return this.serialize();
   }
 }

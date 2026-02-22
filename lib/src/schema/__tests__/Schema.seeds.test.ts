@@ -2,7 +2,12 @@ import { collection } from '../CollectionBuilder';
 import { schema } from '../SchemaBuilder';
 import type { CollectionConfig } from '../types';
 
-import { postModel, userModel, type UserModel, type PostModel } from './test-helpers';
+import {
+  postModel,
+  userModel,
+  type UserModel,
+  type PostModel,
+} from './test-helpers';
 
 // Define shared schema type
 type TestSchema = {
@@ -21,13 +26,14 @@ describe('Schema with Seeds', () => {
               schema.users.create({ name: 'John', email: 'john@example.com' });
               schema.users.create({ name: 'Jane', email: 'jane@example.com' });
             })
-            .create(),
-          posts: collection<TestSchema>().model(postModel).create(),
+            .build(),
+          posts: collection<TestSchema>().model(postModel).build(),
         })
-        .setup();
+        .build();
 
       beforeEach(() => {
         testSchema.db.emptyData();
+        testSchema.resetSeedTracking();
       });
 
       it('should load seeds when called without scenarioId', async () => {
@@ -62,19 +68,26 @@ describe('Schema with Seeds', () => {
             .model(userModel)
             .seeds({
               basic: (schema) => {
-                schema.users.create({ name: 'John', email: 'john@example.com' });
+                schema.users.create({
+                  name: 'John',
+                  email: 'john@example.com',
+                });
               },
               admin: (schema) => {
-                schema.users.create({ name: 'Admin', email: 'admin@example.com' });
+                schema.users.create({
+                  name: 'Admin',
+                  email: 'admin@example.com',
+                });
               },
             })
-            .create(),
-          posts: collection<TestSchema>().model(postModel).create(),
+            .build(),
+          posts: collection<TestSchema>().model(postModel).build(),
         })
-        .setup();
+        .build();
 
       beforeEach(() => {
         testSchema.db.emptyData();
+        testSchema.resetSeedTracking();
       });
 
       it('should load all scenarios when called without scenarioId', async () => {
@@ -121,13 +134,14 @@ describe('Schema with Seeds', () => {
     describe('with no seeds configured', () => {
       const testSchema = schema()
         .collections({
-          users: collection<TestSchema>().model(userModel).create(),
-          posts: collection<TestSchema>().model(postModel).create(),
+          users: collection<TestSchema>().model(userModel).build(),
+          posts: collection<TestSchema>().model(postModel).build(),
         })
-        .setup();
+        .build();
 
       beforeEach(() => {
         testSchema.db.emptyData();
+        testSchema.resetSeedTracking();
       });
 
       it('should do nothing when loadSeeds is called', async () => {
@@ -153,16 +167,20 @@ describe('Schema with Seeds', () => {
             .seeds({
               async: async (schema) => {
                 await Promise.resolve();
-                schema.users.create({ name: 'Async User', email: 'async@example.com' });
+                schema.users.create({
+                  name: 'Async User',
+                  email: 'async@example.com',
+                });
               },
             })
-            .create(),
-          posts: collection<TestSchema>().model(postModel).create(),
+            .build(),
+          posts: collection<TestSchema>().model(postModel).build(),
         })
-        .setup();
+        .build();
 
       beforeEach(() => {
         testSchema.db.emptyData();
+        testSchema.resetSeedTracking();
       });
 
       it('should handle async seed functions', async () => {
@@ -184,7 +202,7 @@ describe('Schema with Seeds', () => {
             schema.users.create({ name: 'John', email: 'john@example.com' });
             schema.users.create({ name: 'Jane', email: 'jane@example.com' });
           })
-          .create(),
+          .build(),
         posts: collection<TestSchema>()
           .model(postModel)
           .seeds((schema) => {
@@ -192,12 +210,13 @@ describe('Schema with Seeds', () => {
             schema.posts.create({ title: 'Post 2', content: 'Content 2' });
             schema.posts.create({ title: 'Post 3', content: 'Content 3' });
           })
-          .create(),
+          .build(),
       })
-      .setup();
+      .build();
 
     beforeEach(() => {
       testSchema.db.emptyData();
+      testSchema.resetSeedTracking();
     });
 
     it('should load all seeds for all collections', async () => {
@@ -218,10 +237,10 @@ describe('Schema with Seeds', () => {
             .seeds((schema) => {
               schema.users.create({ name: 'User', email: 'user@example.com' });
             })
-            .create(),
-          posts: collection<TestSchema>().model(postModel).create(),
+            .build(),
+          posts: collection<TestSchema>().model(postModel).build(),
         })
-        .setup();
+        .build();
 
       await mixedSchema.loadSeeds();
 
@@ -230,6 +249,401 @@ describe('Schema with Seeds', () => {
 
       const posts = mixedSchema.posts.all();
       expect(posts.length).toBe(0);
+    });
+
+    it('should load seeds for a specific collection when collectionName is provided', async () => {
+      await testSchema.loadSeeds('users');
+
+      const users = testSchema.users.all();
+      expect(users.length).toBe(2);
+      expect(users.models[0].name).toBe('John');
+      expect(users.models[1].name).toBe('Jane');
+
+      // Posts should not be loaded
+      const posts = testSchema.posts.all();
+      expect(posts.length).toBe(0);
+    });
+
+    it('should load seeds for another specific collection', async () => {
+      await testSchema.loadSeeds('posts');
+
+      const posts = testSchema.posts.all();
+      expect(posts.length).toBe(3);
+      expect(posts.models[0].title).toBe('Post 1');
+
+      // Users should not be loaded
+      const users = testSchema.users.all();
+      expect(users.length).toBe(0);
+    });
+
+    it('should allow loading seeds for specific collections sequentially', async () => {
+      await testSchema.loadSeeds('users');
+      await testSchema.loadSeeds('posts');
+
+      const users = testSchema.users.all();
+      expect(users.length).toBe(2);
+
+      const posts = testSchema.posts.all();
+      expect(posts.length).toBe(3);
+    });
+
+    it('should throw error when loading seeds for non-existent collection', async () => {
+      // @ts-expect-error - Testing invalid collection name
+      await expect(testSchema.loadSeeds('nonexistent')).rejects.toThrow(
+        "Collection 'nonexistent' not found",
+      );
+    });
+
+    it('should load only default scenario when onlyDefault option is true', async () => {
+      const testSchema = schema()
+        .collections({
+          users: collection<TestSchema>()
+            .model(userModel)
+            .seeds({
+              default: (schema) => {
+                schema.users.create({
+                  name: 'Default User',
+                  email: 'default@example.com',
+                });
+              },
+              admin: (schema) => {
+                schema.users.create({
+                  name: 'Admin',
+                  email: 'admin@example.com',
+                });
+              },
+            })
+            .build(),
+          posts: collection<TestSchema>()
+            .model(postModel)
+            .seeds({
+              default: (schema) => {
+                schema.posts.create({
+                  title: 'Default Post',
+                  content: 'Default content',
+                });
+              },
+              featured: (schema) => {
+                schema.posts.create({
+                  title: 'Featured Post',
+                  content: 'Featured content',
+                });
+              },
+            })
+            .build(),
+        })
+        .build();
+
+      // Load only default scenarios using object syntax
+      await testSchema.loadSeeds({ onlyDefault: true });
+
+      const users = testSchema.users.all();
+      expect(users.length).toBe(1);
+      expect(users.models[0].name).toBe('Default User');
+
+      const posts = testSchema.posts.all();
+      expect(posts.length).toBe(1);
+      expect(posts.models[0].title).toBe('Default Post');
+    });
+
+    it('should load only default scenario for specific collection', async () => {
+      const testSchema = schema()
+        .collections({
+          users: collection<TestSchema>()
+            .model(userModel)
+            .seeds({
+              default: (schema) => {
+                schema.users.create({
+                  name: 'Default User',
+                  email: 'default@example.com',
+                });
+              },
+              admin: (schema) => {
+                schema.users.create({
+                  name: 'Admin',
+                  email: 'admin@example.com',
+                });
+              },
+            })
+            .build(),
+          posts: collection<TestSchema>()
+            .model(postModel)
+            .seeds({
+              default: (schema) => {
+                schema.posts.create({ title: 'Post', content: 'Content' });
+              },
+            })
+            .build(),
+        })
+        .build();
+
+      // Load only default scenario for users using object syntax
+      await testSchema.loadSeeds({
+        collectionName: 'users',
+        onlyDefault: true,
+      });
+
+      const users = testSchema.users.all();
+      expect(users.length).toBe(1);
+      expect(users.models[0].name).toBe('Default User');
+
+      // Posts should not be loaded
+      const posts = testSchema.posts.all();
+      expect(posts.length).toBe(0);
+    });
+
+    it('should work with function seeds as default scenario', async () => {
+      const testSchema = schema()
+        .collections({
+          users: collection<TestSchema>()
+            .model(userModel)
+            .seeds((schema) => {
+              schema.users.create({
+                name: 'Function Seed',
+                email: 'function@example.com',
+              });
+            })
+            .build(),
+        })
+        .build();
+
+      // Load with onlyDefault - should work with function seeds (treated as 'default')
+      await testSchema.loadSeeds({ onlyDefault: true });
+
+      const users = testSchema.users.all();
+      expect(users.length).toBe(1);
+      expect(users.models[0].name).toBe('Function Seed');
+    });
+  });
+
+  describe('Seed load tracking (duplicate prevention)', () => {
+    describe('with function seeds', () => {
+      it('should prevent loading seeds multiple times', async () => {
+        const testSchema = schema()
+          .collections({
+            users: collection<TestSchema>()
+              .model(userModel)
+              .seeds((schema) => {
+                schema.users.create({
+                  name: 'John',
+                  email: 'john@example.com',
+                });
+                schema.users.create({
+                  name: 'Jane',
+                  email: 'jane@example.com',
+                });
+              })
+              .build(),
+          })
+          .build();
+
+        // Load seeds first time
+        await testSchema.users.loadSeeds();
+        expect(testSchema.users.all().length).toBe(2);
+
+        // Try to load seeds again - should be skipped
+        await testSchema.users.loadSeeds();
+        expect(testSchema.users.all().length).toBe(2); // Still 2, not 4
+      });
+
+      it('should allow reloading seeds after collection is emptied', async () => {
+        const testSchema = schema()
+          .collections({
+            users: collection<TestSchema>()
+              .model(userModel)
+              .seeds((schema) => {
+                schema.users.create({
+                  name: 'John',
+                  email: 'john@example.com',
+                });
+              })
+              .build(),
+          })
+          .build();
+
+        // Load seeds first time
+        await testSchema.users.loadSeeds();
+        expect(testSchema.users.all().length).toBe(1);
+
+        // Empty the collection
+        testSchema.db.emptyData();
+        testSchema.resetSeedTracking();
+        expect(testSchema.users.all().length).toBe(0);
+
+        // Load seeds again - should work because collection is empty
+        await testSchema.users.loadSeeds();
+        expect(testSchema.users.all().length).toBe(1);
+      });
+    });
+
+    describe('with named scenario seeds', () => {
+      it('should prevent loading same scenario multiple times', async () => {
+        const testSchema = schema()
+          .collections({
+            users: collection<TestSchema>()
+              .model(userModel)
+              .seeds({
+                basic: (schema) => {
+                  schema.users.create({
+                    name: 'John',
+                    email: 'john@example.com',
+                  });
+                },
+                admin: (schema) => {
+                  schema.users.create({
+                    name: 'Admin',
+                    email: 'admin@example.com',
+                  });
+                },
+              })
+              .build(),
+          })
+          .build();
+
+        // Load basic scenario
+        await testSchema.users.loadSeeds('basic');
+        expect(testSchema.users.all().length).toBe(1);
+
+        // Try to load basic again - should be skipped
+        await testSchema.users.loadSeeds('basic');
+        expect(testSchema.users.all().length).toBe(1); // Still 1, not 2
+
+        // Load admin scenario - should work (different scenario)
+        await testSchema.users.loadSeeds('admin');
+        expect(testSchema.users.all().length).toBe(2);
+      });
+
+      it('should prevent loading all scenarios multiple times', async () => {
+        const testSchema = schema()
+          .collections({
+            users: collection<TestSchema>()
+              .model(userModel)
+              .seeds({
+                basic: (schema) => {
+                  schema.users.create({
+                    name: 'John',
+                    email: 'john@example.com',
+                  });
+                },
+                admin: (schema) => {
+                  schema.users.create({
+                    name: 'Admin',
+                    email: 'admin@example.com',
+                  });
+                },
+              })
+              .build(),
+          })
+          .build();
+
+        // Load all scenarios
+        await testSchema.users.loadSeeds();
+        expect(testSchema.users.all().length).toBe(2);
+
+        // Try to load all again - should skip both
+        await testSchema.users.loadSeeds();
+        expect(testSchema.users.all().length).toBe(2); // Still 2, not 4
+      });
+
+      it('should skip already loaded scenarios when loading all', async () => {
+        const testSchema = schema()
+          .collections({
+            users: collection<TestSchema>()
+              .model(userModel)
+              .seeds({
+                basic: (schema) => {
+                  schema.users.create({
+                    name: 'John',
+                    email: 'john@example.com',
+                  });
+                },
+                admin: (schema) => {
+                  schema.users.create({
+                    name: 'Admin',
+                    email: 'admin@example.com',
+                  });
+                },
+              })
+              .build(),
+          })
+          .build();
+
+        // Load basic scenario only
+        await testSchema.users.loadSeeds('basic');
+        expect(testSchema.users.all().length).toBe(1);
+
+        // Load all scenarios - should only load admin (basic already loaded)
+        await testSchema.users.loadSeeds();
+        expect(testSchema.users.all().length).toBe(2);
+      });
+
+      it('should reset tracking and reload after collection is emptied', async () => {
+        const testSchema = schema()
+          .collections({
+            users: collection<TestSchema>()
+              .model(userModel)
+              .seeds({
+                basic: (schema) => {
+                  schema.users.create({
+                    name: 'John',
+                    email: 'john@example.com',
+                  });
+                },
+              })
+              .build(),
+          })
+          .build();
+
+        // Load seeds
+        await testSchema.users.loadSeeds('basic');
+        expect(testSchema.users.all().length).toBe(1);
+
+        // Try to load again - should be skipped
+        await testSchema.users.loadSeeds('basic');
+        expect(testSchema.users.all().length).toBe(1);
+
+        // Empty collection
+        testSchema.db.emptyData();
+        testSchema.resetSeedTracking();
+
+        // Load seeds again - should work because collection is empty
+        await testSchema.users.loadSeeds('basic');
+        expect(testSchema.users.all().length).toBe(1);
+      });
+    });
+
+    describe('with schema-level loadSeeds', () => {
+      it('should prevent duplicate loading across schema-level calls', async () => {
+        const testSchema = schema()
+          .collections({
+            users: collection<TestSchema>()
+              .model(userModel)
+              .seeds((schema) => {
+                schema.users.create({
+                  name: 'User',
+                  email: 'user@example.com',
+                });
+              })
+              .build(),
+            posts: collection<TestSchema>()
+              .model(postModel)
+              .seeds((schema) => {
+                schema.posts.create({ title: 'Post', content: 'Content' });
+              })
+              .build(),
+          })
+          .build();
+
+        // Load all seeds
+        await testSchema.loadSeeds();
+        expect(testSchema.users.all().length).toBe(1);
+        expect(testSchema.posts.all().length).toBe(1);
+
+        // Try to load all again - should skip both
+        await testSchema.loadSeeds();
+        expect(testSchema.users.all().length).toBe(1);
+        expect(testSchema.posts.all().length).toBe(1);
+      });
     });
   });
 });

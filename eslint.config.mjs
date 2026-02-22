@@ -26,7 +26,8 @@ const baseRules = {
     },
     {
       selector: 'WithStatement',
-      message: '`with` is disallowed in strict mode because it makes code impossible to predict and optimize.',
+      message:
+        '`with` is disallowed in strict mode because it makes code impossible to predict and optimize.',
     },
   ],
 };
@@ -58,7 +59,7 @@ const jsdocRules = {
 
 export default defineConfig([
   {
-    ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**'],
+    ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**', 'examples/**'],
   },
 
   // JS support

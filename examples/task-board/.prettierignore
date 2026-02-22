@@ -1,0 +1,16 @@
+# Dependencies
+node_modules
+
+# Build outputs
+dist
+build
+
+# Vite
+.vite
+
+# Coverage
+coverage
+
+# MSW
+public/mockServiceWorker.js
+

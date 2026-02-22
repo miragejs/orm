@@ -6,6 +6,28 @@ import { collection } from '../CollectionBuilder';
 import { schema } from '../SchemaBuilder';
 import type { CollectionConfig } from '../types';
 
+// ANSI color codes for matching colored log output
+const COLORS = {
+  reset: '\x1b[0m',
+  green: '\x1b[32m', // DEBUG
+  gray: '\x1b[90m', // LOG
+  blue: '\x1b[34m', // INFO
+  yellow: '\x1b[33m', // WARN
+  red: '\x1b[31m', // ERROR
+};
+
+// Helper to create expected colored message
+const coloredLevel = (level: 'DEBUG' | 'LOG' | 'INFO' | 'WARN' | 'ERROR') => {
+  const colorMap = {
+    DEBUG: COLORS.green,
+    LOG: COLORS.gray,
+    INFO: COLORS.blue,
+    WARN: COLORS.yellow,
+    ERROR: COLORS.red,
+  };
+  return `${colorMap[level]}${level}${COLORS.reset}`;
+};
+
 // Define test model attributes
 interface UserAttrs {
   id: string;
@@ -20,8 +42,16 @@ interface PostAttrs {
 }
 
 // Create test models
-const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
-const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
+const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<UserAttrs>()
+  .build();
+const postModel = model()
+  .name('post')
+  .collection('posts')
+  .attrs<PostAttrs>()
+  .build();
 
 // Create test factories
 const userFactory = factory()
@@ -29,14 +59,14 @@ const userFactory = factory()
   .attrs({
     name: () => 'John Doe',
   })
-  .create();
+  .build();
 
 const postFactory = factory()
   .model(postModel)
   .attrs({
     title: () => 'Test Post',
   })
-  .create();
+  .build();
 
 // Define test schema type
 type TestSchema = {
@@ -62,18 +92,19 @@ describe('Schema with Logging', () => {
   });
 
   describe('Schema initialization', () => {
-    it('should log schema initialization at debug level', () => {
+    it('should log schema initialization at info level', () => {
       schema()
-        .logging({ enabled: true, level: 'debug' })
+        .logging({ enabled: true, level: 'info' })
         .collections({
-          users: collection<TestSchema>().model(userModel).create(),
+          users: collection<TestSchema>().model(userModel).build(),
         })
-        .setup();
+        .build();
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        '[Mirage] DEBUG: Schema initialized',
+        `[Mirage] ${coloredLevel('INFO')}: All collections registered`,
         expect.objectContaining({
-          collections: ['users'],
+          count: 1,
+          names: ['users'],
         }),
       );
     });
@@ -82,9 +113,9 @@ describe('Schema with Logging', () => {
       schema()
         .logging({ enabled: false, level: 'debug' })
         .collections({
-          users: collection<TestSchema>().model(userModel).create(),
+          users: collection<TestSchema>().model(userModel).build(),
         })
-        .setup();
+        .build();
 
       expect(consoleLogSpy).not.toHaveBeenCalled();
     });
@@ -92,24 +123,24 @@ describe('Schema with Logging', () => {
     it('should not log when logging is not configured', () => {
       schema()
         .collections({
-          users: collection<TestSchema>().model(userModel).create(),
+          users: collection<TestSchema>().model(userModel).build(),
         })
-        .setup();
+        .build();
 
       expect(consoleLogSpy).not.toHaveBeenCalled();
     });
 
     it('should log collection registration', () => {
       schema()
-        .logging({ enabled: true, level: 'debug' })
+        .logging({ enabled: true, level: 'log' })
         .collections({
-          users: collection<TestSchema>().model(userModel).create(),
-          posts: collection<TestSchema>().model(postModel).create(),
+          users: collection<TestSchema>().model(userModel).build(),
+          posts: collection<TestSchema>().model(postModel).build(),
         })
-        .setup();
+        .build();
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        '[Mirage] DEBUG: Registering collections',
+        `[Mirage] ${coloredLevel('LOG')}: Registering collections`,
         expect.objectContaining({
           count: 2,
           names: ['users', 'posts'],
@@ -117,16 +148,10 @@ describe('Schema with Logging', () => {
       );
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] DEBUG: Collection 'users' initialized",
+        `[Mirage] ${coloredLevel('INFO')}: All collections registered`,
         expect.objectContaining({
-          modelName: 'user',
-        }),
-      );
-
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] DEBUG: Collection 'posts' initialized",
-        expect.objectContaining({
-          modelName: 'post',
+          count: 2,
+          names: ['users', 'posts'],
         }),
       );
     });
@@ -137,77 +162,141 @@ describe('Schema with Logging', () => {
       const testSchema = schema()
         .logging({ enabled: true, level: 'debug' })
         .collections({
-          users: collection<TestSchema>().model(userModel).factory(userFactory).create(),
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .build(),
         })
-        .setup();
+        .build();
 
       testSchema.users.create({ name: 'Alice' });
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        '[Mirage] DEBUG: Creating user',
+        `[Mirage] ${coloredLevel('LOG')}: Creating model for 'users'`,
         expect.objectContaining({
           collection: 'users',
         }),
       );
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        '[Mirage] DEBUG: Created user with factory',
+        `[Mirage] ${coloredLevel('DEBUG')}: Built attributes for 'users'`,
         expect.objectContaining({
-          collection: 'users',
+          id: expect.any(String),
+          attrs: expect.objectContaining({
+            name: 'Alice',
+          }),
+        }),
+      );
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `[Mirage] ${coloredLevel('DEBUG')}: Saved model for 'users'`,
+        expect.objectContaining({
+          id: expect.any(String),
+        }),
+      );
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `[Mirage] ${coloredLevel('DEBUG')}: Processed associations for 'users'`,
+        expect.objectContaining({
+          id: expect.any(String),
+          relValues: expect.any(Object),
+        }),
+      );
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `[Mirage] ${coloredLevel('INFO')}: Created model for 'users'`,
+        expect.objectContaining({
+          id: expect.any(String),
         }),
       );
     });
 
-    it('should not log model creation at info level', () => {
+    it('should log at info level without debug details', () => {
       const testSchema = schema()
         .logging({ enabled: true, level: 'info' })
         .collections({
-          users: collection<TestSchema>().model(userModel).factory(userFactory).create(),
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .build(),
         })
-        .setup();
+        .build();
 
       // Clear previous logs from schema initialization
       consoleLogSpy.mockClear();
 
       testSchema.users.create({ name: 'Alice' });
 
-      // Should not include debug logs about model creation
+      // Should have INFO logs (end message)
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `[Mirage] ${coloredLevel('INFO')}: Created model for 'users'`,
+        expect.anything(),
+      );
+
+      // Should not have DEBUG or LOG logs
       expect(consoleLogSpy).not.toHaveBeenCalledWith(
-        '[Mirage] DEBUG: Creating user',
+        expect.stringContaining('DEBUG'),
+        expect.anything(),
+      );
+      expect(consoleLogSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining(`${coloredLevel('LOG')}`),
         expect.anything(),
       );
     });
   });
 
   describe('Query operations logging', () => {
-    it('should log find operation at debug level', () => {
+    it('should log find operation with LOG start and INFO end', () => {
       const testSchema = schema()
         .logging({ enabled: true, level: 'debug' })
         .collections({
-          users: collection<TestSchema>().model(userModel).factory(userFactory).create(),
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .build(),
         })
-        .setup();
+        .build();
 
       const user = testSchema.users.create({ name: 'Alice' });
       consoleLogSpy.mockClear();
 
       testSchema.users.find(user.id);
 
+      // BaseCollection LOG start
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] DEBUG: Find in 'users'",
+        `[Mirage] ${coloredLevel('LOG')}: Finding model in 'users'`,
+        expect.objectContaining({
+          input: user.id,
+        }),
+      );
+
+      // DbCollection DEBUG internal
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `[Mirage] ${coloredLevel('DEBUG')}: Found 1 records in 'users'`,
         expect.objectContaining({
           query: user.id,
         }),
       );
+
+      // BaseCollection LOG end
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `[Mirage] ${coloredLevel('LOG')}: Found 1 model in 'users'`,
+        expect.objectContaining({
+          id: user.id,
+        }),
+      );
     });
 
-    it('should log findMany operation at debug level', () => {
+    it('should log findMany operation with LOG start and LOG end', () => {
       const testSchema = schema()
         .logging({ enabled: true, level: 'debug' })
         .collections({
-          users: collection<TestSchema>().model(userModel).factory(userFactory).create(),
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .build(),
         })
-        .setup();
+        .build();
 
       testSchema.users.create({ name: 'Alice' });
       testSchema.users.create({ name: 'Bob' });
@@ -215,24 +304,41 @@ describe('Schema with Logging', () => {
 
       testSchema.users.findMany({ name: 'Alice' });
 
+      // BaseCollection LOG start
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] DEBUG: Query 'users': findMany",
-        expect.anything(),
+        `[Mirage] ${coloredLevel('LOG')}: Finding models in 'users'`,
+        expect.objectContaining({
+          input: { name: 'Alice' },
+        }),
       );
 
+      // DbCollection DEBUG internal
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] DEBUG: Query 'users' returned 1 records",
-        '',
+        `[Mirage] ${coloredLevel('DEBUG')}: Found 1 records in 'users'`,
+        expect.objectContaining({
+          query: { name: 'Alice' },
+        }),
+      );
+
+      // BaseCollection LOG end
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `[Mirage] ${coloredLevel('LOG')}: Found 1 models in 'users'`,
+        expect.objectContaining({
+          ids: expect.any(Array),
+        }),
       );
     });
 
-    it('should log all() operation at debug level', () => {
+    it('should log all() operation with LOG start and LOG end', () => {
       const testSchema = schema()
         .logging({ enabled: true, level: 'debug' })
         .collections({
-          users: collection<TestSchema>().model(userModel).factory(userFactory).create(),
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .build(),
         })
-        .setup();
+        .build();
 
       testSchema.users.create({ name: 'Alice' });
       testSchema.users.create({ name: 'Bob' });
@@ -240,69 +346,235 @@ describe('Schema with Logging', () => {
 
       testSchema.users.all();
 
+      // BaseCollection LOG start
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] DEBUG: Query 'users': all()",
-        expect.objectContaining({
-          operation: 'all',
-        }),
+        `[Mirage] ${coloredLevel('LOG')}: Fetching all models from 'users'`,
+        '',
       );
 
+      // BaseCollection LOG end
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] DEBUG: Query 'users' returned 2 records",
+        `[Mirage] ${coloredLevel('LOG')}: Fetched 2 models from 'users'`,
         '',
       );
     });
 
-    it('should log first() operation at debug level', () => {
+    it('should log first() operation with LOG start and LOG end', () => {
       const testSchema = schema()
         .logging({ enabled: true, level: 'debug' })
         .collections({
-          users: collection<TestSchema>().model(userModel).factory(userFactory).create(),
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .build(),
         })
-        .setup();
+        .build();
 
       testSchema.users.create({ name: 'Alice' });
       consoleLogSpy.mockClear();
 
       testSchema.users.first();
 
-      expect(consoleLogSpy).toHaveBeenCalledWith("[Mirage] DEBUG: Query 'users': first()", '');
+      // BaseCollection LOG start
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] DEBUG: Query 'users' found record",
+        `[Mirage] ${coloredLevel('LOG')}: Fetching first model from 'users'`,
+        '',
+      );
+
+      // BaseCollection LOG end
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `[Mirage] ${coloredLevel('LOG')}: Fetched first model from 'users'`,
         expect.objectContaining({
-          id: expect.anything(),
+          found: true,
         }),
       );
     });
 
-    it('should log delete operation at debug level', () => {
+    it('should log count() operation with LOG start and LOG end', () => {
       const testSchema = schema()
         .logging({ enabled: true, level: 'debug' })
         .collections({
-          users: collection<TestSchema>().model(userModel).factory(userFactory).create(),
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .build(),
         })
-        .setup();
+        .build();
+
+      testSchema.users.create({ name: 'Alice' });
+      testSchema.users.create({ name: 'Bob' });
+      consoleLogSpy.mockClear();
+
+      const result = testSchema.users.count();
+
+      expect(result).toBe(2);
+
+      // BaseCollection LOG start
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `[Mirage] ${coloredLevel('LOG')}: Counting models in 'users'`,
+        expect.objectContaining({
+          where: undefined,
+        }),
+      );
+
+      // BaseCollection LOG end
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `[Mirage] ${coloredLevel('LOG')}: Counted 2 models in 'users'`,
+        '',
+      );
+    });
+
+    it('should log count() operation with where clause', () => {
+      const testSchema = schema()
+        .logging({ enabled: true, level: 'debug' })
+        .collections({
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .build(),
+        })
+        .build();
+
+      testSchema.users.create({ name: 'Alice' });
+      testSchema.users.create({ name: 'Bob' });
+      consoleLogSpy.mockClear();
+
+      const result = testSchema.users.count({ name: 'Alice' });
+
+      expect(result).toBe(1);
+
+      // BaseCollection LOG start with where clause
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `[Mirage] ${coloredLevel('LOG')}: Counting models in 'users'`,
+        expect.objectContaining({
+          where: { name: 'Alice' },
+        }),
+      );
+
+      // BaseCollection LOG end
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `[Mirage] ${coloredLevel('LOG')}: Counted 1 models in 'users'`,
+        '',
+      );
+    });
+
+    it('should log exists() operation with LOG start and LOG end', () => {
+      const testSchema = schema()
+        .logging({ enabled: true, level: 'debug' })
+        .collections({
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .build(),
+        })
+        .build();
+
+      testSchema.users.create({ name: 'Alice' });
+      consoleLogSpy.mockClear();
+
+      const result = testSchema.users.exists();
+
+      expect(result).toBe(true);
+
+      // BaseCollection LOG start
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `[Mirage] ${coloredLevel('LOG')}: Checking existence in 'users'`,
+        expect.objectContaining({
+          where: undefined,
+        }),
+      );
+
+      // BaseCollection LOG end
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `[Mirage] ${coloredLevel('LOG')}: Existence check in 'users': true`,
+        '',
+      );
+    });
+
+    it('should log exists() operation with where clause', () => {
+      const testSchema = schema()
+        .logging({ enabled: true, level: 'debug' })
+        .collections({
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .build(),
+        })
+        .build();
+
+      testSchema.users.create({ name: 'Alice' });
+      consoleLogSpy.mockClear();
+
+      const resultExists = testSchema.users.exists({ name: 'Alice' });
+      expect(resultExists).toBe(true);
+
+      consoleLogSpy.mockClear();
+
+      const resultNotExists = testSchema.users.exists({ name: 'Charlie' });
+      expect(resultNotExists).toBe(false);
+
+      // BaseCollection LOG start with where clause
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `[Mirage] ${coloredLevel('LOG')}: Checking existence in 'users'`,
+        expect.objectContaining({
+          where: { name: 'Charlie' },
+        }),
+      );
+
+      // BaseCollection LOG end (false result)
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `[Mirage] ${coloredLevel('LOG')}: Existence check in 'users': false`,
+        '',
+      );
+    });
+
+    it('should log delete operation with LOG start and LOG end', () => {
+      const testSchema = schema()
+        .logging({ enabled: true, level: 'debug' })
+        .collections({
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .build(),
+        })
+        .build();
 
       const user = testSchema.users.create({ name: 'Alice' });
       consoleLogSpy.mockClear();
 
       testSchema.users.delete(user.id);
 
+      // BaseCollection LOG start
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] DEBUG: Delete from 'users'",
+        `[Mirage] ${coloredLevel('LOG')}: Deleting model ${user.id} from 'users'`,
+        '',
+      );
+
+      // DbCollection DEBUG internal
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `[Mirage] ${coloredLevel('DEBUG')}: Deleted record from 'users'`,
         expect.objectContaining({
           id: user.id,
         }),
       );
+
+      // BaseCollection LOG end
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `[Mirage] ${coloredLevel('LOG')}: Deleted model ${user.id} from 'users'`,
+        '',
+      );
     });
 
-    it('should log deleteMany operation at debug level', () => {
+    it('should log deleteMany operation with LOG start and LOG end', () => {
       const testSchema = schema()
         .logging({ enabled: true, level: 'debug' })
         .collections({
-          users: collection<TestSchema>().model(userModel).factory(userFactory).create(),
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .build(),
         })
-        .setup();
+        .build();
 
       testSchema.users.create({ name: 'Alice' });
       testSchema.users.create({ name: 'Bob' });
@@ -310,23 +582,36 @@ describe('Schema with Logging', () => {
 
       const count = testSchema.users.deleteMany({ name: 'Alice' });
 
+      // BaseCollection LOG start
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] DEBUG: Delete many from 'users'",
-        expect.anything(),
+        `[Mirage] ${coloredLevel('LOG')}: Deleting models from 'users'`,
+        expect.objectContaining({
+          input: { name: 'Alice' },
+        }),
       );
 
+      // DbCollection DEBUG internal
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] DEBUG: Deleted 1 records from 'users'",
+        `[Mirage] ${coloredLevel('DEBUG')}: 1 records deleted from 'users'`,
+        expect.objectContaining({
+          ids: expect.any(Array),
+        }),
+      );
+
+      // BaseCollection LOG end
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `[Mirage] ${coloredLevel('LOG')}: Deleted 1 models from 'users'`,
         '',
       );
+
       expect(count).toBe(1);
     });
   });
 
   describe('Fixtures logging', () => {
-    it('should log fixture loading at info level', async () => {
+    it('should log fixture loading with LOG start and INFO end', async () => {
       const testSchema = schema()
-        .logging({ enabled: true, level: 'info' })
+        .logging({ enabled: true, level: 'log' })
         .collections({
           users: collection<TestSchema>()
             .model(userModel)
@@ -334,9 +619,9 @@ describe('Schema with Logging', () => {
               { id: '1', name: 'Alice' },
               { id: '2', name: 'Bob' },
             ])
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       // Clear previous logs from schema initialization
       consoleLogSpy.mockClear();
@@ -344,12 +629,12 @@ describe('Schema with Logging', () => {
       await testSchema.users.loadFixtures();
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] INFO: Loading fixtures for collection 'users'",
+        `[Mirage] ${coloredLevel('LOG')}: Loading fixtures for 'users'`,
         expect.objectContaining({ count: 2 }),
       );
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] INFO: Fixtures loaded successfully for 'users'",
+        `[Mirage] ${coloredLevel('INFO')}: Fixtures loaded for 'users'`,
         expect.objectContaining({ count: 2 }),
       );
     });
@@ -364,9 +649,9 @@ describe('Schema with Logging', () => {
               { id: '1', name: 'Alice' },
               { id: '2', name: 'Bob' },
             ])
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       // Load fixtures first time
       await testSchema.users.loadFixtures();
@@ -379,7 +664,7 @@ describe('Schema with Logging', () => {
       }
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '[Mirage] ERROR: Fixture loading failed: ID conflicts detected',
+        `[Mirage] ${coloredLevel('ERROR')}: Fixture loading failed: ID conflicts detected`,
         expect.objectContaining({
           collection: 'users',
           conflicts: ['1', '2'],
@@ -389,17 +674,17 @@ describe('Schema with Logging', () => {
 
     it('should log auto-loading fixtures', () => {
       schema()
-        .logging({ enabled: true, level: 'info' })
+        .logging({ enabled: true, level: 'log' })
         .collections({
           users: collection<TestSchema>()
             .model(userModel)
             .fixtures([{ id: '1', name: 'Alice' }], { strategy: 'auto' })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        '[Mirage] INFO: Auto-loading fixtures',
+        `[Mirage] ${coloredLevel('LOG')}: Auto-loading fixtures`,
         expect.objectContaining({
           collections: ['users'],
         }),
@@ -408,9 +693,9 @@ describe('Schema with Logging', () => {
   });
 
   describe('Seeds logging', () => {
-    it('should log seed loading at info level', async () => {
+    it('should log seed loading with LOG start and INFO end', async () => {
       const testSchema = schema()
-        .logging({ enabled: true, level: 'info' })
+        .logging({ enabled: true, level: 'log' })
         .collections({
           users: collection<TestSchema>()
             .model(userModel)
@@ -418,9 +703,9 @@ describe('Schema with Logging', () => {
             .seeds((schema) => {
               schema.users.create({ name: 'Seeded User' });
             })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       // Clear previous logs from schema initialization
       consoleLogSpy.mockClear();
@@ -428,21 +713,21 @@ describe('Schema with Logging', () => {
       await testSchema.users.loadSeeds();
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] INFO: Loading all seeds for collection 'users'",
+        `[Mirage] ${coloredLevel('LOG')}: Loading seeds for 'users'`,
         expect.objectContaining({
           scenarios: ['default'],
         }),
       );
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] INFO: Seeds loaded successfully for 'users'",
+        `[Mirage] ${coloredLevel('INFO')}: Seeds loaded for 'users'`,
         '',
       );
     });
 
-    it('should log seed scenario loading', async () => {
+    it('should log seed scenario loading with LOG start and INFO end', async () => {
       const testSchema = schema()
-        .logging({ enabled: true, level: 'info' })
+        .logging({ enabled: true, level: 'log' })
         .collections({
           users: collection<TestSchema>()
             .model(userModel)
@@ -455,9 +740,9 @@ describe('Schema with Logging', () => {
                 schema.users.create({ name: 'Test User' });
               },
             })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       // Clear previous logs
       consoleLogSpy.mockClear();
@@ -465,12 +750,12 @@ describe('Schema with Logging', () => {
       await testSchema.users.loadSeeds('development');
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] INFO: Loading seed scenario 'development' for 'users'",
+        `[Mirage] ${coloredLevel('LOG')}: Loading seed scenario 'development' for 'users'`,
         '',
       );
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        "[Mirage] INFO: Seed scenario 'development' loaded successfully",
+        `[Mirage] ${coloredLevel('INFO')}: Seed scenario 'development' loaded for 'users'`,
         '',
       );
     });
@@ -487,9 +772,9 @@ describe('Schema with Logging', () => {
                 schema.users.create({ name: 'Dev User' });
               },
             })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       try {
         await testSchema.users.loadSeeds('nonexistent');
@@ -498,7 +783,7 @@ describe('Schema with Logging', () => {
       }
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "[Mirage] ERROR: Seed scenario 'nonexistent' not found",
+        `[Mirage] ${coloredLevel('ERROR')}: Seed scenario 'nonexistent' not found`,
         expect.objectContaining({
           collection: 'users',
           requested: 'nonexistent',
@@ -509,9 +794,9 @@ describe('Schema with Logging', () => {
   });
 
   describe('Schema-level operations', () => {
-    it('should log schema.loadSeeds at info level', async () => {
+    it('should log schema.loadSeeds with LOG start and INFO end', async () => {
       const testSchema = schema()
-        .logging({ enabled: true, level: 'info' })
+        .logging({ enabled: true, level: 'log' })
         .collections({
           users: collection<TestSchema>()
             .model(userModel)
@@ -519,16 +804,16 @@ describe('Schema with Logging', () => {
             .seeds((schema) => {
               schema.users.create({ name: 'User' });
             })
-            .create(),
+            .build(),
           posts: collection<TestSchema>()
             .model(postModel)
             .factory(postFactory)
             .seeds((schema) => {
               schema.posts.create({ title: 'Post' });
             })
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       // Clear previous logs
       consoleLogSpy.mockClear();
@@ -536,32 +821,35 @@ describe('Schema with Logging', () => {
       await testSchema.loadSeeds();
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        '[Mirage] INFO: Loading seeds for all collections',
+        `[Mirage] ${coloredLevel('LOG')}: Loading all seeds`,
         expect.objectContaining({
           collections: ['users', 'posts'],
         }),
       );
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        '[Mirage] INFO: All seeds loaded successfully',
-        '',
+        `[Mirage] ${coloredLevel('INFO')}: All seeds loaded`,
+        expect.objectContaining({
+          users: expect.any(Array),
+          posts: expect.any(Array),
+        }),
       );
     });
 
-    it('should log schema.loadFixtures at info level', async () => {
+    it('should log schema.loadFixtures with LOG start and INFO end', async () => {
       const testSchema = schema()
-        .logging({ enabled: true, level: 'info' })
+        .logging({ enabled: true, level: 'log' })
         .collections({
           users: collection<TestSchema>()
             .model(userModel)
             .fixtures([{ id: '1', name: 'Alice' }])
-            .create(),
+            .build(),
           posts: collection<TestSchema>()
             .model(postModel)
             .fixtures([{ id: '1', title: 'Post 1' }])
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       // Clear previous logs
       consoleLogSpy.mockClear();
@@ -569,15 +857,18 @@ describe('Schema with Logging', () => {
       await testSchema.loadFixtures();
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        '[Mirage] INFO: Loading fixtures for all collections',
+        `[Mirage] ${coloredLevel('LOG')}: Loading all fixtures`,
         expect.objectContaining({
           collections: ['users', 'posts'],
         }),
       );
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        '[Mirage] INFO: All fixtures loaded successfully',
-        '',
+        `[Mirage] ${coloredLevel('INFO')}: All fixtures loaded`,
+        expect.objectContaining({
+          users: expect.any(Array),
+          posts: expect.any(Array),
+        }),
       );
     });
   });
@@ -587,9 +878,12 @@ describe('Schema with Logging', () => {
       const testSchema = schema()
         .logging({ enabled: true, level: 'silent' })
         .collections({
-          users: collection<TestSchema>().model(userModel).factory(userFactory).create(),
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .build(),
         })
-        .setup();
+        .build();
 
       testSchema.users.create({ name: 'Alice' });
 
@@ -606,9 +900,9 @@ describe('Schema with Logging', () => {
             .model(userModel)
             .factory(userFactory)
             .fixtures([{ id: '1', name: 'Alice' }])
-            .create(),
+            .build(),
         })
-        .setup();
+        .build();
 
       // This shouldn't log anything (info level)
       await testSchema.users.loadFixtures();
@@ -626,20 +920,80 @@ describe('Schema with Logging', () => {
       expect(consoleLogSpy).not.toHaveBeenCalled();
       expect(consoleErrorSpy).toHaveBeenCalled();
     });
+
+    it('should show LOG level messages when level is set to log', () => {
+      const testSchema = schema()
+        .logging({ enabled: true, level: 'log' })
+        .collections({
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .build(),
+        })
+        .build();
+
+      testSchema.users.create({ name: 'Alice' });
+      consoleLogSpy.mockClear();
+
+      testSchema.users.find('1');
+
+      // Should see LOG level messages (LOG = 1)
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `[Mirage] ${coloredLevel('LOG')}: Finding model in 'users'`,
+        expect.anything(),
+      );
+
+      // Should see LOG level end messages
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `[Mirage] ${coloredLevel('LOG')}: Found 1 model in 'users'`,
+        expect.anything(),
+      );
+
+      // Should NOT see DEBUG level messages (DEBUG = 0, filtered out at LOG level)
+      expect(consoleLogSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining(`${coloredLevel('DEBUG')}`),
+        expect.anything(),
+      );
+    });
   });
 
   describe('Custom prefix', () => {
     it('should use custom prefix', () => {
       schema()
-        .logging({ enabled: true, level: 'debug', prefix: '[MyORM]' })
+        .logging({ enabled: true, level: 'info', prefix: '[MyORM]' })
         .collections({
-          users: collection<TestSchema>().model(userModel).create(),
+          users: collection<TestSchema>().model(userModel).build(),
         })
-        .setup();
+        .build();
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        '[MyORM] DEBUG: Schema initialized',
+        `[MyORM] ${coloredLevel('INFO')}: All collections registered`,
         expect.anything(),
+      );
+    });
+  });
+
+  describe('New LOG level', () => {
+    it('should support log level as string config', () => {
+      const testSchema = schema()
+        .logging({ enabled: true, level: 'log' })
+        .collections({
+          users: collection<TestSchema>()
+            .model(userModel)
+            .factory(userFactory)
+            .build(),
+        })
+        .build();
+
+      testSchema.users.create({ name: 'Alice' });
+      consoleLogSpy.mockClear();
+
+      testSchema.users.all();
+
+      // LOG level start message should appear
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `[Mirage] ${coloredLevel('LOG')}: Fetching all models from 'users'`,
+        '',
       );
     });
   });

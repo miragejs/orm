@@ -16,7 +16,7 @@ import type { ModelTemplate } from './types';
  * @example
  * ```typescript
  * // Create a basic template
- * const userTemplate = model().name('user').collection('users').create();
+ * const userTemplate = model().name('user').collection('users').build();
  *
  * // Create a template with specific model attributes
  * interface User { id: string; name: string; email: string; }
@@ -24,7 +24,7 @@ import type { ModelTemplate } from './types';
  *   .name('user')
  *   .collection('users')
  *   .attrs<UserAttrs>()
- *   .create();
+ *   .build();
  *
  * // With custom JSON types
  * const jsonTypedTemplate = model()
@@ -32,7 +32,7 @@ import type { ModelTemplate } from './types';
  *   .collection('users')
  *   .attrs<UserAttrs>()
  *   .json<UserJSON, UsersJSON>()
- *   .create();
+ *   .build();
  * ```
  */
 export default class ModelBuilder<
@@ -57,9 +57,19 @@ export default class ModelBuilder<
    */
   name<T extends string>(
     modelName: T,
-  ): ModelBuilder<TModelAttrs, T, TCollectionName, TSerializedModel, TSerializedCollection> {
+  ): ModelBuilder<
+    TModelAttrs,
+    T,
+    TCollectionName,
+    TSerializedModel,
+    TSerializedCollection
+  > {
     // Validate model name
-    if (!modelName || typeof modelName !== 'string' || modelName.trim() === '') {
+    if (
+      !modelName ||
+      typeof modelName !== 'string' ||
+      modelName.trim() === ''
+    ) {
       throw new MirageError('Model name must be a non-empty string.');
     }
 
@@ -87,9 +97,19 @@ export default class ModelBuilder<
    */
   collection<T extends string>(
     collectionName: T,
-  ): ModelBuilder<TModelAttrs, TModelName, T, TSerializedModel, TSerializedCollection> {
+  ): ModelBuilder<
+    TModelAttrs,
+    TModelName,
+    T,
+    TSerializedModel,
+    TSerializedCollection
+  > {
     // Validate collection name
-    if (!collectionName || typeof collectionName !== 'string' || collectionName.trim() === '') {
+    if (
+      !collectionName ||
+      typeof collectionName !== 'string' ||
+      collectionName.trim() === ''
+    ) {
       throw new MirageError('Collection name must be a non-empty string.');
     }
 
@@ -119,7 +139,13 @@ export default class ModelBuilder<
    * const builder = model().name('user').collection('users').attrs<UserAttrs>();
    * ```
    */
-  attrs<T extends { id: any }>(): ModelBuilder<T, TModelName, TCollectionName, T, T[]> {
+  attrs<T extends { id: any }>(): ModelBuilder<
+    T,
+    TModelName,
+    TCollectionName,
+    T,
+    T[]
+  > {
     const builder = new ModelBuilder<T, TModelName, TCollectionName, T, T[]>();
     builder._modelName = this._modelName as TModelName;
     builder._collectionName = this._collectionName as TCollectionName;
@@ -151,7 +177,7 @@ export default class ModelBuilder<
    *   .collection('users')
    *   .attrs<UserAttrs>()
    *   .json<UserJSON, UsersJSON>() // Specify serialization types
-   *   .create();
+   *   .build();
    * ```
    */
   json<TModel = TModelAttrs, TCollection = TModel[]>(): ModelBuilder<
@@ -174,7 +200,7 @@ export default class ModelBuilder<
   }
 
   /**
-   * Creates the final ModelTemplate with all configured types and metadata.
+   * Builds the final ModelTemplate with all configured types and metadata.
    *
    * This method produces the immutable ModelTemplate that can be used throughout
    * your application for type-safe model operations. The template includes the
@@ -188,10 +214,10 @@ export default class ModelBuilder<
    *   .name('user')
    *   .collection('users')
    *   .attrs<UserAttrs>()
-   *   .create();
+   *   .build();
    * ```
    */
-  create(): ModelTemplate<TModelName, TCollectionName> & {
+  build(): ModelTemplate<TModelName, TCollectionName> & {
     __attrs: TModelAttrs;
     __json: {
       model: TSerializedModel;
@@ -199,10 +225,14 @@ export default class ModelBuilder<
     };
   } {
     if (!this._modelName) {
-      throw new MirageError('Model name is required. Call .name() before .create()');
+      throw new MirageError(
+        'Model name is required. Call .name() before .build()',
+      );
     }
     if (!this._collectionName) {
-      throw new MirageError('Collection name is required. Call .collection() before .create()');
+      throw new MirageError(
+        'Collection name is required. Call .collection() before .build()',
+      );
     }
 
     return {
@@ -234,7 +264,7 @@ export default class ModelBuilder<
  * const userTemplate = model()
  *   .name('user')
  *   .collection('users')
- *   .create();
+ *   .build();
  *
  * // With typed attributes
  * interface UserAttrs { id: string; name: string; email: string; }
@@ -242,7 +272,7 @@ export default class ModelBuilder<
  *   .name('user')
  *   .collection('users')
  *   .attrs<UserAttrs>()
- *   .create();
+ *   .build();
  *
  * // With custom JSON types
  * interface UserJSON { id: string; name: string; email: string; }
@@ -252,7 +282,7 @@ export default class ModelBuilder<
  *   .collection('users')
  *   .attrs<UserAttrs>()
  *   .json<UserJSON, UsersJSON>()
- *   .create();
+ *   .build();
  * ```
  */
 export function model(): ModelBuilder<{ id: string }, string, string> {

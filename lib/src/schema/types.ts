@@ -1,16 +1,18 @@
 import type { DbCollection } from '@src/db';
-import type { Factory, ModelTraits } from '@src/factory';
-import type { IdentityManager, StringIdentityManager } from '@src/id-manager';
+import type { Factory } from '@src/factory';
+import type {
+  IdentityManager,
+  IdentityManagerConfig,
+  IdType,
+} from '@src/id-manager';
 import type {
   ModelAttrs,
   ModelForeignKeys,
-  ModelId,
+  ModelIdFor,
   ModelTemplate,
-  RelatedModelAttrs,
-  RelationshipsByTemplate,
 } from '@src/model';
 import type { ModelRelationships } from '@src/model';
-import type { SerializerOptions, StructuralSerializerOptions } from '@src/serializer';
+import type { Serializer, SerializerConfig } from '@src/serializer';
 import type { LoggerConfig } from '@src/utils';
 
 import type Collection from './Collection';
@@ -20,18 +22,17 @@ import type { SchemaInstance } from './Schema';
  * Seed function that accepts a schema instance
  * @template TSchema - The schema collections type
  */
-export type SeedFunction<TSchema extends SchemaCollections = SchemaCollections> = (
-  schema: SchemaInstance<TSchema>,
-) => void | Promise<void>;
+export type SeedFunction<
+  TSchema extends SchemaCollections = SchemaCollections,
+> = (schema: SchemaInstance<TSchema>) => void | Promise<void>;
 
 /**
  * Named seed scenarios - object with named seed methods
  * @template TSchema - The schema collections type
  */
-export type SeedScenarios<TSchema extends SchemaCollections = SchemaCollections> = Record<
-  string,
-  SeedFunction<TSchema>
->;
+export type SeedScenarios<
+  TSchema extends SchemaCollections = SchemaCollections,
+> = Record<string, SeedFunction<TSchema>>;
 
 /**
  * Seeds configuration - can be a function or object with named scenarios
@@ -57,7 +58,9 @@ export type FixtureAttrs<
   TTemplate extends ModelTemplate,
   TRelationships extends ModelRelationships = {},
 > = ModelAttrs<TTemplate> &
-  (Record<string, never> extends TRelationships ? {} : Partial<ModelForeignKeys<TRelationships>>);
+  (Record<string, never> extends TRelationships
+    ? {}
+    : Partial<ModelForeignKeys<TRelationships, TTemplate>>);
 
 /**
  * Fixture configuration for a collection
@@ -80,15 +83,14 @@ export interface FixtureConfig<
 
 /**
  * Global schema configuration
- * @template TIdentityManager - The identity manager type
- * @template TGlobalConfig - The global serializer configuration type
+ * @template TIdType - The default ID type for collections (inferred from identityManager.initialCounter)
  */
-export interface SchemaConfig<
-  TIdentityManager extends IdentityManager = StringIdentityManager,
-  TGlobalConfig extends StructuralSerializerOptions | undefined = undefined,
-> {
-  identityManager?: TIdentityManager;
-  globalSerializerConfig?: TGlobalConfig;
+export interface SchemaConfig<TIdType extends IdType = string> {
+  /**
+   * Default identity manager configuration for all collections.
+   * Individual collections can override this with their own configuration.
+   */
+  identityManager?: IdentityManagerConfig<TIdType>;
   logging?: LoggerConfig;
 }
 
@@ -97,30 +99,38 @@ export interface SchemaConfig<
  * @template TTemplate - The model template
  * @template TRelationships - The model relationships
  * @template TFactory - The factory type
- * @template TSerializer - The serializer instance type
  * @template TSchema - The schema collections type for seeds typing
  */
 export interface CollectionConfig<
   TTemplate extends ModelTemplate,
   TRelationships extends ModelRelationships = {},
-  TFactory extends Factory<TTemplate, any, any> | undefined = undefined,
-  TSerializer = undefined,
+  TFactory extends Factory<TTemplate, any, any> = Factory<
+    TTemplate,
+    string,
+    SchemaCollections
+  >,
   TSchema extends SchemaCollections = SchemaCollections,
+  TSerializer extends Serializer<TTemplate, TSchema> = Serializer<
+    TTemplate,
+    TSchema
+  >,
 > {
   model: TTemplate;
   factory?: TFactory;
   relationships?: TRelationships;
-  identityManager?: IdentityManager<ModelId<TTemplate>>;
   /**
-   * Serializer configuration object (attrs, root, embed, include)
-   * Used when collection().serializer({...config}) is called
+   * Identity manager configuration or instance for this collection.
+   * Can be either an IdentityManagerConfig object or an IdentityManager instance.
+   * The ID type must match the model template's ID type.
    */
-  serializerConfig?: SerializerOptions<TTemplate>;
+  identityManager?:
+    | IdentityManagerConfig<ModelIdFor<TTemplate>>
+    | IdentityManager<ModelIdFor<TTemplate>>;
   /**
-   * Serializer instance (custom serializer class)
-   * Used when collection().serializer(instance) is called
+   * Serializer configuration or instance for this collection.
+   * Can be either a SerializerConfig config object or a Serializer instance.
    */
-  serializerInstance?: TSerializer;
+  serializer?: SerializerConfig<TTemplate, TSchema> | TSerializer;
   /**
    * Seeds configuration - can be a function or object with named scenarios
    * Used when collection().seeds(...) is called
@@ -137,23 +147,27 @@ export interface CollectionConfig<
  * Type for schema collections - provides both string-based property access and symbol-based relationship resolution
  * @template TCollections - The string-keyed schema collections config
  */
-export type SchemaCollections = Record<string, CollectionConfig<any, any, any, any, any>>;
+export type SchemaCollections = Record<
+  string,
+  CollectionConfig<any, any, any, any, any>
+>;
 
 /**
  * Type for schema collections - provides string-based property access
  * @template TCollections - The string-keyed schema collections config
  */
-export type SchemaCollectionAccessors<TCollections extends SchemaCollections> = {
-  [K in keyof TCollections]: TCollections[K] extends CollectionConfig<
-    infer TTemplate,
-    infer TRelationships,
-    infer TFactory,
-    infer TSerializer,
-    any
-  >
-    ? Collection<TCollections, TTemplate, TRelationships, TFactory, TSerializer>
-    : never;
-};
+export type SchemaCollectionAccessors<TCollections extends SchemaCollections> =
+  {
+    [K in keyof TCollections]: TCollections[K] extends CollectionConfig<
+      infer TTemplate,
+      infer TRelationships,
+      infer TFactory,
+      any,
+      any
+    >
+      ? Collection<TCollections, TTemplate, TRelationships, TFactory>
+      : never;
+  };
 
 /**
  * Maps schema collection configs to database collections with inferred foreign keys
@@ -169,57 +183,9 @@ export type SchemaDbCollections<TCollections extends SchemaCollections> = {
   >
     ? DbCollection<
         ModelAttrs<TTemplate> &
-          (TRelationships extends ModelRelationships ? ModelForeignKeys<TRelationships> : {})
+          (TRelationships extends ModelRelationships
+            ? ModelForeignKeys<TRelationships, TTemplate>
+            : {})
       >
     : never;
 };
-
-/**
- * Type for collection create/factory attributes - all attributes are optional
- * Used for passing attributes to create() methods where factory provides defaults
- * @template TTemplate - The model template
- * @template TSchema - The schema collections type
- * @template TRelationships - The model relationships
- */
-export type CollectionCreateAttrs<
-  TTemplate extends ModelTemplate,
-  TSchema extends SchemaCollections = SchemaCollections,
-  TRelationships extends ModelRelationships = RelationshipsByTemplate<TTemplate, TSchema>,
-> = Partial<ModelAttrs<TTemplate, TSchema>> &
-  (Record<string, never> extends TRelationships
-    ? {}
-    : Partial<RelatedModelAttrs<TSchema, TRelationships>>);
-
-// ----------------------------------------------------------------------------
-// Utility Types
-// ----------------------------------------------------------------------------
-
-/**
- * Simplified Collection instance type helper that only requires the template parameter.
- * Useful for typing collection references without verbose generic parameters.
- * @template TTemplate - The model template (required)
- * @template TRelationships - The model relationships (optional, defaults to {})
- * @template TFactory - The factory type (optional, defaults to undefined)
- * @template TSerializer - The serializer type (optional, defaults to undefined)
- * @example
- * ```typescript
- * import { CollectionInstance } from '@miragejs/orm';
- *
- * // Simple usage
- * const usersCollection: CollectionInstance<typeof userModel> = schema.users;
- *
- * // With relationships
- * const usersCollection: CollectionInstance<
- *   typeof userModel,
- *   { posts: HasMany<typeof postModel> }
- * > = schema.users;
- * ```
- */
-export type CollectionInstance<
-  TTemplate extends ModelTemplate,
-  TRelationships extends ModelRelationships = {},
-  TFactory extends
-    | Factory<TTemplate, SchemaCollections, ModelTraits<SchemaCollections, TTemplate>>
-    | undefined = undefined,
-  TSerializer = undefined,
-> = Collection<SchemaCollections, TTemplate, TRelationships, TFactory, TSerializer>;

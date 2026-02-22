@@ -1,9 +1,10 @@
 import type { DbRecordInput, NewDbRecord, QueryOptions } from '@src/db';
-import type { Factory, FactoryTraitNames, ModelTraits } from '@src/factory';
+import { Factory, FactoryTraitNames } from '@src/factory';
 import {
-  Model,
   ModelCollection,
   ModelCreateAttrs,
+  ModelNewAttrs,
+  ModelUpdateAttrs,
   PartialModelAttrs,
   type ModelAttrs,
   type ModelConfig,
@@ -17,7 +18,7 @@ import { MirageError } from '@src/utils';
 
 import { BaseCollection } from './BaseCollection';
 import type { SchemaInstance } from './Schema';
-import type { CollectionConfig, CollectionCreateAttrs, SchemaCollections } from './types';
+import type { CollectionConfig, SchemaCollections } from './types';
 
 /**
  * Collection for managing models of a specific type
@@ -31,30 +32,40 @@ export default class Collection<
   TSchema extends SchemaCollections = SchemaCollections,
   TTemplate extends ModelTemplate = ModelTemplate,
   TRelationships extends ModelRelationships = {},
-  TFactory extends
-    | Factory<TTemplate, TSchema, ModelTraits<TSchema, TTemplate>>
-    | undefined = undefined,
-  TSerializer = undefined,
-> extends BaseCollection<TSchema, TTemplate, TRelationships, TFactory, TSerializer> {
+  TFactory extends Factory<TTemplate, string, TSchema> = Factory<
+    TTemplate,
+    string,
+    TSchema
+  >,
+> extends BaseCollection<TSchema, TTemplate, TRelationships, TFactory> {
   /**
    * Creates a new model instance (not persisted in the database).
    * @param attrs - The attributes to create the model with. All required attributes must be provided.
    * @returns The new model instance.
    */
   new(
-    attrs: ModelCreateAttrs<TTemplate, TSchema>,
-  ): NewModelInstance<TTemplate, TSchema, TSerializer> {
-    return new this.Model({
+    attrs: ModelNewAttrs<TTemplate, TSchema>,
+  ): NewModelInstance<TTemplate, TSchema> {
+    const model = new this.Model({
       attrs: attrs,
-      relationships: this._relationships,
+      relationships: this.relationships,
       schema: this._schema,
-      serializer: this._serializer,
+      serializer: this.serializer,
     } as unknown as ModelConfig<
       TTemplate,
       TSchema,
-      RelationshipsByTemplate<TTemplate, TSchema>,
-      TSerializer
+      RelationshipsByTemplate<TTemplate, TSchema>
     >);
+
+    this._logger?.debug(
+      `New model instance created for '${this.collectionName}'`,
+      {
+        id: model.id,
+        attrs: model.attrs,
+      },
+    );
+
+    return model;
   }
 
   /**
@@ -65,93 +76,67 @@ export default class Collection<
   create(
     ...traitsAndDefaults: (
       | FactoryTraitNames<TFactory>
-      | CollectionCreateAttrs<TTemplate, TSchema>
+      | ModelCreateAttrs<TTemplate, TSchema>
     )[]
-  ): ModelInstance<TTemplate, TSchema, TSerializer> {
-    this._logger?.debug(`Creating ${this.modelName}`, {
+  ): ModelInstance<TTemplate, TSchema> {
+    this._logger?.log(`Creating model for '${this.collectionName}'`, {
       collection: this.collectionName,
       traitsAndDefaults,
     });
 
-    // Extract traits and defaults
-    const traits: FactoryTraitNames<TFactory>[] = [];
-    let defaults: CollectionCreateAttrs<TTemplate, TSchema> = {};
-
-    traitsAndDefaults.forEach((arg) => {
-      if (typeof arg === 'string') {
-        traits.push(arg);
-      } else {
-        defaults = { ...defaults, ...arg };
-      }
+    // 1. Build base attributes (no associations)
+    const attrs = this._factory.build(
+      this._schema,
+      ...traitsAndDefaults,
+    ) as ModelNewAttrs<TTemplate, TSchema>;
+    this._logger?.debug(`Built attributes for '${this.collectionName}'`, {
+      id: attrs.id,
+      attrs,
     });
 
-    // Separate regular attributes from relationship values
-    const { modelAttrs, relationshipUpdates } = Model._processAttrs<TTemplate, TSchema>(
-      defaults,
-      this._relationships as unknown as RelationshipsByTemplate<TTemplate, TSchema>,
+    // 2. Save model to DB (parent now exists!)
+    let model = this.new(attrs).save();
+    this._logger?.debug(`Saved model for '${this.collectionName}'`, {
+      id: model.id,
+    });
+
+    // 3. Process associations (nested models can find parent)
+    const relValues = this._factory.runAssociations(
+      this._schema,
+      model,
+      ...(traitsAndDefaults as (
+        | FactoryTraitNames<TFactory>
+        | PartialModelAttrs<TTemplate, TSchema>
+      )[]),
+    );
+    this._logger?.debug(`Processed associations for '${this.collectionName}'`, {
+      id: model.id,
+      relValues,
+    });
+
+    // 4. Reload model to get latest DB state (includes FKs updated via inverse sync in step 3)
+    model = model.reload();
+
+    // 5. Update model with relationship FKs (triggers inverse sync + re-init accessors)
+    if (Object.keys(relValues).length > 0) {
+      model.update(relValues as ModelUpdateAttrs<TTemplate, TSchema>);
+    }
+
+    // 6. Run afterCreate hooks
+    this._factory.runAfterCreateHooks(
+      this._schema,
+      model,
+      ...(traitsAndDefaults as (
+        | FactoryTraitNames<TFactory>
+        | PartialModelAttrs<TTemplate, TSchema>
+      )[]),
     );
 
-    const nextId = modelAttrs.id ?? this._dbCollection.nextId;
+    model = model.reload();
 
-    // Cache the id if provided
-    if (modelAttrs.id) {
-      this._identityManager?.set(modelAttrs.id as ModelAttrs<TTemplate, TSchema>['id']);
-    }
-
-    if (this._factory) {
-      // Build factory attrs with only regular attributes (no relationships)
-      const factoryAttrs = this._factory.build(
-        nextId,
-        ...traits,
-        modelAttrs as PartialModelAttrs<TTemplate, TSchema>,
-      ) as ModelAttrs<TTemplate, TSchema>;
-
-      // Skip associations for relationships that the user provided
-      const userProvidedRelationshipKeys = Object.keys(relationshipUpdates);
-
-      // Process associations to get relationship values (including from traits)
-      const associationValues = this._factory.processAssociations(
-        this._schema,
-        userProvidedRelationshipKeys,
-        traitsAndDefaults as (
-          | FactoryTraitNames<TFactory>
-          | PartialModelAttrs<TTemplate, TSchema>
-        )[],
-      );
-
-      // Merge: user defaults override associations, associations override factory attrs
-      const completeAttrs = {
-        ...factoryAttrs,
-        ...associationValues,
-        ...relationshipUpdates, // User-provided relationships have highest priority
-      } as ModelCreateAttrs<TTemplate, TSchema>;
-
-      const model = this.new(completeAttrs).save();
-      this._logger?.debug(`Created ${this.modelName} with factory`, {
-        id: model.id,
-        collection: this.collectionName,
-      });
-      // Type assertion needed: factory hook expects specific model instance type
-      // but we're working with a more general model type at this point
-      return this._factory.processAfterCreateHooks(
-        this._schema,
-        model as any,
-        ...(traitsAndDefaults as (
-          | FactoryTraitNames<TFactory>
-          | PartialModelAttrs<TTemplate, TSchema>
-        )[]),
-      ) as ModelInstance<TTemplate, TSchema, TSerializer>;
-    }
-
-    // No factory - merge modelAttrs with relationship values
-    const attrs = { ...modelAttrs, ...relationshipUpdates, id: nextId } as ModelCreateAttrs<
-      TTemplate,
-      TSchema
-    >;
-    const model = this.new(attrs).save();
-    this._logger?.debug(`Created ${this.modelName}`, {
+    this._logger?.info(`Created model for '${this.collectionName}'`, {
       id: model.id,
-      collection: this.collectionName,
+      attrs: model.attrs,
     });
 
     return model;
@@ -167,9 +152,9 @@ export default class Collection<
     count: number,
     ...traitsAndDefaults: (
       | FactoryTraitNames<TFactory>
-      | CollectionCreateAttrs<TTemplate, TSchema>
+      | ModelCreateAttrs<TTemplate, TSchema>
     )[]
-  ): ModelCollection<TTemplate, TSchema, TSerializer>;
+  ): ModelCollection<TTemplate, TSchema>;
 
   /**
    * Create multiple models with different attributes.
@@ -177,8 +162,11 @@ export default class Collection<
    * @returns A collection of model instances.
    */
   createMany(
-    models: (FactoryTraitNames<TFactory> | CollectionCreateAttrs<TTemplate, TSchema>)[][],
-  ): ModelCollection<TTemplate, TSchema, TSerializer>;
+    models: (
+      | FactoryTraitNames<TFactory>
+      | ModelCreateAttrs<TTemplate, TSchema>
+    )[][],
+  ): ModelCollection<TTemplate, TSchema>;
 
   /**
    * Implementation signature for createMany overloads.
@@ -190,17 +178,27 @@ export default class Collection<
   createMany(
     countOrModels:
       | number
-      | (FactoryTraitNames<TFactory> | CollectionCreateAttrs<TTemplate, TSchema>)[][],
+      | (
+          | FactoryTraitNames<TFactory>
+          | ModelCreateAttrs<TTemplate, TSchema>
+        )[][],
     ...traitsAndDefaults: (
       | FactoryTraitNames<TFactory>
-      | CollectionCreateAttrs<TTemplate, TSchema>
+      | ModelCreateAttrs<TTemplate, TSchema>
     )[]
-  ): ModelCollection<TTemplate, TSchema, TSerializer> {
-    let models: ModelInstance<TTemplate, TSchema, TSerializer>[];
+  ): ModelCollection<TTemplate, TSchema> {
+    const count =
+      typeof countOrModels === 'number' ? countOrModels : countOrModels.length;
+
+    this._logger?.log(`Creating ${count} models for '${this.collectionName}'`);
+
+    let models: ModelInstance<TTemplate, TSchema>[];
 
     if (typeof countOrModels === 'number') {
       // Original behavior: create N models with same traits
-      models = Array.from({ length: countOrModels }, () => this.create(...traitsAndDefaults));
+      models = Array.from({ length: countOrModels }, () =>
+        this.create(...traitsAndDefaults),
+      );
     } else {
       // New behavior: create models with individual traits
       models = countOrModels.map((modelTraitsAndDefaults) =>
@@ -208,7 +206,14 @@ export default class Collection<
       );
     }
 
-    return new ModelCollection(this._template, models, this._serializer);
+    this._logger?.info(
+      `Created ${models.length} models for '${this.collectionName}'`,
+      {
+        ids: models.map((m) => m.id),
+      },
+    );
+
+    return new ModelCollection(this.template, models, this.serializer);
   }
 
   /**
@@ -221,9 +226,9 @@ export default class Collection<
     query: DbRecordInput<ModelAttrs<TTemplate, TSchema>>,
     ...traitsAndDefaults: (
       | FactoryTraitNames<TFactory>
-      | CollectionCreateAttrs<TTemplate, TSchema>
+      | ModelCreateAttrs<TTemplate, TSchema>
     )[]
-  ): ModelInstance<TTemplate, TSchema, TSerializer> {
+  ): ModelInstance<TTemplate, TSchema> {
     const existingModel = this.find(query);
     if (existingModel) {
       return existingModel;
@@ -231,7 +236,7 @@ export default class Collection<
 
     const newModel = this.create(
       ...traitsAndDefaults,
-      query as CollectionCreateAttrs<TTemplate, TSchema>,
+      query as ModelCreateAttrs<TTemplate, TSchema>,
     );
     return newModel;
   }
@@ -247,24 +252,32 @@ export default class Collection<
     count: number,
     query:
       | DbRecordInput<ModelAttrs<TTemplate, TSchema>>
-      | ((model: ModelInstance<TTemplate, TSchema, TSerializer>) => boolean),
+      | ((model: ModelInstance<TTemplate, TSchema>) => boolean),
     ...traitsAndDefaults: (
       | FactoryTraitNames<TFactory>
-      | CollectionCreateAttrs<TTemplate, TSchema>
+      | ModelCreateAttrs<TTemplate, TSchema>
     )[]
-  ): ModelCollection<TTemplate, TSchema, TSerializer> {
+  ): ModelCollection<TTemplate, TSchema> {
     // Find existing models matching the query
     const existingModels =
       typeof query === 'function'
-        ? this.findMany({ where: query } as unknown as QueryOptions<ModelAttrs<TTemplate, TSchema>>)
+        ? this.findMany({ where: query } as unknown as QueryOptions<
+            ModelAttrs<TTemplate, TSchema>
+          >)
         : this.findMany(query as DbRecordInput<ModelAttrs<TTemplate, TSchema>>);
 
     // If we have enough models, return the requested count
     if (existingModels.length >= count) {
+      this._logger?.info(
+        `Found ${count} existing models for '${this.collectionName}'`,
+        {
+          ids: existingModels.models.slice(0, count).map((m) => m.id),
+        },
+      );
       return new ModelCollection(
-        this._template,
+        this.template,
         existingModels.models.slice(0, count),
-        this._serializer,
+        this.serializer,
       );
     }
 
@@ -273,18 +286,29 @@ export default class Collection<
 
     // Create the remaining models
     // If query is an object, include it in the creation attributes
-    const queryAttrs =
-      typeof query === 'function' ? {} : (query as CollectionCreateAttrs<TTemplate, TSchema>);
-
+    const queryAttrs = typeof query === 'function' ? {} : query;
     const newModels = Array.from({ length: needed }, () =>
-      this.create(...traitsAndDefaults, queryAttrs),
+      this.create(
+        ...traitsAndDefaults,
+        queryAttrs as ModelCreateAttrs<TTemplate, TSchema>,
+      ),
+    );
+
+    this._logger?.info(
+      `Found ${existingModels.length} and created ${newModels.length} models for '${this.collectionName}'`,
+      {
+        ids: [
+          ...existingModels.models.map((m) => m.id),
+          ...newModels.map((m) => m.id),
+        ],
+      },
     );
 
     // Combine existing and new models
     return new ModelCollection(
-      this._template,
+      this.template,
       [...existingModels.models, ...newModels],
-      this._serializer,
+      this.serializer,
     );
   }
 
@@ -305,25 +329,46 @@ export default class Collection<
    */
   async loadSeeds(scenarioId?: string): Promise<void> {
     if (!this._seeds) {
-      this._logger?.debug(`No seeds configured for collection '${this.collectionName}'`);
+      this._logger?.debug(`No seeds configured for '${this.collectionName}'`);
       return;
     }
 
     // Normalize seeds to always be an object
-    const seedScenarios: Record<string, (schema: SchemaInstance<TSchema>) => void | Promise<void>> =
-      typeof this._seeds === 'function' ? { default: this._seeds } : this._seeds;
+    const seedScenarios: Record<
+      string,
+      (schema: SchemaInstance<TSchema>) => void | Promise<void>
+    > =
+      typeof this._seeds === 'function'
+        ? { default: this._seeds }
+        : this._seeds;
 
     // If no scenarioId provided, run all scenarios
     if (!scenarioId) {
-      this._logger?.info(`Loading all seeds for collection '${this.collectionName}'`, {
+      this._logger?.log(`Loading seeds for '${this.collectionName}'`, {
         scenarios: Object.keys(seedScenarios),
       });
       for (const name in seedScenarios) {
+        // Check if this scenario has already been loaded
+        if (this._loadedSeeds.has(name)) {
+          this._logger?.warn(
+            `Seed scenario '${name}' for '${this.collectionName}' has already been loaded, skipping`,
+            {
+              loadCount: this._loadedSeeds.get(name),
+            },
+          );
+          continue;
+        }
+
         const seedFn = seedScenarios[name];
-        this._logger?.debug(`Running seed scenario '${name}' for '${this.collectionName}'`);
+        this._logger?.debug(
+          `Loading seed scenario '${name}' for '${this.collectionName}'`,
+        );
         await seedFn(this._schema);
+
+        // Track that this scenario has been loaded
+        this._loadedSeeds.set(name, (this._loadedSeeds.get(name) || 0) + 1);
       }
-      this._logger?.info(`Seeds loaded successfully for '${this.collectionName}'`);
+      this._logger?.info(`Seeds loaded for '${this.collectionName}'`);
       return;
     }
 
@@ -341,9 +386,31 @@ export default class Collection<
       );
     }
 
-    this._logger?.info(`Loading seed scenario '${scenarioId}' for '${this.collectionName}'`);
+    // Check if this scenario has already been loaded
+    if (this._loadedSeeds.has(scenarioId)) {
+      this._logger?.warn(
+        `Seed scenario '${scenarioId}' for '${this.collectionName}' has already been loaded, skipping`,
+        {
+          loadCount: this._loadedSeeds.get(scenarioId),
+        },
+      );
+      return;
+    }
+
+    this._logger?.log(
+      `Loading seed scenario '${scenarioId}' for '${this.collectionName}'`,
+    );
     await seedScenarios[scenarioId](this._schema);
-    this._logger?.info(`Seed scenario '${scenarioId}' loaded successfully`);
+
+    // Track that this scenario has been loaded
+    this._loadedSeeds.set(
+      scenarioId,
+      (this._loadedSeeds.get(scenarioId) || 0) + 1,
+    );
+
+    this._logger?.info(
+      `Seed scenario '${scenarioId}' loaded for '${this.collectionName}'`,
+    );
   }
 
   /**
@@ -358,17 +425,19 @@ export default class Collection<
    */
   async loadFixtures(): Promise<void> {
     if (!this._fixtures || !this._fixtures.records.length) {
-      this._logger?.debug(`No fixtures configured for collection '${this.collectionName}'`);
+      this._logger?.debug(
+        `No fixtures configured for '${this.collectionName}'`,
+      );
       return;
     }
 
-    this._logger?.info(`Loading fixtures for collection '${this.collectionName}'`, {
+    this._logger?.log(`Loading fixtures for '${this.collectionName}'`, {
       count: this._fixtures.records.length,
     });
 
     // Check for ID conflicts with existing records
     const fixtureIds = this._fixtures.records.map((r) => r.id);
-    const existingIds = this._dbCollection.all().map((r) => r.id);
+    const existingIds = this.dbCollection.all().map((r) => r.id);
     const conflicts = fixtureIds.filter((id) => existingIds.includes(id));
 
     if (conflicts.length > 0) {
@@ -387,11 +456,11 @@ export default class Collection<
     // Fixtures are typed as FixtureAttrs which includes all model attributes
     // The type assertion bridges FixtureAttrs (all attrs including id) with
     // NewDbRecord (Omit<Record, 'id'> & { id?: id }), which are structurally compatible
-    this._dbCollection.insertMany(
+    this.dbCollection.insertMany(
       this._fixtures.records as NewDbRecord<ModelAttrs<TTemplate, TSchema>>[],
     );
 
-    this._logger?.info(`Fixtures loaded successfully for '${this.collectionName}'`, {
+    this._logger?.info(`Fixtures loaded for '${this.collectionName}'`, {
       count: this._fixtures.records.length,
     });
   }
@@ -405,26 +474,28 @@ export default class Collection<
  */
 export function createCollection<
   TSchema extends SchemaCollections,
-  TConfig extends CollectionConfig<any, any, any, any, any>,
+  TTemplate extends ModelTemplate,
+  TRelationships extends ModelRelationships,
+  TFactory extends Factory<TTemplate, any, any>,
 >(
   schema: SchemaInstance<TSchema>,
-  config: TConfig,
-): TConfig extends CollectionConfig<
-  infer TTemplate,
-  infer TRelationships,
-  infer TFactory,
-  infer TSerializer,
-  any
->
-  ? Collection<
-      TSchema,
-      TTemplate,
-      TRelationships extends ModelRelationships ? TRelationships : {},
-      TFactory,
-      TSerializer
-    >
-  : never {
+  config: CollectionConfig<TTemplate, TRelationships, TFactory, TSchema>,
+): Collection<
+  TSchema,
+  TTemplate,
+  TRelationships,
+  TFactory extends Factory<TTemplate, any, any>
+    ? TFactory
+    : Factory<TTemplate, string, TSchema>
+> {
   // Type assertion needed: Factory function with complex conditional return type
   // TypeScript can't verify generic parameters match the conditional type structure
-  return new Collection(schema, config) as any;
+  return new Collection(schema, config) as Collection<
+    TSchema,
+    TTemplate,
+    TRelationships,
+    TFactory extends Factory<TTemplate, any, any>
+      ? TFactory
+      : Factory<TTemplate, string, TSchema>
+  >;
 }

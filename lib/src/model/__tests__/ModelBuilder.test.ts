@@ -23,7 +23,10 @@ describe('ModelBuilder', () => {
     });
 
     it('should allow method chaining with attrs()', () => {
-      const builder = new ModelBuilder().name('user').collection('users').attrs<UserAttrs>();
+      const builder = new ModelBuilder()
+        .name('user')
+        .collection('users')
+        .attrs<UserAttrs>();
       expect(builder).toBeInstanceOf(ModelBuilder);
     });
 
@@ -32,7 +35,7 @@ describe('ModelBuilder', () => {
         .name('user')
         .collection('users')
         .attrs<UserAttrs>()
-        .create();
+        .build();
 
       expect(userModel.modelName).toBe('user');
       expect(userModel.collectionName).toBe('users');
@@ -41,13 +44,13 @@ describe('ModelBuilder', () => {
 
     it('should throw error if name is not set', () => {
       expect(() => {
-        new ModelBuilder().collection('users').create();
+        new ModelBuilder().collection('users').build();
       }).toThrow('Model name is required');
     });
 
     it('should throw error if collection is not set', () => {
       expect(() => {
-        new ModelBuilder().name('user').create();
+        new ModelBuilder().name('user').build();
       }).toThrow('Collection name is required');
     });
   });
@@ -59,29 +62,37 @@ describe('ModelBuilder', () => {
     });
 
     it('should support fluent API', () => {
-      const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
+      const userModel = model()
+        .name('user')
+        .collection('users')
+        .attrs<UserAttrs>()
+        .build();
 
       expect(userModel.modelName).toBe('user');
       expect(userModel.collectionName).toBe('users');
     });
 
     it('should create template with typed attributes', () => {
-      const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
+      const userModel = model()
+        .name('user')
+        .collection('users')
+        .attrs<UserAttrs>()
+        .build();
 
       expect(userModel.modelName).toBe('user');
       expect(userModel.collectionName).toBe('users');
     });
 
     it('should work without explicit attrs() call', () => {
-      const userModel = model().name('user').collection('users').create();
+      const userModel = model().name('user').collection('users').build();
 
       expect(userModel.modelName).toBe('user');
       expect(userModel.collectionName).toBe('users');
     });
 
     it('should allow flexible method order', () => {
-      const userModel1 = model().name('user').collection('users').create();
-      const userModel2 = model().collection('users').name('user').create();
+      const userModel1 = model().name('user').collection('users').build();
+      const userModel2 = model().collection('users').name('user').build();
 
       expect(userModel1.modelName).toBe('user');
       expect(userModel1.collectionName).toBe('users');
@@ -92,7 +103,11 @@ describe('ModelBuilder', () => {
 
   describe('type safety', () => {
     it('should maintain type information through the builder chain', () => {
-      const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
+      const userModel = model()
+        .name('user')
+        .collection('users')
+        .attrs<UserAttrs>()
+        .build();
 
       // These should be type-safe (no TypeScript errors)
       expect(userModel.modelName).toBe('user');
@@ -111,7 +126,7 @@ describe('ModelBuilder', () => {
         .collection('users')
         .attrs<UserAttrs>()
         .json<UserJSON>()
-        .create();
+        .build();
 
       expect(userModel.modelName).toBe('user');
       expect(userModel.collectionName).toBe('users');
@@ -122,53 +137,53 @@ describe('ModelBuilder', () => {
   describe('Validation', () => {
     it('should throw error for empty model name', () => {
       expect(() => {
-        model().name('').collection('users').create();
+        model().name('').collection('users').build();
       }).toThrow(MirageError);
 
       expect(() => {
-        model().name('').collection('users').create();
+        model().name('').collection('users').build();
       }).toThrow('Model name must be a non-empty string');
     });
 
     it('should throw error for whitespace-only model name', () => {
       expect(() => {
-        model().name('   ').collection('users').create();
+        model().name('   ').collection('users').build();
       }).toThrow('Model name must be a non-empty string');
     });
 
     it('should throw error for empty collection name', () => {
       expect(() => {
-        model().name('user').collection('').create();
+        model().name('user').collection('').build();
       }).toThrow(MirageError);
 
       expect(() => {
-        model().name('user').collection('').create();
+        model().name('user').collection('').build();
       }).toThrow('Collection name must be a non-empty string');
     });
 
     it('should throw error for whitespace-only collection name', () => {
       expect(() => {
-        model().name('user').collection('   ').create();
+        model().name('user').collection('   ').build();
       }).toThrow('Collection name must be a non-empty string');
     });
 
     it('should throw error when name() is not called before create()', () => {
       expect(() => {
-        model().collection('users').create();
+        model().collection('users').build();
       }).toThrow(MirageError);
 
       expect(() => {
-        model().collection('users').create();
+        model().collection('users').build();
       }).toThrow('Model name is required');
     });
 
     it('should throw error when collection() is not called before create()', () => {
       expect(() => {
-        model().name('user').create();
+        model().name('user').build();
       }).toThrow(MirageError);
 
       expect(() => {
-        model().name('user').create();
+        model().name('user').build();
       }).toThrow('Collection name is required');
     });
   });

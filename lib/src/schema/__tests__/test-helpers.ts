@@ -1,5 +1,5 @@
 import { factory } from '@src/factory';
-import { NumberIdentityManager } from '@src/id-manager';
+import type { IdentityManagerConfig } from '@src/id-manager';
 import { model } from '@src/model';
 
 // Define test model attributes
@@ -22,13 +22,21 @@ export interface CommentAttrs {
 }
 
 // Create test models
-export const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
-export const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
+export const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<UserAttrs>()
+  .build();
+export const postModel = model()
+  .name('post')
+  .collection('posts')
+  .attrs<PostAttrs>()
+  .build();
 export const commentModel = model()
   .name('comment')
   .collection('comments')
   .attrs<CommentAttrs>()
-  .create();
+  .build();
 
 // Define test model types
 export type UserModel = typeof userModel;
@@ -47,7 +55,7 @@ export const userFactory = factory()
       email: 'admin@example.com',
     },
   })
-  .create();
+  .build();
 
 export const postFactory = factory()
   .model(postModel)
@@ -55,14 +63,16 @@ export const postFactory = factory()
     content: () => 'This is a test post',
     title: () => 'Hello World',
   })
-  .create();
+  .build();
 
 export const commentFactory = factory()
   .model(commentModel)
   .attrs({
     content: () => 'Great post!',
   })
-  .create();
+  .build();
 
-// Create post identity manager (reused across tests)
-export const postIdentityManager = new NumberIdentityManager();
+// Create post identity manager config (reused across tests)
+export const postIdentityManagerConfig: IdentityManagerConfig<number> = {
+  initialCounter: 1,
+};

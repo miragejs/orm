@@ -2,8 +2,10 @@ export { default as Serializer } from './Serializer';
 export {
   type StructuralSerializerOptions,
   type DataSerializerOptions,
-  type SerializerOptions,
-  // Deprecated aliases
-  type GlobalSerializerConfig,
   type SerializerConfig,
+  type SelectOption,
+  type WithOption,
+  type WithValue,
+  type NestedSerializerOptions,
+  type RelationsMode,
 } from './types';

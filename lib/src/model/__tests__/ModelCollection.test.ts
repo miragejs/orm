@@ -1,4 +1,5 @@
 import { collection, schema, type CollectionConfig } from '@src/schema';
+import { Serializer } from '@src/serializer';
 
 import Model from '../Model';
 import { model } from '../ModelBuilder';
@@ -13,7 +14,11 @@ interface UserAttrs {
 }
 
 // Create test model
-const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
+const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<UserAttrs>()
+  .build();
 
 // Create test model type
 type UserModel = typeof userModel;
@@ -29,9 +34,9 @@ const UserModelClass = Model.define<UserModel, TestSchema>(userModel);
 // Create schema instance
 const testSchema = schema()
   .collections({
-    users: collection().model(userModel).create(),
+    users: collection().model(userModel).build(),
   })
-  .setup();
+  .build();
 
 describe('ModelCollection', () => {
   let user1: ModelInstance<UserModel, TestSchema>;
@@ -52,7 +57,10 @@ describe('ModelCollection', () => {
       attrs: { name: 'Alice', email: 'alice@example.com' },
       schema: testSchema,
     }).save();
-    userCollection = new ModelCollection<UserModel, TestSchema>(userModel, [user1, user2]);
+    userCollection = new ModelCollection<UserModel, TestSchema>(userModel, [
+      user1,
+      user2,
+    ]);
   });
 
   afterEach(() => {
@@ -67,7 +75,9 @@ describe('ModelCollection', () => {
     });
 
     it('should initialize empty collection', () => {
-      const emptyCollection = new ModelCollection<UserModel, TestSchema>(userModel);
+      const emptyCollection = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+      );
       expect(emptyCollection.length).toBe(0);
       expect(emptyCollection.isEmpty).toBe(true);
       expect(Array.from(emptyCollection)).toStrictEqual([]);
@@ -78,14 +88,18 @@ describe('ModelCollection', () => {
     it('should return correct length', () => {
       expect(userCollection.length).toBe(2);
 
-      const emptyCollection = new ModelCollection<UserModel, TestSchema>(userModel);
+      const emptyCollection = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+      );
       expect(emptyCollection.length).toBe(0);
     });
 
     it('should check if collection is empty', () => {
       expect(userCollection.isEmpty).toBe(false);
 
-      const emptyCollection = new ModelCollection<UserModel, TestSchema>(userModel);
+      const emptyCollection = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+      );
       expect(emptyCollection.isEmpty).toBe(true);
     });
 
@@ -99,14 +113,18 @@ describe('ModelCollection', () => {
     it('should get first model', () => {
       expect(userCollection.first()).toBe(user1);
 
-      const emptyCollection = new ModelCollection<UserModel, TestSchema>(userModel);
+      const emptyCollection = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+      );
       expect(emptyCollection.first()).toBeNull();
     });
 
     it('should get last model', () => {
       expect(userCollection.last()).toBe(user2);
 
-      const emptyCollection = new ModelCollection<UserModel, TestSchema>(userModel);
+      const emptyCollection = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+      );
       expect(emptyCollection.last()).toBeNull();
     });
   });
@@ -134,7 +152,9 @@ describe('ModelCollection', () => {
     });
 
     it('should filter models to new collection', () => {
-      const filteredCollection = userCollection.filter((model) => model.name === 'John');
+      const filteredCollection = userCollection.filter(
+        (model) => model.name === 'John',
+      );
 
       expect(filteredCollection).toBeInstanceOf(ModelCollection);
       expect(filteredCollection.length).toBe(1);
@@ -157,14 +177,21 @@ describe('ModelCollection', () => {
     });
 
     it('should check if every model matches condition', () => {
-      expect(userCollection.every((model) => model.email.includes('@example.com'))).toBe(true);
-      expect(userCollection.every((model) => model.name === 'John')).toBe(false);
+      expect(
+        userCollection.every((model) => model.email.includes('@example.com')),
+      ).toBe(true);
+      expect(userCollection.every((model) => model.name === 'John')).toBe(
+        false,
+      );
     });
   });
 
   describe('Array-like utility methods', () => {
     it('should concatenate collections and arrays', () => {
-      const otherCollection = new ModelCollection<UserModel, TestSchema>(userModel, [user3]);
+      const otherCollection = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+        [user3],
+      );
       const concatenated = userCollection.concat(otherCollection);
 
       expect(concatenated).toBeInstanceOf(ModelCollection);
@@ -197,7 +224,9 @@ describe('ModelCollection', () => {
     });
 
     it('should sort models in new collection', () => {
-      const sorted = userCollection.sort((a, b) => a.name.localeCompare(b.name));
+      const sorted = userCollection.sort((a, b) =>
+        a.name.localeCompare(b.name),
+      );
 
       expect(sorted).toBeInstanceOf(ModelCollection);
       expect(Array.from(sorted)).toStrictEqual([user2, user1]); // Jane comes before John
@@ -228,7 +257,9 @@ describe('ModelCollection', () => {
 
     it('should convert to string representation', () => {
       const str = userCollection.toString();
-      expect(str).toBe(`collection:users(${user1.toString()}, ${user2.toString()})`);
+      expect(str).toBe(
+        `collection:users(${user1.toString()}, ${user2.toString()})`,
+      );
     });
 
     it('should be iterable', () => {
@@ -351,9 +382,223 @@ describe('ModelCollection', () => {
     });
   });
 
+  describe('Query metadata', () => {
+    it('should have undefined meta by default', () => {
+      expect(userCollection.meta).toBeUndefined();
+    });
+
+    it('should have undefined meta for empty collection', () => {
+      const emptyCollection = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+      );
+      expect(emptyCollection.meta).toBeUndefined();
+    });
+
+    it('should store meta when provided to constructor', () => {
+      const query = { where: { name: 'John' }, limit: 10 };
+      const collectionWithMeta = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+        [user1, user2],
+        undefined,
+        { query, total: 100 },
+      );
+      expect(collectionWithMeta.meta).toBeDefined();
+      expect(collectionWithMeta.meta?.query).toBe(query);
+      expect(collectionWithMeta.meta?.total).toBe(100);
+    });
+
+    it('should not preserve meta when filtering collection', () => {
+      const collectionWithMeta = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+        [user1, user2],
+        undefined,
+        { query: { limit: 10 }, total: 100 },
+      );
+
+      const filtered = collectionWithMeta.filter((m) => m.name === 'John');
+      expect(filtered.meta).toBeUndefined();
+    });
+
+    it('should not preserve meta when mapping collection', () => {
+      const collectionWithMeta = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+        [user1, user2],
+        undefined,
+        { query: { limit: 10 }, total: 100 },
+      );
+
+      const mapped = collectionWithMeta.map((m) => m);
+      expect(mapped.meta).toBeUndefined();
+    });
+
+    it('should not preserve meta when sorting collection', () => {
+      const collectionWithMeta = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+        [user1, user2],
+        undefined,
+        { query: { limit: 10 }, total: 100 },
+      );
+
+      const sorted = collectionWithMeta.sort((a, b) =>
+        a.name.localeCompare(b.name),
+      );
+      expect(sorted.meta).toBeUndefined();
+    });
+
+    it('should not preserve meta when reversing collection', () => {
+      const collectionWithMeta = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+        [user1, user2],
+        undefined,
+        { query: { limit: 10 }, total: 100 },
+      );
+
+      const reversed = collectionWithMeta.reverse();
+      expect(reversed.meta).toBeUndefined();
+    });
+
+    it('should not preserve meta when concatenating collections', () => {
+      const collectionWithMeta = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+        [user1, user2],
+        undefined,
+        { query: { limit: 10 }, total: 100 },
+      );
+
+      const concatenated = collectionWithMeta.concat([user3]);
+      expect(concatenated.meta).toBeUndefined();
+    });
+  });
+
+  describe('Serialization', () => {
+    it('should serialize collection to array of attributes', () => {
+      const json = userCollection.serialize();
+
+      expect(json).toEqual([
+        { id: user1.id, name: 'John', email: 'john@example.com' },
+        { id: user2.id, name: 'Jane', email: 'jane@example.com' },
+      ]);
+    });
+
+    it('should accept Serializer instance in serialize() method', () => {
+      type CustomUserJSON = {
+        id: string;
+        name: string;
+      };
+
+      // Create a custom serializer instance
+      const customSerializer = new Serializer<
+        UserModel,
+        TestSchema,
+        CustomUserJSON,
+        CustomUserJSON[]
+      >(userModel, { select: ['id', 'name'] });
+
+      // Use the serializer instance in serialize() method
+      const json: CustomUserJSON[] = userCollection.serialize(customSerializer);
+      expect(json).toEqual([
+        { id: user1.id, name: 'John' },
+        { id: user2.id, name: 'Jane' },
+      ]);
+      // Should not include email
+      expect(json[0]).not.toHaveProperty('email');
+      expect(json[1]).not.toHaveProperty('email');
+    });
+
+    it('should use passed Serializer instance instead of configured serializer', () => {
+      type OverrideUserJSON = {
+        id: string;
+        name: string;
+      };
+
+      type OverrideUsersJSON = {
+        users: OverrideUserJSON[];
+      };
+
+      // Configure collection with a default serializer (uses default types)
+      const defaultSerializer = new Serializer<UserModel, TestSchema>(
+        userModel,
+        { select: ['id', 'email'] },
+      );
+
+      const collectionWithSerializer = new ModelCollection<
+        UserModel,
+        TestSchema
+      >(userModel, [user1, user2], defaultSerializer);
+
+      // Create a different serializer with custom type to pass to serialize()
+      const overrideSerializer = new Serializer<
+        UserModel,
+        TestSchema,
+        OverrideUserJSON,
+        OverrideUsersJSON
+      >(userModel, {
+        select: ['id', 'name'],
+        root: 'users',
+      });
+
+      // The passed serializer should override the configured one
+      const json: OverrideUsersJSON =
+        collectionWithSerializer.serialize(overrideSerializer);
+      expect(json).toEqual({
+        users: [
+          { id: user1.id, name: 'John' },
+          { id: user2.id, name: 'Jane' },
+        ],
+      });
+    });
+
+    it('should still accept options when no Serializer instance is passed', () => {
+      const defaultSerializer = new Serializer<UserModel, TestSchema>(
+        userModel,
+        { select: ['id', 'name', 'email'] },
+      );
+
+      const collectionWithSerializer = new ModelCollection<
+        UserModel,
+        TestSchema
+      >(userModel, [user1, user2], defaultSerializer);
+
+      // Pass options instead of serializer instance
+      const json = collectionWithSerializer.serialize({ select: ['id'] });
+      expect(json).toEqual([{ id: user1.id }, { id: user2.id }]);
+    });
+
+    it('should serialize with root wrapping using custom serializer', () => {
+      type CustomUserJSON = {
+        id: string;
+        name: string;
+      };
+
+      type CustomUsersJSON = {
+        users: CustomUserJSON[];
+      };
+
+      const customSerializer = new Serializer<
+        UserModel,
+        TestSchema,
+        CustomUserJSON,
+        CustomUsersJSON
+      >(userModel, {
+        select: ['id', 'name'],
+        root: true,
+      });
+
+      const json: CustomUsersJSON = userCollection.serialize(customSerializer);
+      expect(json).toEqual({
+        users: [
+          { id: user1.id, name: 'John' },
+          { id: user2.id, name: 'Jane' },
+        ],
+      });
+    });
+  });
+
   describe('Edge cases', () => {
     it('should handle empty collection operations', () => {
-      const emptyCollection = new ModelCollection<UserModel, TestSchema>(userModel);
+      const emptyCollection = new ModelCollection<UserModel, TestSchema>(
+        userModel,
+      );
 
       expect(emptyCollection.length).toBe(0);
       expect(emptyCollection.isEmpty).toBe(true);
@@ -375,14 +620,22 @@ describe('ModelCollection', () => {
     });
 
     it('should handle operations with no matches', () => {
-      const notFound = userCollection.find((model) => model.name === 'NonExistent');
+      const notFound = userCollection.find(
+        (model) => model.name === 'NonExistent',
+      );
       expect(notFound).toBeUndefined();
 
-      const filtered = userCollection.filter((model) => model.name === 'NonExistent');
+      const filtered = userCollection.filter(
+        (model) => model.name === 'NonExistent',
+      );
       expect(filtered.length).toBe(0);
 
-      expect(userCollection.some((model) => model.name === 'NonExistent')).toBe(false);
-      expect(userCollection.every((model) => model.name === 'NonExistent')).toBe(false);
+      expect(userCollection.some((model) => model.name === 'NonExistent')).toBe(
+        false,
+      );
+      expect(
+        userCollection.every((model) => model.name === 'NonExistent'),
+      ).toBe(false);
     });
   });
 
@@ -398,19 +651,22 @@ describe('ModelCollection', () => {
         .name('comment')
         .collection('comments')
         .attrs<CommentAttrs>()
-        .create();
+        .build();
 
       type CommentSchema = {
         comments: CollectionConfig<typeof CommentModel>;
       };
 
-      const CommentModelClass = Model.define<typeof CommentModel, CommentSchema>(CommentModel);
+      const CommentModelClass = Model.define<
+        typeof CommentModel,
+        CommentSchema
+      >(CommentModel);
 
       const commentSchema = schema()
         .collections({
-          comments: collection().model(CommentModel).create(),
+          comments: collection().model(CommentModel).build(),
         })
-        .setup();
+        .build();
 
       const comment1 = new CommentModelClass({
         attrs: { text: 'First comment', userId: '1' },
@@ -420,10 +676,10 @@ describe('ModelCollection', () => {
         attrs: { text: 'Second comment', userId: '2' },
         schema: commentSchema,
       }).save();
-      const commentCollection = new ModelCollection<typeof CommentModel, CommentSchema>(
-        CommentModel,
-        [comment1, comment2],
-      );
+      const commentCollection = new ModelCollection<
+        typeof CommentModel,
+        CommentSchema
+      >(CommentModel, [comment1, comment2]);
 
       expect(commentCollection.length).toBe(2);
       expect(commentCollection.at(0)?.text).toBe('First comment');

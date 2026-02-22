@@ -1,0 +1,70 @@
+{
+  "name": "task-board-example",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Example project using miragejs-orm",
+  "scripts": {
+    "reinstall": "rm -rf node_modules && pnpm install",
+    "start": "vite",
+    "restart": "pnpm reinstall && pnpm start",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "check:format": "prettier --check \"src/**/*.{ts,tsx}\" \"test/**/*.{ts,tsx}\"",
+    "check:lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "check:types": "tsc --noEmit",
+    "check:all": "pnpm check:format && pnpm check:lint && pnpm check:types",
+    "fix:format": "prettier --write \"src/**/*.{ts,tsx}\" \"test/**/*.{ts,tsx}\"",
+    "fix:lint": "eslint . --ext ts,tsx --fix",
+    "fix:all": "pnpm fix:format && pnpm fix:lint",
+    "build": "vite build",
+    "build:checks": "pnpm check:all && pnpm build"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.13.5",
+    "@emotion/styled": "^11.13.5",
+    "@faker-js/faker": "^9.2.0",
+    "@mui/icons-material": "^6.1.7",
+    "@mui/material": "^6.1.7",
+    "@mui/x-charts": "^8.23.0",
+    "lodash.kebabcase": "^4.1.1",
+    "lodash.upperfirst": "^4.3.1",
+    "miragejs-orm": "file:../../lib",
+    "msw": "^2.6.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router": "^7.0.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/lodash.kebabcase": "^4.1.9",
+    "@types/lodash.upperfirst": "^4.3.9",
+    "@types/node": "^25.0.9",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^5.1.4",
+    "@vitest/coverage-v8": "^4.0.17",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.0",
+    "globals": "^16.1.0",
+    "happy-dom": "^20.6.1",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.32.1",
+    "vite": "^6.0.1",
+    "vitest": "^4.0.18"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
+  }
+}

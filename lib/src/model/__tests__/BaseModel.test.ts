@@ -1,5 +1,5 @@
 import { DbCollection } from '@src/db';
-import { NumberIdentityManager } from '@src/id-manager';
+import { IdentityManager } from '@src/id-manager';
 
 import BaseModel from '../BaseModel';
 
@@ -33,7 +33,11 @@ describe('BaseModel', () => {
 
   describe('Constructor', () => {
     it('should initialize with default values', () => {
-      expect(user.attrs).toEqual({ name: 'John', email: 'john@example.com', id: null });
+      expect(user.attrs).toEqual({
+        name: 'John',
+        email: 'john@example.com',
+        id: null,
+      });
       expect(user.modelName).toBe('user');
       expect(user.isNew()).toBe(true);
     });
@@ -47,9 +51,17 @@ describe('BaseModel', () => {
     });
 
     it('should provide attrs getter', () => {
-      expect(user.attrs).toEqual({ name: 'John', email: 'john@example.com', id: null });
+      expect(user.attrs).toEqual({
+        name: 'John',
+        email: 'john@example.com',
+        id: null,
+      });
       user.save();
-      expect(user.attrs).toEqual({ name: 'John', email: 'john@example.com', id: '1' });
+      expect(user.attrs).toEqual({
+        name: 'John',
+        email: 'john@example.com',
+        id: '1',
+      });
     });
 
     it('should handle save operation', () => {
@@ -92,7 +104,9 @@ describe('BaseModel', () => {
   describe('Serialization', () => {
     it('should serialize to JSON', () => {
       user.save();
-      expect(user.toJSON()).toEqual({
+
+      const json: UserAttrs = user.toJSON();
+      expect(json).toEqual({
         id: '1',
         name: 'John',
         email: 'john@example.com',
@@ -107,9 +121,13 @@ describe('BaseModel', () => {
 
   describe('ID behavior', () => {
     it('should use string IDs by default', () => {
-      const comment = new BaseModel<{ id: string; text: string }>('comment', 'comments', {
-        text: 'Great post!',
-      });
+      const comment = new BaseModel<{ id: string; text: string }>(
+        'comment',
+        'comments',
+        {
+          text: 'Great post!',
+        },
+      );
       expect(comment.id).toBeNull();
 
       comment.save();
@@ -119,12 +137,19 @@ describe('BaseModel', () => {
     });
 
     it('should work with number IDs when explicitly typed', () => {
-      const postDbCollection = new DbCollection<{ id: number; title: string; content: string }>(
-        'posts',
-        { identityManager: new NumberIdentityManager() },
-      );
+      const postDbCollection = new DbCollection<{
+        id: number;
+        title: string;
+        content: string;
+      }>('posts', {
+        identityManager: new IdentityManager({ initialCounter: 1 }),
+      });
 
-      const post = new BaseModel<{ id: number; title: string; content: string }>(
+      const post = new BaseModel<{
+        id: number;
+        title: string;
+        content: string;
+      }>(
         'post',
         'posts',
         { title: 'My Post', content: 'Content here' },

@@ -1,54 +1,59 @@
 import { createDatabase, type DbInstance } from '@src/db';
-import { StringIdentityManager } from '@src/id-manager';
-import type { ModelTemplate } from '@src/model';
 import {
-  Serializer,
-  type SerializerOptions,
-  type StructuralSerializerOptions,
-} from '@src/serializer';
+  IdentityManager,
+  type IdentityManagerConfig,
+  type IdType,
+} from '@src/id-manager';
 import { Logger, MirageError } from '@src/utils';
 
 import Collection, { createCollection } from './Collection';
 import type {
-  SchemaCollectionAccessors,
   CollectionConfig,
+  SchemaCollectionAccessors,
   SchemaCollections,
   SchemaConfig,
   SchemaDbCollections,
 } from './types';
 
 /**
- * Schema class that manages database and collections
+ * Schema class that manages database and collections.
+ *
+ * You can set a default identity manager configuration at the schema level,
+ * which individual collections can override with their own configuration.
+ * By default, collections use string IDs starting from "1".
  * @template TCollections - The type map of collection names to their configurations
- * @template TConfig - The schema configuration type with identity manager and global serializer config
+ * @template TIdType - The default ID type for collections (defaults to string)
  */
 export default class Schema<
   TCollections extends SchemaCollections,
-  TConfig extends SchemaConfig<any, any> = SchemaConfig<StringIdentityManager, undefined>,
+  TIdType extends IdType = string,
 > {
   public readonly db: DbInstance<SchemaDbCollections<TCollections>>;
-  public readonly identityManager: TConfig extends SchemaConfig<infer TIdentityManager, any>
-    ? TIdentityManager
-    : StringIdentityManager;
   public readonly logger?: Logger;
 
-  private _collections: Map<string, Collection<any, any, any, any, any>> = new Map();
-  private _globalSerializerConfig?: StructuralSerializerOptions;
+  private _collections: Map<string, Collection<any, any, any, any>> = new Map();
+  private _defaultIdentityManagerConfig?: IdentityManagerConfig<TIdType>;
 
-  constructor(collections: TCollections, config?: TConfig) {
-    this.db = createDatabase<SchemaDbCollections<TCollections>>();
-    this.identityManager = config?.identityManager ?? new StringIdentityManager();
-    this._globalSerializerConfig = config?.globalSerializerConfig;
-
+  constructor(collections: TCollections, config?: SchemaConfig<TIdType>) {
     // Create logger if logging is enabled
     if (config?.logging?.enabled) {
       this.logger = new Logger(config.logging);
-      this.logger.debug('Schema initialized', {
-        collections: Object.keys(collections),
-      });
     }
 
+    // Store the default identity manager config for later merging with collection configs
+    this._defaultIdentityManagerConfig = config?.identityManager;
+
+    // Create database instance
+    this.db = createDatabase<SchemaDbCollections<TCollections>>({
+      logger: this.logger,
+    });
+
+    // Register collections
     this._registerCollections(collections);
+
+    if (this.logger) {
+      this.logger.debug('Schema initialized', this.db.dump());
+    }
   }
 
   /**
@@ -62,22 +67,19 @@ export default class Schema<
     infer TTemplate,
     infer TRelationships,
     infer TFactory,
-    infer TSerializer,
     any
   >
-    ? Collection<TCollections, TTemplate, TRelationships, TFactory, TSerializer>
+    ? Collection<TCollections, TTemplate, TRelationships, TFactory>
     : never {
     const collection = this._collections.get(collectionName as string);
     if (!collection) {
       throw new MirageError(`Collection '${String(collectionName)}' not found`);
     }
-    // Type assertion needed: Map storage loses specific generic parameters
-    // TypeScript can't verify stored collection matches complex conditional return type
     return collection as any;
   }
 
   /**
-   * Load all seeds for all collections in the schema.
+   * Load seeds for all collections or a specific collection in the schema.
    * This will run all seed scenarios for each collection.
    * To load specific scenarios, use collection.loadSeeds(scenarioId) on individual collections.
    * @example
@@ -85,41 +87,137 @@ export default class Schema<
    * // Load all seeds for all collections
    * await schema.loadSeeds();
    *
-   * // Or load specific scenario for a single collection
-   * await schema.users.loadSeeds('development');
+   * // Load seeds for a specific collection
+   * await schema.loadSeeds('users');
+   *
+   * // Load only default scenarios for all collections
+   * await schema.loadSeeds({ onlyDefault: true });
+   *
+   * // Load only default scenario for a specific collection
+   * await schema.loadSeeds({ collectionName: 'users', onlyDefault: true });
    * ```
    */
-  async loadSeeds(): Promise<void> {
-    this.logger?.info('Loading seeds for all collections', {
-      collections: Array.from(this._collections.keys()),
-    });
+  async loadSeeds(): Promise<void>;
+  /**
+   * Load seeds for a specific collection
+   * @param collectionName - The name of the collection to load seeds for
+   */
+  async loadSeeds(collectionName: keyof TCollections): Promise<void>;
+  /**
+   * Load only default scenarios for all collections
+   * @param options - Load options with onlyDefault flag
+   */
+  async loadSeeds(options: { onlyDefault: boolean }): Promise<void>;
+  /**
+   * Load seeds for a specific collection with options
+   * @param options - Load options with collectionName and optional onlyDefault flag
+   */
+  async loadSeeds(options: {
+    collectionName: keyof TCollections;
+    onlyDefault?: boolean;
+  }): Promise<void>;
+  /**
+   * Implementation method for loading seeds
+   * @param collectionNameOrOptions - Collection name or options object
+   */
+  async loadSeeds(
+    collectionNameOrOptions?:
+      | keyof TCollections
+      | { collectionName?: keyof TCollections; onlyDefault?: boolean },
+  ): Promise<void> {
+    // Parse arguments
+    let collectionName: keyof TCollections | undefined;
+    let onlyDefault = false;
 
-    for (const collection of this._collections.values()) {
-      await collection.loadSeeds();
+    if (typeof collectionNameOrOptions === 'object') {
+      // Object parameter: { collectionName?, onlyDefault? }
+      collectionName = collectionNameOrOptions.collectionName;
+      onlyDefault = collectionNameOrOptions.onlyDefault ?? false;
+    } else {
+      // String parameter: collectionName
+      collectionName = collectionNameOrOptions;
     }
 
-    this.logger?.info('All seeds loaded successfully');
+    if (collectionName) {
+      this.logger?.log(
+        `Loading seeds for '${String(collectionName)}'${onlyDefault ? ' (default only)' : ''}`,
+      );
+
+      const collection = this.getCollection(collectionName);
+      await collection.loadSeeds(onlyDefault ? 'default' : undefined);
+
+      this.logger?.info(
+        `Seeds loaded for '${String(collectionName)}'`,
+        this.db.dump(),
+      );
+    } else {
+      this.logger?.log(
+        `Loading all seeds${onlyDefault ? ' (default only)' : ''}`,
+        {
+          collections: Array.from(this._collections.keys()),
+        },
+      );
+
+      for (const [_, collection] of this._collections) {
+        await collection.loadSeeds(onlyDefault ? 'default' : undefined);
+      }
+
+      this.logger?.info('All seeds loaded', this.db.dump());
+    }
   }
 
   /**
-   * Load all fixtures for all collections in the schema.
+   * Load fixtures for all collections or a specific collection in the schema.
    * This will insert all fixture records into each collection's database.
+   * @param collectionName - Optional collection name to load fixtures for. If not provided, loads for all collections.
    * @example
    * ```typescript
    * // Load all fixtures for all collections
    * await schema.loadFixtures();
+   *
+   * // Load fixtures for a specific collection
+   * await schema.loadFixtures('users');
    * ```
    */
-  async loadFixtures(): Promise<void> {
-    this.logger?.info('Loading fixtures for all collections', {
-      collections: Array.from(this._collections.keys()),
-    });
+  async loadFixtures(collectionName?: keyof TCollections): Promise<void> {
+    if (collectionName) {
+      this.logger?.log(`Loading fixtures for '${String(collectionName)}'`);
 
-    for (const collection of this._collections.values()) {
+      const collection = this.getCollection(collectionName);
       await collection.loadFixtures();
-    }
 
-    this.logger?.info('All fixtures loaded successfully');
+      this.logger?.info(
+        `Fixtures loaded for '${String(collectionName)}'`,
+        this.db.dump(),
+      );
+    } else {
+      this.logger?.log('Loading all fixtures', {
+        collections: Array.from(this._collections.keys()),
+      });
+
+      for (const [_, collection] of this._collections) {
+        await collection.loadFixtures();
+      }
+
+      this.logger?.info('All fixtures loaded', this.db.dump());
+    }
+  }
+
+  /**
+   * Resets seed tracking for all collections, allowing seeds to be reloaded.
+   * Call this after db.emptyData() if you need to reload seeds.
+   * @example
+   * ```typescript
+   * schema.db.emptyData();
+   * schema.resetSeedTracking();
+   * await schema.loadSeeds(); // Seeds can now be loaded again
+   * ```
+   */
+  resetSeedTracking(): void {
+    for (const [_, collection] of this._collections) {
+      collection.resetSeedTracking();
+    }
+    this.logger?.log('Seed tracking reset for all collections');
   }
 
   /**
@@ -127,52 +225,45 @@ export default class Schema<
    * @param collections - Collection configurations to register
    */
   private _registerCollections(collections: TCollections): void {
-    this.logger?.debug('Registering collections', {
+    this.logger?.log('Registering collections', {
       count: Object.keys(collections).length,
       names: Object.keys(collections),
     });
 
     // Track collections with auto-loading fixtures
-    const autoLoadCollections: any[] = [];
+    const autoLoadCollections: Collection<TCollections>[] = [];
 
     for (const collectionName in collections) {
       const collectionConfig = collections[collectionName];
       const {
-        model,
         factory,
-        relationships,
-        serializerConfig,
-        serializerInstance,
-        seeds,
         fixtures,
-      } = collectionConfig;
-      const identityManager = collectionConfig.identityManager ?? this.identityManager;
-
-      // Determine the final serializer to use
-      let finalSerializer: any;
-
-      if (serializerInstance) {
-        // 1. Collection-level instance has highest priority (no merging)
-        finalSerializer = serializerInstance;
-      } else {
-        // 2. Merge global config with collection config
-        const mergedConfig = this._mergeConfigs(model, serializerConfig);
-
-        // Only create serializer if there's a config
-        if (mergedConfig) {
-          finalSerializer = new Serializer(model, mergedConfig);
-        }
-      }
-
-      const collection = createCollection(this as SchemaInstance<TCollections, TConfig>, {
-        model,
-        factory,
         identityManager,
+        model,
         relationships,
-        serializer: finalSerializer,
         seeds,
-        fixtures,
-      });
+        serializer,
+      } = collectionConfig;
+
+      const mergedIdentityManager = this._mergeIdentityManager(identityManager);
+
+      const collection = createCollection(
+        this as SchemaInstance<TCollections>,
+        {
+          model,
+          relationships,
+          factory,
+          identityManager: mergedIdentityManager,
+          serializer,
+          seeds,
+          fixtures,
+        } as CollectionConfig<
+          typeof model,
+          typeof relationships,
+          typeof factory,
+          TCollections
+        >,
+      );
       this._collections.set(collectionName, collection);
 
       Object.defineProperty(this, collectionName, {
@@ -187,8 +278,9 @@ export default class Schema<
       }
     }
 
-    this.logger?.debug('Collections registered successfully', {
-      count: this._collections.size,
+    this.logger?.info('All collections registered', {
+      count: Object.keys(collections).length,
+      names: Object.keys(collections),
     });
 
     // Validate inverse relationships after all collections are registered
@@ -198,15 +290,44 @@ export default class Schema<
     // This is done synchronously after all collections are registered
     // to ensure relationships are set up properly
     if (autoLoadCollections.length > 0) {
-      this.logger?.info('Auto-loading fixtures', {
+      this.logger?.log('Auto-loading fixtures', {
         collections: autoLoadCollections.map((c) => c.collectionName),
       });
+
       for (const collection of autoLoadCollections) {
         // Load fixtures synchronously using a non-async approach
         // Since we're in a constructor context, we need to handle this carefully
         void collection.loadFixtures();
       }
     }
+  }
+
+  /**
+   * Merge identity manager from collection config with schema defaults.
+   * Collection-level config/instance takes priority over schema-level default.
+   * @param collectionIdentityManager - The identity manager from collection config (config or instance)
+   * @returns The merged identity manager config or instance, or undefined
+   * @private
+   */
+  private _mergeIdentityManager<TId extends IdType>(
+    collectionIdentityManager?:
+      | IdentityManagerConfig<TId>
+      | IdentityManager<TId>,
+  ): IdentityManagerConfig<TId> | IdentityManager<TId> | undefined {
+    // If collection has an IdentityManager instance, use it directly (highest priority)
+    if (collectionIdentityManager instanceof IdentityManager) {
+      return collectionIdentityManager;
+    }
+
+    // If collection has a config, use it (takes priority over schema default)
+    if (collectionIdentityManager) {
+      return collectionIdentityManager;
+    }
+
+    // Fall back to schema default config (cast needed as schema default may have different ID type)
+    return this._defaultIdentityManagerConfig as
+      | IdentityManagerConfig<TId>
+      | undefined;
   }
 
   /**
@@ -236,7 +357,8 @@ export default class Schema<
 
         const inverseName = relationship.inverse as string;
         const targetCollectionName = relationship.targetModel.collectionName;
-        const targetCollectionConfig = collections[targetCollectionName as keyof TCollections];
+        const targetCollectionConfig =
+          collections[targetCollectionName as keyof TCollections];
 
         if (!targetCollectionConfig) {
           throw new MirageError(
@@ -255,7 +377,10 @@ export default class Schema<
 
         // Validate that inverse relationship points back to this collection
         const inverseRel = targetRelationships[inverseName];
-        if (inverseRel.targetModel.collectionName !== collectionConfig.model.collectionName) {
+        if (
+          inverseRel.targetModel.collectionName !==
+          collectionConfig.model.collectionName
+        ) {
           throw new MirageError(
             `Invalid inverse relationship: '${collectionName}.${relName}' ` +
               `declares inverse '${inverseName}', but '${targetCollectionName}.${inverseName}' ` +
@@ -278,40 +403,11 @@ export default class Schema<
       }
     }
   }
-
-  /**
-   * Merge global serializer config with collection-specific config
-   * Collection config values override global config values
-   * @param _template - The model template (used for type inference only)
-   * @param collectionConfig - Collection-specific serializer config
-   * @returns Merged serializer config or undefined if both are undefined
-   */
-  private _mergeConfigs<TTemplate extends ModelTemplate>(
-    _template: TTemplate,
-    collectionConfig?: SerializerOptions<TTemplate>,
-  ): SerializerOptions<TTemplate> | undefined {
-    const global = this._globalSerializerConfig;
-
-    if (!global && !collectionConfig) {
-      return undefined;
-    }
-
-    return {
-      // Structural options: collection overrides global
-      root: collectionConfig?.root ?? global?.root,
-      embed: collectionConfig?.embed ?? global?.embed,
-      // Model-specific options: only from collection level
-      attrs: collectionConfig?.attrs,
-      include: collectionConfig?.include,
-    };
-  }
 }
 
 /**
  * Type for a complete schema instance with collections
  * Provides both string-based property access and symbol-based relationship resolution
  */
-export type SchemaInstance<
-  TCollections extends SchemaCollections,
-  TConfig extends SchemaConfig<any, any> = SchemaConfig<StringIdentityManager, undefined>,
-> = Schema<TCollections, TConfig> & SchemaCollectionAccessors<TCollections>;
+export type SchemaInstance<TCollections extends SchemaCollections> =
+  Schema<TCollections> & SchemaCollectionAccessors<TCollections>;

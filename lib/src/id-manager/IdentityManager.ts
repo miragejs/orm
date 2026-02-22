@@ -28,7 +28,9 @@ export default class IdentityManager<T extends IdType = string> {
   constructor(options: IdentityManagerConfig<T>) {
     this._initialCounter = options.initialCounter;
     this._counter = this._initialCounter;
-    this._usedIds = options.initialUsedIds ? new Set<T>(options.initialUsedIds) : new Set<T>();
+    this._usedIds = options.initialUsedIds
+      ? new Set<T>(options.initialUsedIds)
+      : new Set<T>();
     this._idGenerator = options.idGenerator ?? this.getDefaultGenerator();
   }
 
@@ -38,11 +40,9 @@ export default class IdentityManager<T extends IdType = string> {
    */
   get(): T {
     let nextId = this._counter;
-
     while (this._usedIds.has(nextId)) {
       nextId = this._idGenerator(nextId);
     }
-
     return nextId;
   }
 
@@ -87,50 +87,24 @@ export default class IdentityManager<T extends IdType = string> {
   private getDefaultGenerator(): IdGenerator<T> {
     if (typeof this._initialCounter === 'string') {
       if (isNaN(Number(this._initialCounter))) {
-        throw new MirageError('Default ID generator only works with numeric string IDs');
+        throw new MirageError(
+          'Default ID generator only works with numeric string IDs',
+        );
       }
       return ((current: string) => {
         if (isNaN(Number(current))) {
-          throw new MirageError('Default ID generator only works with numeric string IDs');
+          throw new MirageError(
+            'Default ID generator only works with numeric string IDs',
+          );
         }
         return String(Number(current) + 1);
       }) as unknown as IdGenerator<T>;
     } else if (typeof this._initialCounter === 'number') {
       return ((current: number) => current + 1) as unknown as IdGenerator<T>;
     } else {
-      throw new MirageError('Unknown ID type. Please provide a custom idGenerator.');
+      throw new MirageError(
+        'Unknown ID type. Please provide a custom idGenerator.',
+      );
     }
-  }
-}
-
-/**
- * String-based identity manager with sensible defaults.
- * @example
- * const identityManager = new StringIdentityManager();
- * identityManager.fetch(); // => "1"
- * identityManager.fetch(); // => "2"
- */
-export class StringIdentityManager extends IdentityManager<string> {
-  constructor(options?: Partial<IdentityManagerConfig<string>>) {
-    super({
-      initialCounter: '1',
-      ...options,
-    });
-  }
-}
-
-/**
- * Number-based identity manager with sensible defaults.
- * @example
- * const identityManager = new NumberIdentityManager();
- * identityManager.fetch(); // => 1
- * identityManager.fetch(); // => 2
- */
-export class NumberIdentityManager extends IdentityManager<number> {
-  constructor(options?: Partial<IdentityManagerConfig<number>>) {
-    super({
-      initialCounter: 1,
-      ...options,
-    });
   }
 }

@@ -68,7 +68,10 @@ describe('DB', () => {
         const num = parseInt(current.split('-')[1]);
         return `user-${num + 1}`;
       };
-      const usersManager = new IdentityManager<string>({ initialCounter: 'user-1', idGenerator });
+      const usersManager = new IdentityManager<string>({
+        initialCounter: 'user-1',
+        idGenerator,
+      });
       const db = createDatabase().createCollection<{ id: string }>('users', {
         identityManager: usersManager,
       });
@@ -91,13 +94,17 @@ describe('DB', () => {
 
     it('should create collection with initial data', () => {
       const initialData = [{ id: '1', name: 'John' }];
-      const db = createDatabase().createCollection<UserRecord>('users', { initialData });
+      const db = createDatabase().createCollection<UserRecord>('users', {
+        initialData,
+      });
       expect(db.users.find('1')).toEqual({ id: '1', name: 'John' });
     });
 
     it('should throw error when creating duplicate collection', () => {
       const db = createDatabase().createCollection('users');
-      expect(() => db.createCollection('users')).toThrow('Collection users already exists');
+      expect(() => db.createCollection('users')).toThrow(
+        'Collection users already exists',
+      );
     });
   });
 

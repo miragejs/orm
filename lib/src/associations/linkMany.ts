@@ -1,4 +1,4 @@
-import type { InferModelAttrs, ModelTemplate } from '@src/model';
+import type { ModelAttrsFor, ModelTemplate } from '@src/model';
 import type { SchemaCollections } from '@src/schema';
 
 import type {
@@ -10,18 +10,21 @@ import type {
 
 /**
  * Try to find N existing models, else create more as needed (with schema type for trait validation)
- * @template TSchema - The schema collections type
  * @template TModel - The model template (inferred from model parameter)
+ * @template TSchema - The schema collections type
  * @param model - Model template to use
  * @param count - Number of models needed
  * @param query - Optional query to filter models (attributes object or predicate function)
  * @param traitsAndDefaults - Traits and/or defaults to apply when creating (variadic) - trait names are validated against schema
  * @returns The link many association
  */
-export default function linkMany<TSchema extends SchemaCollections, TModel extends ModelTemplate>(
+export default function linkMany<
+  TModel extends ModelTemplate,
+  TSchema extends SchemaCollections,
+>(
   model: TModel,
   count: number,
-  query?: AssociationQuery<InferModelAttrs<TModel>>,
+  query?: AssociationQuery<ModelAttrsFor<TModel>>,
   ...traitsAndDefaults: TypedAssociationTraitsAndDefaults<TSchema, TModel>
 ): LinkManyAssociation<TModel>;
 
@@ -37,7 +40,7 @@ export default function linkMany<TSchema extends SchemaCollections, TModel exten
 export default function linkMany<TModel extends ModelTemplate>(
   model: TModel,
   count: number,
-  query?: AssociationQuery<InferModelAttrs<TModel>>,
+  query?: AssociationQuery<ModelAttrsFor<TModel>>,
   ...traitsAndDefaults: AssociationTraitsAndDefaults
 ): LinkManyAssociation<TModel>;
 

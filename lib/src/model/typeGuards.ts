@@ -11,7 +11,12 @@ import type { ModelInstance, ModelTemplate } from './types';
 export function isModelInstance<TSchema extends SchemaCollections>(
   value: unknown,
 ): value is ModelInstance<ModelTemplate, TSchema> {
-  return value !== null && typeof value === 'object' && 'id' in value && 'modelName' in value;
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'id' in value &&
+    'modelName' in value
+  );
 }
 
 /**
@@ -22,7 +27,10 @@ export function isModelInstance<TSchema extends SchemaCollections>(
 export function isModelInstanceArray<TSchema extends SchemaCollections>(
   value: unknown,
 ): value is ModelInstance<ModelTemplate, TSchema>[] {
-  return Array.isArray(value) && value.every((item) => isModelInstance<TSchema>(item));
+  return (
+    Array.isArray(value) &&
+    value.every((item) => isModelInstance<TSchema>(item))
+  );
 }
 
 /**

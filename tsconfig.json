@@ -17,18 +17,9 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "ES2022",
-    "typeRoots": ["./node_modules", "./node_modules/@types", "./lib/types"],
+    "typeRoots": ["./node_modules", "./node_modules/@types"],
     "types": ["node", "vitest/globals"]
   },
-  "include": [
-    "lib/src/**/*",
-    "lib/types/**/*",
-    "tsup.config.ts",
-    "vitest.config.mts"
-  ],
-  "exclude": [
-    "node_modules",
-    "lib/dist",
-    "lib/node_modules"
-  ]
+  "include": ["lib/src/**/*", "tsup.config.ts", "vitest.config.mts"],
+  "exclude": ["node_modules", "lib/dist", "lib/node_modules"]
 }

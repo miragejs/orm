@@ -1,22 +1,30 @@
-import { Relationships } from '@src/associations';
 import type { DbCollection } from '@src/db';
+import { Relationships } from '@src/relations';
 import type { SchemaCollections } from '@src/schema';
+import { Serializer } from '@src/serializer';
+import type { SerializerConfig } from '@src/serializer';
 
 import BaseModel from './BaseModel';
 import RelationshipsManager from './RelationshipsManager';
-import { isModelCollection, isModelInstance, isModelInstanceArray } from './typeGuards';
+import {
+  isModelCollection,
+  isModelInstance,
+  isModelInstanceArray,
+} from './typeGuards';
 import type {
+  SerializedCollectionFor,
+  SerializedModelFor,
+  ForeignKeyValue,
   ModelAttrs,
   ModelClass,
   ModelConfig,
-  ModelCreateAttrs,
+  ModelNewAttrs,
   ModelInstance,
   ModelRelationships,
   ModelTemplate,
   ModelUpdateAttrs,
   NewModelAttrs,
   NewModelInstance,
-  RelatedModelAttrs,
   RelationshipNames,
   RelationshipTargetModel,
   RelationshipsByTemplate,
@@ -26,14 +34,21 @@ import type {
  * Model class for managing model instances with relationships
  * @template TTemplate - The model template (most important for users)
  * @template TSchema - The schema collections type for enhanced type inference
- * @template TSerializer - The serializer type
  */
 export default class Model<
   TTemplate extends ModelTemplate = ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
-  TSerializer = undefined,
-> extends BaseModel<ModelAttrs<TTemplate, TSchema>, TSerializer> {
+> extends BaseModel<
+  ModelAttrs<TTemplate, TSchema>,
+  SerializedModelFor<TTemplate>
+> {
   public readonly relationships?: RelationshipsByTemplate<TTemplate, TSchema>;
+  public readonly serializer?: Serializer<
+    TTemplate,
+    TSchema,
+    SerializedModelFor<TTemplate>,
+    SerializedCollectionFor<TTemplate>
+  >;
   protected _relationshipsManager?: RelationshipsManager<TTemplate, TSchema>;
 
   constructor(
@@ -41,21 +56,20 @@ export default class Model<
     config: ModelConfig<
       TTemplate,
       TSchema,
-      RelationshipsByTemplate<TTemplate, TSchema>,
-      TSerializer
+      RelationshipsByTemplate<TTemplate, TSchema>
     >,
   ) {
-    const { attrs, relationships, schema, serializer } = config;
+    const { attrs, relationships, serializer, schema } = config;
 
     const dbCollection = schema.db.getCollection(
       template.collectionName,
     ) as unknown as DbCollection<ModelAttrs<TTemplate, TSchema>>;
 
-    // Process attributes to separate relationship model instances from regular attributes
-    const { modelAttrs, relationshipUpdates } = Model._processAttrs<TTemplate, TSchema>(
-      attrs,
-      relationships,
-    );
+    // Process attributes to separate relationship values from regular attributes
+    const { modelAttrs, relationshipUpdates } = Model.processAttrs<
+      TTemplate,
+      TSchema
+    >(attrs, relationships, true);
 
     // Initialize BaseModel with regular attributes, db collection, and serializer
     super(
@@ -66,6 +80,7 @@ export default class Model<
       serializer,
     );
 
+    this.serializer = serializer;
     this.relationships = relationships;
     if (schema && relationships) {
       // Cast to base Model type since RelationshipsManager doesn't need serializer type info
@@ -75,9 +90,13 @@ export default class Model<
         relationships,
       );
 
-      // Set pending relationship updates only if the model is new (not already in the database)
-      if (this._status === 'new' && Object.keys(relationshipUpdates).length > 0) {
-        this._relationshipsManager.setPendingRelationshipUpdates(relationshipUpdates);
+      if (
+        this._status === 'new' &&
+        Object.keys(relationshipUpdates).length > 0
+      ) {
+        this._relationshipsManager.setPendingRelationshipUpdates(
+          relationshipUpdates,
+        );
       }
 
       this._initAttributeAccessors();
@@ -92,251 +111,24 @@ export default class Model<
    * Define a model class with attribute accessors
    * @template TTemplate - The model template (most important for users)
    * @template TSchema - The schema collections type for enhanced type inference
-   * @template TSerializer - The serializer type
    * @param template - The model template to define
    * @returns A model class that can be instantiated with 'new'
    */
   static define<
     TTemplate extends ModelTemplate,
     TSchema extends SchemaCollections = SchemaCollections,
-    TSerializer = undefined,
-  >(template: TTemplate): ModelClass<TTemplate, TSchema, TSerializer> {
-    return class extends Model<TTemplate, TSchema, TSerializer> {
+  >(template: TTemplate): ModelClass<TTemplate, TSchema> {
+    return class extends Model<TTemplate, TSchema> {
       constructor(
         config: ModelConfig<
           TTemplate,
           TSchema,
-          RelationshipsByTemplate<TTemplate, TSchema>,
-          TSerializer
+          RelationshipsByTemplate<TTemplate, TSchema>
         >,
       ) {
         super(template, config);
       }
-    } as unknown as ModelClass<TTemplate, TSchema, TSerializer>;
-  }
-
-  // -- CRUD METHODS --
-
-  /**
-   * Save the model to the database and apply pending relationship updates
-   * @returns The model with saved instance type
-   */
-  save(): this & ModelInstance<TTemplate, TSchema, TSerializer> {
-    // Save the model (FK changes are in _attrs from _processAttrs or link/unlink)
-    super.save();
-
-    // Update inverse relationships on other models (now that this model is saved)
-    if (this._relationshipsManager) {
-      this._relationshipsManager.applyPendingInverseUpdates();
-    }
-
-    return this as this & ModelInstance<TTemplate, TSchema, TSerializer>;
-  }
-
-  /**
-   * Update the model attributes and save the model
-   * @param attrs - The attributes to update
-   * @returns The model with saved instance type
-   */
-  update(
-    attrs: ModelUpdateAttrs<TTemplate, TSchema>,
-  ): this & ModelInstance<TTemplate, TSchema, TSerializer> {
-    // Process attributes to separate relationship model instances from regular attributes
-    const { modelAttrs, relationshipUpdates } = Model._processAttrs<TTemplate, TSchema>(
-      attrs,
-      this.relationships,
-    );
-
-    // Set pending relationship updates (handles both model instances and FK values)
-    if (this._relationshipsManager && Object.keys(relationshipUpdates).length > 0) {
-      this._relationshipsManager.setPendingRelationshipUpdates(relationshipUpdates);
-    }
-
-    return super.update(modelAttrs as Partial<ModelAttrs<TTemplate, TSchema>>) as this &
-      ModelInstance<TTemplate, TSchema, TSerializer>;
-  }
-
-  /**
-   * Reload the model from the database
-   * @returns The model with saved instance type
-   */
-  reload(): this & ModelInstance<TTemplate, TSchema, TSerializer> {
-    return super.reload() as this & ModelInstance<TTemplate, TSchema, TSerializer>;
-  }
-
-  /**
-   * Destroy the model from the database
-   * @returns The model with new instance type
-   */
-  destroy(): this & NewModelInstance<TTemplate, TSchema, TSerializer> {
-    return super.destroy() as this & NewModelInstance<TTemplate, TSchema, TSerializer>;
-  }
-
-  // -- RELATIONSHIP METHODS --
-
-  /**
-   * Link this model to another model via a relationship
-   * @param relationshipName - The name of the relationship
-   * @param targetModel - The model to link to (or null to unlink)
-   * @returns This model instance for chaining
-   */
-  link<K extends RelationshipNames<RelationshipsByTemplate<TTemplate, TSchema>>>(
-    relationshipName: K,
-    targetModel: RelationshipTargetModel<TSchema, RelationshipsByTemplate<TTemplate, TSchema>, K>,
-  ): this & ModelInstance<TTemplate, TSchema, TSerializer> {
-    if (this._relationshipsManager) {
-      // Get FK updates from manager (which also handles inverse relationships)
-      const result = this._relationshipsManager.link(relationshipName, targetModel);
-
-      // Apply FK updates to this model's attributes
-      Object.assign(this._attrs, result.foreignKeyUpdates);
-
-      // Save if this model was already saved
-      if (this.isSaved()) {
-        this.save();
-      }
-    }
-    return this as this & ModelInstance<TTemplate, TSchema, TSerializer>;
-  }
-
-  /**
-   * Unlink this model from another model via a relationship
-   * @param relationshipName - The name of the relationship
-   * @param targetModel - The specific model to unlink (optional for hasMany, unlinks all if not provided)
-   * @returns This model instance for chaining
-   */
-  unlink<K extends RelationshipNames<RelationshipsByTemplate<TTemplate, TSchema>>>(
-    relationshipName: K,
-    targetModel?: RelationshipTargetModel<TSchema, RelationshipsByTemplate<TTemplate, TSchema>, K>,
-  ): this & ModelInstance<TTemplate, TSchema, TSerializer> {
-    if (this._relationshipsManager) {
-      // Get FK updates from manager (which also handles inverse relationships)
-      const result = this._relationshipsManager.unlink(relationshipName, targetModel);
-
-      // Apply FK updates to this model's attributes
-      Object.assign(this._attrs, result.foreignKeyUpdates);
-
-      // Save if this model was already saved
-      if (this.isSaved()) {
-        this.save();
-      }
-    }
-    return this as this & ModelInstance<TTemplate, TSchema, TSerializer>;
-  }
-
-  /**
-   * Get related model(s) for a relationship with proper typing
-   * @param relationshipName - The relationship name
-   * @returns The related model(s) or null/empty collection
-   */
-  related<K extends RelationshipNames<RelationshipsByTemplate<TTemplate, TSchema>>>(
-    relationshipName: K,
-  ): RelationshipTargetModel<TSchema, RelationshipsByTemplate<TTemplate, TSchema>, K> | null {
-    return this._relationshipsManager?.related(relationshipName) ?? null;
-  }
-
-  // -- ATTRIBUTES PROCESSING METHODS --
-
-  /**
-   * Extract foreign key value from a relationship value
-   * @param relationship - The relationship configuration
-   * @param value - The value to extract the foreign key from
-   * @returns The foreign key value
-   */
-  private static _extractForeignKey<TSchema extends SchemaCollections>(
-    relationship: Relationships,
-    value: unknown,
-  ): string | string[] | null {
-    const { type } = relationship;
-
-    if (type === 'belongsTo') {
-      if (isModelInstance<TSchema>(value)) {
-        return value.id as string;
-      }
-      return null;
-    }
-
-    if (type === 'hasMany') {
-      if (isModelInstanceArray<TSchema>(value)) {
-        return value.map((model) => model.id as string);
-      }
-      if (isModelCollection<TSchema>(value)) {
-        return value.models.map((model) => model.id as string);
-      }
-      return [];
-    }
-
-    return null;
-  }
-
-  /**
-   * Separate attributes into model attributes and relationship updates
-   * Extracts foreign keys from relationship model instances and initializes default values
-   * @param attrs - The attributes to separate
-   * @param relationships - The relationships configuration
-   * @returns Object containing:
-   *   - regularAttrs: Regular attributes (may include explicit FK values)
-   *   - relationshipValues: Relationship values
-   *   - foreignKeys: Foreign keys (extracted from relationship models or defaults)
-   */
-  private static _separateAttrs<
-    _TTemplate extends ModelTemplate,
-    TSchema extends SchemaCollections,
-    TRelationships extends ModelRelationships,
-  >(
-    attrs: Record<string, unknown>,
-    relationships: TRelationships,
-  ): {
-    regularAttrs: Record<string, unknown>;
-    relationshipValues: Record<string, unknown>;
-    foreignKeys: Record<string, string | string[] | null>;
-  } {
-    const regularAttrs: Record<string, unknown> = {};
-    const relationshipValues: Record<string, unknown> = {};
-    const foreignKeys: Record<string, string | string[] | null> = {};
-
-    // Step 1: Initialize all foreign keys with default values
-    for (const relationshipName in relationships) {
-      const relationship = relationships[relationshipName];
-      const { type, foreignKey } = relationship;
-      foreignKeys[foreignKey] = type === 'belongsTo' ? null : [];
-    }
-
-    // Step 2: Process attributes
-    for (const key in attrs) {
-      const value = attrs[key];
-      if (key in relationships) {
-        // Relationship attribute (model instance)
-        const relationship = relationships[key];
-        relationshipValues[key] = value;
-
-        // Extract FK from relationship model (overrides default if present)
-        const foreignKeyValue = Model._extractForeignKey<TSchema>(relationship, value);
-        if (foreignKeyValue !== null) {
-          foreignKeys[relationship.foreignKey] = foreignKeyValue;
-        }
-      } else {
-        // Check if this is a foreign key attribute
-        let isForeignKey = false;
-        for (const relationshipName in relationships) {
-          const relationship = relationships[relationshipName];
-          if (relationship.foreignKey === key) {
-            isForeignKey = true;
-            foreignKeys[key] = value as string | string[] | null;
-            // Add FK value to relationshipValues so it's processed by setPendingRelationshipUpdates
-            relationshipValues[relationshipName] = value;
-            break;
-          }
-        }
-
-        if (!isForeignKey) {
-          // Regular attribute
-          regularAttrs[key] = value;
-        }
-      }
-    }
-
-    return { regularAttrs, relationshipValues, foreignKeys };
+    } as unknown as ModelClass<TTemplate, TSchema>;
   }
 
   /**
@@ -344,6 +136,7 @@ export default class Model<
    * Separates relationship model instances from regular attributes and extracts foreign keys
    * @param attrs - The attributes to process (can include both regular attrs and relationship instances)
    * @param relationships - The relationships configuration (optional)
+   * @param includeDefaults - Whether to include default FK values (null for belongsTo, [] for hasMany). Default: false
    * @returns Object containing:
    *   - modelAttrs: Regular attributes and foreign keys ready for the database
    *   - relationshipUpdates: Relationship model instances to be linked after save
@@ -354,22 +147,34 @@ export default class Model<
    * //   relationshipUpdates: { author: authorModelInstance }
    * // }
    */
-  static _processAttrs<
+  /**
+   * Process attributes to separate model attributes from relationship updates
+   * Extracts foreign keys from relationship model instances and initializes default values
+   * @param attrs - The attributes to process
+   * @param relationships - The relationships configuration
+   * @param includeDefaults - Whether to include default FK values (null for belongsTo, [] for hasMany)
+   * @returns Object with modelAttrs (including FKs) and relationshipUpdates (for inverse sync)
+   */
+  static processAttrs<
     TTemplate extends ModelTemplate,
     TSchema extends SchemaCollections,
-    TRelationships extends ModelRelationships = RelationshipsByTemplate<TTemplate, TSchema>,
+    TRelationships extends ModelRelationships = RelationshipsByTemplate<
+      TTemplate,
+      TSchema
+    >,
   >(
     attrs:
-      | ModelCreateAttrs<TTemplate, TSchema, TRelationships>
+      | ModelNewAttrs<TTemplate, TSchema, TRelationships>
       | ModelUpdateAttrs<TTemplate, TSchema, TRelationships>
-      | Partial<ModelCreateAttrs<TTemplate, TSchema, TRelationships>>
+      | Partial<ModelNewAttrs<TTemplate, TSchema, TRelationships>>
       | Record<string, unknown>,
     relationships?: TRelationships,
+    includeDefaults: boolean = false,
   ): {
     modelAttrs:
       | NewModelAttrs<ModelAttrs<TTemplate, TSchema>>
       | Partial<ModelAttrs<TTemplate, TSchema>>;
-    relationshipUpdates: Partial<RelatedModelAttrs<TSchema, TRelationships>>;
+    relationshipUpdates: Record<string, ForeignKeyValue>; // { relationshipName: foreignKeyValue }
   } {
     // Early return if no relationships are defined
     if (!relationships) {
@@ -381,26 +186,319 @@ export default class Model<
       };
     }
 
-    // Step 1: Separate regular attributes, relationship values, and extracted foreign keys
-    // (default FK values are also initialized here)
-    const { regularAttrs, relationshipValues, foreignKeys } = Model._separateAttrs<
-      TTemplate,
-      TSchema,
-      TRelationships
-    >(attrs as Record<string, unknown>, relationships);
+    const modelAttrs: Record<string, unknown> = {};
+    const relationshipUpdates: Record<string, ForeignKeyValue> = {};
+    const attrsRecord = attrs as Record<string, unknown>;
 
-    // Step 2: Combine foreign keys (defaults) with regular attributes
-    // regularAttrs comes second to allow explicit FK values to override defaults
-    const modelAttrs = { ...foreignKeys, ...regularAttrs };
+    // Step 1: Initialize all foreign keys with default values (only if includeDefaults is true)
+    if (includeDefaults) {
+      for (const relationshipName in relationships) {
+        const relationship = relationships[relationshipName];
+        const { type, foreignKey } = relationship;
+        modelAttrs[foreignKey] = type === 'belongsTo' ? null : [];
+      }
+    }
+
+    // Step 2: Process attributes
+    for (const key in attrsRecord) {
+      const value = attrsRecord[key];
+
+      if (key in relationships) {
+        // Relationship attribute - extract FK value (from model instance or direct value)
+        const relationship = relationships[key];
+
+        // Check if this is null or empty array (valid for unsetting relationships)
+        const isNullOrEmpty =
+          value === null || (Array.isArray(value) && value.length === 0);
+
+        if (isNullOrEmpty) {
+          // null or [] - store as-is
+          modelAttrs[relationship.foreignKey] = value;
+          relationshipUpdates[key] = value as ForeignKeyValue;
+        } else {
+          // Model instance or collection - extract FK value
+          const foreignKeyValue = Model.extractForeignKey(relationship, value);
+          if (foreignKeyValue !== null) {
+            modelAttrs[relationship.foreignKey] = foreignKeyValue;
+            relationshipUpdates[key] = foreignKeyValue;
+          }
+        }
+      } else {
+        // Check if this is a foreign key attribute
+        let isForeignKey = false;
+        for (const relationshipName in relationships) {
+          const relationship = relationships[relationshipName];
+          if (relationship.foreignKey === key) {
+            isForeignKey = true;
+            modelAttrs[key] = value;
+            // Store with relationship name as key for inverse updates
+            relationshipUpdates[relationshipName] = value as ForeignKeyValue;
+            break;
+          }
+        }
+
+        if (!isForeignKey) {
+          // Regular attribute
+          modelAttrs[key] = value;
+        }
+      }
+    }
 
     return {
       modelAttrs: modelAttrs as
         | NewModelAttrs<ModelAttrs<TTemplate, TSchema>>
         | Partial<ModelAttrs<TTemplate, TSchema>>,
-      relationshipUpdates: relationshipValues as Partial<
-        RelatedModelAttrs<TSchema, TRelationships>
-      >,
+      relationshipUpdates,
     };
+  }
+
+  /**
+   * Extract foreign key value from a relationship value
+   * @param relationship - The relationship configuration
+   * @param value - The value to extract the foreign key from
+   * @returns The foreign key value
+   */
+  private static extractForeignKey(
+    relationship: Relationships,
+    value: unknown,
+  ): string | string[] | null {
+    const { type } = relationship;
+
+    if (type === 'belongsTo') {
+      if (isModelInstance(value)) {
+        return value.id;
+      }
+      return null;
+    }
+
+    if (type === 'hasMany') {
+      if (isModelInstanceArray(value)) {
+        return value.map((model) => model.id);
+      }
+      if (isModelCollection(value)) {
+        return value.models.map((model) => model.id);
+      }
+      return [];
+    }
+
+    return null;
+  }
+
+  // -- CRUD METHODS --
+
+  /**
+   * Save the model to the database and apply pending relationship updates
+   * @returns The model with saved instance type
+   */
+  save(): this & ModelInstance<TTemplate, TSchema> {
+    // Save the model (FK changes are in _attrs from processAttrs or link/unlink)
+    super.save();
+
+    // Update inverse relationships on other models (now that this model is saved)
+    if (this._relationshipsManager) {
+      this._relationshipsManager.applyPendingInverseUpdates();
+    }
+
+    return this as this & ModelInstance<TTemplate, TSchema>;
+  }
+
+  /**
+   * Update the model attributes and save the model
+   * @param attrs - The attributes to update
+   * @returns The model with saved instance type
+   */
+  update(
+    attrs: ModelUpdateAttrs<TTemplate, TSchema>,
+  ): this & ModelInstance<TTemplate, TSchema> {
+    // Process attributes to separate relationship values from regular attributes
+    const { modelAttrs, relationshipUpdates } = Model.processAttrs<
+      TTemplate,
+      TSchema
+    >(attrs, this.relationships);
+
+    // Set pending relationship updates
+    if (
+      this._relationshipsManager &&
+      Object.keys(relationshipUpdates).length > 0
+    ) {
+      this._relationshipsManager.setPendingRelationshipUpdates(
+        relationshipUpdates,
+      );
+    }
+
+    const model = super.update(
+      modelAttrs as Partial<ModelAttrs<TTemplate, TSchema>>,
+    ) as this & ModelInstance<TTemplate, TSchema>;
+
+    this._initAttributeAccessors();
+
+    return model;
+  }
+
+  /**
+   * Reload the model from the database
+   * @returns The model with saved instance type
+   */
+  reload(): this & ModelInstance<TTemplate, TSchema> {
+    return super.reload() as this & ModelInstance<TTemplate, TSchema>;
+  }
+
+  /**
+   * Destroy the model from the database
+   * @returns The model with new instance type
+   */
+  destroy(): this & NewModelInstance<TTemplate, TSchema> {
+    return super.destroy() as this & NewModelInstance<TTemplate, TSchema>;
+  }
+
+  // -- RELATIONSHIP METHODS --
+
+  /**
+   * Get related model(s) for a relationship with proper typing
+   * @param relationshipName - The relationship name
+   * @returns The related model(s) or null/empty collection
+   */
+  related<
+    K extends RelationshipNames<RelationshipsByTemplate<TTemplate, TSchema>>,
+  >(
+    relationshipName: K,
+  ): RelationshipTargetModel<
+    TSchema,
+    RelationshipsByTemplate<TTemplate, TSchema>,
+    K
+  > {
+    return this._relationshipsManager?.related(
+      relationshipName,
+    ) as RelationshipTargetModel<
+      TSchema,
+      RelationshipsByTemplate<TTemplate, TSchema>,
+      K
+    >;
+  }
+
+  /**
+   * Link this model to another model via a relationship
+   * @param relationshipName - The name of the relationship
+   * @param targetModel - The model to link to (or null to unlink)
+   * @returns This model instance for chaining
+   */
+  link<
+    K extends RelationshipNames<RelationshipsByTemplate<TTemplate, TSchema>>,
+  >(
+    relationshipName: K,
+    targetModel: RelationshipTargetModel<
+      TSchema,
+      RelationshipsByTemplate<TTemplate, TSchema>,
+      K
+    > | null,
+  ): this & ModelInstance<TTemplate, TSchema> {
+    if (this._relationshipsManager) {
+      // Get FK updates from manager (which also handles inverse relationships)
+      const result = this._relationshipsManager.link(
+        relationshipName,
+        targetModel,
+      );
+
+      // Apply FK updates to this model's attributes
+      Object.assign(this._attrs, result.foreignKeyUpdates);
+
+      // Save if this model was already saved
+      if (this.isSaved()) {
+        this.save();
+      }
+    }
+    return this as this & ModelInstance<TTemplate, TSchema>;
+  }
+
+  /**
+   * Unlink this model from another model via a relationship
+   * @param relationshipName - The name of the relationship
+   * @param targetModel - The specific model to unlink (optional for hasMany, unlinks all if not provided)
+   * @returns This model instance for chaining
+   */
+  unlink<
+    K extends RelationshipNames<RelationshipsByTemplate<TTemplate, TSchema>>,
+  >(
+    relationshipName: K,
+    targetModel?: RelationshipTargetModel<
+      TSchema,
+      RelationshipsByTemplate<TTemplate, TSchema>,
+      K
+    >,
+  ): this & ModelInstance<TTemplate, TSchema> {
+    if (this._relationshipsManager) {
+      // Get FK updates from manager (which also handles inverse relationships)
+      const result = this._relationshipsManager.unlink(
+        relationshipName,
+        targetModel,
+      );
+
+      // Apply FK updates to this model's attributes
+      Object.assign(this._attrs, result.foreignKeyUpdates);
+
+      // Save if this model was already saved
+      if (this.isSaved()) {
+        this.save();
+      }
+    }
+    return this as this & ModelInstance<TTemplate, TSchema>;
+  }
+
+  // -- SERIALIZATION --
+
+  /**
+   * Serialize the model with a custom serializer instance
+   * @template TSerializedModel - The serialized model type inferred from the serializer
+   * @param serializer - A Serializer instance to use for serialization
+   * @returns A serialized representation of the model with the type inferred from the serializer
+   */
+  serialize<TSerializedModel>(
+    serializer: Serializer<TTemplate, TSchema, TSerializedModel, any>,
+  ): TSerializedModel;
+
+  /**
+   * Serialize the model with optional runtime options and explicit return type
+   * @template TSerialized - Custom return type for manual type assertion
+   * @param options - Optional serializer options to override class-level settings
+   * @returns A serialized representation of the model
+   */
+  serialize<TSerialized>(
+    options?: Partial<SerializerConfig<TTemplate, TSchema>>,
+  ): TSerialized;
+
+  /**
+   * Serialize the model with optional runtime options
+   * @param options - Optional serializer options to override class-level settings
+   * @returns A serialized representation of the model
+   */
+  serialize(
+    options?: Partial<SerializerConfig<TTemplate, TSchema>>,
+  ): SerializedModelFor<TTemplate>;
+
+  /**
+   * Serialize the model with optional runtime options or a custom serializer
+   * @param optionsOrSerializer - Optional serializer options or a Serializer instance
+   * @returns A serialized representation of the model
+   */
+  serialize<TSerialized = SerializedModelFor<TTemplate>>(
+    optionsOrSerializer?:
+      | Partial<SerializerConfig<TTemplate, TSchema>>
+      | Serializer<TTemplate, TSchema>,
+  ): TSerialized {
+    // If a Serializer instance is passed, use it directly
+    if (optionsOrSerializer instanceof Serializer) {
+      return optionsOrSerializer.serialize(
+        this as unknown as ModelInstance<TTemplate, TSchema>,
+      ) as TSerialized;
+    }
+    // Otherwise, use the model's configured serializer with options
+    if (this.serializer instanceof Serializer) {
+      return this.serializer.serialize(
+        this as unknown as ModelInstance<TTemplate, TSchema>,
+        optionsOrSerializer,
+      ) as TSerialized;
+    }
+    return { ...this._attrs } as TSerialized;
   }
 
   // -- ACCESSOR INITIALIZATION METHODS --
@@ -444,8 +542,10 @@ export default class Model<
       const relationshipName = name as RelationshipNames<
         RelationshipsByTemplate<TTemplate, TSchema>
       >;
-      const relationshipDef = this._relationshipsManager.relationshipDefs[relationshipName];
-      const { foreignKey, type } = relationshipDef.relationship as Relationships;
+      const relationshipDef =
+        this._relationshipsManager.relationshipDefs[relationshipName];
+      const { foreignKey, type } =
+        relationshipDef.relationship as Relationships;
 
       // Initialize foreign key if it doesn't exist in attrs
       if (!(foreignKey in this._attrs)) {

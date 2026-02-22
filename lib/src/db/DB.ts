@@ -1,5 +1,5 @@
 import { IdentityManager, type IdType } from '@src/id-manager';
-import { MirageError } from '@src/utils';
+import { MirageError, type Logger } from '@src/utils';
 
 import DbCollection from './DbCollection';
 import type {
@@ -24,9 +24,11 @@ import type {
  */
 export default class DB<TCollections extends DbCollections> {
   private _collections: Map<keyof TCollections, DbCollection<any>> = new Map();
+  private _logger?: Logger;
 
   constructor(config: DbConfig<TCollections> = {}) {
-    const { initialData } = config;
+    const { initialData, logger } = config;
+    this._logger = logger;
 
     if (initialData) {
       this.loadData(initialData);
@@ -57,7 +59,9 @@ export default class DB<TCollections extends DbCollections> {
   createCollection<TAttrs extends DbRecord>(
     name: keyof TCollections,
     config?: Omit<DbCollectionConfig<TAttrs>, 'name'>,
-  ): DbInstance<TCollections & { [K in keyof TCollections]: DbCollection<TAttrs> }> {
+  ): DbInstance<
+    TCollections & { [K in keyof TCollections]: DbCollection<TAttrs> }
+  > {
     const collectionName = String(name);
 
     if (this._collections.has(collectionName)) {
@@ -67,6 +71,7 @@ export default class DB<TCollections extends DbCollections> {
     const collection = new DbCollection<TAttrs>(collectionName, {
       identityManager: config?.identityManager,
       initialData: config?.initialData,
+      logger: this._logger,
     });
     this._collections.set(collectionName, collection);
     this.initCollectionAccessors();
@@ -99,7 +104,9 @@ export default class DB<TCollections extends DbCollections> {
    * @returns The identity manager for the given collection name.
    * @throws {Error} If the collection does not exist.
    */
-  identityManagerFor(collectionName: keyof TCollections): IdentityManager<IdType> {
+  identityManagerFor(
+    collectionName: keyof TCollections,
+  ): IdentityManager<IdType> {
     const collection = this.getCollection(collectionName);
     return collection.identityManager;
   }
@@ -128,7 +135,9 @@ export default class DB<TCollections extends DbCollections> {
       }
     }
 
-    return this as unknown as DbInstance<TCollections & DbCollectionsFromStaticData<TData>>;
+    return this as unknown as DbInstance<
+      TCollections & DbCollectionsFromStaticData<TData>
+    >;
   }
 
   /**
@@ -146,7 +155,9 @@ export default class DB<TCollections extends DbCollections> {
     const data = {} as DbData<TCollections>;
 
     this._collections.forEach((collection, name) => {
-      data[name] = collection.all() as DbCollectionData<TCollections[typeof name]>;
+      data[name] = collection.all() as DbCollectionData<
+        TCollections[typeof name]
+      >;
     });
 
     return data;
@@ -182,9 +193,9 @@ export default class DB<TCollections extends DbCollections> {
  * db.users.records; // [{ id: "1", name: 'John' }]
  * db.posts.records; // [{ id: "1", title: 'Hello world' }]
  */
-export function createDatabase<TCollections extends Record<string, DbCollection<any>>>(
-  config?: DbConfig<TCollections>,
-): DbInstance<TCollections> {
+export function createDatabase<
+  TCollections extends Record<string, DbCollection<any>>,
+>(config?: DbConfig<TCollections>): DbInstance<TCollections> {
   return new DB<TCollections>(config) as DbInstance<TCollections>;
 }
 

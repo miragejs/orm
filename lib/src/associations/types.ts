@@ -1,12 +1,12 @@
 import type { FactoryTraitNames } from '@src/factory';
 import type {
-  InferCollectionName,
-  InferModelAttrs,
-  InferModelName,
+  CollectionNameFor,
+  ModelAttrsFor,
   ModelRelationships,
   ModelTemplate,
   RelationshipsByTemplate,
 } from '@src/model';
+import type { RelationshipTargetTemplate } from '@src/relations';
 import type { CollectionConfig, SchemaCollections } from '@src/schema';
 
 // ============================================================================
@@ -22,7 +22,7 @@ import type { CollectionConfig, SchemaCollections } from '@src/schema';
 type CollectionConfigFor<
   TSchema extends SchemaCollections,
   TModel extends ModelTemplate,
-> = TSchema[InferCollectionName<TModel>];
+> = TSchema[CollectionNameFor<TModel>];
 
 /**
  * Extract the factory from a model's collection in the schema
@@ -30,8 +30,16 @@ type CollectionConfigFor<
  * @template TModel - The model template
  * @internal
  */
-type FactoryFor<TSchema extends SchemaCollections, TModel extends ModelTemplate> =
-  CollectionConfigFor<TSchema, TModel> extends CollectionConfig<any, any, infer TFactory, any, any>
+type FactoryFor<
+  TSchema extends SchemaCollections,
+  TModel extends ModelTemplate,
+> =
+  CollectionConfigFor<TSchema, TModel> extends CollectionConfig<
+    any,
+    any,
+    infer TFactory,
+    any
+  >
     ? TFactory
     : undefined;
 
@@ -47,60 +55,7 @@ type TraitNamesFor<
 > = FactoryTraitNames<FactoryFor<TSchema, TModel>>;
 
 // ============================================================================
-// RELATIONSHIP TYPES
-// ============================================================================
-
-/**
- * BelongsTo relationship - this model contains a foreign key to another model
- * Example: Post belongsTo User (Post has authorId pointing to User.id)
- * @template TTarget - The target model template this relationship points to
- * @template TForeign - The foreign key field name (defaults to "{targetModelName}Id")
- */
-export type BelongsTo<
-  TTarget extends ModelTemplate,
-  TForeign extends string = `${InferModelName<TTarget>}Id`,
-> = {
-  foreignKey: TForeign;
-  targetModel: TTarget;
-  type: 'belongsTo';
-  /**
-   * The name of the inverse relationship on the target model.
-   * - `undefined`: Auto-detect inverse relationship (default behavior)
-   * - `string`: Explicit inverse relationship name
-   * - `null`: No inverse relationship (disable synchronization)
-   */
-  inverse?: string | null;
-};
-
-/**
- * HasMany relationship - this model can have multiple related models
- * Example: User hasMany Posts (User has postIds array containing Post.id values)
- * @template TTarget - The target model template this relationship points to
- * @template TForeign - The foreign key array field name (defaults to "{targetModelName}Ids")
- */
-export type HasMany<
-  TTarget extends ModelTemplate,
-  TForeign extends string = `${InferModelName<TTarget>}Ids`,
-> = {
-  foreignKey: TForeign;
-  targetModel: TTarget;
-  type: 'hasMany';
-  /**
-   * The name of the inverse relationship on the target model.
-   * - `undefined`: Auto-detect inverse relationship (default behavior)
-   * - `string`: Explicit inverse relationship name
-   * - `null`: No inverse relationship (disable synchronization)
-   */
-  inverse?: string | null;
-};
-
-/**
- * All relationship types
- */
-export type Relationships = BelongsTo<any, any> | HasMany<any, any>;
-
-// ============================================================================
-// ASSOCIATION TYPES
+// FACTORY ASSOCIATION TYPES
 // ============================================================================
 
 /**
@@ -118,7 +73,9 @@ export type AssociationQueryPredicate<TModel> = (model: TModel) => boolean;
  * Query for finding models - can be an attributes object or a predicate function
  * @template TModel - The model type to query
  */
-export type AssociationQuery<TModel = any> = Partial<TModel> | AssociationQueryPredicate<TModel>;
+export type AssociationQuery<TModel = any> =
+  | Partial<TModel>
+  | AssociationQueryPredicate<TModel>;
 
 /**
  * Runtime storage for traits and defaults passed to factory associations.
@@ -135,7 +92,7 @@ export type AssociationTraitsAndDefaults = Array<string | Record<string, any>>;
 export type TypedAssociationTraitsAndDefaults<
   TSchema extends SchemaCollections,
   TModel extends ModelTemplate,
-> = Array<TraitNamesFor<TSchema, TModel> | Partial<InferModelAttrs<TModel>>>;
+> = Array<TraitNamesFor<TSchema, TModel> | Partial<ModelAttrsFor<TModel>>>;
 
 /**
  * Base interface for all factory associations
@@ -165,8 +122,9 @@ export interface CreateAssociation<TModel extends ModelTemplate = ModelTemplate>
  * Association that always creates N new related models
  * @template TModel - The model template to create
  */
-export interface CreateManyAssociation<TModel extends ModelTemplate = ModelTemplate>
-  extends BaseAssociation<TModel> {
+export interface CreateManyAssociation<
+  TModel extends ModelTemplate = ModelTemplate,
+> extends BaseAssociation<TModel> {
   type: 'createMany';
   /** Number of models to create (for identical models) */
   count?: number;
@@ -189,8 +147,9 @@ export interface LinkAssociation<TModel extends ModelTemplate = ModelTemplate>
  * Association that tries to find N existing models, or creates more if needed
  * @template TModel - The model template to link or create
  */
-export interface LinkManyAssociation<TModel extends ModelTemplate = ModelTemplate>
-  extends BaseAssociation<TModel> {
+export interface LinkManyAssociation<
+  TModel extends ModelTemplate = ModelTemplate,
+> extends BaseAssociation<TModel> {
   type: 'linkMany';
   /** Number of models to link */
   count: number;
@@ -207,19 +166,6 @@ export type Association<TModel extends ModelTemplate = ModelTemplate> =
   | CreateManyAssociation<TModel>
   | LinkAssociation<TModel>
   | LinkManyAssociation<TModel>;
-
-/**
- * Extract the target model template from a relationship
- * @template TRelationship - The relationship type (BelongsTo or HasMany)
- * @internal
- */
-type RelationshipTargetTemplate<TRelationship> = TRelationship extends {
-  targetModel: infer TTarget;
-}
-  ? TTarget extends ModelTemplate
-    ? TTarget
-    : never
-  : never;
 
 /**
  * Map of relationship names to factory associations for a model.
@@ -244,7 +190,9 @@ export type FactoryAssociations<
   RelationshipsByTemplate<TTemplate, TSchema> extends ModelRelationships
     ? {
         [K in keyof RelationshipsByTemplate<TTemplate, TSchema>]?: Association<
-          RelationshipTargetTemplate<RelationshipsByTemplate<TTemplate, TSchema>[K]>
+          RelationshipTargetTemplate<
+            RelationshipsByTemplate<TTemplate, TSchema>[K]
+          >
         >;
       }
     : {};

@@ -1,6 +1,2 @@
-export {
-  default as IdentityManager,
-  StringIdentityManager,
-  NumberIdentityManager,
-} from './IdentityManager';
+export { default as IdentityManager } from './IdentityManager';
 export type * from './types';

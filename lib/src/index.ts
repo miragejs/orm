@@ -5,16 +5,16 @@
  * relationships, factories, and serialization for testing and development.
  * @example Basic Usage
  * ```typescript
- * import { model, schema, collection } from '@miragejs/orm';
+ * import { model, schema, collection, relations, associations } from '@miragejs/orm';
  *
  * // Define your models
  * const userModel = model('user', 'users')
  *   .attrs<{ name: string; email: string }>()
- *   .create();
+ *   .build();
  *
  * const postModel = model('post', 'posts')
  *   .attrs<{ title: string; content: string }>()
- *   .create();
+ *   .build();
  *
  * // Define your factories
  * const userFactory = factory()
@@ -28,7 +28,7 @@
  *       posts: associations.createMany(postModel, 2),
  *     },
  *   })
- *   .create();
+ *   .build();
  *
  * // Setup schema
  * const appSchema = schema()
@@ -36,17 +36,17 @@
  *     users: collection()
  *       .model(userModel)
  *       .relationships({
- *         posts: associations.hasMany(postModel),
+ *         posts: relations.hasMany(postModel),
  *       })
- *       .create(),
+ *       .build(),
  *     posts: collection()
  *       .model(postModel)
  *       .relationships({
- *         author: associations.belongsTo(userModel, { foreignKey: 'authorId' }),
+ *         author: relations.belongsTo(userModel, { foreignKey: 'authorId' }),
  *       })
- *       .create(),
+ *       .build(),
  *   })
- *   .setup();
+ *   .build();
  *
  * // Use the schema
  * appSchema.users.create('withPosts');
@@ -66,25 +66,27 @@
 // ----------------------------------------------------------------------------
 // Identity Manager
 // ----------------------------------------------------------------------------
-export { StringIdentityManager, NumberIdentityManager } from './id-manager';
-export type { IdentityManager } from './id-manager';
+export { IdentityManager } from './id-manager';
+export type { IdentityManagerConfig, IdType, IdGenerator } from './id-manager';
 
 // ----------------------------------------------------------------------------
 // Model Builder
 // ----------------------------------------------------------------------------
 export { model } from './model';
 export type {
-  InferCollectionName,
-  InferModelAttrs,
-  InferModelName,
-  InferSerializedCollection,
-  InferSerializedModel,
+  CollectionNameFor,
   ModelAttrs,
+  ModelAttrsFor,
+  ModelCollection,
+  ModelCreateAttrs,
   ModelInstance,
+  ModelNameFor,
   ModelTemplate,
   ModelUpdateAttrs,
   NewModelInstance,
   PartialModelAttrs,
+  SerializedCollectionFor,
+  SerializedModelFor,
 } from './model';
 
 // ----------------------------------------------------------------------------
@@ -94,28 +96,29 @@ export { factory } from './factory';
 export type {
   Factory,
   FactoryAfterCreateHook,
+  FactoryAttrFunc,
   FactoryAttrs,
   ModelTraits,
   TraitDefinition,
 } from './factory';
 
 // ----------------------------------------------------------------------------
-// Associations
+// Relations (schema relationship definitions)
+// ----------------------------------------------------------------------------
+export { relations, belongsTo, hasMany } from './relations';
+export type { BelongsTo, HasMany, Relationships } from './relations';
+
+// ----------------------------------------------------------------------------
+// Associations (factory management)
 // ----------------------------------------------------------------------------
 export {
   associations,
-  belongsTo,
   create,
   createMany,
-  hasMany,
   link,
   linkMany,
 } from './associations';
 export type {
-  // Relationship associations
-  BelongsTo,
-  HasMany,
-  // Factory associations
   Association,
   CreateAssociation,
   CreateManyAssociation,
@@ -135,24 +138,27 @@ export { collection, schema } from './schema';
 export type {
   Collection,
   CollectionConfig,
-  CollectionCreateAttrs,
-  CollectionInstance,
   FixtureAttrs,
   FixtureConfig,
   FixtureLoadStrategy,
   SchemaCollections,
   SchemaInstance,
   SeedFunction,
-  Seeds,
   SeedScenarios,
+  Seeds,
 } from './schema';
-
 // ----------------------------------------------------------------------------
 // Serializer
 // ----------------------------------------------------------------------------
 export { Serializer } from './serializer';
 export type {
   DataSerializerOptions,
-  SerializerOptions,
+  SerializerConfig,
   StructuralSerializerOptions,
 } from './serializer';
+
+// ----------------------------------------------------------------------------
+// Logger
+// ----------------------------------------------------------------------------
+export { Logger, LogLevel, resolveFactoryAttr } from './utils';
+export type { LoggerConfig } from './utils';

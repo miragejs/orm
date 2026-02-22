@@ -1,20 +1,30 @@
 import { DbCollection } from '@src/db';
+import { Serializer } from '@src/serializer';
 
-import type { BaseModelInstance, ModelStatus, NewBaseModelInstance, NewModelAttrs } from './types';
+import type {
+  BaseModelInstance,
+  ModelInstance,
+  ModelStatus,
+  NewBaseModelInstance,
+  NewModelAttrs,
+} from './types';
 
 /**
  * BaseModel class for managing basic model operations without schema dependencies
  * Handles basic CRUD operations, db updates, attribute management, and status tracking
  * @template TAttrs - The model attributes type (e.g., { id: string, name: string })
- * @template TSerializer - The serializer type for custom JSON serialization
+ * @template TSerialized - The serialized output type (defaults to TAttrs if no serializer)
  */
-export default class BaseModel<TAttrs extends { id: any }, TSerializer = undefined> {
+export default class BaseModel<
+  TAttrs extends { id: any },
+  TSerialized = TAttrs,
+> {
   public readonly modelName: string;
   public readonly collectionName: string;
 
   protected _attrs: NewModelAttrs<TAttrs>;
   protected _dbCollection: DbCollection<TAttrs>;
-  protected _serializer?: TSerializer;
+  protected _serializer?: Serializer<any, any, any, any, any>;
   protected _status: ModelStatus;
 
   constructor(
@@ -22,13 +32,14 @@ export default class BaseModel<TAttrs extends { id: any }, TSerializer = undefin
     collectionName: string,
     attrs: NewModelAttrs<TAttrs>,
     dbCollection?: DbCollection<TAttrs>,
-    serializer?: TSerializer,
+    serializer?: Serializer<any, any, any, any, any>,
   ) {
     this.modelName = modelName;
     this.collectionName = collectionName;
 
     this._attrs = { ...attrs, id: attrs.id ?? null } as NewModelAttrs<TAttrs>;
-    this._dbCollection = dbCollection ?? new DbCollection<TAttrs>(collectionName);
+    this._dbCollection =
+      dbCollection ?? new DbCollection<TAttrs>(collectionName);
     this._serializer = serializer;
     this._status = this._checkStatus();
   }
@@ -57,7 +68,7 @@ export default class BaseModel<TAttrs extends { id: any }, TSerializer = undefin
    * Save the model to the database
    * @returns The model with saved instance type
    */
-  save(): this & BaseModelInstance<TAttrs, TSerializer> {
+  save(): this & BaseModelInstance<TAttrs, TSerialized> {
     if (this.isNew() || !this.id) {
       const record = this._dbCollection.insert(this._attrs);
 
@@ -75,7 +86,9 @@ export default class BaseModel<TAttrs extends { id: any }, TSerializer = undefin
    * @param attrs - The attributes to update
    * @returns The model instance for chaining
    */
-  update(attrs: Partial<TAttrs>): this & BaseModelInstance<TAttrs, TSerializer> {
+  update(
+    attrs: Partial<TAttrs>,
+  ): this & BaseModelInstance<TAttrs, TSerialized> {
     Object.assign(this._attrs, attrs);
     return this.save();
   }
@@ -84,7 +97,7 @@ export default class BaseModel<TAttrs extends { id: any }, TSerializer = undefin
    * Reload the model from the database
    * @returns The model with saved instance type
    */
-  reload(): this & BaseModelInstance<TAttrs, TSerializer> {
+  reload(): this & BaseModelInstance<TAttrs, TSerialized> {
     if (this._attrs.id) {
       const record = this._dbCollection.find(this.id);
 
@@ -103,14 +116,14 @@ export default class BaseModel<TAttrs extends { id: any }, TSerializer = undefin
    * Destroy the model from the database
    * @returns The model with new instance type
    */
-  destroy(): this & NewBaseModelInstance<TAttrs, TSerializer> {
+  destroy(): this & NewBaseModelInstance<TAttrs, TSerialized> {
     if (this.isSaved() && this.id) {
       this._dbCollection.delete(this.id);
       this._attrs = { ...this._attrs, id: null };
       this._status = 'new';
     }
 
-    return this as this & NewBaseModelInstance<TAttrs, TSerializer>;
+    return this as this & NewBaseModelInstance<TAttrs, TSerialized>;
   }
 
   // -- STATUS CHECKS --
@@ -137,20 +150,13 @@ export default class BaseModel<TAttrs extends { id: any }, TSerializer = undefin
    * Serialize the model to a JSON object
    * @returns The serialized model using the configured serializer or raw attributes
    */
-  toJSON(): TSerializer extends { serialize(model: any): infer TSerializedModel }
-    ? TSerializedModel
-    : TAttrs {
-    if (
-      this._serializer &&
-      typeof this._serializer === 'object' &&
-      'serialize' in this._serializer &&
-      typeof this._serializer.serialize === 'function'
-    ) {
-      return this._serializer.serialize(this);
+  toJSON(): TSerialized {
+    if (this._serializer) {
+      return this._serializer.serialize(
+        this as unknown as ModelInstance<any, any>,
+      ) as TSerialized;
     }
-    // Type assertion needed due to conditional return type complexity
-    // TypeScript can't verify TAttrs matches the conditional type in all cases
-    return { ...this._attrs } as any;
+    return { ...this._attrs } as TSerialized;
   }
 
   /**

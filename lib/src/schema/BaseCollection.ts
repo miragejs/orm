@@ -1,11 +1,20 @@
-import type { DbCollection, DbRecordInput, QueryOptions, WhereHelperFns } from '@src/db';
-import type { Factory, ModelTraits } from '@src/factory';
-import type { IdentityManager } from '@src/id-manager';
+import type {
+  DbCollection,
+  DbRecordInput,
+  PaginatedResult,
+  QueryOptions,
+  Where,
+  WhereHelperFns,
+} from '@src/db';
+import { Factory } from '@src/factory';
+import { IdentityManager, type IdentityManagerConfig } from '@src/id-manager';
 import {
   Model,
   ModelCollection,
-  ModelCreateAttrs,
-  ModelId,
+  ModelNewAttrs,
+  ModelIdFor,
+  type SerializedCollectionFor,
+  type SerializedModelFor,
   type ModelAttrs,
   type ModelClass,
   type ModelConfig,
@@ -14,6 +23,7 @@ import {
   type ModelTemplate,
   type RelationshipsByTemplate,
 } from '@src/model';
+import { Serializer, type SerializerConfig } from '@src/serializer';
 import type { Logger } from '@src/utils';
 
 import type { SchemaInstance } from './Schema';
@@ -31,37 +41,56 @@ export abstract class BaseCollection<
   TSchema extends SchemaCollections = SchemaCollections,
   TTemplate extends ModelTemplate = ModelTemplate,
   TRelationships extends ModelRelationships = {},
-  TFactory extends
-    | Factory<TTemplate, TSchema, ModelTraits<TSchema, TTemplate>>
-    | undefined = undefined,
-  TSerializer = undefined,
+  TFactory extends Factory<TTemplate, string, TSchema> = Factory<
+    TTemplate,
+    string,
+    TSchema
+  >,
 > {
+  readonly template: TTemplate;
   readonly modelName: string;
   readonly collectionName: string;
-  protected readonly Model: ModelClass<TTemplate, TSchema, TSerializer>;
 
-  protected readonly _template: TTemplate;
+  public readonly Model: ModelClass<TTemplate, TSchema>;
+  public readonly dbCollection: DbCollection<ModelAttrs<TTemplate, TSchema>>;
+  public readonly identityManager: IdentityManager<
+    ModelAttrs<TTemplate, TSchema>['id']
+  >;
+  public readonly relationships?: TRelationships;
+  public readonly serializer?: Serializer<
+    TTemplate,
+    TSchema,
+    SerializedModelFor<TTemplate>,
+    SerializedCollectionFor<TTemplate>
+  >;
+
   protected readonly _schema: SchemaInstance<TSchema>;
-  protected readonly _dbCollection: DbCollection<ModelAttrs<TTemplate, TSchema>>;
-  protected readonly _identityManager: IdentityManager<ModelAttrs<TTemplate, TSchema>['id']>;
+  protected readonly _factory: TFactory;
+  protected readonly _fixtures?: FixtureConfig<TTemplate, TRelationships>;
+  protected readonly _seeds?: Seeds<TSchema>;
   protected readonly _logger?: Logger;
 
-  protected readonly _factory?: TFactory;
-  protected readonly _relationships?: TRelationships;
-  protected readonly _serializer?: TSerializer;
-  protected readonly _seeds?: Seeds<TSchema>;
-  protected readonly _fixtures?: FixtureConfig<TTemplate, TRelationships>;
+  /**
+   * Track which seed scenarios have been loaded to prevent duplicate data.
+   * Maps scenario IDs to the number of times they've been loaded.
+   * @protected
+   */
+  protected _loadedSeeds: Map<string, number> = new Map();
 
   constructor(
     schema: SchemaInstance<TSchema>,
     config: {
-      factory?: TFactory;
-      identityManager?: IdentityManager<ModelId<TTemplate>>;
       model: TTemplate;
+      factory?: TFactory;
       relationships?: TRelationships;
-      serializer?: TSerializer;
-      seeds?: Seeds<TSchema>;
       fixtures?: FixtureConfig<TTemplate, TRelationships>;
+      seeds?: Seeds<TSchema>;
+      serializer?:
+        | SerializerConfig<TTemplate, TSchema>
+        | Serializer<TTemplate, TSchema>;
+      identityManager?:
+        | IdentityManagerConfig<ModelIdFor<TTemplate>>
+        | IdentityManager<ModelIdFor<TTemplate>>;
     },
   ) {
     const {
@@ -74,45 +103,36 @@ export abstract class BaseCollection<
       fixtures,
     } = config;
 
+    this.template = model;
     this.modelName = model.modelName;
     this.collectionName = model.collectionName;
-    this.Model = Model.define<TTemplate, TSchema, TSerializer>(model);
+    this.relationships = relationships;
 
-    this._template = model;
+    // Resolve serializer: use instance directly or create from config
+    this.serializer = this._resolveSerializer(model, serializer);
+
     this._schema = schema;
     this._logger = schema.logger;
-    this._dbCollection = this._initializeDbCollection(identityManager);
-    this._identityManager = this._dbCollection.identityManager;
-
-    this._relationships = relationships;
-    this._factory = factory;
-    this._serializer = serializer;
-    this._seeds = seeds;
+    this._factory = factory ?? (new Factory(model) as TFactory);
     this._fixtures = fixtures;
+    this._seeds = seeds;
+
+    this.Model = Model.define<TTemplate, TSchema>(model);
+
+    // Resolve identity manager: use instance directly or create from config
+    const resolvedIdentityManager =
+      this._resolveIdentityManager(identityManager);
+    this.dbCollection = this._initializeDbCollection(resolvedIdentityManager);
+    this.identityManager = this.dbCollection.identityManager;
 
     this._logger?.debug(`Collection '${this.collectionName}' initialized`, {
       modelName: this.modelName,
       hasFactory: !!factory,
-      hasRelationships: !!relationships && Object.keys(relationships).length > 0,
+      hasRelationships:
+        !!relationships && Object.keys(relationships).length > 0,
       hasSeeds: !!seeds,
       hasFixtures: !!fixtures,
     });
-  }
-
-  /**
-   * Get the collection relationships.
-   * @returns The collection relationships configuration.
-   */
-  get relationships(): TRelationships | undefined {
-    return this._relationships;
-  }
-
-  /**
-   * Get the serializer for the collection.
-   * @returns The collection serializer instance.
-   */
-  get serializer(): TSerializer | undefined {
-    return this._serializer;
   }
 
   /**
@@ -120,53 +140,61 @@ export abstract class BaseCollection<
    * @param index - The index of the model to get.
    * @returns The model instance or undefined if not found.
    */
-  at(index: number): ModelInstance<TTemplate, TSchema, TSerializer> | undefined {
-    const record = this._dbCollection.at(index);
-    return record ? this._createModelFromRecord(record) : undefined;
+  at(index: number): ModelInstance<TTemplate, TSchema> | undefined {
+    this._logger?.log(
+      `Accessing model at index ${index} in '${this.collectionName}'`,
+    );
+    const record = this.dbCollection.at(index);
+    const model = record ? this._createModelFromRecord(record) : undefined;
+    this._logger?.log(
+      `Accessed model at index ${index} in '${this.collectionName}'`,
+      {
+        found: !!model,
+      },
+    );
+    return model;
   }
 
   /**
    * Returns all model instances in the collection.
    * @returns All model instances in the collection.
    */
-  all(): ModelCollection<TTemplate, TSchema, TSerializer> {
-    this._logger?.debug(`Query '${this.collectionName}': all()`, {
-      operation: 'all',
-    });
-
-    const records = this._dbCollection.all();
-    this._logger?.debug(`Query '${this.collectionName}' returned ${records.length} records`);
-
+  all(): ModelCollection<TTemplate, TSchema> {
+    this._logger?.log(`Fetching all models from '${this.collectionName}'`);
+    const records = this.dbCollection.all();
     const models = records.map((record) => this._createModelFromRecord(record));
-    return new ModelCollection(this._template, models, this._serializer);
+    this._logger?.log(
+      `Fetched ${models.length} models from '${this.collectionName}'`,
+    );
+    return new ModelCollection(this.template, models, this.serializer);
   }
 
   /**
    * Returns the first model in the collection.
    * @returns The first model in the collection or null if the collection is empty.
    */
-  first(): ModelInstance<TTemplate, TSchema, TSerializer> | null {
-    this._logger?.debug(`Query '${this.collectionName}': first()`);
-
-    const record = this._dbCollection.first();
-    if (record) {
-      this._logger?.debug(`Query '${this.collectionName}' found record`, { id: record.id });
-    }
-    return record ? this._createModelFromRecord(record) : null;
+  first(): ModelInstance<TTemplate, TSchema> | null {
+    this._logger?.log(`Fetching first model from '${this.collectionName}'`);
+    const record = this.dbCollection.first();
+    const model = record ? this._createModelFromRecord(record) : null;
+    this._logger?.log(`Fetched first model from '${this.collectionName}'`, {
+      found: !!model,
+    });
+    return model;
   }
 
   /**
    * Returns the last model in the collection.
    * @returns The last model in the collection or null if the collection is empty.
    */
-  last(): ModelInstance<TTemplate, TSchema, TSerializer> | null {
-    this._logger?.debug(`Query '${this.collectionName}': last()`);
-
-    const record = this._dbCollection.last();
-    if (record) {
-      this._logger?.debug(`Query '${this.collectionName}' found record`, { id: record.id });
-    }
-    return record ? this._createModelFromRecord(record) : null;
+  last(): ModelInstance<TTemplate, TSchema> | null {
+    this._logger?.log(`Fetching last model from '${this.collectionName}'`);
+    const record = this.dbCollection.last();
+    const model = record ? this._createModelFromRecord(record) : null;
+    this._logger?.log(`Fetched last model from '${this.collectionName}'`, {
+      found: !!model,
+    });
+    return model;
   }
 
   /**
@@ -190,32 +218,40 @@ export abstract class BaseCollection<
       | ModelAttrs<TTemplate, TSchema>['id']
       | DbRecordInput<ModelAttrs<TTemplate, TSchema>>
       | QueryOptions<ModelAttrs<TTemplate, TSchema>>,
-  ): ModelInstance<TTemplate, TSchema, TSerializer> | null {
-    this._logger?.debug(`Find in '${this.collectionName}'`, {
-      query: typeof input === 'object' && 'where' in input ? 'QueryOptions' : input,
-    });
+  ): ModelInstance<TTemplate, TSchema> | null {
+    this._logger?.log(`Finding model in '${this.collectionName}'`, { input });
+
+    let model: ModelInstance<TTemplate, TSchema> | null = null;
 
     // Handle QueryOptions with callback where clause
-    if (typeof input === 'object' && 'where' in input && typeof input.where === 'function') {
+    if (
+      typeof input === 'object' &&
+      'where' in input &&
+      typeof input.where === 'function'
+    ) {
       const queryOptions = this._convertQueryOptionsCallback(input);
-      const record = this._dbCollection.find(queryOptions);
-      if (record) {
-        this._logger?.debug(`Find in '${this.collectionName}' found record`, { id: record.id });
-      }
-      return record ? this._createModelFromRecord(record) : null;
+      const record = this.dbCollection.find(queryOptions);
+      model = record ? this._createModelFromRecord(record) : null;
+    } else {
+      const record = this.dbCollection.find(input);
+      model = record ? this._createModelFromRecord(record) : null;
     }
 
-    const record = this._dbCollection.find(input);
-    if (record) {
-      this._logger?.debug(`Find in '${this.collectionName}' found record`, { id: record.id });
-    }
-    return record ? this._createModelFromRecord(record) : null;
+    this._logger?.log(
+      `Found ${model ? 1 : 0} model in '${this.collectionName}'`,
+      {
+        id: model?.id,
+      },
+    );
+
+    return model;
   }
 
   /**
    * Finds multiple models by IDs, predicate object, or query options.
    * @param input - The array of IDs, predicate object, or query options to find by.
-   * @returns A collection of matching model instances.
+   * @returns A collection of matching model instances. When using QueryOptions,
+   *          the collection includes metadata with the original query and total count.
    * @example
    * ```typescript
    * // Find by IDs
@@ -224,12 +260,13 @@ export abstract class BaseCollection<
    * // Find by predicate object
    * collection.findMany({ status: 'active' });
    *
-   * // Find with query options
-   * collection.findMany({
+   * // Find with query options (includes meta with total)
+   * const result = collection.findMany({
    *   where: { age: { gte: 18 } },
    *   orderBy: { name: 'asc' },
    *   limit: 10
    * });
+   * result.meta?.total; // Total matching records before pagination
    *
    * // Find with callback where clause
    * collection.findMany({
@@ -242,31 +279,120 @@ export abstract class BaseCollection<
       | ModelAttrs<TTemplate, TSchema>['id'][]
       | DbRecordInput<ModelAttrs<TTemplate, TSchema>>
       | QueryOptions<ModelAttrs<TTemplate, TSchema>>,
-  ): ModelCollection<TTemplate, TSchema, TSerializer> {
-    this._logger?.debug(`Query '${this.collectionName}': findMany`, {
-      query: Array.isArray(input)
-        ? `${input.length} IDs`
-        : typeof input === 'object' && 'where' in input
-          ? 'QueryOptions'
-          : input,
-    });
+  ): ModelCollection<TTemplate, TSchema> {
+    this._logger?.log(`Finding models in '${this.collectionName}'`, { input });
 
-    // Handle QueryOptions with callback where clause
-    if (typeof input === 'object' && 'where' in input && typeof input.where === 'function') {
-      const queryOptions = this._convertQueryOptionsCallback(input);
-      const records = this._dbCollection.findMany(queryOptions);
+    let collection: ModelCollection<TTemplate, TSchema>;
 
-      this._logger?.debug(`Query '${this.collectionName}' returned ${records.length} records`);
+    // Handle array of IDs - returns array from DbCollection
+    if (Array.isArray(input)) {
+      const records = this.dbCollection.findMany(input);
+      const models = records.map((record) =>
+        this._createModelFromRecord(record),
+      );
+      collection = new ModelCollection(this.template, models, this.serializer);
+    } else {
+      // Check if it's QueryOptions (has where, orderBy, cursor, offset, or limit)
+      const hasQueryKeys =
+        typeof input === 'object' &&
+        ('where' in input ||
+          'orderBy' in input ||
+          'cursor' in input ||
+          'offset' in input ||
+          'limit' in input);
 
-      const models = records.map((record) => this._createModelFromRecord(record));
-      return new ModelCollection(this._template, models, this._serializer);
+      if (hasQueryKeys) {
+        // Handle QueryOptions with callback where clause
+        const queryOptions =
+          typeof input.where === 'function'
+            ? this._convertQueryOptionsCallback(
+                input as QueryOptions<ModelAttrs<TTemplate, TSchema>>,
+              )
+            : (input as QueryOptions<ModelAttrs<TTemplate, TSchema>>);
+        const result = this.dbCollection.findMany(
+          queryOptions,
+        ) as PaginatedResult<ModelAttrs<TTemplate, TSchema>>;
+        const models = result.records.map((record) =>
+          this._createModelFromRecord(record),
+        );
+
+        collection = new ModelCollection(
+          this.template,
+          models,
+          this.serializer,
+          {
+            query: queryOptions,
+            total: result.total,
+          },
+        );
+      } else {
+        // Handle predicate object - returns array from DbCollection
+        const records = this.dbCollection.findMany(
+          input as DbRecordInput<ModelAttrs<TTemplate, TSchema>>,
+        );
+        const models = records.map((record) =>
+          this._createModelFromRecord(record),
+        );
+        collection = new ModelCollection(
+          this.template,
+          models,
+          this.serializer,
+        );
+      }
     }
 
-    const records = this._dbCollection.findMany(input);
-    this._logger?.debug(`Query '${this.collectionName}' returned ${records.length} records`);
+    this._logger?.log(
+      `Found ${collection.length} models in '${this.collectionName}'`,
+      {
+        ids: collection.models.map((m) => m.id),
+      },
+    );
 
-    const models = records.map((record) => this._createModelFromRecord(record));
-    return new ModelCollection(this._template, models, this._serializer);
+    return collection;
+  }
+
+  /**
+   * Count records matching an optional where clause.
+   * @param where - Optional where clause to filter records
+   * @returns The number of matching records
+   * @example
+   * ```typescript
+   * // Count all records
+   * collection.count();
+   *
+   * // Count with where clause
+   * collection.count({ status: 'active' });
+   * collection.count({ age: { gte: 18, lte: 65 } });
+   * ```
+   */
+  count(where?: Where<ModelAttrs<TTemplate, TSchema>>): number {
+    this._logger?.log(`Counting models in '${this.collectionName}'`, { where });
+    const result = this.dbCollection.count(where);
+    this._logger?.log(`Counted ${result} models in '${this.collectionName}'`);
+    return result;
+  }
+
+  /**
+   * Check if any records match an optional where clause.
+   * @param where - Optional where clause to filter records
+   * @returns True if at least one record matches
+   * @example
+   * ```typescript
+   * // Check if collection has any records
+   * collection.exists();
+   *
+   * // Check with where clause
+   * collection.exists({ email: 'user@example.com' });
+   * collection.exists({ status: { in: ['active', 'pending'] } });
+   * ```
+   */
+  exists(where?: Where<ModelAttrs<TTemplate, TSchema>>): boolean {
+    this._logger?.log(`Checking existence in '${this.collectionName}'`, {
+      where,
+    });
+    const result = this.dbCollection.exists(where);
+    this._logger?.log(`Existence check in '${this.collectionName}': ${result}`);
+    return result;
   }
 
   /**
@@ -274,8 +400,9 @@ export abstract class BaseCollection<
    * @param id - The id of the model to delete.
    */
   delete(id: ModelAttrs<TTemplate, TSchema>['id']): void {
-    this._logger?.debug(`Delete from '${this.collectionName}'`, { id });
-    this._dbCollection.delete(id);
+    this._logger?.log(`Deleting model ${id} from '${this.collectionName}'`);
+    this.dbCollection.delete(id);
+    this._logger?.log(`Deleted model ${id} from '${this.collectionName}'`);
   }
 
   /**
@@ -303,23 +430,36 @@ export abstract class BaseCollection<
       | DbRecordInput<ModelAttrs<TTemplate, TSchema>>
       | QueryOptions<ModelAttrs<TTemplate, TSchema>>,
   ): number {
-    this._logger?.debug(`Delete many from '${this.collectionName}'`, {
-      query: Array.isArray(input) ? `${input.length} IDs` : input,
+    this._logger?.log(`Deleting models from '${this.collectionName}'`, {
+      input,
     });
 
+    let count: number;
+
     // Handle QueryOptions with callback where clause
-    if (typeof input === 'object' && 'where' in input && typeof input.where === 'function') {
+    if (
+      typeof input === 'object' &&
+      'where' in input &&
+      typeof input.where === 'function'
+    ) {
       const queryOptions = this._convertQueryOptionsCallback(input);
-      const count = this._dbCollection.deleteMany(queryOptions);
-
-      this._logger?.debug(`Deleted ${count} records from '${this.collectionName}'`);
-
-      return count;
+      count = this.dbCollection.deleteMany(queryOptions);
+    } else {
+      count = this.dbCollection.deleteMany(input);
     }
 
-    const count = this._dbCollection.deleteMany(input);
-    this._logger?.debug(`Deleted ${count} records from '${this.collectionName}'`);
+    this._logger?.log(`Deleted ${count} models from '${this.collectionName}'`);
+
     return count;
+  }
+
+  /**
+   * Resets the seed tracking, allowing seeds to be loaded again.
+   * Called automatically when the collection data is cleared via db.emptyData().
+   */
+  resetSeedTracking(): void {
+    this._loadedSeeds.clear();
+    this._logger?.debug(`Seed tracking reset for '${this.collectionName}'`);
   }
 
   // -- PRIVATE METHODS --
@@ -337,7 +477,7 @@ export abstract class BaseCollection<
     }
 
     const modelWhereCallback = options.where as (
-      model: ModelInstance<TTemplate, TSchema, TSerializer>,
+      model: ModelInstance<TTemplate, TSchema>,
       helpers: WhereHelperFns<ModelAttrs<TTemplate, TSchema>>,
     ) => boolean;
 
@@ -363,36 +503,97 @@ export abstract class BaseCollection<
    */
   protected _createModelFromRecord(
     record: ModelAttrs<TTemplate, TSchema>,
-  ): ModelInstance<TTemplate, TSchema, TSerializer> {
+  ): ModelInstance<TTemplate, TSchema> {
     return new this.Model({
-      attrs: record as ModelCreateAttrs<TTemplate, TSchema>,
-      relationships: this._relationships as unknown as RelationshipsByTemplate<TTemplate, TSchema>,
+      attrs: record as ModelNewAttrs<TTemplate, TSchema>,
+      relationships: this.relationships as unknown as RelationshipsByTemplate<
+        TTemplate,
+        TSchema
+      >,
       schema: this._schema,
-      serializer: this._serializer,
+      serializer: this.serializer,
     } as unknown as ModelConfig<
       TTemplate,
       TSchema,
-      RelationshipsByTemplate<TTemplate, TSchema>,
-      TSerializer
-    >) as ModelInstance<TTemplate, TSchema, TSerializer>;
+      RelationshipsByTemplate<TTemplate, TSchema>
+    >) as ModelInstance<TTemplate, TSchema>;
+  }
+
+  /**
+   * Resolve serializer from config or instance.
+   * If a Serializer instance is provided, use it directly.
+   * If a config object is provided, create a new Serializer instance.
+   * @param model - The model template
+   * @param serializer - The serializer config or instance
+   * @returns The resolved Serializer instance or undefined
+   * @private
+   */
+  private _resolveSerializer(
+    model: TTemplate,
+    serializer?:
+      | SerializerConfig<TTemplate, TSchema>
+      | Serializer<TTemplate, TSchema>,
+  ):
+    | Serializer<
+        TTemplate,
+        TSchema,
+        SerializedModelFor<TTemplate>,
+        SerializedCollectionFor<TTemplate>
+      >
+    | undefined {
+    if (!serializer) {
+      return undefined;
+    }
+
+    if (serializer instanceof Serializer) {
+      return serializer;
+    }
+
+    // It's a config object, create a new Serializer instance
+    return new Serializer(model, serializer);
+  }
+
+  /**
+   * Resolve identity manager from config or instance.
+   * If an IdentityManager instance is provided, use it directly.
+   * If a config object is provided, create a new IdentityManager instance.
+   * @param identityManager - The identity manager config or instance
+   * @returns The resolved IdentityManager instance or undefined
+   * @private
+   */
+  private _resolveIdentityManager(
+    identityManager?:
+      | IdentityManagerConfig<ModelIdFor<TTemplate>>
+      | IdentityManager<ModelIdFor<TTemplate>>,
+  ): IdentityManager<ModelIdFor<TTemplate>> | undefined {
+    if (!identityManager) {
+      return undefined;
+    }
+
+    if (identityManager instanceof IdentityManager) {
+      return identityManager;
+    }
+
+    // It's a config object, create a new IdentityManager instance
+    return new IdentityManager(identityManager);
   }
 
   /**
    * Initialize and create the database collection if needed
-   * @param identityManager - The identity manager to use for the collection
+   * @param identityManager - The identity manager instance for the collection
    * @returns The database collection instance
    * @private
    */
   private _initializeDbCollection(
-    identityManager?: IdentityManager<ModelId<TTemplate>>,
+    identityManager?: IdentityManager<ModelIdFor<TTemplate>>,
   ): DbCollection<ModelAttrs<TTemplate, TSchema>> {
     if (!this._schema.db.hasCollection(this.collectionName)) {
       this._schema.db.createCollection(this.collectionName, {
-        identityManager: identityManager,
+        identityManager,
       });
     }
-    return this._schema.db.getCollection(this._template.collectionName) as unknown as DbCollection<
-      ModelAttrs<TTemplate, TSchema>
-    >;
+    return this._schema.db.getCollection(
+      this.template.collectionName,
+    ) as unknown as DbCollection<ModelAttrs<TTemplate, TSchema>>;
   }
 }

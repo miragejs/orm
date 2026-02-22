@@ -1,24 +1,25 @@
-import { StringIdentityManager } from '@src/id-manager';
-
 import { collection } from '../CollectionBuilder';
 import { schema } from '../SchemaBuilder';
 
 import {
   postFactory,
-  postIdentityManager,
+  postIdentityManagerConfig,
   postModel,
   userFactory,
   userModel,
 } from './test-helpers';
 
 // Create test collections
-const userCollection = collection().model(userModel).factory(userFactory).create();
+const userCollection = collection()
+  .model(userModel)
+  .factory(userFactory)
+  .build();
 
 const postCollection = collection()
   .model(postModel)
   .factory(postFactory)
-  .identityManager(postIdentityManager)
-  .create();
+  .identityManager(postIdentityManagerConfig)
+  .build();
 
 // Create test schema
 const testSchema = schema()
@@ -26,8 +27,7 @@ const testSchema = schema()
     users: userCollection,
     posts: postCollection,
   })
-  .identityManager(new StringIdentityManager())
-  .setup();
+  .build();
 
 describe('Schema', () => {
   beforeEach(() => {
@@ -58,11 +58,6 @@ describe('Schema', () => {
     it('provides access to database instance', () => {
       expect(testSchema.db).toBeDefined();
       expect(typeof testSchema.db.getCollection).toBe('function');
-    });
-
-    it('provides access to identity manager', () => {
-      expect(testSchema.identityManager).toBeDefined();
-      expect(typeof testSchema.identityManager.get).toBe('function');
     });
   });
 
@@ -249,14 +244,22 @@ describe('Schema', () => {
 
     it('finds many or creates models with traits and defaults', () => {
       // Request 2 posts, but override the title
-      const posts = testSchema.posts.findManyOrCreateBy(2, {}, { title: 'Custom Post' });
+      const posts = testSchema.posts.findManyOrCreateBy(
+        2,
+        {},
+        { title: 'Custom Post' },
+      );
       expect(posts.length).toBe(2);
       // First 2 posts exist already
       expect(posts.models[0].title).toBe('Post 1');
       expect(posts.models[1].title).toBe('Post 2');
 
       // Request 4 posts total with custom title
-      const morePosts = testSchema.posts.findManyOrCreateBy(4, {}, { title: 'New Post' });
+      const morePosts = testSchema.posts.findManyOrCreateBy(
+        4,
+        {},
+        { title: 'New Post' },
+      );
       expect(morePosts.length).toBe(4);
       // First 4 posts exist already (2 original + 2 custom)
       expect(morePosts.models[0].title).toBe('Post 1');
@@ -269,289 +272,158 @@ describe('Schema', () => {
       const user = testSchema.users.create();
       const post = testSchema.posts.create();
 
-      // Users use StringIdentityManager
+      // Users use default string IDs (no custom config)
       expect(typeof user.id).toBe('string');
 
-      // Posts use NumberIdentityManager
+      // Posts use number IDs (configured via collection builder)
       expect(typeof post.id).toBe('number');
     });
 
-    it('allows global identity manager override', () => {
-      const schemaWithNumberDefault = schema()
-        .collections({
-          users: {
-            model: userModel,
-            factory: userFactory,
-            identityManager: new StringIdentityManager(),
-          },
-          posts: {
-            model: postModel,
-            factory: postFactory,
-          },
-        })
-        .identityManager(postIdentityManager)
-        .setup();
+    it('each collection has independent ID sequences', () => {
+      // Create users and posts in different orders
+      testSchema.users.create();
+      testSchema.users.create();
+      testSchema.posts.create();
 
-      const user = schemaWithNumberDefault.users.create();
-      const post = schemaWithNumberDefault.posts.create();
+      // Each collection should have its own ID sequence starting from 1
+      const user3 = testSchema.users.create();
+      const post2 = testSchema.posts.create();
 
-      expect(typeof user.id).toBe('string');
-      expect(typeof post.id).toBe('number');
+      // User should be "3" (third user created)
+      expect(user3.id).toBe('3');
+
+      // Post should be 2 (second post created, using number ID config)
+      expect(post2.id).toBe(2);
     });
   });
 
-  describe('Global serializer configuration', () => {
-    describe('Schema-level global config', () => {
-      it('should apply global root config to all collections', () => {
-        const testSchema = schema()
-          .collections({
-            users: collection().model(userModel).create(),
-            posts: collection().model(postModel).create(),
-          })
-          .serializer({ root: true })
-          .setup();
+  describe('Collection serializer configuration', () => {
+    it('should not wrap when no serializer config is set', () => {
+      const testSchema = schema()
+        .collections({
+          users: collection().model(userModel).build(),
+        })
+        .build();
 
-        const user = testSchema.users.create({ name: 'Alice', email: 'alice@example.com' });
-        const post = testSchema.posts.create({ title: 'Hello', content: 'World' });
-
-        expect(user.toJSON()).toEqual({
-          user: { id: user.id, name: 'Alice', email: 'alice@example.com' },
-        });
-        expect(post.toJSON()).toEqual({
-          post: { id: post.id, title: 'Hello', content: 'World' },
-        });
+      const user = testSchema.users.create({
+        name: 'Charlie',
+        email: 'charlie@example.com',
       });
 
-      it('should apply global custom root key to all collections', () => {
-        const testSchema = schema()
-          .collections({
-            users: collection().model(userModel).create(),
-          })
-          .serializer({ root: 'data' })
-          .setup();
-
-        const user = testSchema.users.create({ name: 'Bob', email: 'bob@example.com' });
-
-        expect(user.toJSON()).toEqual({
-          data: { id: user.id, name: 'Bob', email: 'bob@example.com' },
-        });
-      });
-
-      it('should not wrap when no global config is set', () => {
-        const testSchema = schema()
-          .collections({
-            users: collection().model(userModel).create(),
-          })
-          .setup();
-
-        const user = testSchema.users.create({ name: 'Charlie', email: 'charlie@example.com' });
-
-        expect(user.toJSON()).toEqual({
-          id: user.id,
-          name: 'Charlie',
-          email: 'charlie@example.com',
-        });
+      expect(user.toJSON()).toEqual({
+        id: user.id,
+        name: 'Charlie',
+        email: 'charlie@example.com',
       });
     });
 
-    describe('Collection-level config override', () => {
-      it('should override global root config at collection level', () => {
-        const testSchema = schema()
-          .serializer({ root: true })
-          .collections({
-            users: collection().model(userModel).serializer({ root: false }).create(),
-            posts: collection().model(postModel).create(),
-          })
-          .setup();
+    it('should apply collection-level root config', () => {
+      const testSchema = schema()
+        .collections({
+          users: collection()
+            .model(userModel)
+            .serializer({ root: true })
+            .build(),
+        })
+        .build();
 
-        const user = testSchema.users.create({ name: 'Eve', email: 'eve@example.com' });
-        const post = testSchema.posts.create({ title: 'Test', content: 'Content' });
-
-        // User has root: false (collection override)
-        expect(user.toJSON()).toEqual({
-          id: user.id,
-          name: 'Eve',
-          email: 'eve@example.com',
-        });
-
-        // Post has root: true (global config)
-        expect(post.toJSON()).toEqual({
-          post: { id: post.id, title: 'Test', content: 'Content' },
-        });
+      const user = testSchema.users.create({
+        name: 'Alice',
+        email: 'alice@example.com',
       });
 
-      it('should allow collection-specific attrs filtering with global root', () => {
-        const testSchema = schema()
-          .serializer({ root: true })
-          .collections({
-            users: collection()
-              .model(userModel)
-              .serializer({ attrs: ['id', 'name'] })
-              .create(),
-          })
-          .setup();
-
-        const user = testSchema.users.create({ name: 'Frank', email: 'frank@example.com' });
-
-        expect(user.toJSON()).toEqual({
-          user: { id: user.id, name: 'Frank' },
-        });
-      });
-
-      it('should merge global and collection config correctly', () => {
-        const testSchema = schema()
-          .serializer({ root: true, embed: false })
-          .collections({
-            users: collection()
-              .model(userModel)
-              .serializer({ attrs: ['id', 'name', 'email'] })
-              .create(),
-          })
-          .setup();
-
-        const user = testSchema.users.create({ name: 'Grace', email: 'grace@example.com' });
-
-        // Should have root from global, attrs from collection
-        expect(user.toJSON()).toEqual({
-          user: { id: user.id, name: 'Grace', email: 'grace@example.com' },
-        });
-      });
-
-      it('should allow overriding global root key with collection custom key', () => {
-        const testSchema = schema()
-          .serializer({ root: true })
-          .collections({
-            users: collection().model(userModel).serializer({ root: 'userData' }).create(),
-          })
-          .setup();
-
-        const user = testSchema.users.create({ name: 'Henry', email: 'henry@example.com' });
-
-        expect(user.toJSON()).toEqual({
-          userData: { id: user.id, name: 'Henry', email: 'henry@example.com' },
-        });
+      expect(user.toJSON()).toEqual({
+        user: { id: user.id, name: 'Alice', email: 'alice@example.com' },
       });
     });
 
-    describe('Collection serialization', () => {
-      it('should apply global root config to collection serialization', () => {
-        const testSchema = schema()
-          .serializer({ root: true })
-          .collections({
-            users: collection().model(userModel).create(),
-          })
-          .setup();
+    it('should apply collection-level custom root key', () => {
+      const testSchema = schema()
+        .collections({
+          users: collection()
+            .model(userModel)
+            .serializer({ root: 'userData' })
+            .build(),
+        })
+        .build();
 
-        const user1 = testSchema.users.create({ name: 'Jack', email: 'jack@example.com' });
-        const user2 = testSchema.users.create({ name: 'Jill', email: 'jill@example.com' });
-
-        const allUsers = testSchema.users.all();
-
-        expect(allUsers.toJSON()).toEqual({
-          users: [
-            { id: user1.id, name: 'Jack', email: 'jack@example.com' },
-            { id: user2.id, name: 'Jill', email: 'jill@example.com' },
-          ],
-        });
+      const user = testSchema.users.create({
+        name: 'Henry',
+        email: 'henry@example.com',
       });
 
-      it('should apply collection attrs filter to collection serialization', () => {
-        const testSchema = schema()
-          .collections({
-            users: collection()
-              .model(userModel)
-              .serializer({ attrs: ['id', 'name'] })
-              .create(),
-          })
-          .setup();
-
-        const user1 = testSchema.users.create({ name: 'Kate', email: 'kate@example.com' });
-        const user2 = testSchema.users.create({ name: 'Leo', email: 'leo@example.com' });
-
-        const allUsers = testSchema.users.all();
-
-        expect(allUsers.toJSON()).toEqual([
-          { id: user1.id, name: 'Kate' },
-          { id: user2.id, name: 'Leo' },
-        ]);
-      });
-
-      it('should apply merged config to collection serialization', () => {
-        const testSchema = schema()
-          .serializer({ root: true })
-          .collections({
-            users: collection()
-              .model(userModel)
-              .serializer({ attrs: ['id', 'name'] })
-              .create(),
-          })
-          .setup();
-
-        const user1 = testSchema.users.create({ name: 'Mike', email: 'mike@example.com' });
-        const user2 = testSchema.users.create({ name: 'Nina', email: 'nina@example.com' });
-
-        const allUsers = testSchema.users.all();
-
-        expect(allUsers.toJSON()).toEqual({
-          users: [
-            { id: user1.id, name: 'Mike' },
-            { id: user2.id, name: 'Nina' },
-          ],
-        });
+      expect(user.toJSON()).toEqual({
+        userData: { id: user.id, name: 'Henry', email: 'henry@example.com' },
       });
     });
 
-    describe('Edge cases', () => {
-      it('should handle empty attrs array', () => {
-        const testSchema = schema()
-          .collections({
-            users: collection().model(userModel).serializer({ attrs: [] }).create(),
-          })
-          .setup();
+    it('should apply collection select filter to collection serialization', () => {
+      const testSchema = schema()
+        .collections({
+          users: collection()
+            .model(userModel)
+            .serializer({ select: ['id', 'name'] })
+            .build(),
+        })
+        .build();
 
-        const user = testSchema.users.create({ name: 'Paul', email: 'paul@example.com' });
-
-        // Empty attrs should return all attributes (fallback behavior)
-        expect(user.toJSON()).toEqual({
-          id: user.id,
-          name: 'Paul',
-          email: 'paul@example.com',
-        });
+      const user1 = testSchema.users.create({
+        name: 'Kate',
+        email: 'kate@example.com',
+      });
+      const user2 = testSchema.users.create({
+        name: 'Leo',
+        email: 'leo@example.com',
       });
 
-      it('should handle undefined root value correctly', () => {
-        const testSchema = schema()
-          .serializer({ root: undefined })
-          .collections({
-            users: collection().model(userModel).create(),
-          })
-          .setup();
+      const allUsers = testSchema.users.all();
 
-        const user = testSchema.users.create({ name: 'Quinn', email: 'quinn@example.com' });
+      expect(allUsers.toJSON()).toEqual([
+        { id: user1.id, name: 'Kate' },
+        { id: user2.id, name: 'Leo' },
+      ]);
+    });
 
-        // undefined root should not wrap
-        expect(user.toJSON()).toEqual({
-          id: user.id,
-          name: 'Quinn',
-          email: 'quinn@example.com',
-        });
+    it('should handle empty select array', () => {
+      const testSchema = schema()
+        .collections({
+          users: collection()
+            .model(userModel)
+            .serializer({ select: [] })
+            .build(),
+        })
+        .build();
+
+      const user = testSchema.users.create({
+        name: 'Paul',
+        email: 'paul@example.com',
       });
 
-      it('should handle both root and attrs at collection level', () => {
-        const testSchema = schema()
-          .collections({
-            users: collection()
-              .model(userModel)
-              .serializer({ root: 'userRecord', attrs: ['id', 'name'] })
-              .create(),
-          })
-          .setup();
+      // Empty select should return all attributes (fallback behavior)
+      expect(user.toJSON()).toEqual({
+        id: user.id,
+        name: 'Paul',
+        email: 'paul@example.com',
+      });
+    });
 
-        const user = testSchema.users.create({ name: 'Rachel', email: 'rachel@example.com' });
+    it('should handle both root and select at collection level', () => {
+      const testSchema = schema()
+        .collections({
+          users: collection()
+            .model(userModel)
+            .serializer({ root: 'userRecord', select: ['id', 'name'] })
+            .build(),
+        })
+        .build();
 
-        expect(user.toJSON()).toEqual({
-          userRecord: { id: user.id, name: 'Rachel' },
-        });
+      const user = testSchema.users.create({
+        name: 'Rachel',
+        email: 'rachel@example.com',
+      });
+
+      expect(user.toJSON()).toEqual({
+        userRecord: { id: user.id, name: 'Rachel' },
       });
     });
   });

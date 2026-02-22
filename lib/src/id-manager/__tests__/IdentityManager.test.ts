@@ -1,4 +1,4 @@
-import IdentityManager, { StringIdentityManager, NumberIdentityManager } from '../IdentityManager';
+import IdentityManager from '../IdentityManager';
 
 describe('IdentityManager', () => {
   describe('constructor', () => {
@@ -14,7 +14,10 @@ describe('IdentityManager', () => {
 
     it('should initialize with custom used IDs', () => {
       const usedIds = ['1', '2', '3'];
-      const manager = new IdentityManager({ initialCounter: '1', initialUsedIds: usedIds });
+      const manager = new IdentityManager({
+        initialCounter: '1',
+        initialUsedIds: usedIds,
+      });
       expect(manager.get()).toBe('4');
     });
 
@@ -133,11 +136,45 @@ describe('IdentityManager', () => {
     });
   });
 
+  describe('default generator with number IDs', () => {
+    it('should increment number IDs correctly', () => {
+      const manager = new IdentityManager<number>({ initialCounter: 1 });
+      expect(manager.get()).toBe(1);
+      expect(manager.fetch()).toBe(1);
+      expect(manager.get()).toBe(2);
+      expect(manager.fetch()).toBe(2);
+      expect(manager.get()).toBe(3);
+    });
+
+    it('should handle large numbers correctly', () => {
+      const manager = new IdentityManager<number>({ initialCounter: 999 });
+      expect(manager.fetch()).toBe(999);
+      expect(manager.get()).toBe(1000);
+    });
+
+    it('should handle gaps in used IDs', () => {
+      const manager = new IdentityManager<number>({ initialCounter: 1 });
+      manager.set(1);
+      manager.set(3);
+      expect(manager.get()).toBe(2);
+      manager.set(2);
+      expect(manager.get()).toBe(4);
+    });
+
+    it('should reset to initial counter value', () => {
+      const manager = new IdentityManager<number>({ initialCounter: 10 });
+      manager.set(10);
+      manager.set(11);
+      manager.reset();
+      expect(manager.get()).toBe(10);
+    });
+  });
+
   describe('custom ID generator', () => {
     it('should use custom generator for string IDs', () => {
       const stringManager = new IdentityManager<string>({
         initialCounter: 'id_1',
-        idGenerator: (currentId) => {
+        idGenerator: (currentId: string) => {
           const num = parseInt(currentId.split('_')[1]);
           return `id_${num + 1}`;
         },
@@ -163,7 +200,7 @@ describe('IdentityManager', () => {
     it('should work with custom number generator', () => {
       const numberManager = new IdentityManager<number>({
         initialCounter: 1,
-        idGenerator: (currentId) => currentId * 2,
+        idGenerator: (currentId: number) => currentId * 2,
       });
 
       expect(numberManager.get()).toBe(1);
@@ -176,7 +213,7 @@ describe('IdentityManager', () => {
     it('should work with UUID-like generators', () => {
       const uuidManager = new IdentityManager<string>({
         initialCounter: 'uuid-1',
-        idGenerator: (currentId) => {
+        idGenerator: (currentId: string) => {
           const num = parseInt(currentId.split('-')[1]);
           return `uuid-${num + 1}`;
         },
@@ -185,130 +222,6 @@ describe('IdentityManager', () => {
       expect(uuidManager.get()).toBe('uuid-1');
       expect(uuidManager.fetch()).toBe('uuid-1');
       expect(uuidManager.get()).toBe('uuid-2');
-    });
-  });
-});
-
-describe('StringIdentityManager', () => {
-  describe('constructor', () => {
-    it('should initialize with default string counter "1"', () => {
-      const manager = new StringIdentityManager();
-      expect(manager.get()).toBe('1');
-    });
-
-    it('should allow custom initialCounter override', () => {
-      const manager = new StringIdentityManager({ initialCounter: '10' });
-      expect(manager.get()).toBe('10');
-    });
-
-    it('should allow custom used IDs', () => {
-      const manager = new StringIdentityManager({ initialUsedIds: ['1', '3'] });
-      expect(manager.get()).toBe('2');
-    });
-
-    it('should allow custom ID generator', () => {
-      const manager = new StringIdentityManager({
-        idGenerator: (currentId) => `id_${Number(currentId) + 1}`,
-      });
-      expect(manager.get()).toBe('1');
-      expect(manager.fetch()).toBe('1');
-      expect(manager.get()).toBe('id_2');
-    });
-  });
-
-  describe('basic functionality', () => {
-    let manager: StringIdentityManager;
-
-    beforeEach(() => {
-      manager = new StringIdentityManager();
-    });
-
-    it('should increment string IDs correctly', () => {
-      expect(manager.get()).toBe('1');
-      expect(manager.fetch()).toBe('1');
-      expect(manager.get()).toBe('2');
-      expect(manager.fetch()).toBe('2');
-      expect(manager.get()).toBe('3');
-    });
-
-    it('should handle gaps in used IDs', () => {
-      manager.set('1');
-      manager.set('3');
-      expect(manager.get()).toBe('2');
-      manager.set('2');
-      expect(manager.get()).toBe('4');
-    });
-
-    it('should reset to default string counter', () => {
-      manager.set('1');
-      manager.set('2');
-      manager.reset();
-      expect(manager.get()).toBe('1');
-    });
-  });
-});
-
-describe('NumberIdentityManager', () => {
-  describe('constructor', () => {
-    it('should initialize with default number counter 1', () => {
-      const manager = new NumberIdentityManager();
-      expect(manager.get()).toBe(1);
-    });
-
-    it('should allow custom initialCounter override', () => {
-      const manager = new NumberIdentityManager({ initialCounter: 10 });
-      expect(manager.get()).toBe(10);
-    });
-
-    it('should allow custom used IDs', () => {
-      const manager = new NumberIdentityManager({ initialUsedIds: [1, 3] });
-      expect(manager.get()).toBe(2);
-    });
-
-    it('should allow custom ID generator', () => {
-      const manager = new NumberIdentityManager({
-        idGenerator: (currentId) => currentId * 2,
-      });
-      expect(manager.get()).toBe(1);
-      expect(manager.fetch()).toBe(1);
-      expect(manager.get()).toBe(2);
-    });
-  });
-
-  describe('basic functionality', () => {
-    let manager: NumberIdentityManager;
-
-    beforeEach(() => {
-      manager = new NumberIdentityManager();
-    });
-
-    it('should increment number IDs correctly', () => {
-      expect(manager.get()).toBe(1);
-      expect(manager.fetch()).toBe(1);
-      expect(manager.get()).toBe(2);
-      expect(manager.fetch()).toBe(2);
-      expect(manager.get()).toBe(3);
-    });
-
-    it('should handle gaps in used IDs', () => {
-      manager.set(1);
-      manager.set(3);
-      expect(manager.get()).toBe(2);
-      manager.set(2);
-      expect(manager.get()).toBe(4);
-    });
-
-    it('should reset to default number counter', () => {
-      manager.set(1);
-      manager.set(2);
-      manager.reset();
-      expect(manager.get()).toBe(1);
-    });
-
-    it('should handle large numbers correctly', () => {
-      const largeManager = new NumberIdentityManager({ initialCounter: 999 });
-      expect(largeManager.fetch()).toBe(999);
-      expect(largeManager.get()).toBe(1000);
     });
   });
 });

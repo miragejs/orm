@@ -32,8 +32,9 @@ export default defineConfig({
         'lib/src/**/__tests__/**',
         'lib/src/**/types.ts', // Type-only files
         'lib/src/**/index.ts', // Re-export files typically don't need coverage
-        'node_modules/**',
         'lib/dist/**',
+        'examples/**',
+        'node_modules/**',
       ],
 
       // Coverage thresholds - fail if coverage drops below these

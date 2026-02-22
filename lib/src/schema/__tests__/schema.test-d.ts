@@ -1,9 +1,7 @@
-import type { BelongsTo } from '@src/associations';
-import { StringIdentityManager } from '@src/id-manager';
-import { model } from '@src/model';
+import { model, type ModelCreateAttrs } from '@src/model';
+import type { BelongsTo } from '@src/relations';
 import type {
   CollectionConfig,
-  CollectionCreateAttrs,
   FixtureAttrs,
   FixtureConfig,
   FixtureLoadStrategy,
@@ -31,8 +29,16 @@ interface PostAttrs {
 }
 
 // Test models
-const userModel = model().name('user').collection('users').attrs<UserAttrs>().create();
-const postModel = model().name('post').collection('posts').attrs<PostAttrs>().create();
+const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<UserAttrs>()
+  .build();
+const postModel = model()
+  .name('post')
+  .collection('posts')
+  .attrs<PostAttrs>()
+  .build();
 
 // Test serializer
 const userSerializer = new Serializer(userModel);
@@ -47,23 +53,20 @@ test('SchemaCollections should work with basic collections map', () => {
   expectTypeOf(collections).toBeObject();
 });
 
-test('SchemaConfig should work with default identity manager', () => {
-  const config: SchemaConfig = {
-    identityManager: new StringIdentityManager(),
-  };
-
-  expectTypeOf(config).toEqualTypeOf<SchemaConfig>();
-});
-
 test('SchemaConfig should work with logging configuration', () => {
   const config: SchemaConfig = {
-    identityManager: new StringIdentityManager(),
     logging: {
       enabled: true,
       level: 'info',
       prefix: '[ORM]',
     },
   };
+
+  expectTypeOf(config).toEqualTypeOf<SchemaConfig>();
+});
+
+test('SchemaConfig should work with empty config', () => {
+  const config: SchemaConfig = {};
 
   expectTypeOf(config).toEqualTypeOf<SchemaConfig>();
 });
@@ -79,8 +82,8 @@ test('CollectionConfig should work with minimal configuration', () => {
 test('CollectionConfig should work with serializer config', () => {
   const config: CollectionConfig<typeof userModel> = {
     model: userModel,
-    serializerConfig: {
-      attrs: ['id', 'name', 'email'],
+    serializer: {
+      select: ['id', 'name', 'email'],
     },
   };
 
@@ -102,8 +105,8 @@ test('CollectionConfig should work with fixtures', () => {
   expectTypeOf(config).toEqualTypeOf<CollectionConfig<typeof userModel>>();
 });
 
-test('CollectionCreateAttrs should work for basic attributes', () => {
-  const attrs: CollectionCreateAttrs<typeof userModel> = {
+test('ModelCreateAttrs should work for basic attributes', () => {
+  const attrs: ModelCreateAttrs<typeof userModel> = {
     name: 'John',
     email: 'john@example.com',
   };
@@ -112,13 +115,13 @@ test('CollectionCreateAttrs should work for basic attributes', () => {
   expectTypeOf(attrs).toBeObject();
 });
 
-test('CollectionCreateAttrs should work with relationships', () => {
+test('ModelCreateAttrs should work with relationships', () => {
   type TestCollections = {
     users: CollectionConfig<typeof userModel>;
     posts: CollectionConfig<typeof postModel>;
   };
 
-  const attrs: CollectionCreateAttrs<
+  const attrs: ModelCreateAttrs<
     typeof postModel,
     TestCollections,
     { author: BelongsTo<typeof userModel, 'authorId'> }
@@ -128,7 +131,7 @@ test('CollectionCreateAttrs should work with relationships', () => {
   } as any;
 
   expectTypeOf(attrs).toEqualTypeOf<
-    CollectionCreateAttrs<
+    ModelCreateAttrs<
       typeof postModel,
       TestCollections,
       { author: BelongsTo<typeof userModel, 'authorId'> }
