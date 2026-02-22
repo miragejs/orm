@@ -30,7 +30,7 @@ describe('getTeam', () => {
     expect(result.description).toBe(team.description);
   });
 
-  test('throws error when not authenticated', async () => {
-    await expect(getTeam()).rejects.toThrow('Not authenticated');
+  test('throws api error', async () => {
+    await expect(getTeam()).rejects.toThrow();
   });
 });

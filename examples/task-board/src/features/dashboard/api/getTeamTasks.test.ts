@@ -71,4 +71,8 @@ describe('getTeamTasks', () => {
 
     expect(result.memberOptions).toEqual(memberOptions);
   });
+
+  test('throws api error', async () => {
+    await expect(getTeamTasks()).rejects.toThrow();
+  });
 });

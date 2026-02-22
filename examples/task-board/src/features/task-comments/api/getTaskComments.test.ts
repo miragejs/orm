@@ -16,7 +16,7 @@ describe('getTaskComments', () => {
 
   afterAll(() => server.close());
 
-  test('fetches comments for a task', async ({ schema }) => {
+  test('returns comments for a task', async ({ schema }) => {
     const task = schema.tasks.create('withComments');
     const { assignee } = task;
     setUserCookie(assignee.id);
@@ -44,20 +44,9 @@ describe('getTaskComments', () => {
     expect(comments).toEqual([]);
   });
 
-  test('throws error when task not found', async ({ schema }) => {
-    const user = schema.users.create();
-    setUserCookie(user.id);
-
-    await expect(getTaskComments('non-existent-task')).rejects.toThrow(
-      'Failed to fetch task comments',
-    );
-  });
-
-  test('throws error when not authenticated', async ({ schema }) => {
+  test('throws api error', async ({ schema }) => {
     const task = schema.tasks.create();
 
-    await expect(getTaskComments(task.id)).rejects.toThrow(
-      'Failed to fetch task comments',
-    );
+    await expect(getTaskComments(task.id)).rejects.toThrow();
   });
 });

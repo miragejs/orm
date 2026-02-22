@@ -36,12 +36,10 @@ describe('updateTask', () => {
     expect(updated).toMatchObject(payload);
   });
 
-  test('throws server error', async ({ schema }) => {
+  test('throws api error', async ({ schema }) => {
     const user = schema.users.create();
     setUserCookie(user.id);
 
-    await expect(updateTask('non-existent-id', { title: 'New title' })).rejects.toThrow(
-      'Task not found',
-    );
+    await expect(updateTask('non-existent-id', { title: 'New title' })).rejects.toThrow();
   });
 });

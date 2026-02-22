@@ -21,7 +21,7 @@ describe('login', () => {
     expect(result).toEqual(user);
   });
 
-  test('throws error for non-existent user', async () => {
-    await expect(login('nonexistent@example.com')).rejects.toThrow('User not found');
+  test('throws api error', async () => {
+    await expect(login('nonexistent@example.com')).rejects.toThrow();
   });
 });

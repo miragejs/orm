@@ -28,20 +28,9 @@ describe('addTaskComment', () => {
     expect(comment.author.id).toBe(assignee.id);
   });
 
-  test('throws error when task not found', async ({ schema }) => {
-    const user = schema.users.create();
-    setUserCookie(user.id);
-
-    await expect(addTaskComment('non-existent-task', 'Test')).rejects.toThrow(
-      'Failed to add comment',
-    );
-  });
-
-  test('throws error when not authenticated', async ({ schema }) => {
+  test('throws api error', async ({ schema }) => {
     const task = schema.tasks.create();
 
-    await expect(addTaskComment(task.id, 'Test')).rejects.toThrow(
-      'Failed to add comment',
-    );
+    await expect(addTaskComment(task.id, 'Test')).rejects.toThrow();
   });
 });

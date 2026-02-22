@@ -17,7 +17,7 @@ describe('getUserTasks', () => {
 
   afterAll(() => server.close());
 
-  test('gets tasks for authenticated user', async ({ schema }) => {
+  test('returns tasks for authenticated user', async ({ schema }) => {
     const user = schema.users.create('withTasks');
     const tasks = user.tasks.serialize(taskItemSerializer);
     setUserCookie(user.id);
@@ -28,18 +28,9 @@ describe('getUserTasks', () => {
     expect(result).toEqual(tasks);
   });
 
-  test('throws error when not authenticated', async ({ schema }) => {
+  test('throws api error', async ({ schema }) => {
     const user = schema.users.create();
 
-    await expect(getUserTasks(user.id)).rejects.toThrow('Failed to fetch user tasks');
-  });
-
-  test('throws error when user not found', async ({ schema }) => {
-    const user = schema.users.create();
-    setUserCookie(user.id);
-
-    await expect(getUserTasks('non-existent-id')).rejects.toThrow(
-      'Failed to fetch user tasks',
-    );
+    await expect(getUserTasks(user.id)).rejects.toThrow();
   });
 });

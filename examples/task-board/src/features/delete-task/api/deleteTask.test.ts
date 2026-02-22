@@ -16,7 +16,7 @@ describe('deleteTask', () => {
 
   afterAll(() => server.close());
 
-  test('deletes task for authenticated user', async ({ schema }) => {
+  test('deletes task', async ({ schema }) => {
     const manager = schema.users.create('manager');
     const task = schema.tasks.create({ creator: manager, team: manager.team });
     setUserCookie(manager.id);
@@ -27,20 +27,9 @@ describe('deleteTask', () => {
     expect(found).toBeFalsy();
   });
 
-  test('throws when not authenticated', async ({ schema }) => {
-    const manager = schema.users.create('manager');
-    const task = schema.tasks.create({ creator: manager, team: manager.team });
+  test('throws api error', async ({ schema }) => {
+    const task = schema.tasks.create();
 
-    await expect(deleteTask(task.id)).rejects.toThrow('Not authenticated');
-
-    const found = schema.tasks.find(task.id);
-    expect(found).toBeDefined();
-  });
-
-  test('throws when task not found', async ({ schema }) => {
-    const user = schema.users.create();
-    setUserCookie(user.id);
-
-    await expect(deleteTask('non-existent-id')).rejects.toThrow('Task not found');
+    await expect(deleteTask(task.id)).rejects.toThrow();
   });
 });

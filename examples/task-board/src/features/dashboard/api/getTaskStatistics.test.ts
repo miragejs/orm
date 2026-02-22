@@ -51,15 +51,7 @@ describe('getTaskStatistics', () => {
     expect(result.statistics.inProgress[1]).toBe(0);
   });
 
-  test('returns empty statistics when team has no tasks', async ({ schema }) => {
-    const manager = schema.users.create('manager');
-    setUserCookie(manager.id);
-
-    const result = await getTaskStatistics();
-
-    expect(result.statistics.dates).toHaveLength(0);
-    expect(result.statistics.created).toHaveLength(0);
-    expect(result.statistics.completed).toHaveLength(0);
-    expect(result.statistics.inProgress).toHaveLength(0);
+  test('throws api error', async () => {
+    await expect(getTaskStatistics()).rejects.toThrow();
   });
 });

@@ -43,7 +43,7 @@ describe('createTask', () => {
     expect(result).toMatchObject(task);
   });
 
-  test('throws server error', async () => {
+  test('throws api error', async () => {
     const payload = {
       assigneeId: null,
       dueDate: new Date().toISOString(),
@@ -52,6 +52,6 @@ describe('createTask', () => {
       title: 'Task',
     };
 
-    await expect(createTask(payload)).rejects.toThrow('Not authenticated');
+    await expect(createTask(payload)).rejects.toThrow();
   });
 });

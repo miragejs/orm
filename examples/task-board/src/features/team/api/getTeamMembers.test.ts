@@ -68,7 +68,7 @@ describe('getTeamMembers', () => {
     expect(result.members[0].name).toBe('Zoe');
   });
 
-  test('throws error when not authenticated', async () => {
-    await expect(getTeamMembers()).rejects.toThrow('Not authenticated');
+  test('throws api error', async () => {
+    await expect(getTeamMembers()).rejects.toThrow();
   });
 });

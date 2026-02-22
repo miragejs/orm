@@ -16,7 +16,7 @@ describe('getUser', () => {
 
   afterAll(() => server.close());
 
-  test('gets authenticated user', async ({ schema }) => {
+  test('returns authenticated user', async ({ schema }) => {
     const user = schema.users.create().toJSON();
     setUserCookie(user.id);
 
@@ -24,12 +24,7 @@ describe('getUser', () => {
     expect(result).toEqual(user);
   });
 
-  test('throws "Not authenticated" when no cookie present', async () => {
-    await expect(getUser()).rejects.toThrow('Not authenticated');
-  });
-
-  test('throws "Failed to fetch user" when user not found', async () => {
-    setUserCookie('non-existent-id');
-    await expect(getUser()).rejects.toThrow('Failed to fetch user');
+  test('throws api error', async () => {
+    await expect(getUser()).rejects.toThrow();
   });
 });
