@@ -64,8 +64,16 @@ This project follows the **[Conventional Commits](https://www.conventionalcommit
 Each commit message must have a clear, structured format:
 
 ```
-&lt;type&gt;[optional scope]: &lt;short summary&gt;
+<type>(<scope>): <short summary>
 ```
+
+### Scopes (required for features and fixes)
+| Scope | Use for |
+|-------|---------|
+| **lib** | Changes to the main library (`lib/`) — core ORM, schema, models, serializers, etc. |
+| **example** | Changes to the example project (`examples/task-board/`) — demo app, tests, docs. |
+
+Use these scopes so that changelogs and reviews can distinguish library changes from example-only changes.
 
 ### Common types
 | Type | Use for |
@@ -81,12 +89,15 @@ Each commit message must have a clear, structured format:
 
 ### Examples
 ```bash
-feat(model): add factory builder support
-fix(serializer): correct relation key resolution
-docs: update contribution guide with Conventional Commits section
+feat(lib): add factory builder support
+fix(lib): correct relation key resolution in serializer
+feat(example): add login help dialog
+docs(example): update task-board README with schema setup
+docs: update contribution guide with scope requirements
 ```
 
 ### Notes
+- **Scope is required** for `feat` and `fix`: use `feat(lib)` or `feat(example)` (or `fix(lib)` / `fix(example)`).
 - Keep summaries short (under 80 chars).
 - Use **present tense** (“add” not “added”).
 - Avoid capitalizing the first word after the colon.
