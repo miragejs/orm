@@ -1,6 +1,6 @@
 import { http, HttpResponse, delay } from 'msw';
 import { testSchema } from '@test/schema';
-import { parseCookieUserId } from '@test/utils';
+import { parseCookieUserId } from '@test/server/utils';
 import { taskItemSerializer } from '@test/schema/collections/tasks';
 import type { Task, Comment, TaskItem, TaskFormValues } from '@shared/types';
 

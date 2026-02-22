@@ -7,7 +7,7 @@ import {
 import { parseTableQuery } from '@shared/utils';
 import { ModelAttrs, Where } from 'miragejs-orm';
 import { TaskModel } from '@test/schema/models';
-import { parseCookieUserId } from '@test/utils';
+import { parseCookieUserId } from '@test/server/utils';
 import { collectTaskStats } from './collectTaskStats';
 import { defaultMembersParams, defaultTasksParams, parseFilters } from './parseFilters';
 import type { MemberOption, Team, UserInfo } from '@shared/types';

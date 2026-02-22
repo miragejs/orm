@@ -1,6 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import { testSchema } from '@test/schema';
-import { parseCookieUserId } from '@test/utils';
+import { parseCookieUserId } from '@test/server/utils';
 import type { User } from '@shared/types';
 
 /**
