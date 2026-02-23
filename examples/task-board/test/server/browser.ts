@@ -1,6 +1,6 @@
 import { setupWorker } from 'msw/browser';
-import { handlers } from './handlers';
 import { testSchema } from '@test/schema';
+import { handlers } from './handlers';
 
 /**
  * MSW browser worker for intercepting API requests in development

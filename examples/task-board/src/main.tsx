@@ -5,7 +5,6 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import lightGreen from '@mui/material/colors/lightGreen';
 import purple from '@mui/material/colors/purple';
 import Root from './Root';
-import { initMockServer } from '@test/server';
 
 // Create Material-UI theme
 const theme = createTheme({
@@ -23,6 +22,7 @@ const theme = createTheme({
 async function startApp() {
   // Initialize mock server with seeds in development mode
   if (import.meta.env.DEV) {
+    const { initMockServer } = await import('@test/server/browser');
     await initMockServer();
   }
 
