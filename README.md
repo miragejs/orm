@@ -18,57 +18,44 @@
 
 ## ✨ What is miragejs-orm?
 
-**miragejs-orm** is a complete TypeScript rewrite of the powerful ORM layer from MirageJS, designed to give frontend developers the freedom to quickly create type-safe mocks for both testing and development — without backend dependencies.
-
-Build realistic, relational data models in memory with factories, traits, relationships, and serialization, all with **100% type safety** and a modern, fluent API.
-
----
+**miragejs-orm** is a TypeScript rewrite of the ORM layer from MirageJS. Use it to build in-memory, type-safe mocks for frontend testing and development—no backend required. You get models, relationships, factories, and serialization through a modern, fluent API.
 
 ## 🚀 Why Choose miragejs-orm?
 
-### Compared to MirageJS
+MirageJS excels at full API mocking; we took its ORM and rebuilt it for type safety and flexibility.
 
-While MirageJS is an excellent solution for full API mocking, `miragejs-orm` takes the most powerful part - the ORM — and enhances it:
+**Technical highlights**
 
-- **🎯 Fully Rewritten in TypeScript** - Built from the ground up with TypeScript, providing complete type safety and excellent IDE autocomplete
-- **🪶 Zero Dependencies** - No external dependencies means smaller bundle size (~55KB) and no supply chain concerns
-- **🔌 Framework Agnostic** - Use with any HTTP interceptor library (MSW, Mirage Server, Axios interceptors, etc.) or testing framework
-- **⚡ Modern Fluent API** - Declarative builder patterns let you construct schemas, models, and factories with an intuitive, chainable API
-- **📦 No Inflection Magic Under The Hood** - Now you control exactly how your model names and attributes are formatted - what you define is what you get
-- **✅ Battle Tested** - 900+ test cases with 95% code coverage, including type tests, ensure reliability
-- **🔧 Modern Tooling** - Built with modern build tools and package standards for optimal developer experience
+- **🎯 TypeScript-first** — Full type safety and IDE support; no magic, no runtime schema.
+- **🪶 Zero dependencies** — Smaller bundle (~55KB), no supply-chain surprises.
+- **🔌 Framework agnostic** — Works with MSW, Mirage Server, Axios interceptors, or any test runner.
+- **⚡ Fluent API** — Chainable builders for schemas, models, and factories.
+- **📦 No inflection magic** — You choose model and attribute names; what you define is what you get.
+- **✅ Battle tested** — 900+ tests, 95% coverage, including type tests.
 
-### Key Benefits
-
-- **Develop UI-First** - Don't wait for backend APIs. Build complete frontend features with realistic data
-- **Flexible Data Modeling** - Create models that mirror your backend entities OR design custom models for specific endpoints
-- **Built-in Serialization** - Transform your data on output with serializers to match API formats, hide sensitive fields, and control response structure
-- **Type-Safe Mocking** - Full TypeScript support means your mocks stay in sync with your types
-- **Testing & Development** - Perfect for unit tests, integration tests, Storybook stories, and development environments
-
-**📂 Example project:** See the [task-board example](./examples/task-board) for a full reference: schema setup, models, collections, relations, factories, seeds, serializers, and MSW handlers. Use it to learn the library and as a pattern for your own projects.
-
----
+**What you get** — Develop UI-first with realistic data, model your API your way (or keep models minimal), and use built-in serialization for API-shaped output. One setup fits unit tests, integration tests, and Storybook.
 
 ## 💭 Philosophy
 
-### Freedom Over Rigidity
+**Freedom over rigidity** — The library is a playground, not a constraint. You can mirror your backend or define minimal models for specific endpoints; mock data stays in the ORM instead of scattered in handlers. The goal is UI-first development without waiting on APIs.
 
-The core idea behind `miragejs-orm` is to give frontend developers a **playground, not a prison**. We don't force you to perfectly replicate your backend architecture - instead, we give you the tools to create exactly what you need:
+**Schema-less but type-safe** — We don’t validate at runtime; you keep test data correct so tests stay meaningful. We provide full TypeScript support so that mock management is type-safe. That tradeoff keeps setup simple and gives you full control while preserving compile-time safety.
 
-- **Model Your API, Your Way** – Build a complete relational model that mirrors your server, OR create minimal models for specific endpoint outputs
-- **No Scope Creep** – Keep your mock data within the library's scope rather than managing complex state in route handlers or test setup
-- **UI-First Development** – Get ahead of backend development and prototype features with realistic, relational data
+---
 
-### Schema-less but Type-Safe
+<div align="center">
 
-We embrace a unique philosophy:
+## 📂 Example project
 
-- **No Runtime Validation** – Models are schema-less by design. You're responsible for keeping your test data correct so tests meet expectations
-- **100% Type Safety** – On our side, we provide complete TypeScript support to make mock management fully type-safe
-- **Developer Freedom** – We give you powerful tools without imposing backend-style validation constraints
+<img src="./docs/example-project-screenshot.png" alt="Task Board dashboard — team overview, task trends, and task list" width="720" />
 
-This approach means faster iteration, simpler setup, and complete control over your mock data while maintaining the benefits of TypeScript's compile-time safety.
+</div>
+
+A full reference app shows how to wire miragejs-orm into a real stack: schema, models, collections, relationships, factories, seeds, serializers, and MSW request handlers. Use it to learn the library and as a template for your own mocks.
+
+**[Task Board](./examples/task-board)** — [Open in CodeSandbox](https://githubbox.com/miragejs/orm/tree/main/examples/task-board)
+
+**Tech stack:** Vite, React 18, React Router 7, TypeScript, Material UI (MUI), MSW, Vitest, Testing Library, Faker. The app runs with a mock API only; no backend required.
 
 ---
 
@@ -190,54 +177,90 @@ const userModel = model('user', 'users').attrs<UserAttrs>().build();
 
 ### 2. Collections
 
-Collections are containers for models that live in your schema. They handle CRUD operations and queries.
+Collections are containers for models that live in your schema. They handle creation, querying, and access; collection methods return `Model` or `ModelCollection`, not raw records.
+
+#### Basic collection
+
+Only `.model()` is required. Everything else is optional.
+
+```typescript
+import { collection } from 'miragejs-orm';
+
+const userCollection = collection().model(userModel).build();
+```
+
+#### Full collection
+
+You can add relationships, factory, serializer, identity manager, seeds, and fixtures.
 
 ```typescript
 import { collection, relations } from 'miragejs-orm';
 
 const userCollection = collection()
   .model(userModel)
-  .factory(userFactory) // Optional
-  .relationships({ posts: relations.hasMany(postModel) }) // Optional
-  .serializer(userSerializer) // Optional
+  .relationships({ posts: relations.hasMany(postModel) })
+  .factory(userFactory)
+  .serializer(userSerializer)
+  .identityManager(identityManagerConfigOrInstance)
+  .seeds((schema) => {...})
+  .fixtures(userFixtures)
   .build();
 ```
 
-**Creating**
+#### Accessing models
+
+Get all models or access by position.
+
+| Method      | Description                                                |
+| ----------- | ---------------------------------------------------------- |
+| `all()`     | Returns a `ModelCollection` of all models.                 |
+| `first()`   | First model, or `null` if empty.                           |
+| `last()`    | Last model, or `null` if empty.                            |
+| `at(index)` | Model at zero-based index, or `undefined` if out of range. |
 
 ```typescript
-// New (in-memory only, not saved to DB — uses only the attributes you pass, no factory)
-const user = testSchema.users.new({
-  name: 'Alice',
-  email: 'alice@example.com',
-});
+const allUsers = testSchema.users.all();
+const first = testSchema.users.first();
+const last = testSchema.users.last();
+const thirdUser = testSchema.users.at(2);
+```
 
-// Create with custom attributes
+#### Creating models
+
+Create and persist models. With a factory, you can use traits and defaults.
+
+| Method                                     | Description                                                   |
+| ------------------------------------------ | ------------------------------------------------------------- |
+| `create(attrs?, ...traits)`                | Create one model. Pass attributes and/or factory trait names. |
+| `createMany(count, attrs?, ...traits)`     | Create multiple models with the same attributes/traits.       |
+| `findOrCreateBy(match, attrs?)`            | Find one model by predicate or create with given attributes.  |
+| `findManyOrCreateBy(count, match, attrs?)` | Find up to `count` models by predicate or create to fill.     |
+
+```typescript
+// One model with custom attributes
 const user = testSchema.users.create({
   name: 'Alice',
   email: 'alice@example.com',
 });
 
-// Create with factory traits
+// With factory traits
 const adminUser = testSchema.users.create({ name: 'Admin' }, 'admin');
 
-// Create multiple identical records
-const users = testSchema.users.createMany(3);
+// Multiple identical models
+const users = testSchema.users.createMany(3, 'admin');
 
-// Create multiple different records: two regular users and one admin
+// Multiple models with different attrs/traits per item
 const users = testSchema.users.createMany([
   [{ name: 'Alice', email: 'alice@example.com' }],
   [{ name: 'Bob', email: 'bob@example.com' }],
-  ['admin'], // Using a trait
+  ['admin'],
 ]);
 
-// Find or create by attributes
+// Find or create
 const user = testSchema.users.findOrCreateBy(
   { email: 'alice@example.com' },
   { name: 'Alice', role: 'user' },
 );
-
-// Find many or create by attributes
 const users = testSchema.users.findManyOrCreateBy(
   5,
   { role: 'user' },
@@ -245,61 +268,85 @@ const users = testSchema.users.findManyOrCreateBy(
 );
 ```
 
-**Querying**
+#### Querying
+
+Find one model or a `ModelCollection` by ID or by conditions (`where` object or predicate function).
+
+| Method                                       | Description                                                      |
+| -------------------------------------------- | ---------------------------------------------------------------- |
+| `find(id \| { where } \| QueryOptions)`      | One model (or `null`) by ID, predicate object, or query options. |
+| `findMany(ids \| { where } \| QueryOptions)` | `ModelCollection` by IDs, predicate object, or query options.    |
 
 ```typescript
-// Find by ID
+// By ID
 const user = testSchema.users.find('1');
 
-// Find with conditions
+// By conditions (object)
 const admin = testSchema.users.find({ where: { role: 'admin' } });
 
-// Find many by IDs
+// Many by IDs
 const users = testSchema.users.findMany(['1', '2', '3']);
 
-// Find with predicate function
+// Many with predicate function
 const activeUsers = testSchema.users.findMany({
   where: (user) => user.isActive && user.role === 'admin',
 });
-
-// Get all records
-const allUsers = testSchema.users.all();
-
-// Get first / last / by index
-const first = testSchema.users.first();
-const last = testSchema.users.last();
-const thirdUser = testSchema.users.at(2);
 ```
 
-**Record management (update & remove)**
+<details>
+<summary><strong>Collection API reference</strong></summary>
 
-```typescript
-// Update a record (model method)
-user.update({ name: 'Bob', role: 'admin' });
+| Method                                         | Returns              | Description                                                     |
+| ---------------------------------------------- | -------------------- | --------------------------------------------------------------- |
+| `all()`                                        | `ModelCollection`    | All models in the collection.                                   |
+| `at(index)`                                    | `Model \| undefined` | Model at zero-based index.                                      |
+| `count(where?)`                                | `number`             | Count models; optional `where` to filter.                       |
+| `create(attrs?, ...traits)`                    | `Model`              | Create one model.                                               |
+| `createMany(countOrSpec, attrs?, ...traits)`   | `ModelCollection`    | Create multiple models.                                         |
+| `delete(id)`                                   | `void`               | Remove one model by ID.                                         |
+| `deleteMany(ids \| predicate \| QueryOptions)` | `number`             | Remove matching models; returns count.                          |
+| `exists(where?)`                               | `boolean`            | Whether at least one model matches; optional `where` to filter. |
+| `find(id \| { where } \| QueryOptions)`        | `Model \| null`      | One model by ID, predicate, or query options.                   |
+| `findMany(ids \| { where } \| QueryOptions)`   | `ModelCollection`    | Models by IDs, predicate, or query options.                     |
+| `findManyOrCreateBy(count, match, attrs?)`     | `ModelCollection`    | Find up to count by predicate or create to fill.                |
+| `findOrCreateBy(match, attrs?)`                | `Model`              | Find one by predicate or create.                                |
+| `first()`                                      | `Model \| null`      | First model, or `null` if empty.                                |
+| `last()`                                       | `Model \| null`      | Last model, or `null` if empty.                                 |
+| `new(attrs)`                                   | `Model`              | In-memory only (not saved). Prefer `create()`.                  |
 
-// Delete a record (model method)
-user.destroy();
+</details>
 
-// Delete by ID (collection method)
-testSchema.users.delete('1');
-
-// Delete multiple records (collection method)
-testSchema.users.deleteMany(['1', '2', '3']);
-```
+---
 
 <details>
 <summary><strong>Key points</strong></summary>
 
-- **Creating and finding** — Use collection methods: `create()`, `createMany()`, `find()`, `findMany()`, `findOrCreateBy()`, `findManyOrCreateBy()`, `all()`, `first()`, `last()`, `at()`.
-- **Updating and removing** — Use model methods: `model.update()`, `model.destroy()`, or collection helpers `collection.delete(id)` / `collection.deleteMany(ids)`.
-- **`new()`** — Creates a model instance in memory only (not saved to the DB), using only the attributes you pass (no factory). Exists mainly for internal use but is exposed for parity with the legacy MirageJS API. Prefer `create()` for building and persisting models in normal application or test code.
-- **Database (db) API** — Operating on raw records via `schema.db.collectionName` is not recommended for normal use. The db API is exposed mainly for debugging and low-level access.
-- **Naming conventions** — The API uses consistent singular/plural and query patterns:
-  - **Singular/plural:** `create()` / `createMany()`, `find()` / `findMany()`, `delete()` / `deleteMany()`.
-  - **Query API:** Use `find({ where })` and `findMany({ where })` instead of separate `findBy` / `where`-style APIs.
-  - **Find-or-create:** `findOrCreateBy()` and `findManyOrCreateBy()` for conditional creation.
+- **Creating and finding** — Use collection methods to create and find your models (CR).
+- **Updating and removing** — Use model methods for updating or removing a specific model, or use collection helpers for removal (UD).
+- **Collection vs ModelCollection** — A **Collection** (e.g. `schema.users`) is the schema container you use to create, find, and query models. A **ModelCollection** is the result of operations that return multiple models (e.g. `all()`, `findMany()`, `createMany()`) or a relationship (e.g. `user.posts`). It holds Model instances, supports most Array methods (operating over the models), exposes the underlying array via `.models`, and provides serialization.
+- **Database (db) API** — You can access raw records using `schema.db[collectionName]` or `schema[collectionName].dbCollection`. In that way you access the `DbCollection` interface (e.g. for debugging or low-level use).
 
 </details>
+
+---
+
+<details>
+<summary><strong>Method naming vs original MirageJS</strong></summary>
+
+This library uses a consistent singular/plural and query API that differs from the original MirageJS ORM:
+
+| Original MirageJS                                      | miragejs-orm                                              | Notes                                                                                        |
+| ------------------------------------------------------ | --------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `create()`                                             | `create()`                                                | Same: create one model.                                                                      |
+| `createList('user', n)` / `schema.users.createList(n)` | `createMany(n, attrs?, ...traits)`                        | One method for “create many”: pass a count or an array of per-model attrs/traits.            |
+| `findBy(attr, value)` / `findBy({ email: 'x' })`       | `find({ where: { email: 'x' } })` or `find(id)`           | No separate `findBy`. Use `find(id)` for by-id, or `find({ where })` for any condition.      |
+| `where(attr, value)` / `where({ role: 'admin' })`      | `findMany({ where: { role: 'admin' })` or `findMany(ids)` | No separate `where`. Use `findMany(ids)` for by-ids, or `findMany({ where })` for filtering. |
+
+**Summary:** Creation uses **create** / **createMany** (replacing `createList`). Finding uses **find** and **findMany** with a single pattern: by ID(s), by predicate object, or by full **QueryOptions** (including `where`, `orderBy`, `limit`, etc.). That way you don’t switch between `findBy` and `where` - you always pass a query shape to `find` or `findMany`.
+
+</details>
+
+---
 
 ### 3. Relationships
 
@@ -388,14 +435,62 @@ const student = testSchema.students.create({
 console.log(student.courses.length); // 2
 ```
 
+#### Relation options
+
+**`foreignKey`** - Override the default attribute that stores the related ID. Defaults are derived from the target model name: `belongsTo(userModel)` → `userModel.modelName='user'` → `userId`; `hasMany(postModel)` → `postModel.modelName='post'` → `postIds`. Use `foreignKey` when your attribute name differs (e.g. `authorId` instead of `userId`).
+
+```typescript
+// Relationship name is `author`, but we store the ID in `authorId`
+relationships: {
+  author: relations.belongsTo(userModel, { foreignKey: 'authorId' }),
+}
+```
+
+**`inverse`** — Controls the inverse side of the relationship for bidirectional sync. Omit for auto-detection, set to a **string** to name the inverse relationship explicitly, or set to **`null`** to disable synchronization. Use explicit `inverse` when one model has multiple relationships to the same target (e.g. author vs reviewer).
+
+```typescript
+// User has two relationships to Post: authoredPosts and reviewedPosts.
+// Each post has author and reviewer (both pointing to User).
+// Explicit inverse pairs keep sync correct: author ↔ authoredPosts, reviewer ↔ reviewedPosts.
+users: collection()
+  .model(userModel)
+  .relationships({
+    authoredPosts: relations.hasMany(postModel, {
+      foreignKey: 'authoredPostIds',
+      inverse: 'author',
+    }),
+    reviewedPosts: relations.hasMany(postModel, {
+      foreignKey: 'reviewedPostIds',
+      inverse: 'reviewer',
+    }),
+  })
+  .build(),
+
+posts: collection()
+  .model(postModel)
+  .relationships({
+    author: relations.belongsTo(userModel, {
+      foreignKey: 'authorId',
+      inverse: 'authoredPosts',
+    }),
+    reviewer: relations.belongsTo(userModel, {
+      foreignKey: 'reviewerId',
+      inverse: 'reviewedPosts',
+    }),
+  })
+  .build(),
+```
+
 <details>
 <summary><strong>Key points</strong></summary>
 
-- **Same model template** — For correct behavior, the model template passed to the collection (`.model(...)`) and to the relationship utilities (`relations.hasMany(...)`, `relations.belongsTo(...)`) must be the same reference. Mismatches can break type inference and relationship resolution.
-- **Default foreign key** — The default foreign key is derived from the **target model’s name** (from its template): `belongsTo(userModel)` → `userId`; `hasMany(postModel)` → `postIds`. You don’t need to pass `foreignKey` when your attribute matches this default.
-- **Relationship name vs foreign key** — The relationship key (e.g. `author`) is independent of the stored attribute. If you want a different relationship name but the default FK is based on the target model name, specify `foreignKey` explicitly. Example: `author: relations.belongsTo(userModel, { foreignKey: 'authorId' })` uses the key `author` but stores the ID in `authorId`; without `foreignKey`, the default would be `userId` (from `userModel.modelName`).
+- **Same model template** — The model template passed to the collection (`.model(...)`) and to the relationship utilities (`relations.hasMany(...)`, `relations.belongsTo(...)`) must be the same reference. Mismatches can break type inference and relationship resolution.
+- **No inflection magic** — Legacy MirageJS uses inflection to derive foreign key names from the relationship name automatically. This library does not support that layer: you specify attribute names (e.g. via `foreignKey`) in the exact format you want in your data. That keeps serialization and data processing straightforward, avoids hidden transformations, and makes the behavior predictable.
+- **Relationships vs Associations** — In legacy MirageJS the relationship configuration utilities were called Associations. Here, **relationships** and **associations** mean different things: use **relation utilities** (`relations.hasMany()`, `relations.belongsTo()`) for schema relationship configuration; use **factory associations** ([see Factory Associations](#factory-associations)) to create or link related models when building data with factories.
 
 </details>
+
+---
 
 ### 4. Factories
 
@@ -558,7 +653,8 @@ const postFactory = factory()
 <details>
 <summary><strong>Key points</strong></summary>
 
-- **Build order** — When you call `collection.create(...)` (with optional traits/attrs), the library:
+- **Defaults and traits** — Attributes and associations defined on the factory (`.attrs()`, `.associations()`) are **default values**. Attributes and associations from traits (`.traits()`) act as **overrides**. Traits are applied after all default values are evaluated, so trait values take precedence.
+- **Build order** — When you call `collection.create(...)` (with optional attrs/traits), the library:
   1. **Factory** evaluates attrs and traits, resolves IDs, returns base attributes (no associations yet);
   2. **Collection** creates the model and **saves it to the DB** so the parent exists;
   3. **Factory** creates or links related models (they can now resolve the parent);
@@ -573,7 +669,7 @@ const postFactory = factory()
         postModel,
         3,
         'published',
-      ), // model traits and attributes are suggested by IDE
+      ), // model attributes and traits are suggested by IDE
     })
     .afterCreate((user, schema) => {
       schema.posts.first(); // schema is fully typed
@@ -582,6 +678,8 @@ const postFactory = factory()
   ```
 
 </details>
+
+---
 
 ### 5. Schema
 
@@ -649,13 +747,27 @@ const autoSchema = schema()
 
 #### Seeds
 
-Define seed scenarios at the collection level for different testing contexts:
+Define seed scenarios at the collection level for different testing contexts. For a single default scenario, pass a function:
+
+```typescript
+const userCollection = collection()
+  .model(userModel)
+  .factory(userFactory)
+  .seeds((schema) => {
+    schema.users.create({ name: 'Demo User', email: 'demo@example.com' });
+  })
+  .build();
+
+// Load default seeds (e.g. when starting the mock server)
+await testSchema.loadSeeds({ onlyDefault: true });
+```
+
+For multiple scenarios, use an object with named keys:
 
 ```typescript
 import { collection, schema } from 'miragejs-orm';
 import { faker } from '@faker-js/faker';
 
-// Define seeds in the collection builder. Use a "default" scenario for loadSeeds({ onlyDefault: true }).
 const userCollection = collection()
   .model(userModel)
   .factory(userFactory)
@@ -680,7 +792,6 @@ const userCollection = collection()
         createdAt: new Date('2024-01-15').toISOString(),
       });
     },
-
     adminUser: (schema) => {
       // Create admin user for permission testing
       schema.users.create({
@@ -699,6 +810,7 @@ const postCollection = collection()
     postAuthor: (schema) => {
       // Create posts and assign a user to a random subset
       schema.posts.createMany(20);
+
       const user = schema.users.create({
         name: 'Alice Author',
         email: 'alice@example.com',
@@ -744,41 +856,18 @@ await testSchema.loadSeeds({ onlyDefault: true });
 
 </details>
 
+---
+
 ### 6. Serializers
 
-Serializers control how models are converted to JSON. Configure them per collection via the **Serializer** class or by passing a **SerializerConfig** object. Options can be overridden at call time (e.g. `model.toJSON()` or `model.serializer(options)`).
+Serializers control how models are converted to JSON. Configure them per collection by passing a **SerializerConfig** object; the collection builds an internal serializer from it. Options can be overridden at call time via `model.serialize(options)`. Use the model template’s **`.json<T>()`** to declare the default shape returned by **`.toJSON()`**.
 
-#### Serializer options (SerializerConfig)
+#### Basic example
 
-- **`select`** — Which attributes to include.
-
-  - **Array:** include only listed keys, e.g. `['id', 'name', 'email']`.
-  - **Object:** `{ key: true }` include only those keys; `{ key: false }` exclude those keys (include all others).
-
-- **`with`** — Which relationships to include and how.
-
-  - **Array:** relationship names to include, e.g. `['posts', 'author']`.
-  - **Object:** `{ relationName: true }` or `{ relationName: false }` to include/exclude; or `{ relationName: { select: [...], mode: 'embedded' } }` for nested options (e.g. which fields on the relation, or per-relation mode override).
-
-- **`relationsMode`** — How to output relationships (default: `'foreignKey'`).
-
-  - `'foreignKey'` — Only foreign key IDs; no nested relationship data.
-  - `'embedded'` — Relationships nested in the model; foreign keys removed.
-  - `'embedded+foreignKey'` — Nested and keep foreign keys.
-  - `'sideLoaded'` — Relationships at top level (requires `root`). `BelongsTo` as single-item arrays.
-  - `'sideLoaded+foreignKey'` — Same and keep foreign keys in attributes.
-  - Per-relation overrides are possible inside `with` (e.g. `with: { posts: { mode: 'embedded' } }`).
-
-- **`root`** — Wrap the serialized output in a root key.
-  - `true` — Use model/collection name (e.g. `{ user: { ... } }`).
-  - `false` — No wrapping (default).
-  - **String** — Custom key (e.g. `'userData'` → `{ userData: { ... } }`).
-
-#### Using the Serializer class
+Pass a **SerializerConfig** to the collection and use **`.json<TModel, TCollection?>()`** on the model template to set the TypeScript type returned by **`.toJSON()`**. That type is what you get from `user.toJSON()` and `collection.toJSON()`.
 
 ```typescript
-import { model, collection, schema, Serializer } from 'miragejs-orm';
-import type { SerializerConfig } from 'miragejs-orm';
+import { model, collection, schema } from 'miragejs-orm';
 
 interface UserAttrs {
   id: string;
@@ -788,80 +877,99 @@ interface UserAttrs {
   role: string;
 }
 
+// Shape of the serialized output (e.g. API response)
 interface UserJSON {
   id: string;
   name: string;
   email: string;
+  postIds: string[];
 }
 
-const userModel = model('user', 'users').attrs<UserAttrs>().build();
-
-const userSerializer = new Serializer(userModel, {
-  select: ['id', 'name', 'email'],
-  with: { posts: true },
-  relationsMode: 'embedded',
-  root: true,
-});
-
-const testSchema = schema()
-  .collections({
-    users: collection().model(userModel).serializer(userSerializer).build(),
-  })
+const userModel = model('user', 'users')
+  .attrs<UserAttrs>()
+  .json<UserJSON>() // default type for .toJSON()
   .build();
 
-const user = testSchema.users.create({
-  name: 'Alice',
-  email: 'alice@example.com',
-  password: 'secret',
-  role: 'admin',
-});
-
-const json = user.toJSON();
-// With root: true → { user: { id: '1', name: 'Alice', email: 'alice@example.com', posts: [...] } }
-```
-
-#### Collection-level serializer config (object)
-
-Pass options directly to the collection instead of a Serializer instance. The collection builds an internal serializer from this config.
-
-```typescript
 const testSchema = schema()
   .collections({
     users: collection()
       .model(userModel)
       .serializer({
         select: ['id', 'name', 'email'],
-        root: 'userData',
         with: ['posts'],
-        relationsMode: 'embedded',
       })
       .build(),
   })
   .build();
 
-const user = testSchema.users.create({ name: 'Bob', email: 'bob@example.com' });
-console.log(user.toJSON());
-// { userData: { id: '1', name: 'Bob', email: 'bob@example.com', posts: [...] } }
+const user = testSchema.users.create(
+  {
+    name: 'Alice',
+    email: 'alice@example.com',
+    password: 'secret',
+    role: 'admin',
+  },
+  'withPosts',
+);
+
+// Type of `json` is UserJSON — matches the type passed to .json<UserJSON>()
+const json = user.toJSON();
 ```
 
 #### Method-level overrides
 
-Override serializer options at call time using the **model’s** `serialize()` method (or `toJSON()` for default options). The model uses the collection’s serializer and passes through your overrides:
+Use **`model.serialize(options)`** to override the collection serializer options at call time. When the resulting shape differs from the default (e.g. you pass a different `select` or a custom Serializer instance), use the **generic** **`serialize<TCustomJSON>(...)`** so the return type reflects the custom serialization:
 
 ```typescript
-// Override options when serializing (uses the collection’s serializer)
-const json = user.serialize({ root: false });
+interface UserData {
+  data: {
+    id: string;
+    name: string;
+  };
+}
+const summary: UserData = user.serialize<UserData>({
+  select: ['id', 'name'],
+  root: 'data',
+});
 ```
+
+#### Serializer options (SerializerConfig)
+
+| Option          | Type                                                          | Description                                                                                                                                                                                                                    |
+| --------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `select`        | `string[]` or `Record<string, boolean>`                       | Which attributes to include. **Array:** only listed keys (e.g. `['id', 'name', 'email']`). **Object:** `{ key: true }` include, `{ key: false }` exclude (include all others).                                                 |
+| `with`          | `string[]` or `Record<string, boolean \| { select?, mode? }>` | Which relationships to include and how. **Array:** names to include (e.g. `['posts', 'author']`). **Object:** `{ relationName: true \| false }` or `{ relationName: { select: [...], mode: 'embedded' } }` for nested options. |
+| `relationsMode` | `string`                                                      | How to output relationships. Default: `'foreignKey'`. See table below. Per-relation override: `with: { posts: { mode: 'embedded' } }`.                                                                                         |
+| `root`          | `boolean` or `string`                                         | Wrap output in a root key. See table below. Default: `false`.                                                                                                                                                                  |
+
+**`relationsMode` values**
+
+| Value                     | Description                                                                    |
+| ------------------------- | ------------------------------------------------------------------------------ |
+| `'foreignKey'`            | Only foreign key IDs; no nested relationship data.                             |
+| `'embedded'`              | Relationships nested in the model; foreign keys removed.                       |
+| `'embedded+foreignKey'`   | Nested and keep foreign keys.                                                  |
+| `'sideLoaded'`            | Relationships at top level (requires `root`). BelongsTo as single-item arrays. |
+| `'sideLoaded+foreignKey'` | Same and keep foreign keys in attributes.                                      |
+
+**`root` values**
+
+| Value    | Effect                                                    |
+| -------- | --------------------------------------------------------- |
+| `true`   | Use model/collection name (e.g. `{ user: { ... } }`).     |
+| `false`  | No wrapping (default).                                    |
+| `string` | Custom key (e.g. `'userData'` → `{ userData: { ... } }`). |
 
 <details>
 <summary><strong>Key points (vs original MirageJS)</strong></summary>
 
 - **Built-in serialization; use model methods** — Unlike legacy MirageJS, you don’t need to call serializers directly. Pass the serializer (or config) in the collection config and use **model methods only**: `model.toJSON()`, `model.serialize(options)`, and `collection.toJSON()` for lists. Serialization is built into the model and collection.
-- **Config-based API** — Serialization is driven by **select**, **with**, **relationsMode**, and **root** (no separate `attrs` / `embed` / `include`). Relationship inclusion and shape are controlled by `with` and `relationsMode` (e.g. `embedded`, `foreignKey`, `sideLoaded`).
 - **One level of nested relationships** — Only one level of nested `with` is supported when serializing related models. Deeper nesting is not part of the serializer API; keep payloads one level for related data.
 - **Custom reusable serializers** — Use the **Serializer** class to define a named, reusable serializer (with your own options and optional custom subclass). Attach it to a collection or use it in tests so the same output shape is reused across test files and handlers.
 
 </details>
+
+---
 
 ### 7. Records vs Models
 
@@ -876,15 +984,18 @@ Understanding the distinction between **Records** and **Models** is fundamental 
 
 **Models** are class instances that wrap records and provide rich functionality:
 
+- **`.attrs`** — The plain object that represents the record stored in the database (attributes and foreign keys). This is the same shape as the underlying record; attribute accessors like `user.name` read from it.
 - All record attributes via accessors (`user.name`, `post.title`)
 - Relationship accessors (`user.posts`, `post.author`)
 - CRUD methods (`.save()`, `.update()`, `.destroy()`, `.reload()`)
 - Relationship methods (`.related()`, `.link()`, `.unlink()`)
-- Serialization (`.toJSON()`, `.toString()`)
+- Serialization (`.toJSON()`, `.toString()`, `.serializer()`)
 - Status tracking (`.isNew()`, `.isSaved()`)
 
+**ModelCollection** is a collection of Model instances. You get it from collection methods that return multiple models (`all()`, `findMany()`, `createMany()`) or from relationship accessors (`user.posts`). It supports most Array-like methods (operating over the models), exposes the underlying list via `.models`, and provides `.length` and serialization (`.toJSON()`). It is not the same as the schema **Collection** (e.g. `schema.users`), which is the container you use to create and query; the ModelCollection is the _result_ of those operations.
+
 ```typescript
-// When you create a model, it materializes into a Model instance
+// When you create a record, it materializes into a model instance
 const user = testSchema.users.create({
   name: 'Alice',
   email: 'alice@example.com',
@@ -892,11 +1003,9 @@ const user = testSchema.users.create({
 
 // The Model instance wraps a Record stored in the database
 console.log(user instanceof Model); // true
-console.log(user.name); // 'Alice' - attribute accessor
+console.log(user.attrs); // { id: '1', name: 'Alice', email: '...', postIds: [] } — the record in the DB
+console.log(user.name); // 'Alice' - attribute accessor (reads from .attrs)
 console.log(user.posts); // ModelCollection - relationship accessor
-
-// Under the hood, the record is just:
-// { id: '1', name: 'Alice', email: 'alice@example.com', postIds: [] }
 
 // Models are materialized when:
 // - Creating: testSchema.users.create(...)
@@ -911,6 +1020,30 @@ console.log(user.posts); // ModelCollection - relationship accessor
 - 🔄 **Fresh Data** - Each query materializes new model instances with the latest record data
 - 🎯 **Type Safety** - Models provide type-safe accessors and methods, records are just data
 - 🔗 **Relationships** - Models handle relationship logic, records only store foreign keys
+
+---
+
+<details>
+<summary><strong>Model API reference</strong></summary>
+
+| Method / property          | Returns                            | Description                                                                 |
+| -------------------------- | ---------------------------------- | --------------------------------------------------------------------------- |
+| `attrs`                    | `object`                           | The record stored in the DB (copy of attributes and foreign keys).          |
+| `id`                       | `string \| number \| null`         | The model ID (or `null` if unsaved).                                        |
+| `destroy()`                | `this`                             | Remove the model from the DB; model becomes "new" (no id).                  |
+| `isNew()`                  | `boolean`                          | Whether the model is not yet saved to the DB.                               |
+| `isSaved()`                | `boolean`                          | Whether the model exists in the DB.                                         |
+| `link(relName, target)`    | `this`                             | Link this model to another via a relationship (updates FKs and inverse).    |
+| `related(relName)`         | `Model \| ModelCollection \| null` | Get the related model(s) for a relationship.                                |
+| `reload()`                 | `this`                             | Reload attributes from the DB.                                              |
+| `save()`                   | `this`                             | Insert or update the record in the DB.                                      |
+| `serialize(options?)`      | `TSerialized`                      | Serialize with optional overrides or a custom Serializer; generic for type. |
+| `toJSON()`                 | `TSerialized`                      | Serialize using the collection serializer (default options).                |
+| `toString()`               | `string`                           | Simple string representation (e.g. `model:user(1)`).                        |
+| `unlink(relName, target?)` | `this`                             | Unlink a relationship (optional target for hasMany).                        |
+| `update(attrs)`            | `this`                             | Merge attributes and save to the DB.                                        |
+
+</details>
 
 ---
 
@@ -1107,129 +1240,6 @@ export const WithManyUsers: StoryObj<typeof UserList> = {
 
 </div>
 
-### Custom Identity Managers
-
-Control how IDs are generated via **IdentityManagerConfig** (no need to define a custom class). You can set a default at the **schema level** and override per **collection**.
-
-**Config options:** `initialCounter` (required), optional `initialUsedIds`, optional `idGenerator(currentId) => nextId`.
-
-```typescript
-import { schema, collection, IdentityManager } from 'miragejs-orm';
-import type { IdentityManagerConfig } from 'miragejs-orm';
-
-// Global default: string IDs starting at "1" (schema-level)
-const testSchema = schema()
-  .identityManager({ initialCounter: '1' })
-  .collections({
-    users: userCollection,
-    posts: postCollection,
-  })
-  .build();
-
-// Per-collection override: number IDs for posts only
-const postCollection = collection()
-  .model(postModel)
-  .identityManager({ initialCounter: 1 })
-  .build();
-
-// Custom id generator (e.g. UUIDs)
-const uuidConfig: IdentityManagerConfig<string> = {
-  initialCounter: '0',
-  idGenerator: () => crypto.randomUUID(),
-};
-const usersCollection = collection()
-  .model(userModel)
-  .identityManager(uuidConfig)
-  .build();
-
-// You can also pass an IdentityManager instance per collection
-const customManager = new IdentityManager({ initialCounter: 100 });
-collection().model(postModel).identityManager(customManager).build();
-```
-
-### Custom Serializers
-
-Extend the **Serializer** class when you need a reusable, named serializer with custom logic. Override `serialize()` or `serializeCollection()` and call `super.serialize()` / `super.serializeCollection()` to use the default behavior, then adjust the result. When the custom serializer is passed to the collection, you can use **`.toJSON()`** on the model or collection instead of calling the serializer directly.
-
-```typescript
-import { model, collection, schema, Serializer } from 'miragejs-orm';
-import type {
-  SerializerConfig,
-  ModelInstance,
-  ModelCollection,
-} from 'miragejs-orm';
-
-// Custom serialized types (optional — use .json() so toJSON() is typed)
-interface UserJSON {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  displayName: string;
-}
-interface UserListResponse {
-  data: UserJSON[];
-}
-
-const userModel = model('user', 'users')
-  .attrs<{ id: string; name: string; email: string; role: string }>()
-  .json<UserJSON, UserJSON[]>()
-  .build();
-
-// Custom serializer: add computed fields; wrap list response in a "data" envelope
-class UserApiSerializer extends Serializer<typeof userModel, TestCollections> {
-  serialize(
-    model: ModelInstance<typeof userModel, TestCollections>,
-    options?: Partial<SerializerConfig<typeof userModel, TestCollections>>,
-  ) {
-    const json = super.serialize(model, options) as Record<string, unknown>;
-    json.displayName = `${model.name} (${model.email})`;
-    return json;
-  }
-
-  serializeCollection(
-    collection: ModelCollection<typeof userModel, TestCollections>,
-    options?: Partial<SerializerConfig<typeof userModel, TestCollections>>,
-  ) {
-    const json = super.serializeCollection(collection, options) as Record<
-      string,
-      unknown
-    >;
-    const items = json[this.collectionName] as unknown[];
-    return { data: items };
-  }
-}
-
-const userSerializer = new UserApiSerializer(userModel, {
-  select: ['id', 'name', 'email', 'role'],
-  root: true,
-});
-
-const testSchema = schema()
-  .collections({
-    users: collection().model(userModel).serializer(userSerializer).build(),
-  })
-  .build();
-
-const user = testSchema.users.create({
-  name: 'Alice',
-  email: 'alice@example.com',
-  role: 'user',
-});
-const users = testSchema.users.all();
-
-// Option 1: use .toJSON() (uses the collection's serializer)
-const singleJson: { user: UserJSON } = user.toJSON();
-// { user: { id: '1', name: 'Alice', email: 'alice@example.com', role: 'user', displayName: 'Alice (alice@example.com)' } }
-
-const listJson: UserListResponse = users.toJSON() as UserListResponse;
-// { data: [{ id: '1', name: 'Alice', email: 'alice@example.com', role: 'user', displayName: '...' }, ...] }
-
-// Option 2: call the serializer directly (e.g. in handlers or when you hold a serializer reference)
-userSerializer.serialize(user);
-userSerializer.serializeCollection(users);
-```
-
 ### Query Methods
 
 MirageJS ORM provides powerful query capabilities including advanced operators, logical combinations, and pagination — features not available in standard MirageJS.
@@ -1414,18 +1424,123 @@ const results = testSchema.users.findMany({
 });
 ```
 
-### Direct Database Access
+### Custom Identity Managers
 
-For low-level operations:
+Control how IDs are generated via **IdentityManagerConfig** (no need to define a custom class). You can set a default at the **schema level** and override per **collection**.
+
+**Config options:** `initialCounter` (required), optional `initialUsedIds`, optional `idGenerator(currentId) => nextId`.
 
 ```typescript
-// Access raw database
-const rawUsers = testSchema.db.users.all();
+import { schema, collection, IdentityManager } from 'miragejs-orm';
+import type { IdentityManagerConfig } from 'miragejs-orm';
 
-// Batch operations
-testSchema.db.emptyData(); // Clear all data
-testSchema.db.users.insert({ id: '1', name: 'Alice' });
-testSchema.db.users.remove({ id: '1' });
+// Global default: string IDs starting at "1" (schema-level)
+const testSchema = schema()
+  .identityManager({ initialCounter: '1' })
+  .collections({
+    users: userCollection,
+    posts: postCollection,
+  })
+  .build();
+
+// Per-collection override: number IDs for posts only
+const postCollection = collection()
+  .model(postModel)
+  .identityManager({ initialCounter: 1 })
+  .build();
+
+// Custom id generator (e.g. UUIDs)
+const uuidConfig: IdentityManagerConfig<string> = {
+  initialCounter: '0',
+  idGenerator: () => crypto.randomUUID(),
+};
+const usersCollection = collection()
+  .model(userModel)
+  .identityManager(uuidConfig)
+  .build();
+
+// You can also pass an IdentityManager instance per collection
+const customManager = new IdentityManager({ initialCounter: 100 });
+collection().model(postModel).identityManager(customManager).build();
+```
+
+### Custom Serializers
+
+Extend the **Serializer** class when you need a reusable, named serializer with custom logic. Override `serialize()` or `serializeCollection()` and call `super.serialize()` / `super.serializeCollection()` to use the default behavior, then adjust the result. When the custom serializer is passed to the collection, you can use **`.toJSON()`** on the model or collection instead of calling the serializer directly.
+
+```typescript
+import { model, collection, schema, Serializer } from 'miragejs-orm';
+import type {
+  ModelInstance,
+  ModelCollection,
+  SerializerConfig,
+} from 'miragejs-orm';
+
+// Custom serialized types (optional — use .json() so toJSON() is typed)
+interface UserJSON {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  displayName: string;
+}
+interface UserListJSON {
+  data: UserJSON[];
+}
+
+const userModel = model('user', 'users')
+  .attrs<{ id: string; name: string; email: string; role: string }>()
+  .json<UserJSON, UserListJSON>()
+  .build();
+
+// Custom serializer: add computed fields; wrap list response in a "data" envelope
+class UserApiSerializer extends Serializer<typeof userModel, TestCollections> {
+  serialize(
+    model: ModelInstance<typeof userModel, TestCollections>,
+    options?: Partial<SerializerConfig<typeof userModel, TestCollections>>,
+  ) {
+    const json = super.serialize(model, options);
+    json.displayName = `${model.name} (${model.email})`;
+    return json;
+  }
+
+  serializeCollection(
+    collection: ModelCollection<typeof userModel, TestCollections>,
+    options?: Partial<SerializerConfig<typeof userModel, TestCollections>>,
+  ) {
+    const json = super.serializeCollection(collection, options);
+    const items = json[this.collectionName];
+    return { data: items, size: items.length };
+  }
+}
+
+const userSerializer = new UserApiSerializer(userModel, {
+  select: ['id', 'name', 'email', 'role'],
+});
+
+const testSchema = schema()
+  .collections({
+    users: collection().model(userModel).serializer(userSerializer).build(),
+  })
+  .build();
+
+const user = testSchema.users.create({
+  name: 'Alice',
+  email: 'alice@example.com',
+  role: 'user',
+});
+const users = testSchema.users.all();
+
+// Option 1: use .toJSON() (uses the collection's serializer)
+const singleJson: UserJSON = user.toJSON();
+// { id: '1', name: 'Alice', email: 'alice@example.com', role: 'user', displayName: 'Alice (alice@example.com)' }
+
+const listJson: UserListJSON = users.toJSON();
+// { data: [{ id: '1', name: 'Alice', email: 'alice@example.com', role: 'user', displayName: '...' }, ...], size }
+
+// Option 2: call the serializer directly (e.g. in handlers or when you hold a serializer reference)
+userSerializer.serialize(user);
+userSerializer.serializeCollection(users);
 ```
 
 ### Debugging
@@ -1553,6 +1668,66 @@ const testSchema = schema()
   .build();
 ```
 
+### Direct Database Access
+
+For low-level operations, use `schema.db` to get the **DB** instance and `schema.db[collectionName]` or `schema[collectionName].dbCollection` to get a **DbCollection**. These work with raw records (plain objects), not Model instances.
+
+```typescript
+// Access raw database
+const rawUsers = testSchema.db.users.all();
+
+// Batch operations
+testSchema.db.emptyData(); // Clear all data
+testSchema.db.users.insert({ id: '1', name: 'Alice' });
+testSchema.db.users.delete('1');
+```
+
+<details>
+<summary><strong>DB API reference</strong></summary>
+
+| Method                               | Returns                             | Description                                                            |
+| ------------------------------------ | ----------------------------------- | ---------------------------------------------------------------------- |
+| `createCollection(name, config?)`    | `this`                              | Create a new collection (name, optional initialData, identityManager). |
+| `dump()`                             | `Record<collectionName, TRecord[]>` | Dump all collection data as a plain object.                            |
+| `emptyData()`                        | `void`                              | Clear all records in all collections.                                  |
+| `getCollection(name)`                | `DbCollection`                      | Get a collection by name. Throws if missing.                           |
+| `hasCollection(name)`                | `boolean`                           | Whether a collection exists.                                           |
+| `identityManagerFor(collectionName)` | `IdentityManager`                   | Get the identity manager for a collection.                             |
+| `loadData(data)`                     | `this`                              | Load initial data into existing or new collections.                    |
+
+Access collections dynamically as properties: `schema.db.users`, `schema.db.posts`, etc. (each returns a **DbCollection**).
+
+</details>
+
+<details>
+<summary><strong>DbCollection API reference</strong></summary>
+
+| Method / property                              | Returns                          | Description                                       |
+| ---------------------------------------------- | -------------------------------- | ------------------------------------------------- |
+| `all()`                                        | `TRecord[]`                      | All records in the collection.                    |
+| `at(index)`                                    | `TRecord \| undefined`           | Record at zero-based index.                       |
+| `clear()`                                      | `void`                           | Remove all records; reset identity manager.       |
+| `count(where?)`                                | `number`                         | Count records; optional `where` to filter.        |
+| `delete(id)`                                   | `boolean`                        | Remove one record by ID.                          |
+| `deleteMany(ids \| predicate \| QueryOptions)` | `number`                         | Remove matching records; returns count.           |
+| `exists(where?)`                               | `boolean`                        | Whether at least one record matches.              |
+| `find(id \| predicate \| QueryOptions)`        | `TRecord \| null`                | One record by ID, predicate, or query options.    |
+| `findMany(ids \| predicate \| QueryOptions)`   | `TRecord[]` or `PaginatedResult` | Records by IDs, predicate, or query options.      |
+| `first()`                                      | `TRecord \| undefined`           | First record.                                     |
+| `has(id)`                                      | `boolean`                        | Whether a record with that ID exists.             |
+| `identityManager`                              | `IdentityManager`                | ID generator for this collection.                 |
+| `insert(data)`                                 | `TRecord`                        | Insert one record (ID auto-generated if omitted). |
+| `insertMany(data[])`                           | `TRecord[]`                      | Insert multiple records.                          |
+| `isEmpty`                                      | `boolean`                        | Whether the collection has no records.            |
+| `last()`                                       | `TRecord \| undefined`           | Last record.                                      |
+| `name`                                         | `string`                         | Collection name.                                  |
+| `nextId`                                       | `TRecord['id']`                  | Next ID from the identity manager.                |
+| `size`                                         | `number`                         | Number of records.                                |
+| `update(id, patch)`                            | `TRecord \| null`                | Update one record by ID.                          |
+| `updateMany(input, patch)`                     | `TRecord[]`                      | Update multiple records.                          |
+
+</details>
+
 ---
 
 <div align="center">
@@ -1568,7 +1743,7 @@ MirageJS ORM is built with TypeScript-first design. Here are best practices for 
 Use `typeof` to create reusable model template types that can be shared across your schema:
 
 ```typescript
-// -- @test/schema/models/user.model.ts --
+// -- @test/schema/models/userModel.ts --
 import { model } from 'miragejs-orm';
 import type { User } from '@domain/users/types';
 
@@ -1588,7 +1763,7 @@ export type UserModel = typeof userModel;
 ```
 
 ```typescript
-// -- @test/schema/models/post.model.ts --
+// -- @test/schema/models/postModel.ts --
 import { model } from 'miragejs-orm';
 import type { Post } from '@domain/posts/types';
 
@@ -1606,12 +1781,12 @@ export type PostModel = typeof postModel;
 ```
 
 ```typescript
-// -- @test/schema/collections/user.collection.ts --
+// -- @test/schema/collections/usersCollection.ts --
 // Use shareable model types in your collections
 import {
   userModel,
-  type UserModel,
   postModel,
+  type UserModel,
   type PostModel,
 } from '@test/schema/models';
 ```
@@ -1622,13 +1797,13 @@ Define explicit schema types for use across your application (e.g. `TestSchema` 
 
 ```typescript
 // -- @test/schema/schema.ts or types.ts --
-import { schema, collection, relations } from 'miragejs-orm';
+import { collection, relations, schema } from 'miragejs-orm';
 import type {
-  CollectionConfig,
-  HasMany,
   BelongsTo,
-  SchemaInstance,
+  CollectionConfig,
   Factory,
+  HasMany,
+  SchemaInstance,
 } from 'miragejs-orm';
 import type { UserModel, PostModel } from './models';
 
@@ -1698,7 +1873,7 @@ The `ModelInstance<TTemplate, TSchema>` type uses the schema to construct the co
 Pass schema type to collections for type-safe `schema` usage and data validation (e.g., seeds, fixtures, etc.):
 
 ```typescript
-// -- @test/schema/collections/user.collection.ts --
+// -- @test/schema/collections/usersCollection.ts --
 import { collection, relations } from 'miragejs-orm';
 import { userModel, postModel } from '@test/schema/models';
 import type { TestCollections } from '@test/schema/types';
