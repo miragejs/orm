@@ -36,10 +36,10 @@ Contributions, discussions, and feedback are very welcome ❤️
    pnpm install
    ```
 
-3. **Run the full local build check (lint, types, tests):**
-   ```bash
-   pnpm run check:all
-   ```
+3. **Run checks and tests:**
+   - **Lint, format, and types:** `pnpm check:all`
+   - **All tests (type tests + unit tests):** `pnpm test:all`
+   - **Everything before a PR:** `pnpm build:checks`
 
 ---
 
@@ -123,10 +123,16 @@ Once merged, your commits will automatically be included in the changelog via th
 
 ## 🧪 Testing
 
-Run all tests:
-```bash
-pnpm test
-```
+There are two test scripts; use **`test:all`** to run both:
+
+- **`pnpm test`** — Runs unit tests (Vitest).
+- **`pnpm test:types`** — Runs type tests (Vitest with `--typecheck`).
+- **`pnpm test:all`** — Runs type tests then unit tests (handy before pushing).
+
+Other useful commands:
+
+- **`pnpm test:watch`** — Unit tests in watch mode.
+- **`pnpm test:coverage`** — Unit tests with coverage.
 
 Run only a subset (by pattern):
 ```bash
@@ -137,15 +143,19 @@ pnpm test -- src/model
 
 ## 🎨 Code style
 
-The repository uses:
-- **ESLint** + **Prettier** for code consistency  
-- **TypeScript strict mode** for type safety
+The repository uses **ESLint** and **Prettier** for code consistency, and **TypeScript strict mode** for type safety.
 
-Please run:
-```bash
-pnpm run lint
-pnpm run format
-```
+**Check** (CI-style, no edits):
+
+- **`pnpm check:lint`** — Lint `lib/src`.
+- **`pnpm check:format`** — Check Prettier formatting.
+- **`pnpm check:all`** — Lint + format + type-check (handy before committing).
+
+**Fix** (auto-fix lint and format):
+
+- **`pnpm fix:lint`** — Auto-fix ESLint issues.
+- **`pnpm fix:format`** — Apply Prettier.
+- **`pnpm fix:all`** — Run both (handy before committing).
 
 ---
 
