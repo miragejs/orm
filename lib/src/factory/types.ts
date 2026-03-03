@@ -66,10 +66,8 @@ export type ModelTraits<
   TTraits extends string = never,
   TTemplate extends ModelTemplate = ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
-  TExpectedTraits extends Record<
-    TTraits,
-    TraitDefinition<TTemplate, TSchema>
-  > = Record<TTraits, TraitDefinition<TTemplate, TSchema>>,
+  TExpectedTraits extends Record<TTraits, TraitDefinition<TTemplate, TSchema>> =
+    Record<TTraits, TraitDefinition<TTemplate, TSchema>>,
 > = [TTraits] extends [never]
   ? Record<string, TraitDefinition<TTemplate, TSchema>>
   : Exact<

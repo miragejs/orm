@@ -180,7 +180,7 @@ export default class SchemaBuilder<
    * This method produces the complete schema instance that can be used throughout
    * your application. Collections must be set before calling build().
    * @returns The configured Schema instance with collection accessors
-   * @throws Error if no collections have been configured
+   * @throws {MirageError} If no collections have been configured
    * @example
    * ```typescript
    * const appSchema = schema()

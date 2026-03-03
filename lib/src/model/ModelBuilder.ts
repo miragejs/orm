@@ -207,7 +207,7 @@ export default class ModelBuilder<
    * model and collection names, a unique symbol key, and hidden type properties
    * for attributes and serialization.
    * @returns The configured ModelTemplate instance with hidden type properties
-   * @throws Error if model name or collection name is not set
+   * @throws {MirageError} If model name or collection name is not set
    * @example
    * ```typescript
    * const userTemplate = model()

@@ -113,8 +113,9 @@ export interface BaseAssociation<TModel extends ModelTemplate = ModelTemplate> {
  * Association that always creates one new related model
  * @template TModel - The model template to create
  */
-export interface CreateAssociation<TModel extends ModelTemplate = ModelTemplate>
-  extends BaseAssociation<TModel> {
+export interface CreateAssociation<
+  TModel extends ModelTemplate = ModelTemplate,
+> extends BaseAssociation<TModel> {
   type: 'create';
 }
 
@@ -136,8 +137,9 @@ export interface CreateManyAssociation<
  * Association that tries to find an existing model, or creates one if not found
  * @template TModel - The model template to link or create
  */
-export interface LinkAssociation<TModel extends ModelTemplate = ModelTemplate>
-  extends BaseAssociation<TModel> {
+export interface LinkAssociation<
+  TModel extends ModelTemplate = ModelTemplate,
+> extends BaseAssociation<TModel> {
   type: 'link';
   /** Optional query to find existing models */
   query?: AssociationQuery;

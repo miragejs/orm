@@ -162,5 +162,7 @@ export interface DataSerializerOptions<
 export interface SerializerConfig<
   TTemplate extends ModelTemplate,
   TSchema extends SchemaCollections = SchemaCollections,
-> extends StructuralSerializerOptions,
+>
+  extends
+    StructuralSerializerOptions,
     DataSerializerOptions<TTemplate, TSchema> {}

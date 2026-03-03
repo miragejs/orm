@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 import js from '@eslint/js';
 import { defineConfig } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
@@ -6,6 +8,8 @@ import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import unusedImports from 'eslint-plugin-unused-imports';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const baseRules = {
   'import-x/order': [
@@ -92,8 +96,8 @@ export default defineConfig([
       },
       parser: tseslint.parser,
       parserOptions: {
-        project: ['./tsconfig.json'],
-        tsconfigRootDir: '.',
+        project: [path.join(__dirname, 'tsconfig.json')],
+        tsconfigRootDir: __dirname,
       },
     },
     plugins: {
