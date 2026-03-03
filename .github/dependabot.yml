@@ -1,0 +1,20 @@
+version: 2
+
+updates:
+  # Library dependencies
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    open-pull-requests-limit: 5
+    exclude-paths:
+      - 'examples/**'
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
+
+  # GitHub Actions
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
