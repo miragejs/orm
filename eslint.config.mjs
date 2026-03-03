@@ -1,5 +1,6 @@
-import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import js from '@eslint/js';
 import { defineConfig } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
@@ -26,7 +27,8 @@ const baseRules = {
     // Only restrict genuinely problematic patterns
     {
       selector: 'LabeledStatement',
-      message: 'Labels are a form of GOTO; using them makes code confusing and hard to maintain.',
+      message:
+        'Labels are a form of GOTO; using them makes code confusing and hard to maintain.',
     },
     {
       selector: 'WithStatement',
@@ -63,7 +65,12 @@ const jsdocRules = {
 
 export default defineConfig([
   {
-    ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**', 'examples/**'],
+    ignores: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/coverage/**',
+      'examples/**',
+    ],
   },
 
   // JS support
