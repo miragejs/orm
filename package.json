@@ -63,7 +63,7 @@
     "provenance": true
   },
   "devDependencies": {
-    "@changesets/changelog-github": "^0.5.1",
+    "@changesets/changelog-github": "^0.6.0",
     "@changesets/cli": "^2.29.7",
     "@eslint/js": "^10.0.1",
     "@eslint/json": "^1.0.1",
