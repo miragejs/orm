@@ -1,14 +1,12 @@
 version: 2
 
 updates:
-  # Library dependencies
+  # Library dependencies (root manifest only — examples/ is intentionally not scanned)
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
       interval: 'weekly'
     open-pull-requests-limit: 5
-    exclude-paths:
-      - 'examples/**'
     commit-message:
       prefix: 'chore'
       include: 'scope'
