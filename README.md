@@ -7,7 +7,7 @@
 > A TypeScript-first ORM for building in-memory databases with models, relationships, and factories
 
 [![npm version](https://img.shields.io/npm/v/miragejs-orm)](https://www.npmjs.com/package/miragejs-orm)
-[![Bundle Size](https://img.shields.io/bundlephobia/minzip/miragejs-orm)](https://bundlephobia.com/package/miragejs-orm)
+[![Bundle Size](https://deno.bundlejs.com/badge?q=miragejs-orm)](https://bundlejs.com/?q=miragejs-orm)
 [![License](https://img.shields.io/npm/l/miragejs-orm)](./LICENSE)
 [![Coverage](https://img.shields.io/badge/coverage-96%25-brightgreen)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue)](https://www.typescriptlang.org/)
@@ -29,33 +29,105 @@ MirageJS excels at full API mocking; we took its ORM and rebuilt it for type saf
 - **🎯 TypeScript-first** — Full type safety and IDE support; no magic, no runtime schema.
 - **🪶 Zero dependencies** — Smaller bundle (~55KB), no supply-chain surprises.
 - **🔌 Framework agnostic** — Works with MSW, Mirage Server, Axios interceptors, or any test runner.
-- **⚡ Fluent API** — Chainable builders for schemas, models, and factories.
-- **📦 No inflection magic** — You choose model and attribute names; what you define is what you get.
+- **⚡ Fluent API** — Chainable builders for schemas, collections, models, and factories.
 - **✅ Battle tested** — 900+ tests, 95% coverage, including type tests.
+- **📦 No naming magic** — Mirage auto-derives singular/plural names and foreign keys for you. We don't: you write every model, attribute, and key name explicitly, so what you define is exactly what you get.
 
 **What you get** — Develop UI-first with realistic data, model your API your way (or keep models minimal), and use built-in serialization for API-shaped output. One setup fits unit tests, integration tests, and Storybook.
 
 ## 💭 Philosophy
 
-**Freedom over rigidity** — The library is a playground, not a constraint. You can mirror your backend or define minimal models for specific endpoints; mock data stays in the ORM instead of scattered in handlers. The goal is UI-first development without waiting on APIs.
+**Freedom, not rigidity** — You're never forced to mirror your backend's models or behavior. Define exactly the data each endpoint needs and manage it dynamically through the ORM, instead of hand-maintaining static fixture files.
 
-**Schema-less but type-safe** — We don’t validate at runtime; you keep test data correct so tests stay meaningful. We provide full TypeScript support so that mock management is type-safe. That tradeoff keeps setup simple and gives you full control while preserving compile-time safety.
+**Schema-less, but type-safe** — No runtime validation. You keep test data correct; TypeScript keeps it type-safe at compile time. That trade-off keeps setup minimal and gives you full control without losing IDE safety.
+
+**UI-first development** — The frontend owns the API contract. Model the data you expect and build against it without waiting on the backend. In the AI era this matters more than ever: agents can scaffold realistic mocks and endpoints in minutes, so the UI leads instead of waits.
 
 ---
 
 <div align="center">
 
-## 📂 Example project
+## 📂 Example mini-app
 
 <img src="./docs/example-project-screenshot.png" alt="Task Board dashboard — team overview, task trends, and task list" width="720" />
 
-</div>
-
-A full reference app shows how to wire miragejs-orm into a real stack: schema, models, collections, relationships, factories, seeds, serializers, and MSW request handlers. Use it to learn the library and as a template for your own mocks.
-
 **[Task Board](./examples/task-board)** — [Open in CodeSandbox](https://githubbox.com/miragejs/orm/tree/main/examples/task-board)
 
-**Tech stack:** Vite, React 18, React Router 7, TypeScript, Material UI (MUI), MSW, Vitest, Testing Library, Faker. The app runs with a mock API only; no backend required.
+</div>
+
+Not a toy demo — a small but complete app covering almost every case you hit in real-world frontends. It shows how to integrate miragejs-orm with a **MSW** mock server for request handling, **Vitest** (using its Context/Fixtures API) for isolated tests, and **Faker** for dynamic data generation. Use it to learn the library and as a template for your own mocks.
+
+---
+
+## 📑 Contents
+
+- [MirageJS ORM](#miragejs-orm)
+  - [✨ What is miragejs-orm?](#-what-is-miragejs-orm)
+  - [🚀 Why Choose miragejs-orm?](#-why-choose-miragejs-orm)
+  - [💭 Philosophy](#-philosophy)
+  - [📂 Example mini-app](#-example-mini-app)
+  - [📑 Contents](#-contents)
+- [📖 Quick Guide](#-quick-guide)
+  - [📦 Installation](#-installation)
+  - [🏃 Quick Start](#-quick-start)
+  - [📚 Core Concepts](#-core-concepts)
+    - [1. Model Templates](#1-model-templates)
+    - [2. Collections](#2-collections)
+      - [Basic collection](#basic-collection)
+      - [Full collection](#full-collection)
+      - [Accessing models](#accessing-models)
+      - [Creating models](#creating-models)
+      - [Querying](#querying)
+    - [3. Relationships](#3-relationships)
+      - [HasMany Relationship](#hasmany-relationship)
+      - [BelongsTo Relationship](#belongsto-relationship)
+      - [Many-to-Many Relationships](#many-to-many-relationships)
+      - [Relation options](#relation-options)
+    - [4. Factories](#4-factories)
+      - [Basic Factory](#basic-factory)
+      - [Derived attributes with resolveFactoryAttr](#derived-attributes-with-resolvefactoryattr)
+      - [Traits](#traits)
+      - [Factory Associations](#factory-associations)
+      - [Lifecycle Hooks](#lifecycle-hooks)
+    - [5. Schema](#5-schema)
+      - [Fixtures](#fixtures)
+      - [Seeds](#seeds)
+    - [6. Serializers](#6-serializers)
+      - [Basic example](#basic-example)
+      - [Method-level overrides](#method-level-overrides)
+    - [7. Records vs Models](#7-records-vs-models)
+    - [8. Collection vs ModelCollection](#8-collection-vs-modelcollection)
+  - [🎯 Usage Examples](#-usage-examples)
+    - [With MSW (Mock Service Worker)](#with-msw-mock-service-worker)
+    - [In Testing (Jest)](#in-testing-jest)
+    - [In Testing (Vitest Context)](#in-testing-vitest-context)
+    - [In Storybook](#in-storybook)
+  - [🔧 Advanced Features](#-advanced-features)
+    - [Query Methods](#query-methods)
+      - [Basic Queries](#basic-queries)
+      - [Advanced Query Operators](#advanced-query-operators)
+      - [Logical Operators (AND/OR/NOT)](#logical-operators-andornot)
+      - [Pagination](#pagination)
+      - [Combined Operations](#combined-operations)
+    - [Custom Identity Managers](#custom-identity-managers)
+    - [Custom Serializers](#custom-serializers)
+    - [Debugging](#debugging)
+    - [Direct Database Access](#direct-database-access)
+  - [💡 TypeScript Best Practices](#-typescript-best-practices)
+    - [Defining Model Template Types](#defining-model-template-types)
+    - [Typing Schema](#typing-schema)
+    - [Typing Model Instances](#typing-model-instances)
+    - [Typing Collections](#typing-collections)
+    - [Typing Factories](#typing-factories)
+  - [📖 API Reference](#-api-reference)
+  - [🤝 Contributing](#-contributing)
+  - [📄 License](#-license)
+
+---
+
+## 📚 Docs
+
+- [Migrating from MirageJS](./docs/migration-from-miragejs.md) — map the original MirageJS API to miragejs-orm.
 
 ---
 
@@ -143,37 +215,39 @@ console.log(post.author.name); // 'Alice'
 
 ### 1. Model Templates
 
-**Model Templates** define the structure of your data entities. They're created using the `model()` builder and are schema-less at runtime but fully typed at compile time.
-
-Model Templates are designed to be **shareable across your schema** - you can reference the same template when setting up relationships and collections, ensuring consistent type inference throughout your application.
+**Model Templates** define the structure of your data entities. They're schema-less at runtime but fully typed at compile time, and are **shareable and immutable** — reference the same template across relationships and collections for consistent type inference.
 
 ```typescript
 import { model } from 'miragejs-orm';
 
-// Define your model attributes interface
 interface UserAttrs {
   name: string;
   email: string;
   role?: string;
 }
 
-// Create a model template
-const userModel = model('user', 'users').attrs<UserAttrs>().build();
-
-// This template can now be shared across collections and relationships
+const userModel = model('user', 'users')
+  .attrs<UserAttrs>()
+  .build();
 ```
 
-<details>
-<summary><strong>Key points</strong></summary>
+> **JavaScript users** — pass a plain object to `.attrs()` instead of a generic (e.g. `.attrs({ name: '', email: '' })`). The object shape gives the IDE good IntelliSense without TypeScript.
 
-- Model Templates are the building blocks created by the `model()` builder.
-- First argument is the **model name** (singular), second is the **collection name** (plural).
-- Use `.attrs<T>()` to define the TypeScript interface for your model.
-- **JavaScript users** — You can pass a plain object to `.attrs()` instead of a generic (e.g. `.attrs({ name: '', email: '' })`). The object shape gives the IDE good IntelliSense for attributes without TypeScript.
-- Templates are **shareable** — use the same template reference for relationships and type inference.
-- Models are immutable once created.
+---
+
+<details>
+<summary><strong>model() builder API reference</strong></summary>
+
+| Method                              | Parameters                                            | Description                                                              |
+| ----------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------ |
+| `model(modelName, collectionName)`  | `modelName`: singular, `collectionName`: plural form  | Start a template. You name both forms explicitly — no inflection.        |
+| `.attrs<TAttrs>()`                  | `TAttrs`: attributes interface                        | Declare the model's attribute types.                                     |
+| `.json<TModel, TCollection?>()`     | `TModel`: model JSON, `TCollection?`: collection JSON | Declare the serialized output type returned by `.toJSON()` (see [Serializers](#6-serializers)). |
+| `.build()`                          | —                                                     | Finalize and return the immutable template.                              |
 
 </details>
+
+---
 
 ### 2. Collections
 
@@ -186,7 +260,9 @@ Only `.model()` is required. Everything else is optional.
 ```typescript
 import { collection } from 'miragejs-orm';
 
-const userCollection = collection().model(userModel).build();
+const userCollection = collection()
+  .model(userModel)
+  .build();
 ```
 
 #### Full collection
@@ -206,6 +282,26 @@ const userCollection = collection()
   .fixtures(userFixtures)
   .build();
 ```
+
+---
+
+<details>
+<summary><strong>collection() builder API reference</strong></summary>
+
+| Method                       | Parameters                                              | Description                                                                          |
+| ---------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `.model(template)`           | `template`: a model template                            | **Required.** Bind the collection to a model template.                               |
+| `.relationships(config)`     | `config`: map of `relations.hasMany`/`belongsTo`        | Define this model's relationships (see [Relationships](#3-relationships)).            |
+| `.factory(factory)`          | `factory`: a factory instance                           | Attach a factory for generating data (see [Factories](#4-factories)).                |
+| `.serializer(configOrInstance)` | `SerializerConfig` or a `Serializer` instance       | Set serialization output (see [Serializers](#6-serializers)).                        |
+| `.identityManager(config)`   | `config`: `IdentityManagerConfig`                       | Override ID generation for this collection (see [Custom Identity Managers](#custom-identity-managers)). |
+| `.seeds(seeds)`              | `seeds`: a function or map of named scenarios           | Define seed data (see [Seeds](#seeds)).                                              |
+| `.fixtures(records, options?)` | `records`: fixture array, `options.strategy?`: `'manual'` \| `'auto'` | Define static fixture data (see [Fixtures](#fixtures)).               |
+| `.build()`                   | —                                                       | Finalize and return the collection config.                                           |
+
+</details>
+
+---
 
 #### Accessing models
 
@@ -270,12 +366,14 @@ const users = testSchema.users.findManyOrCreateBy(
 
 #### Querying
 
-Find one model or a `ModelCollection` by ID or by conditions (`where` object or predicate function).
+Find models, or check/count them, by ID or by conditions (`where` object or predicate function).
 
 | Method                                       | Description                                                      |
 | -------------------------------------------- | ---------------------------------------------------------------- |
 | `find(id \| { where } \| QueryOptions)`      | One model (or `null`) by ID, predicate object, or query options. |
 | `findMany(ids \| { where } \| QueryOptions)` | `ModelCollection` by IDs, predicate object, or query options.    |
+| `count(where?)`                              | Number of models; optional `where` to filter.                    |
+| `exists(where?)`                             | `true` if at least one model matches; optional `where` to filter. |
 
 ```typescript
 // By ID
@@ -291,7 +389,40 @@ const users = testSchema.users.findMany(['1', '2', '3']);
 const activeUsers = testSchema.users.findMany({
   where: (user) => user.isActive && user.role === 'admin',
 });
+
+// Count and existence checks
+const adminCount = testSchema.users.count({ role: 'admin' });
+const hasUsers = testSchema.users.exists();
+const hasAlice = testSchema.users.exists({ email: 'alice@example.com' });
 ```
+
+#### Removing models
+
+Remove one model by ID, or many by IDs, predicate object, or query options.
+
+| Method                                          | Description                                            |
+| ----------------------------------------------- | ------------------------------------------------------ |
+| `delete(id)`                                    | Remove one model by ID.                                |
+| `deleteMany(ids \| { where } \| QueryOptions)`  | Remove matching models; returns the number removed.    |
+
+```typescript
+// One model by ID
+testSchema.users.delete('1');
+
+// Many by IDs
+testSchema.users.deleteMany(['1', '2', '3']);
+
+// Many by conditions (object)
+testSchema.users.deleteMany({ status: 'inactive' });
+
+// Many with query options
+const removed = testSchema.users.deleteMany({
+  where: { age: { lt: 18 } },
+  limit: 10,
+});
+```
+
+---
 
 <details>
 <summary><strong>Collection API reference</strong></summary>
@@ -313,36 +444,6 @@ const activeUsers = testSchema.users.findMany({
 | `first()`                                      | `Model \| null`      | First model, or `null` if empty.                                |
 | `last()`                                       | `Model \| null`      | Last model, or `null` if empty.                                 |
 | `new(attrs)`                                   | `Model`              | In-memory only (not saved). Prefer `create()`.                  |
-
-</details>
-
----
-
-<details>
-<summary><strong>Key points</strong></summary>
-
-- **Creating and finding** — Use collection methods to create and find your models (CR).
-- **Updating and removing** — Use model methods for updating or removing a specific model, or use collection helpers for removal (UD).
-- **Collection vs ModelCollection** — A **Collection** (e.g. `schema.users`) is the schema container you use to create, find, and query models. A **ModelCollection** is the result of operations that return multiple models (e.g. `all()`, `findMany()`, `createMany()`) or a relationship (e.g. `user.posts`). It holds Model instances, supports most Array methods (operating over the models), exposes the underlying array via `.models`, and provides serialization.
-- **Database (db) API** — You can access raw records using `schema.db[collectionName]` or `schema[collectionName].dbCollection`. In that way you access the `DbCollection` interface (e.g. for debugging or low-level use).
-
-</details>
-
----
-
-<details>
-<summary><strong>Method naming vs original MirageJS</strong></summary>
-
-This library uses a consistent singular/plural and query API that differs from the original MirageJS ORM:
-
-| Original MirageJS                                      | miragejs-orm                                              | Notes                                                                                        |
-| ------------------------------------------------------ | --------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `create()`                                             | `create()`                                                | Same: create one model.                                                                      |
-| `createList('user', n)` / `schema.users.createList(n)` | `createMany(n, attrs?, ...traits)`                        | One method for “create many”: pass a count or an array of per-model attrs/traits.            |
-| `findBy(attr, value)` / `findBy({ email: 'x' })`       | `find({ where: { email: 'x' } })` or `find(id)`           | No separate `findBy`. Use `find(id)` for by-id, or `find({ where })` for any condition.      |
-| `where(attr, value)` / `where({ role: 'admin' })`      | `findMany({ where: { role: 'admin' })` or `findMany(ids)` | No separate `where`. Use `findMany(ids)` for by-ids, or `findMany({ where })` for filtering. |
-
-**Summary:** Creation uses **create** / **createMany** (replacing `createList`). Finding uses **find** and **findMany** with a single pattern: by ID(s), by predicate object, or by full **QueryOptions** (including `where`, `orderBy`, `limit`, etc.). That way you don’t switch between `findBy` and `where` - you always pass a query shape to `find` or `findMany`.
 
 </details>
 
@@ -437,7 +538,10 @@ console.log(student.courses.length); // 2
 
 #### Relation options
 
-**`foreignKey`** - Override the default attribute that stores the related ID. Defaults are derived from the target model name: `belongsTo(userModel)` → `userModel.modelName='user'` → `userId`; `hasMany(postModel)` → `postModel.modelName='post'` → `postIds`. Use `foreignKey` when your attribute name differs (e.g. `authorId` instead of `userId`).
+**`foreignKey`** — override the attribute that stores the related ID.
+
+- Defaults are derived from the **target model name**: `belongsTo(userModel)` → `userId`, `hasMany(postModel)` → `postIds`.
+- Set it when your attribute name differs (e.g. `authorId` instead of `userId`).
 
 ```typescript
 // Relationship name is `author`, but we store the ID in `authorId`
@@ -446,7 +550,12 @@ relationships: {
 }
 ```
 
-**`inverse`** — Controls the inverse side of the relationship for bidirectional sync. Omit for auto-detection, set to a **string** to name the inverse relationship explicitly, or set to **`null`** to disable synchronization. Use explicit `inverse` when one model has multiple relationships to the same target (e.g. author vs reviewer).
+**`inverse`** — control the inverse side of the relationship for bidirectional sync.
+
+- **Omit** for auto-detection (the default).
+- Set to a **string** to name the inverse relationship explicitly.
+- Set to **`null`** to disable synchronization.
+- Use an explicit string when one model has multiple relationships to the same target (e.g. author vs reviewer).
 
 ```typescript
 // User has two relationships to Post: authoredPosts and reviewedPosts.
@@ -481,12 +590,28 @@ posts: collection()
   .build(),
 ```
 
-<details>
-<summary><strong>Key points</strong></summary>
+**`collectionName`** — override the collection key used when side-loading this relationship during serialization.
 
-- **Same model template** — The model template passed to the collection (`.model(...)`) and to the relationship utilities (`relations.hasMany(...)`, `relations.belongsTo(...)`) must be the same reference. Mismatches can break type inference and relationship resolution.
-- **No inflection magic** — Legacy MirageJS uses inflection to derive foreign key names from the relationship name automatically. This library does not support that layer: you specify attribute names (e.g. via `foreignKey`) in the exact format you want in your data. That keeps serialization and data processing straightforward, avoids hidden transformations, and makes the behavior predictable.
-- **Relationships vs Associations** — In legacy MirageJS the relationship configuration utilities were called Associations. Here, **relationships** and **associations** mean different things: use **relation utilities** (`relations.hasMany()`, `relations.belongsTo()`) for schema relationship configuration; use **factory associations** ([see Factory Associations](#factory-associations)) to create or link related models when building data with factories.
+- Defaults to the **target model's collection name**.
+- Set it when your serializer needs a different side-load key (e.g. `'articles'` instead of `'posts'`).
+
+---
+
+<details>
+<summary><strong>relations utilities API reference</strong></summary>
+
+| Utility                          | Parameters                                                | Description                                                                  |
+| -------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `relations.hasMany(target, opts?)`   | `target`: model template, `opts?`: relation options   | One-to-many. Stores an array foreign key (default `<model>Ids`).             |
+| `relations.belongsTo(target, opts?)` | `target`: model template, `opts?`: relation options   | Many-to-one. Stores a single foreign key (default `<model>Id`).              |
+
+**`opts`** (all optional):
+
+| Option           | Type                | Description                                                                            |
+| ---------------- | ------------------- | ------------------------------------------------------------------------------------- |
+| `foreignKey`     | `string`            | Attribute storing the related ID. Default derived from target model name.             |
+| `inverse`        | `string` \| `null`  | Inverse relationship name, or `null` to disable sync. Omit to auto-detect.            |
+| `collectionName` | `string`            | Collection key for side-loading during serialization. Defaults to target's collection. |
 
 </details>
 
@@ -650,32 +775,39 @@ const postFactory = factory()
   .build();
 ```
 
+> **Defaults vs traits** — attributes and associations on the factory (`.attrs()`, `.associations()`) are **defaults**; those from `.traits()` are **overrides**. Traits apply after all defaults are evaluated, so trait values win.
+
+> **Build order** — `collection.create(...)` runs: (1) factory evaluates attrs/traits and resolves IDs (no associations yet); (2) collection saves the model so the parent exists; (3) factory creates or links associated models (they can now resolve the parent); (4) collection reloads and applies FK updates, including inverse sync. The parent is always saved before associations run.
+
+---
+
 <details>
-<summary><strong>Key points</strong></summary>
+<summary><strong>factory() builder API reference</strong></summary>
 
-- **Defaults and traits** — Attributes and associations defined on the factory (`.attrs()`, `.associations()`) are **default values**. Attributes and associations from traits (`.traits()`) act as **overrides**. Traits are applied after all default values are evaluated, so trait values take precedence.
-- **Build order** — When you call `collection.create(...)` (with optional attrs/traits), the library:
-  1. **Factory** evaluates attrs and traits, resolves IDs, returns base attributes (no associations yet);
-  2. **Collection** creates the model and **saves it to the DB** so the parent exists;
-  3. **Factory** creates or links related models (they can now resolve the parent);
-  4. **Collection** reloads the model and applies relationship FK updates (including inverse sync). So the parent is always saved before associations run.
-- **Schema type for associations** — Pass your schema collections type to the factory so the `afterCreate` get full type inference and IDE support. Associations should be 'wired' separately:
+| Method                   | Parameters                                                  | Description                                                                 |
+| ------------------------ | ----------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `.model(template)`       | `template`: a model template                                | **Required.** Bind the factory to a model template.                         |
+| `.attrs(attributes)`     | `attributes`: map of static values or `(id) => value` fns   | Default attribute values for created models.                                |
+| `.traits(traits)`        | `traits`: map of named override sets                        | Named variations applied on top of defaults (incl. `afterCreate`).          |
+| `.associations(config)`  | `config`: map of `associations.*` helpers                   | Related models created/linked on every build.                              |
+| `.afterCreate(hook)`     | `hook`: `(model, schema) => void`                           | Run logic after the model and its associations are created.                 |
+| `.build()`               | —                                                           | Finalize and return the factory.                                            |
 
-  ```typescript
-  factory<TestCollections>()
-    .model(userModel)
-    .associations({
-      posts: associations.createMany<PostModel, TestCollections>(
-        postModel,
-        3,
-        'published',
-      ), // model attributes and traits are suggested by IDE
-    })
-    .afterCreate((user, schema) => {
-      schema.posts.first(); // schema is fully typed
-    })
-    .build();
-  ```
+> **Typing** — call `factory<TestCollections>()` so `afterCreate` and association helpers (`associations.createMany<PostModel, TestCollections>(...)`) get full schema type inference and trait-name suggestions.
+
+</details>
+
+---
+
+<details>
+<summary><strong>associations utilities API reference</strong></summary>
+
+| Utility                                | Parameters                                                              | Description                                              |
+| -------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------- |
+| `associations.create(model, ...tD)`    | `model`: template, `...tD`: traits/defaults                             | Always create one new related model.                     |
+| `associations.createMany(model, n \| specs, ...tD)` | `model`: template, `n`: count or per-model `specs` array, `...tD`: traits/defaults | Always create N new related models.        |
+| `associations.link(model, query?, ...tD)`   | `model`: template, `query?`: find predicate, `...tD`: traits/defaults | Find one existing model, else create one.            |
+| `associations.linkMany(model, n, query?, ...tD)` | `model`: template, `n`: count, `query?`: find predicate, `...tD`: traits/defaults | Find up to N existing models, else create to fill. |
 
 </details>
 
@@ -848,11 +980,29 @@ await testSchema.posts.loadSeeds('postAuthor');
 await testSchema.loadSeeds({ onlyDefault: true });
 ```
 
-<details>
-<summary><strong>Key points</strong></summary>
+> **Default vs named seeds** — use the **default** scenario for your dev environment (`loadSeeds({ onlyDefault: true })` when starting the mock server) and **named** scenarios for specific test cases (`loadSeeds('userForm')`). Combining both gives a stable dev dataset plus targeted test data.
 
-- **Create models only through the schema collection API** — Use `testSchema.users.create()`, `testSchema.posts.find()`, etc. Avoid creating or mutating data only via `schema.db`; go through collections so relationships, serializers, and identity managers stay consistent.
-- **Default vs named seeds** — Use the **default** seed scenario for the development environment (e.g. `loadSeeds({ onlyDefault: true })` when starting the mock server). Use **named** seed scenarios for specific test cases (e.g. `loadSeeds('userForm')` or `loadSeeds('postAuthor')`). Combining both gives you a stable dev dataset and targeted test data.
+---
+
+<details>
+<summary><strong>schema() builder API reference</strong></summary>
+
+| Method                       | Parameters                                  | Description                                                                       |
+| ---------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------- |
+| `.collections(config)`       | `config`: map of collection configs         | **Required.** Register the schema's collections.                                  |
+| `.identityManager(config)`   | `config`: `IdentityManagerConfig`           | Schema-wide default ID generation (see [Custom Identity Managers](#custom-identity-managers)). |
+| `.logging(config)`           | `config`: `LoggerConfig`                    | Enable logging (see [Debugging](#debugging)).                                     |
+| `.build()`                   | —                                           | Finalize and return the schema instance.                                          |
+
+**Schema instance methods:**
+
+| Method                                  | Description                                                                  |
+| --------------------------------------- | ---------------------------------------------------------------------------- |
+| `loadSeeds()`                           | Load all seeds for all collections.                                          |
+| `loadSeeds(collectionName)`             | Load all seeds for one collection.                                           |
+| `loadSeeds({ onlyDefault: true })`      | Load only the `default` scenario across collections.                         |
+| `loadFixtures(collectionName?)`         | Load fixtures for all collections, or one by name.                           |
+| `db`                                    | The underlying `DB` instance (see [Direct Database Access](#direct-database-access)). |
 
 </details>
 
@@ -933,14 +1083,19 @@ const summary: UserData = user.serialize<UserData>({
 });
 ```
 
-#### Serializer options (SerializerConfig)
+> **One level of nesting** — only one level of nested `with` is supported when serializing related models. Keep related payloads one level deep.
+
+---
+
+<details>
+<summary><strong>SerializerConfig API reference</strong></summary>
 
 | Option          | Type                                                          | Description                                                                                                                                                                                                                    |
 | --------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `select`        | `string[]` or `Record<string, boolean>`                       | Which attributes to include. **Array:** only listed keys (e.g. `['id', 'name', 'email']`). **Object:** `{ key: true }` include, `{ key: false }` exclude (include all others).                                                 |
 | `with`          | `string[]` or `Record<string, boolean \| { select?, mode? }>` | Which relationships to include and how. **Array:** names to include (e.g. `['posts', 'author']`). **Object:** `{ relationName: true \| false }` or `{ relationName: { select: [...], mode: 'embedded' } }` for nested options. |
-| `relationsMode` | `string`                                                      | How to output relationships. Default: `'foreignKey'`. See table below. Per-relation override: `with: { posts: { mode: 'embedded' } }`.                                                                                         |
-| `root`          | `boolean` or `string`                                         | Wrap output in a root key. See table below. Default: `false`.                                                                                                                                                                  |
+| `relationsMode` | `string`                                                      | How to output relationships. Default: `'foreignKey'`. See values below. Per-relation override: `with: { posts: { mode: 'embedded' } }`.                                                                                        |
+| `root`          | `boolean` or `string`                                         | Wrap output in a root key. See values below. Default: `false`.                                                                                                                                                                 |
 
 **`relationsMode` values**
 
@@ -959,13 +1114,6 @@ const summary: UserData = user.serialize<UserData>({
 | `true`   | Use model/collection name (e.g. `{ user: { ... } }`).     |
 | `false`  | No wrapping (default).                                    |
 | `string` | Custom key (e.g. `'userData'` → `{ userData: { ... } }`). |
-
-<details>
-<summary><strong>Key points (vs original MirageJS)</strong></summary>
-
-- **Built-in serialization; use model methods** — Unlike legacy MirageJS, you don’t need to call serializers directly. Pass the serializer (or config) in the collection config and use **model methods only**: `model.toJSON()`, `model.serialize(options)`, and `collection.toJSON()` for lists. Serialization is built into the model and collection.
-- **One level of nested relationships** — Only one level of nested `with` is supported when serializing related models. Deeper nesting is not part of the serializer API; keep payloads one level for related data.
-- **Custom reusable serializers** — Use the **Serializer** class to define a named, reusable serializer (with your own options and optional custom subclass). Attach it to a collection or use it in tests so the same output shape is reused across test files and handlers.
 
 </details>
 
@@ -1044,6 +1192,39 @@ console.log(user.posts); // ModelCollection - relationship accessor
 | `update(attrs)`            | `this`                             | Merge attributes and save to the DB.                                        |
 
 </details>
+
+---
+
+### 8. Collection vs ModelCollection
+
+These two are easy to confuse because both hold models, but they sit on opposite ends of an operation.
+
+**Collection** (e.g. `schema.users`) is the **schema container** you configure and call. It's the entry point for creating, finding, querying, and deleting models. You set it up once with `collection().model(...).build()` and access it as a property on the schema.
+
+**ModelCollection** is the **result** of an operation that returns multiple models — `all()`, `findMany()`, `createMany()`, or a `hasMany` relationship accessor like `user.posts`. It's a lightweight wrapper around an array of `Model` instances: it supports most Array methods (`map`, `filter`, `forEach`, …) operating over the models, exposes the raw array via `.models`, and adds `.length` plus serialization via `.toJSON()`.
+
+```typescript
+// Collection — the container you call
+const users = testSchema.users; // Collection
+const alice = users.create({ name: 'Alice' }); // Model
+
+// ModelCollection — what those calls return
+const all = testSchema.users.all(); // ModelCollection
+const admins = testSchema.users.findMany({ where: { role: 'admin' } }); // ModelCollection
+const posts = alice.posts; // ModelCollection (hasMany relationship)
+
+// ModelCollection is array-like
+admins.length; // number
+admins.map((u) => u.name); // operates over Model instances
+admins.models; // underlying Model[]
+admins.toJSON(); // serialized output
+```
+
+| | Collection | ModelCollection |
+| --------------- | ------------------------------------------------ | ------------------------------------------------------ |
+| **What it is** | Schema container | Result of a multi-model operation |
+| **How you get it** | `schema.users` | `all()`, `findMany()`, `createMany()`, `user.posts` |
+| **Use it to** | Create, find, query, delete | Iterate, transform, count, serialize a result set |
 
 ---
 
@@ -1682,6 +1863,8 @@ testSchema.db.users.insert({ id: '1', name: 'Alice' });
 testSchema.db.users.delete('1');
 ```
 
+---
+
 <details>
 <summary><strong>DB API reference</strong></summary>
 
@@ -1698,6 +1881,8 @@ testSchema.db.users.delete('1');
 Access collections dynamically as properties: `schema.db.users`, `schema.db.posts`, etc. (each returns a **DbCollection**).
 
 </details>
+
+---
 
 <details>
 <summary><strong>DbCollection API reference</strong></summary>
@@ -1738,7 +1923,7 @@ Access collections dynamically as properties: `schema.db.users`, `schema.db.post
 
 MirageJS ORM is built with TypeScript-first design. Here are best practices for getting the most out of type safety.
 
-### Defining Shareable Model Template Types
+### Defining Model Template Types
 
 Use `typeof` to create reusable model template types that can be shared across your schema:
 
