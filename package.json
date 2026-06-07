@@ -58,6 +58,7 @@
     "prepack": "pnpm build",
     "release": "pnpm build && changeset publish"
   },
+  "packageManager": "pnpm@10.34.1",
   "publishConfig": {
     "access": "public",
     "provenance": true
