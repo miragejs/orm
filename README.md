@@ -161,12 +161,16 @@ Here's a taste of what you can do with `miragejs-orm`:
 import { model, schema, collection, factory, relations } from 'miragejs-orm';
 
 // 1. Define your models
-const userModel = model('user', 'users')
-  .attrs<{ name: string; email: string }>()
+const userModel = model()
+  .name('user')
+  .collection('users')
+  .attrs<{ id: string; name: string; email: string }>()
   .build();
 
-const postModel = model('post', 'posts')
-  .attrs<{ title: string; content: string; authorId: string }>()
+const postModel = model()
+  .name('post')
+  .collection('posts')
+  .attrs<{ id: string; title: string; content: string; authorId: string }>()
   .build();
 
 // 2. Create factories with fake data
@@ -223,17 +227,20 @@ console.log(post.author.name); // 'Alice'
 import { model } from 'miragejs-orm';
 
 interface UserAttrs {
+  id: string;
   name: string;
   email: string;
   role?: string;
 }
 
-const userModel = model('user', 'users')
+const userModel = model()
+  .name('user')
+  .collection('users')
   .attrs<UserAttrs>()
   .build();
 ```
 
-> **JavaScript users** — pass a plain object to `.attrs()` instead of a generic (e.g. `.attrs({ name: '', email: '' })`). The object shape gives the IDE good IntelliSense without TypeScript.
+> **JavaScript users** — pass a plain object to `.attrs()` instead of a generic (e.g. `.attrs({ id: '', name: '', email: '' })`). The object shape gives the IDE good IntelliSense without TypeScript.
 
 ---
 
@@ -242,8 +249,10 @@ const userModel = model('user', 'users')
 
 | Method                              | Parameters                                            | Description                                                              |
 | ----------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------ |
-| `model(modelName, collectionName)`  | `modelName`: singular, `collectionName`: plural form  | Start a template. You name both forms explicitly — no inflection.        |
-| `.attrs<TAttrs>()`                  | `TAttrs`: attributes interface                        | Declare the model's attribute types.                                     |
+| `model()`                           | —                                                     | Start a new model template builder.                                      |
+| `.name(modelName)`                  | `modelName`: singular name (e.g. `'user'`)            | Set the model name. You name forms explicitly — no inflection.           |
+| `.collection(collectionName)`       | `collectionName`: plural form (e.g. `'users'`)        | Set the collection name.                                                 |
+| `.attrs<TAttrs>()`                  | `TAttrs`: attributes interface (must include `id`)    | Declare the model's attribute types.                                     |
 | `.json<TModel, TCollection?>()`     | `TModel`: model JSON, `TCollection?`: collection JSON | Declare the serialized output type returned by `.toJSON()` (see [Serializers](#6-serializers)). |
 | `.build()`                          | —                                                     | Finalize and return the immutable template.                              |
 
@@ -500,12 +509,16 @@ For many-to-many relationships, use `relations.hasMany()` on both sides with arr
 ```typescript
 import { model, schema, collection, relations } from 'miragejs-orm';
 
-const studentModel = model('student', 'students')
-  .attrs<{ name: string; courseIds: string[] }>()
+const studentModel = model()
+  .name('student')
+  .collection('students')
+  .attrs<{ id: string; name: string; courseIds: string[] }>()
   .build();
 
-const courseModel = model('course', 'courses')
-  .attrs<{ title: string; studentIds: string[] }>()
+const courseModel = model()
+  .name('course')
+  .collection('courses')
+  .attrs<{ id: string; title: string; studentIds: string[] }>()
   .build();
 
 const testSchema = schema()
@@ -1037,7 +1050,9 @@ interface UserJSON {
   postIds: string[];
 }
 
-const userModel = model('user', 'users')
+const userModel = model()
+  .name('user')
+  .collection('users')
   .attrs<UserAttrs>()
   .json<UserJSON>() // default type for .toJSON()
   .build();
@@ -1671,7 +1686,9 @@ interface UserListJSON {
   data: UserJSON[];
 }
 
-const userModel = model('user', 'users')
+const userModel = model()
+  .name('user')
+  .collection('users')
   .attrs<{ id: string; name: string; email: string; role: string }>()
   .json<UserJSON, UserListJSON>()
   .build();
@@ -1935,12 +1952,14 @@ import { model } from 'miragejs-orm';
 import type { User } from '@domain/users/types';
 
 // Define user model attributes type
-export type UserAttrs = { name: string; email: string; role: string };
+export type UserAttrs = { id: string; name: string; email: string; role: string };
 // Define user model output type to be produced during serialization
 export type UserJSON = { user: User; current?: boolean };
 
 // Create user model template
-export const userModel = model('user', 'users')
+export const userModel = model()
+  .name('user')
+  .collection('users')
   .attrs<UserAttrs>()
   .json<UserJSON, User[]>()
   .build();
@@ -1955,10 +1974,12 @@ import { model } from 'miragejs-orm';
 import type { Post } from '@domain/posts/types';
 
 // Define post attributes type
-export type PostAttrs = { title: string; content: string; authorId: string };
+export type PostAttrs = { id: string; title: string; content: string; authorId: string };
 
 // Create post model template
-export const postModel = model('post', 'posts')
+export const postModel = model()
+  .name('post')
+  .collection('posts')
   .attrs<PostAttrs>()
   .json<Post, Post[]>() // Use existing Post entity type without transformations
   .build();
