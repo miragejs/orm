@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./docs/logo.svg" alt="MirageJS Logo" width="100" />
+<img src="./docs/logo.svg" alt="MirageJS Logo" width="200" />
 
 # MirageJS ORM
 
