@@ -68,6 +68,7 @@ Not a toy demo — a small but complete app covering almost every case you hit i
   - [📂 Example mini-app](#-example-mini-app)
   - [📑 Contents](#-contents)
   - [📚 Docs](#-docs)
+  - [📝 Articles](#-articles)
 - [📖 Quick Guide](#-quick-guide)
   - [📦 Installation](#-installation)
   - [🏃 Quick Start](#-quick-start)
@@ -130,6 +131,12 @@ Not a toy demo — a small but complete app covering almost every case you hit i
 ## 📚 Docs
 
 - [Migrating from MirageJS](./docs/migration-from-miragejs.md) — map the original MirageJS API to miragejs-orm.
+
+---
+
+## 📝 Articles
+
+- [The Best Frontend Mocking ORM Was Trapped Inside MirageJS. So I Set It Free.](https://medium.com/@kyrylo.dev/the-best-frontend-mocking-orm-was-trapped-inside-miragejs-so-i-set-it-free-d877ca8d2a7e)
 
 ---
 
