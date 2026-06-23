@@ -7,7 +7,6 @@ import {
   schema,
   SchemaInstance,
 } from '@src/schema';
-import { resolveFactoryAttr } from '@src/utils';
 
 import Factory from '../Factory';
 import { factory } from '../FactoryBuilder';
@@ -111,10 +110,7 @@ describe('Factory', () => {
       {
         name: () => 'John Doe',
         email(id: string) {
-          const name = resolveFactoryAttr(this.name, id)
-            .split(' ')
-            .join('.')
-            .toLowerCase();
+          const name = this.name.split(' ').join('.').toLowerCase();
           return `${name}-${id}@example.com`;
         },
         role: 'user',
@@ -196,10 +192,8 @@ describe('Factory', () => {
           name: (id) => {
             return `User ${id}`;
           },
-          email(id) {
-            const name = resolveFactoryAttr(this.name, id)
-              .replace(' ', '-')
-              .toLowerCase();
+          email() {
+            const name = this.name.replace(' ', '-').toLowerCase();
             return `${name}@example.com`;
           },
           role: 'member',
@@ -243,21 +237,18 @@ describe('Factory', () => {
           email(id) {
             called.set('email', (called.get('email') ?? 0) + 1);
 
-            const name = resolveFactoryAttr(this.name, id)
-              .split(' ')
-              .join('.')
-              .toLowerCase();
+            const name = this.name.split(' ').join('.').toLowerCase();
             return `${name}-${id}@example.com`;
           },
           name(id) {
             called.set('name', (called.get('name') ?? 0) + 1);
             return `User ${id}`;
           },
-          bio(id) {
+          bio() {
             called.set('bio', (called.get('bio') ?? 0) + 1);
 
-            const name = resolveFactoryAttr(this.name, id);
-            const email = resolveFactoryAttr(this.email, id);
+            const name = this.name;
+            const email = this.email;
             return `User: ${name} - ${email}`;
           },
           role: 'member',
@@ -273,12 +264,12 @@ describe('Factory', () => {
     it('should throw error for circular dependencies in attributes', () => {
       expect(() => {
         const factory = new Factory<UserModel, never, TestSchema>(userModel, {
-          name(id) {
-            const email = resolveFactoryAttr(this.email, id);
+          name() {
+            const email = this.email;
             return email?.split('@')[0] ?? '';
           },
-          email(id) {
-            const name = resolveFactoryAttr(this.name, id);
+          email() {
+            const name = this.name;
             return name + '@example.com';
           },
         });
@@ -293,9 +284,9 @@ describe('Factory', () => {
       const factory = new Factory<UserModel, never, TestSchema>(userModel, {
         name: () => 'John',
         role: 'admin',
-        email(id) {
-          const name = resolveFactoryAttr(this.name, id);
-          const role = resolveFactoryAttr(this.role, id);
+        email() {
+          const name = this.name;
+          const role = this.role;
           return `${name}.${role}@example.com`.toLowerCase();
         },
       });

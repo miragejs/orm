@@ -34,6 +34,19 @@ export type ExtractTraitsFromSchema<
       : string
     : string;
 
+/**
+ * The `this` context available inside factory attribute functions.
+ *
+ * Each property is typed as its already-resolved value (never a function),
+ * because the factory evaluates function attributes lazily on access via a
+ * Proxy. Reading `this.name` therefore returns the resolved value directly,
+ * with no need to call the function manually.
+ * @template TModelAttrs - The model attributes (excluding `id`)
+ */
+export type FactoryAttrContext<TModelAttrs> = {
+  readonly [K in keyof TModelAttrs]: TModelAttrs[K];
+};
+
 export type FactoryAttrs<
   TTemplate extends ModelTemplate,
   TModelAttrs = Omit<ModelAttrsFor<TTemplate>, 'id'>,
@@ -41,7 +54,7 @@ export type FactoryAttrs<
   [K in keyof TModelAttrs]:
     | TModelAttrs[K]
     | ((
-        this: FactoryAttrs<TTemplate, TModelAttrs>,
+        this: FactoryAttrContext<TModelAttrs>,
         modelId: NonNullable<ModelAttrsFor<TTemplate>['id']>,
       ) => TModelAttrs[K]);
 };
@@ -83,28 +96,3 @@ export type FactoryTraitNames<TFactory> = TFactory extends {
 }
   ? TraitName<TTraits>
   : never;
-
-/**
- * Helper type to work with factory attribute functions in the `this` context.
- * Extracts the function signature for a factory attribute.
- * @template TAttr - The factory attribute type (can be a value or function)
- * @template TModelId - The model ID type
- * @example
- * ```ts
- * const attrs: FactoryAttrs<UserModel> = {
- *   name: () => 'John',
- *   email: function(id: string) {
- *     // Type-safe access to this.name
- *     const getName = this.name as FactoryAttrFunc<typeof this.name, string>;
- *     const name = typeof getName === 'function' ? getName(id) : getName;
- *     return `${name}@example.com`;
- *   }
- * };
- * ```
- */
-export type FactoryAttrFunc<TAttr, TModelId> = TAttr extends (
-  this: any,
-  modelId: TModelId,
-) => infer R
-  ? (this: any, modelId: TModelId) => R
-  : TAttr;

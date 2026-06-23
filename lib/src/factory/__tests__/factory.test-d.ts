@@ -7,7 +7,6 @@
 
 import { model, ModelInstance } from '@src/model';
 import type { CollectionConfig, SchemaInstance } from '@src/schema';
-import { resolveFactoryAttr } from '@src/utils';
 import { expectTypeOf, test } from 'vitest';
 
 import type Factory from '../Factory';
@@ -15,7 +14,6 @@ import { factory } from '../FactoryBuilder';
 import type {
   ExtractTraitsFromSchema,
   FactoryAfterCreateHook,
-  FactoryAttrFunc,
   FactoryAttrs,
   ModelTraits,
   TraitDefinition,
@@ -239,12 +237,12 @@ test('TraitDefinition should allow partial attributes', () => {
   >();
 });
 
-test('FactoryAttrs this context should allow calling other attribute functions', () => {
+test('FactoryAttrs this context should allow accessing other attributes', () => {
   const attrs: FactoryAttrs<UserModel> = {
     name: () => 'John Doe',
-    email: function (id: string) {
-      // Should be able to call this.name as a function
-      const name = typeof this.name === 'function' ? this.name(id) : this.name;
+    email: function () {
+      // this.name returns the resolved value, no function check needed
+      const name = this.name;
       return `${name}@example.com`.toLowerCase().replace(/\s+/g, '.');
     },
   };
@@ -256,8 +254,7 @@ test('FactoryAttrs this context should allow accessing static values', () => {
   const attrs: FactoryAttrs<UserModel> = {
     name: 'Static Name',
     email: function (id: string) {
-      // Should be able to access this.name as a value
-      const name = typeof this.name === 'function' ? this.name(id) : this.name;
+      const name = this.name;
       return `${name}${id}@example.com`;
     },
   };
@@ -269,10 +266,9 @@ test('FactoryAttrs this context should handle mixed static and function attribut
   const attrs: FactoryAttrs<UserModel> = {
     name: () => 'John',
     role: 'admin',
-    email: function (id: string) {
-      // Should handle both function and static attributes
-      const name = typeof this.name === 'function' ? this.name(id) : this.name;
-      const role = typeof this.role === 'function' ? this.role(id) : this.role;
+    email: function () {
+      const name = this.name;
+      const role = this.role;
       return `${name}.${role}@example.com`;
     },
   };
@@ -283,14 +279,13 @@ test('FactoryAttrs this context should handle mixed static and function attribut
 test('FactoryAttrs this context should allow chaining attribute dependencies', () => {
   const attrs: FactoryAttrs<UserModel> = {
     name: () => 'John Doe',
-    email: function (id: string) {
-      const name = typeof this.name === 'function' ? this.name(id) : this.name;
+    email: function () {
+      const name = this.name;
       return `${name}@example.com`.toLowerCase();
     },
-    role: function (id: string) {
+    role: function () {
       // Should be able to reference email which references name
-      const email =
-        typeof this.email === 'function' ? this.email(id) : this.email;
+      const email = this.email;
       return email?.includes('admin') ? 'admin' : 'user';
     },
   };
@@ -301,19 +296,15 @@ test('FactoryAttrs this context should allow chaining attribute dependencies', (
 test('FactoryAttrs this context should preserve type safety', () => {
   const attrs: FactoryAttrs<PostModel> = {
     title: () => 'Post Title',
-    content: function (id: number) {
+    content: function () {
       // this.title is required, so resolved value is string (not string | undefined)
-      const title =
-        typeof this.title === 'function' ? this.title(id) : this.title;
+      const title = this.title;
       expectTypeOf(title).toEqualTypeOf<string>();
       return `Content for ${title}`;
     },
-    published: function (id: number) {
+    published: function () {
       // this.published is optional, so resolved value is boolean | undefined
-      const pub =
-        typeof this.published === 'function'
-          ? this.published(id)
-          : this.published;
+      const pub = this.published;
       expectTypeOf(pub).toEqualTypeOf<boolean | undefined>();
       return pub ?? false;
     },
@@ -322,13 +313,13 @@ test('FactoryAttrs this context should preserve type safety', () => {
   expectTypeOf(attrs).toEqualTypeOf<FactoryAttrs<PostModel>>();
 });
 
-test('FactoryAttrFunc should provide type safety for attribute functions', () => {
+test('this context resolves function attributes to their value type', () => {
   const attrs: FactoryAttrs<UserModel> = {
     name: () => 'John Doe',
-    email: function (id: string) {
-      // Using FactoryAttrFunc for type assertion
-      const getName = this.name as FactoryAttrFunc<typeof this.name, string>;
-      const name = typeof getName === 'function' ? getName(id) : getName;
+    email: function () {
+      // Reading this.name returns the resolved value directly (the Proxy
+      // evaluates function attributes on access).
+      const name = this.name;
       expectTypeOf(name).toEqualTypeOf<string>();
       return `${name}@example.com`;
     },
@@ -337,26 +328,11 @@ test('FactoryAttrFunc should provide type safety for attribute functions', () =>
   expectTypeOf(attrs).toEqualTypeOf<FactoryAttrs<UserModel>>();
 });
 
-test('resolveFactoryAttr should resolve function attributes', () => {
-  const attrs: FactoryAttrs<UserModel> = {
-    name: () => 'John Doe',
-    email: function (id: string) {
-      // Using resolveFactoryAttr helper
-      const name = resolveFactoryAttr(this.name!, id);
-      expectTypeOf(name).toEqualTypeOf<string>();
-      return `${name}@example.com`;
-    },
-  };
-
-  expectTypeOf(attrs).toEqualTypeOf<FactoryAttrs<UserModel>>();
-});
-
-test('resolveFactoryAttr should resolve static values', () => {
+test('this context resolves static values to their value type', () => {
   const attrs: FactoryAttrs<UserModel> = {
     name: 'Static Name',
-    email: function (id: string) {
-      // resolveFactoryAttr works with static values too
-      const name = resolveFactoryAttr(this.name!, id);
+    email: function () {
+      const name = this.name;
       expectTypeOf(name).toEqualTypeOf<string>();
       return `${name}@example.com`;
     },
@@ -365,16 +341,16 @@ test('resolveFactoryAttr should resolve static values', () => {
   expectTypeOf(attrs).toEqualTypeOf<FactoryAttrs<UserModel>>();
 });
 
-test('resolveFactoryAttr should work with complex attribute chains', () => {
+test('this context works with complex attribute chains', () => {
   const attrs: FactoryAttrs<PostModel> = {
     title: () => 'Post Title',
-    content: function (id: number) {
-      const title = resolveFactoryAttr(this.title!, id);
+    content: function () {
+      const title = this.title;
       expectTypeOf(title).toEqualTypeOf<string>();
       return `Content for ${title}`;
     },
-    published: function (id: number) {
-      const content = resolveFactoryAttr(this.content!, id);
+    published: function () {
+      const content = this.content;
       expectTypeOf(content).toEqualTypeOf<string>();
       return content.length > 10;
     },
@@ -383,14 +359,13 @@ test('resolveFactoryAttr should work with complex attribute chains', () => {
   expectTypeOf(attrs).toEqualTypeOf<FactoryAttrs<PostModel>>();
 });
 
-test('resolveFactoryAttr should work with required attributes only', () => {
+test('this context exposes required attributes as their value type', () => {
   const attrs: FactoryAttrs<UserModel> = {
     name: () => 'John',
     email: () => 'john@example.com',
-    role: function (id: string) {
-      // Required attributes work directly with resolveFactoryAttr
-      const name = resolveFactoryAttr(this.name!, id);
-      const email = resolveFactoryAttr(this.email!, id);
+    role: function () {
+      const name = this.name;
+      const email = this.email;
       expectTypeOf(name).toEqualTypeOf<string>();
       expectTypeOf(email).toEqualTypeOf<string>();
       return `${name}:${email}`;
