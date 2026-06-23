@@ -1021,6 +1021,7 @@ await testSchema.loadSeeds({ onlyDefault: true });
 | `loadSeeds(collectionName)`             | Load all seeds for one collection.                                           |
 | `loadSeeds({ onlyDefault: true })`      | Load only the `default` scenario across collections.                         |
 | `loadFixtures(collectionName?)`         | Load fixtures for all collections, or one by name.                           |
+| `emptyData()`                           | Clear all records in all collections (wraps `db.emptyData()`).               |
 | `db`                                    | The underlying `DB` instance (see [Direct Database Access](#direct-database-access)). |
 
 </details>
@@ -1307,7 +1308,7 @@ import { testSchema } from '@test/schema';
 
 describe('User Management', () => {
   beforeEach(() => {
-    testSchema.db.emptyData();
+    testSchema.emptyData();
   });
 
   it('should create a user with posts', () => {
@@ -1355,7 +1356,7 @@ import { testSchema } from './schema';
 export const test = baseTest.extend<{ schema: typeof testSchema }>({
   schema: async ({}, use) => {
     await use(testSchema);
-    testSchema.db.emptyData(); // Teardown: clean after each test
+    testSchema.emptyData(); // Teardown: clean after each test
   },
 });
 ```

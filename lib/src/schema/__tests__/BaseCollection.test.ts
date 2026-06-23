@@ -186,7 +186,7 @@ describe('BaseCollection', () => {
       expect(post?.attrs.authorId).toBe('1');
 
       // Cleanup
-      testSchema.db.emptyData();
+      testSchema.emptyData();
     });
   });
 

@@ -64,7 +64,7 @@ describe('ModelCollection', () => {
   });
 
   afterEach(() => {
-    testSchema.db.emptyData();
+    testSchema.emptyData();
   });
 
   describe('Constructor', () => {
