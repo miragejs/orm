@@ -88,7 +88,7 @@ Not a toy demo — a small but complete app covering almost every case you hit i
       - [Relation options](#relation-options)
     - [4. Factories](#4-factories)
       - [Basic Factory](#basic-factory)
-      - [Derived attributes with resolveFactoryAttr](#derived-attributes-with-resolvefactoryattr)
+      - [Derived attributes](#derived-attributes)
       - [Traits](#traits)
       - [Factory Associations](#factory-associations)
       - [Lifecycle Hooks](#lifecycle-hooks)
@@ -659,25 +659,20 @@ const userFactory = factory()
   .build();
 ```
 
-#### Derived attributes with resolveFactoryAttr
+#### Derived attributes
 
-When one attribute depends on another (e.g. email from name), use the **`resolveFactoryAttr`** helper inside an attr function. It resolves another attr:
-
-- if that attr is a function, it calls it with the current model id;
-- if it's a static value, it returns it.
-
-That way you don't have to write the branching yourself: **it replaces** manual checks like `typeof this.name === 'function' ? this.name(id) : this.name` and keeps attr functions readable when they depend on other attrs.
+When one attribute depends on another (e.g. email from name), just read the other attribute off `this` inside an attr function. Attribute functions are evaluated lazily, so `this.name` always returns the **resolved** value — whether `name` was defined as a static value or a function. You never need to check whether it's a function or call it yourself.
 
 ```typescript
-import { factory, resolveFactoryAttr } from 'miragejs-orm';
+import { factory } from 'miragejs-orm';
 import { faker } from '@faker-js/faker';
 
 const userFactory = factory()
   .model(userModel)
   .attrs({
     name: () => faker.person.fullName(),
-    email(id) {
-      const name = resolveFactoryAttr(this.name, id);
+    email() {
+      const name = this.name; // resolved value, e.g. 'John Doe'
       return `${name.split(' ').join('.').toLowerCase()}@example.com`;
     },
     role: 'user',
@@ -687,6 +682,8 @@ const userFactory = factory()
 // Creates e.g. { name: 'John Doe', email: 'john.doe@example.com', role: 'user' }
 testSchema.users.create();
 ```
+
+Dependencies are resolved on demand and each attribute function runs at most once, so chains like `bio` → `email` → `name` work and circular dependencies are detected and reported.
 
 #### Traits
 

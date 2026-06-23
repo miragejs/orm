@@ -96,7 +96,7 @@ export { factory } from './factory';
 export type {
   Factory,
   FactoryAfterCreateHook,
-  FactoryAttrFunc,
+  FactoryAttrContext,
   FactoryAttrs,
   ModelTraits,
   TraitDefinition,
@@ -160,5 +160,5 @@ export type {
 // ----------------------------------------------------------------------------
 // Logger
 // ----------------------------------------------------------------------------
-export { Logger, LogLevel, resolveFactoryAttr } from './utils';
+export { Logger, LogLevel } from './utils';
 export type { LoggerConfig } from './utils';
