@@ -448,7 +448,7 @@ export default class Collection<
       throw new MirageError(
         `Cannot load fixtures for '${this.collectionName}': ID conflicts detected. ` +
           `The following fixture IDs already exist in the database: ${conflicts.join(', ')}. ` +
-          `Clear the database with db.emptyData() before loading fixtures, or use different IDs.`,
+          `Clear the database with schema.emptyData() before loading fixtures, or use different IDs.`,
       );
     }
 

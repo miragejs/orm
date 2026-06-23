@@ -54,7 +54,7 @@ const testSchema = schema()
 
 describe('Schema with Relationships', () => {
   beforeEach(() => {
-    testSchema.db.emptyData();
+    testSchema.emptyData();
   });
 
   describe('Relationships initialization', () => {

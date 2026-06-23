@@ -50,7 +50,7 @@ type TestSchema = {
 describe('Factory', () => {
   beforeEach(() => {
     // Clear database before each test
-    testSchema.db.emptyData();
+    testSchema.emptyData();
   });
 
   describe('Constructor', () => {
