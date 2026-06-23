@@ -91,7 +91,7 @@ const testSchema = schema()
 describe('Model', () => {
   beforeEach(() => {
     // Clear test database
-    testSchema.db.emptyData();
+    testSchema.emptyData();
   });
 
   describe('Constructor', () => {

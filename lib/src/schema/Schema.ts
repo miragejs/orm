@@ -204,11 +204,23 @@ export default class Schema<
   }
 
   /**
-   * Resets seed tracking for all collections, allowing seeds to be reloaded.
-   * Call this after db.emptyData() if you need to reload seeds.
+   * Empties the data from all collections in the database.
+   * Convenience wrapper around `schema.db.emptyData()`.
    * @example
    * ```typescript
-   * schema.db.emptyData();
+   * schema.emptyData();
+   * ```
+   */
+  emptyData(): void {
+    this.db.emptyData();
+  }
+
+  /**
+   * Resets seed tracking for all collections, allowing seeds to be reloaded.
+   * Call this after emptyData() if you need to reload seeds.
+   * @example
+   * ```typescript
+   * schema.emptyData();
    * schema.resetSeedTracking();
    * await schema.loadSeeds(); // Seeds can now be loaded again
    * ```

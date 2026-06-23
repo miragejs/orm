@@ -455,7 +455,7 @@ export abstract class BaseCollection<
 
   /**
    * Resets the seed tracking, allowing seeds to be loaded again.
-   * Called automatically when the collection data is cleared via db.emptyData().
+   * Called automatically when the collection data is cleared via schema.emptyData().
    */
   resetSeedTracking(): void {
     this._loadedSeeds.clear();

@@ -31,7 +31,7 @@ const testSchema = schema()
 
 describe('Schema', () => {
   beforeEach(() => {
-    testSchema.db.emptyData();
+    testSchema.emptyData();
   });
 
   describe('Constructor', () => {
@@ -155,6 +155,18 @@ describe('Schema', () => {
       testSchema.users.delete(user.id);
       const retrieved = testSchema.users.find(user.id);
       expect(retrieved).toBeNull();
+    });
+
+    it('empties data from all collections via emptyData()', () => {
+      testSchema.users.create();
+      testSchema.posts.create();
+      expect(testSchema.users.all().length).toBe(1);
+      expect(testSchema.posts.all().length).toBe(1);
+
+      testSchema.emptyData();
+
+      expect(testSchema.users.all().length).toBe(0);
+      expect(testSchema.posts.all().length).toBe(0);
     });
   });
 

@@ -32,7 +32,7 @@ describe('Schema with Seeds', () => {
         .build();
 
       beforeEach(() => {
-        testSchema.db.emptyData();
+        testSchema.emptyData();
         testSchema.resetSeedTracking();
       });
 
@@ -86,7 +86,7 @@ describe('Schema with Seeds', () => {
         .build();
 
       beforeEach(() => {
-        testSchema.db.emptyData();
+        testSchema.emptyData();
         testSchema.resetSeedTracking();
       });
 
@@ -140,7 +140,7 @@ describe('Schema with Seeds', () => {
         .build();
 
       beforeEach(() => {
-        testSchema.db.emptyData();
+        testSchema.emptyData();
         testSchema.resetSeedTracking();
       });
 
@@ -179,7 +179,7 @@ describe('Schema with Seeds', () => {
         .build();
 
       beforeEach(() => {
-        testSchema.db.emptyData();
+        testSchema.emptyData();
         testSchema.resetSeedTracking();
       });
 
@@ -215,7 +215,7 @@ describe('Schema with Seeds', () => {
       .build();
 
     beforeEach(() => {
-      testSchema.db.emptyData();
+      testSchema.emptyData();
       testSchema.resetSeedTracking();
     });
 
@@ -466,7 +466,7 @@ describe('Schema with Seeds', () => {
         expect(testSchema.users.all().length).toBe(1);
 
         // Empty the collection
-        testSchema.db.emptyData();
+        testSchema.emptyData();
         testSchema.resetSeedTracking();
         expect(testSchema.users.all().length).toBe(0);
 
@@ -603,7 +603,7 @@ describe('Schema with Seeds', () => {
         expect(testSchema.users.all().length).toBe(1);
 
         // Empty collection
-        testSchema.db.emptyData();
+        testSchema.emptyData();
         testSchema.resetSeedTracking();
 
         // Load seeds again - should work because collection is empty

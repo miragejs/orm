@@ -78,7 +78,7 @@ describe('Schema with Fixtures', () => {
         .build();
 
       beforeEach(() => {
-        testSchema.db.emptyData();
+        testSchema.emptyData();
       });
 
       it('should load fixtures when called', async () => {
@@ -176,7 +176,7 @@ describe('Schema with Fixtures', () => {
         .build();
 
       beforeEach(() => {
-        testSchema.db.emptyData();
+        testSchema.emptyData();
       });
 
       it('should do nothing when loadFixtures is called', async () => {
@@ -195,7 +195,7 @@ describe('Schema with Fixtures', () => {
         .build();
 
       beforeEach(() => {
-        testSchema.db.emptyData();
+        testSchema.emptyData();
       });
 
       it('should do nothing when loadFixtures is called', async () => {
@@ -256,7 +256,7 @@ describe('Schema with Fixtures', () => {
         .build();
 
       beforeEach(() => {
-        testSchema.db.emptyData();
+        testSchema.emptyData();
       });
 
       it('should load all fixtures for all collections', async () => {
@@ -555,7 +555,7 @@ describe('Schema with Fixtures', () => {
       );
 
       await expect(testSchema.users.loadFixtures()).rejects.toThrow(
-        'Clear the database with db.emptyData()',
+        'Clear the database with schema.emptyData()',
       );
     });
 
