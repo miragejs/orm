@@ -1,9 +1,4 @@
-import {
-  associations,
-  factory,
-  resolveFactoryAttr,
-  type ModelUpdateAttrs,
-} from 'miragejs-orm';
+import { associations, factory, type ModelUpdateAttrs } from 'miragejs-orm';
 import { faker } from '@faker-js/faker';
 import { TaskStatus, TaskPriority } from '@shared/enums';
 import { taskModel, userModel } from '@test/schema/models';
@@ -30,20 +25,14 @@ export const taskFactory = factory<TestCollections>()
     description: () => faker.hacker.phrase(),
     priority: () => faker.helpers.enumValue(TaskPriority),
     status: () => faker.helpers.enumValue(TaskStatus),
-    dueDate(id) {
-      const createdAt = resolveFactoryAttr(this.createdAt, id);
-      const dueDate = faker.date
-        .between({ from: createdAt, to: new Date() })
-        .toISOString();
-      return dueDate;
+    dueDate() {
+      return faker.date.between({ from: this.createdAt, to: new Date() }).toISOString();
     },
     createdAt() {
       return faker.date.recent({ days: 14 }).toISOString();
     },
-    updatedAt(id) {
-      const createdAt = resolveFactoryAttr(this.createdAt, id);
-      const dueDate = resolveFactoryAttr(this.dueDate, id);
-      return faker.date.between({ from: createdAt, to: dueDate }).toISOString();
+    updatedAt() {
+      return faker.date.between({ from: this.createdAt, to: this.dueDate }).toISOString();
     },
   })
   .traits({
