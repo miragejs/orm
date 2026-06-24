@@ -6,7 +6,8 @@ export interface UserAttrs {
   id: string;
   avatar: string;
   bio: string;
-  commentIds: string[];
+  // Comments use number IDs, so this foreign-key array is number[].
+  commentIds: number[];
   createdAt: string;
   email: string;
   name: string;

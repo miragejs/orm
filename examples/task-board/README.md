@@ -91,13 +91,44 @@ test/
   - **Serializer**: Default and/or named serializers (e.g. `taskItemSerializer`, `userInfoSerializer`) to control what is returned by the API and in tests.
   - **Seeds**: A `.seeds((schema) => { ... })` function that creates the default dataset. Seed order matters when entities depend on each other (e.g. teams → users → tasks → comments).
 
+### Choosing the ID type (string vs number)
+
+By default every collection uses **string** IDs starting from `"1"`. The `comments` collection in this example uses **number** IDs instead, to show how to opt in:
+
+1. **Declare the `id` type on the model attrs.** The ID type is inferred from the model, so `CommentAttrs` uses `id: number` (see `test/schema/models/commentModel.ts`):
+
+   ```ts
+   export interface CommentAttrs {
+     id: number; // number IDs instead of the default string
+     authorId: string;
+     content: string;
+     createdAt: string;
+     taskId: string;
+   }
+   ```
+
+2. **Configure the collection's identity manager.** Pass a numeric `initialCounter`; the manager then generates `1, 2, 3, ...` (see `test/schema/collections/comments/commentCollection.ts`):
+
+   ```ts
+   export const commentsCollection = collection<TestCollections>()
+     .model(commentModel)
+     .factory(commentFactory)
+     .identityManager({ initialCounter: 1 }) // auto-incrementing number IDs
+     .relationships({ ... })
+     .build();
+   ```
+
+3. **Keep foreign keys and JSON types in sync.** Any model that references comment IDs must use `number` for that key. Here both `TaskAttrs.commentIds` and `UserAttrs.commentIds` are `number[]`, and the shared `Comment` JSON type uses `id: number`. The `initialCounter` value must match the model's `id` type, or you get a compile-time error — `.identityManager({ initialCounter: '1' })` on a `number`-id model will not type-check.
+
+> Tip: for a custom scheme (e.g. UUIDs), pass an `idGenerator`: `.identityManager({ initialCounter: 'c-1', idGenerator: (curr) => ... })`.
+
 ### How the schema is used
 
 - **Development**  
   In `src/main.tsx`, when `import.meta.env.DEV` is true, the app calls `initMockServer()` from `@test/server`. That loads seeds with `testSchema.loadSeeds({ onlyDefault: true })` and starts the MSW worker. The same `testSchema` is used by all MSW handlers in `test/server/handlers/` to `find`, `create`, `update`, `delete`, and serialize data. So the app runs against the ORM without a real server.
 
 - **Tests**  
-  API and integration tests use the **`test`** fixture from `@test/context`. That fixture provides a **`schema`** argument (the same `testSchema` instance). Tests use it to create data (e.g. `schema.users.create()`, `schema.tasks.create('todo', { ... })`) and assert on results (e.g. `schema.tasks.find(id).toJSON()`). After each test, `testSchema.db.emptyData()` runs so the next test starts clean. MSW handlers are the same ones used in dev, so the same schema backs both.
+  API and integration tests use the **`test`** fixture from `@test/context`. That fixture provides a **`schema`** argument (the same `testSchema` instance). Tests use it to create data (e.g. `schema.users.create()`, `schema.tasks.create('todo', { ... })`) and assert on results (e.g. `schema.tasks.find(id).toJSON()`). After each test, `testSchema.emptyData()` runs so the next test starts clean. MSW handlers are the same ones used in dev, so the same schema backs both.
 
 ### Safe pattern summary
 

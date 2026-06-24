@@ -2,7 +2,9 @@ import { model } from 'miragejs-orm';
 import type { Comment } from '@shared/types';
 
 export interface CommentAttrs {
-  id: string;
+  // Comments use number IDs (see commentCollection's identityManager config),
+  // unlike the other models which use the default string IDs.
+  id: number;
   authorId: string;
   content: string;
   createdAt: string;

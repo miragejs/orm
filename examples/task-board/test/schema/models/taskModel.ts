@@ -5,7 +5,8 @@ import type { Task } from '@shared/types';
 export interface TaskAttrs {
   id: string;
   assigneeId: string;
-  commentIds: string[];
+  // Comments use number IDs, so this foreign-key array is number[].
+  commentIds: number[];
   createdAt: string;
   creatorId: string;
   description: string;
