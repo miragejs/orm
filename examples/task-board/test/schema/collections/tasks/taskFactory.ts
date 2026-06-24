@@ -5,6 +5,8 @@ import { taskModel, userModel } from '@test/schema/models';
 import type { TaskModel, UserModel } from '@test/schema/models';
 import type { TestCollections } from '@test/schema';
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 const getTeamPrefix = (teamName?: string) => {
   if (!teamName) {
     return faker.hacker.abbreviation();
@@ -25,14 +27,36 @@ export const taskFactory = factory<TestCollections>()
     description: () => faker.hacker.phrase(),
     priority: () => faker.helpers.enumValue(TaskPriority),
     status: () => faker.helpers.enumValue(TaskStatus),
-    dueDate() {
-      return faker.date.between({ from: this.createdAt, to: new Date() }).toISOString();
-    },
+    // Dates are built so they are always well-ordered and fall on distinct
+    // calendar days: createdAt < updatedAt < dueDate. This keeps the factory
+    // deterministic enough for the UI (which renders dates with
+    // toLocaleDateString(), dropping the time) and avoids inverted ranges when
+    // dueDate is overridden (e.g. the `overdue` trait or an explicit value).
     createdAt() {
-      return faker.date.recent({ days: 14 }).toISOString();
+      // 30–60 days ago
+      return faker.date
+        .recent({ days: 30, refDate: new Date(Date.now() - 30 * MS_PER_DAY) })
+        .toISOString();
     },
     updatedAt() {
-      return faker.date.between({ from: this.createdAt, to: this.dueDate }).toISOString();
+      // 1–14 days after createdAt (independent of dueDate)
+      const createdAt = new Date(this.createdAt).getTime();
+      return faker.date
+        .between({
+          from: new Date(createdAt + MS_PER_DAY),
+          to: new Date(createdAt + 14 * MS_PER_DAY),
+        })
+        .toISOString();
+    },
+    dueDate() {
+      // 15–45 days after createdAt (a distinct day, always after createdAt)
+      const createdAt = new Date(this.createdAt).getTime();
+      return faker.date
+        .between({
+          from: new Date(createdAt + 15 * MS_PER_DAY),
+          to: new Date(createdAt + 45 * MS_PER_DAY),
+        })
+        .toISOString();
     },
   })
   .traits({
