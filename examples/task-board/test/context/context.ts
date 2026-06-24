@@ -7,6 +7,6 @@ export const test = baseTest.extend<{ schema: typeof testSchema }>({
   schema: async ({}, use) => {
     await use(testSchema);
     // Teardown: runs automatically after each test that uses this fixture
-    testSchema.db.emptyData();
+    testSchema.emptyData();
   },
 });
