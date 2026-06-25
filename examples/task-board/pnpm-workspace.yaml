@@ -1,3 +1,5 @@
 allowBuilds:
   esbuild: true
   msw: true
+minimumReleaseAgeExclude:
+  - '@types/node@26.0.1'
