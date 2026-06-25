@@ -17,7 +17,3 @@ coverage
 .vscode
 .idea
 .cursor
-
-# Example app lockfiles — not published; kept out of the dependency graph to avoid
-# Dependabot alerts on demo-only transitive deps
-examples/*/pnpm-lock.yaml
