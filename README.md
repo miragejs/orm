@@ -51,7 +51,7 @@ MirageJS excels at full API mocking; we took its ORM and rebuilt it for type saf
 
 <img src="./docs/example-project-screenshot.png" alt="Task Board dashboard — team overview, task trends, and task list" width="720" />
 
-**[Task Board](./examples/task-board)** — [Open in CodeSandbox](https://codesandbox.io/p/devbox/crazy-breeze-tq9tp2)
+**[Task Board](./examples/task-board)** — [Open in CodeSandbox](https://codesandbox.io/p/devbox/condescending-dew-x7xmvs)
 
 </div>
 
